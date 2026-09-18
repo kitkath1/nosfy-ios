@@ -1,0 +1,16 @@
+{
+  "app": {
+    "CFBundleName": "Nosfy",
+    "CFBundleDisplayName": "Nosfy",
+    "CFBundleIdentifier": "fr.kathryn.woop",
+    "CFBundleVersion": "74",
+    "CFBundleExecutable": "Nosfy"
+  },
+  "widget": {
+    "CFBundleName": "NosfyWidgets",
+    "CFBundleDisplayName": "Nosfy Widgets",
+    "CFBundleIdentifier": "fr.kathryn.woop.WoopWidgets",
+    "CFBundleVersion": "74",
+    "CFBundleExecutable": "NosfyWidgets"
+  }
+}

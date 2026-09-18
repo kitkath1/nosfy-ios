@@ -47,7 +47,7 @@ function detailDe(page: string): { fam: Famille; titre: string; id: string }[] {
 const SECTIONS: { fam: Famille; titre: string; plie?: boolean }[] = [
   { fam: 'trancher', titre: 'À trancher — toi' },
   { fam: 'valider', titre: 'À valider ensemble — toi et moi' },
-  { fam: 'chantier', titre: 'En chantier — moi, rien à faire pour toi', plie: true },
+  { fam: 'chantier', titre: 'En chantier — travaux et prérequis ouverts', plie: true },
   { fam: 'bon', titre: 'Bon — branché et vérifié', plie: true },
 ]
 
@@ -93,7 +93,7 @@ export function Etat() {
           {(['chantier', 'bon'] as Famille[]).map((k) => (
             <button key={k} type="button" className="lien-fam" data-f={f[k] ? `fam:${k}` : undefined} disabled={!f[k]}><i className="pt" data-fam={k} /><b>{f[k]}</b> {LIBELLE_LIGNE[k](f[k])}</button>
           ))}
-          <span>rien à faire pour toi</span>
+          <span>voir les points ouverts</span>
           <button type="button" className="lien-fam tout" data-f="*">tout voir</button>
         </p>
       </div>

@@ -1,0 +1,36 @@
+PASS : compte vide J+0 : premier galet
+PASS : compte vide J+0 : aucun accompli ni date fictive
+PASS : compte vide J+0 : séance en haut du chapitre 1
+PASS : compte vide J+0 : aucun galet avant/au-dessus
+PASS : compte vide J+0 : toutes les récompenses restent à venir
+PASS : compte vide J+1 : premier galet
+PASS : compte vide J+1 : aucun accompli ni date fictive
+PASS : compte vide J+1 : séance en haut du chapitre 1
+PASS : compte vide J+1 : aucun galet avant/au-dessus
+PASS : compte vide J+1 : toutes les récompenses restent à venir
+PASS : compte vide J+40 : premier galet
+PASS : compte vide J+40 : aucun accompli ni date fictive
+PASS : compte vide J+40 : séance en haut du chapitre 1
+PASS : compte vide J+40 : aucun galet avant/au-dessus
+PASS : compte vide J+40 : toutes les récompenses restent à venir
+PASS : historique non vide conservé, pas de remise à zéro
+PASS : un calcul après celui d’un historique ne reprend pas ses galets
+17 contrôles PASS — lancement normal
+PASS : compte vide J+0 : premier galet
+PASS : compte vide J+0 : aucun accompli ni date fictive
+PASS : compte vide J+0 : séance en haut du chapitre 1
+PASS : compte vide J+0 : aucun galet avant/au-dessus
+PASS : compte vide J+0 : toutes les récompenses restent à venir
+PASS : compte vide J+1 : premier galet
+PASS : compte vide J+1 : aucun accompli ni date fictive
+PASS : compte vide J+1 : séance en haut du chapitre 1
+PASS : compte vide J+1 : aucun galet avant/au-dessus
+PASS : compte vide J+1 : toutes les récompenses restent à venir
+PASS : compte vide J+40 : premier galet
+PASS : compte vide J+40 : aucun accompli ni date fictive
+PASS : compte vide J+40 : séance en haut du chapitre 1
+PASS : compte vide J+40 : aucun galet avant/au-dessus
+PASS : compte vide J+40 : toutes les récompenses restent à venir
+PASS : historique non vide conservé, pas de remise à zéro
+PASS : un calcul après celui d’un historique ne reprend pas ses galets
+17 contrôles PASS — dates réelles

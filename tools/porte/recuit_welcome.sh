@@ -12,7 +12,7 @@
 set -e
 cd "$(dirname "$0")/../.."
 SRC=~/Downloads/welcome_nosfy_onbaordin.mp4
-OUT=Woop/Media/welcome-nosfy-premiere.mp4
+OUT=Nosfy/Media/welcome-nosfy-premiere.mp4
 X264=(-c:v libx264 -preset slow -crf 21 -pix_fmt yuv420p -g 48 -movflags +faststart -an)
 ffmpeg -v error -y -i "$SRC" -filter_complex "\
 [0:v]crop=2880:2160:480:0,scale=1200:900:flags=lanczos,format=yuv420p,split[a][b];\

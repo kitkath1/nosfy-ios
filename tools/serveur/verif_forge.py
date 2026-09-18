@@ -22,7 +22,7 @@ import re, json, base64, secrets, urllib.request, urllib.error, sys, os, time
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 URL = "https://ytnnyjkramgiqyxdrkcu.supabase.co"
 REF = "ytnnyjkramgiqyxdrkcu"
-src = open(f"{REPO}/Woop/Services/Supabase.swift").read()
+src = open(f"{REPO}/Nosfy/Services/Supabase.swift").read()
 KEY = re.search(r'"(sb_publishable_[A-Za-z0-9_-]+)"', src).group(1)
 GESTION = open(f"{REPO}/.secrets/supabase-access-token").read().strip()
 

@@ -24,3 +24,9 @@ tools/docsite/captures/dom.html
 
 # généré par next build
 docs/site/next-env.d.ts
+
+# Liens locaux transitoires après renommage Nosfy (sessions encore ouvertes).
+/Woop/
+/WoopShared
+/WoopWidgets/
+/Woop.xcodeproj

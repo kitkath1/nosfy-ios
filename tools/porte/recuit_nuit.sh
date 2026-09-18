@@ -1,5 +1,5 @@
 #!/bin/zsh
-# L'INTRO « NUIT » (13-09) — Woop/Media/nosfy-nuit.mp4 + poster, depuis ~/Downloads/nuit.mp4
+# L'INTRO « NUIT » (13-09) — Nosfy/Media/nosfy-nuit.mp4 + poster, depuis ~/Downloads/nuit.mp4
 # (3840×2160 HEVC 10 bits, 8,04 s, sa piste AAC −27,8 LUFS). Plan : PLAN-INTRO-NUIT.md §5.
 #  1. JAMAIS -ss.  2. Le crop d'abord, au ratio de la fenêtre : bande 330×220 pt (3:2) →
 #  990×660 px ; dans la source le centre, 8 → 92 % (crop 3240×2160 à x=300).
@@ -7,8 +7,8 @@
 #  rectangle se voit.  4. Pas de ping-pong : un plan, une fois.  5. LE SON EST GARDÉ, avec
 #  un fondu de sortie cuit sur sa dernière seconde — c'est là que ma musique monte.
 set -e
-SRC="$HOME/Downloads/nuit.mp4"; OUT="Woop/Media/nosfy-nuit.mp4"
-POSTER_DIR="Woop/Assets.xcassets/nosfy-nuit-poster.imageset"
+SRC="$HOME/Downloads/nuit.mp4"; OUT="Nosfy/Media/nosfy-nuit.mp4"
+POSTER_DIR="Nosfy/Assets.xcassets/nosfy-nuit-poster.imageset"
 X264=(-c:v libx264 -preset slow -crf 20 -pix_fmt yuv420p -g 48 -keyint_min 48 -sc_threshold 0 -movflags +faststart)
 # 2e cuisson (13-09 soir, « mal fondue, pas beau ») : les rampes LINÉAIRES sur quatre
 # bords se lisent comme un rectangle adouci. Une VIGNETTE ELLIPTIQUE en smoothstep —

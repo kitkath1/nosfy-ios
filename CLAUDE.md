@@ -1,4 +1,38 @@
-# Woop — instructions projet
+# Nosfy — instructions projet
+
+**Nom du produit décidé par Kathryn le 18-09-2026 : Nosfy.** Employer Nosfy
+dans tous les textes affichés, les nouveaux documents et les échanges. Le dépôt
+garde ses identifiants historiques (`fr.kathryn.woop`, clés de stockage et module
+Swift `Woop`) pour préserver la compatibilité des comptes et des installations.
+Dossier principal du Bureau : `/Users/kathryn/Desktop/Nosfy` (renommé le 18-09).
+L’ancien chemin reste un accès local masqué pour les sessions déjà ouvertes ;
+ouvrir les nouvelles sessions dans Nosfy.
+Projet et schéma : `Nosfy.xcodeproj` / `Nosfy`. Sources : `Nosfy/`,
+`NosfyShared/`, `NosfyWidgets/` ; entrée : `Nosfy/NosfyApp.swift`. Utiliser ces
+chemins pour les nouveaux builds et commits. Les anciens chemins locaux ne
+sont que des liens de transition pour les sessions ouvertes, hors du projet.
+
+## Compte vide et Route — règle de Kathryn,18-09
+
+Sans séance terminée, commencer tout en haut du chapitre1, au premier galet.
+Aucun fait, date ou gain inventé pour remplir l'écran. Garder ce contrat dans
+Compte, Flow, Serveur et QA. Banc : `tools/duolingo/verif_route_vide.py`.
+La progression non vide reste un chantier distinct, pas un verdict vert.
+
+## Production et documentation — rappel explicite de Kathryn, 18-09-2026
+
+« Tout est bon » est un verdict mesuré, jamais un objectif transformé en état.
+À chaque changement **ou défaut découvert**, actualiser les preuves et réserves
+dans `docs/site/content/`, puis régénérer le livrable et exécuter son vérificateur.
+Une brique branchée, un test backend nominal ou une compilation dans l'arbre
+partagé ne valent pas validation de la version à publier. Les blocages de
+production et les tests iPhone encore ouverts restent visibles en page QA.
+Référence du contrôle du 18-09 : `tools/production/ETAT-PRODUCTION-2026-09-18.md`.
+
+Tester séparément un compte neuf et un compte existant. Conserver l'historique
+personnel ; ne jamais remettre son compte à zéro pour préparer la QA sans un
+accord explicite couvrant cette suppression. Coordonner toute utilisation du
+téléphone avec les sessions Forge / chauffe via `MULTI-SESSION.md`.
 
 ## ⚠️⚠️⚠️ RÈGLE ABSOLUE, NON NÉGOCIABLE — TOUTE SESSION LIT LE SITE DU BACK-END AVANT DE TRAVAILLER
 

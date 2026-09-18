@@ -1,3 +1,12 @@
+<Decision titre="Compte vide : commencer au premier galet">
+  <p>Sans séance terminée, la Home et Route commencent <b>tout en haut du chapitre1, au premier galet</b>. Aucun galet accompli, aucune date fictive, récompenses à venir. Correction du18-09 :34 contrôles Swift PASS ; contrôle iPhone encore ouvert. La progression après une première séance reste provisoire.</p>
+</Decision>
+
+<Decision titre="Nosfy — compte branché, validation production encore ouverte">
+  <p>Le compte neuf vide, l’isolation, la reconnexion et la suppression Supabase passent le banc API. La clé Apple a été fournie et configurée le 18-09 à 08:58 Paris ; la sonde joint Apple, qui refuse le code factice avec <code>invalid_grant</code>. Le rangement d’un vrai jeton et sa révocation restent à mesurer. Le cycle complet depuis l’iPhone et le rapprochement de l’historique existant restent à mesurer.</p>
+  <p>Un défaut de rémunération a aussi été reproduit hors Forge : une séance inexistante reçoit des gains. Le parcours nominal vert ne couvre pas cet invariant. Le verdict global et les étapes restantes sont dans <a href="#qa" data-saut="qa">Test QA</a> et <code>tools/production/ETAT-PRODUCTION-2026-09-18.md</code>.</p>
+</Decision>
+
 <div className="reveal">
 
 ## Le compte aujourd’hui
@@ -56,8 +65,8 @@
 
 </div>
 
-<Decision titre="La pièce externe qui reste : la clé Apple">
-  <p>La clé Sign in with Apple <code>.p8</code>, son Key ID et son Team ID restent à fournir pour la révocation chez Apple. La connexion native fonctionne déjà ; <code>apple-jeton</code> répond <code>cle_absente</code> tant que ces secrets manquent. La suppression efface le compte Woop, mais la révocation Apple n’est pas validée. Le script de pose existe : <code>tools/porte/poser-cle-apple.sh</code>.</p>
+<Decision titre="Clé Apple installée ; connexion et révocation réelles à mesurer">
+  <p>Le 18-09, Kathryn a fourni la clé Sign in with Apple. Les quatre secrets sont installés et relus ; <code>apple-jeton</code> charge la clé et reçoit <code>invalid_grant</code> pour un code factice. Le compte temporaire de la sonde a été effacé. Il reste à refaire une vraie connexion Apple pour ranger son jeton, puis mesurer sa révocation à la suppression d’un compte dédié. Preuve : <code>tools/porte/preuves-apple-2026-09-18/installation.log</code>. La clé privée reste hors du dépôt.</p>
   <p>Le Welcome Back reste interdit pendant l’inscription et avant la première séance terminée. Après celle-ci, il suit la disponibilité donnée par le serveur. Une relance d’un compte incomplet reprend l’inscription ; « home directe » ne concerne que le compte dont le profil est terminé.</p>
 </Decision>
 

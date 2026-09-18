@@ -3,7 +3,7 @@
 # joué en une commande : ABBA, thermique lu au départ de chaque manche, 60 s de home
 # immobile après 15 s de chauffe, la sonde -sondeVol, la médiane des secondes.
 #
-#   tools/perf/campagne-home.sh <Woop.app déjà installé ? oui : on ne réinstalle pas>
+#   tools/perf/campagne-home.sh <Nosfy.app déjà installé ? oui : on ne réinstalle pas>
 #   MANCHES="A B B A A B"  DUREE=60  tools/perf/campagne-home.sh
 #
 #   A = aucun barreau (le vrai binaire)      B = -sansVieRoute (la vie de la card ROUTE éteinte)

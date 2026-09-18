@@ -10,14 +10,14 @@
 # puis l'agrandit — zoom rastérisé, donc flou. On choisit la FENÊTRE.
 #
 # ⚠️ AUCUNE LIGNE DE `project.pbxproj` À TOUCHER : groupes synchronisés
-# Xcode 16 — déposer le .mp4 dans Woop/Media/ suffit. Nom UNIQUE dans
-# tout Woop/ (les sous-dossiers sont aplatis dans le bundle).
+# Xcode 16 — déposer le .mp4 dans Nosfy/Media/ suffit. Nom UNIQUE dans
+# tout Nosfy/ (les sous-dossiers sont aplatis dans le bundle).
 set -e
 cd "$(dirname "$0")"
 
 SRC=~/Downloads
-DEST=../../Woop/Media
-ASSETS=../../Woop/Assets.xcassets
+DEST=../../Nosfy/Media
+ASSETS=../../Nosfy/Assets.xcassets
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 

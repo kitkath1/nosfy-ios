@@ -98,7 +98,7 @@ POPUPS = [
     ('pop-reward-fire',       'Reward · flamme noire',         'RewardPopup(style: .fire)'),
     ('pop-reward-welcome',    'Welcome Back · vidéo chauve-souris', 'RewardPopup(style: .welcome, robe: .video, videoNom: "reward-welcome")'),
     ('pop-reward-welcomeTexte', 'Welcome Back · texte géant « YOU\'RE / BACK »', 'RewardPopup(style: .welcome, robe: .texte)'),
-    ('pop-welcome-back-prod', 'Welcome Back · tel qu\'il s\'ouvre EN PROD (sans sa vidéo)', 'WoopApp.swift → RewardPopup(.welcome, .video) sans videoNom'),
+    ('pop-welcome-back-prod', 'Welcome Back · tel qu\'il s\'ouvre EN PROD (sans sa vidéo)', 'NosfyApp.swift → RewardPopup(.welcome, .video) sans videoNom'),
     ('pop-premiere-galet',    'Première fois · Nosfy sur les galets', 'RewardPopup(.welcome, videoNom: "welcome-galet-premiere", bouton: .capsule)'),
     ('pop-premiere-entree',   'Première fois · Nosfy de face',        'RewardPopup(.welcome, videoNom: "welcome-nosfy-premiere", bouton: .capsule)'),
     ('pop-notifs-pile',       'Les trois toasters, empilés',   'NotifJauge · NotifGrosTexte · NotifChasse'),
@@ -122,10 +122,10 @@ HERO = [
     ('flow',     '@home',                                                                    'jpeg'),
     ('coffre',   'tools/coffre-v2/ARCHIVE/coffre-v1.jpg',                                    'jpeg'),          # 30-08 : la page `regles` est devenue `coffre` + `annonces`
     ('annonces', None,                                                                       'jpeg'),          # aucune capture : hero noir
-    ('forge',    'Woop/Assets.xcassets/booster-orange.imageset/booster-orange.png',          'png'),           # l'objet flotte dans sa couleur
+    ('forge',    'Nosfy/Assets.xcassets/booster-orange.imageset/booster-orange.png',          'png'),           # l'objet flotte dans sa couleur
     ('histoire', None,                                                                       'jpeg'),          # aucune capture : hero noir
     ('qa',       None,                                                                       'jpeg'),          # 14-09 : le Test QA, hero noir
-    ('porte',    'Woop/Assets.xcassets/onb-lune-loop-poster.imageset/onb-lune-loop-poster.jpg', 'jpeg+recadre'),  # 1080×1644 → le centre au format écran
+    ('porte',    'Nosfy/Assets.xcassets/onb-lune-loop-poster.imageset/onb-lune-loop-poster.jpg', 'jpeg+recadre'),  # 1080×1644 → le centre au format écran
 ]
 
 # ── les chemins ────────────────────────────────────────────────────────────────
@@ -133,10 +133,10 @@ HERO = [
 def racine():
     d = os.path.dirname(os.path.abspath(__file__))
     while d != os.path.dirname(d):
-        if os.path.exists(os.path.join(d, 'Woop.xcodeproj')):
+        if os.path.exists(os.path.join(d, 'Nosfy.xcodeproj')):
             return d
         d = os.path.dirname(d)
-    sys.exit('✗ racine du dépôt introuvable (pas de Woop.xcodeproj au-dessus de %s)' % __file__)
+    sys.exit('✗ racine du dépôt introuvable (pas de Nosfy.xcodeproj au-dessus de %s)' % __file__)
 
 RACINE = racine()
 SITE = os.path.join(RACINE, 'docs', 'site')

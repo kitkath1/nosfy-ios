@@ -27,7 +27,7 @@ if [ "${SKIP_BUILD:-0}" != "1" ]; then
   # ⚠️ `E=$?` DANS un `if ! cmd` rend le code de la NÉGATION. La seule forme
   # juste : `cmd || E=$?` (et le `||` protège aussi du `set -e`).
   E=0
-  xcodebuild -project Woop.xcodeproj -scheme Woop -configuration Debug \
+  xcodebuild -project Nosfy.xcodeproj -scheme Nosfy -configuration Debug \
     -destination 'generic/platform=iOS Simulator' \
     -derivedDataPath "$DD" build > "$LOG" 2>&1 || E=$?
   if [ $E -ne 0 ]; then
@@ -37,7 +37,7 @@ if [ "${SKIP_BUILD:-0}" != "1" ]; then
   fi
 fi
 
-APP="$DD/Build/Products/Debug-iphonesimulator/Woop.app"
+APP="$DD/Build/Products/Debug-iphonesimulator/Nosfy.app"
 # C'est la DATE DU DYLIB qu'on lit : Xcode 16+ met un stub de 58 Ko en binaire
 # principal, le vrai code est là.
 echo "dylib : $(stat -f '%Sm %z' "$APP/Woop.debug.dylib" 2>/dev/null || echo ABSENT)"

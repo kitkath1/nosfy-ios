@@ -64,8 +64,8 @@ img=np.zeros((H,W,4),dtype=np.uint8); img[...,3]=(a*255).astype(np.uint8)
 Image.fromarray(img).save("scrim-fond.png")
 EOF
 
-DEST=../../Woop/Media
-SCRIM=../../Woop/Assets.xcassets/home-fond-scrim.imageset
+DEST=../../Nosfy/Media
+SCRIM=../../Nosfy/Assets.xcassets/home-fond-scrim.imageset
 mkdir -p "$SCRIM"
 cp scrim-fond.png "$SCRIM/home-fond-scrim.png"
 cat > "$SCRIM/Contents.json" <<'EOF'
@@ -117,7 +117,7 @@ echo "braise → $DEST/home-fond-flamme.mp4"
 # en additif, une pose posée DEHORS s'AJOUTE à la vidéo et on verrait deux
 # pilules, une fixe et une qui descend.
 for n in pilule flamme; do
-  D=../../Woop/Assets.xcassets/home-fond-$n-poster.imageset
+  D=../../Nosfy/Assets.xcassets/home-fond-$n-poster.imageset
   mkdir -p "$D"
   ffmpeg -y -v error -i "$DEST/home-fond-$n.mp4" -vf "select=eq(n\,0)" -vsync 0 -q:v 3 \
     "$D/home-fond-$n-poster.jpg"

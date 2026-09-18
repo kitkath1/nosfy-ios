@@ -20,8 +20,8 @@
 set -e
 cd "$(dirname "$0")/../.."
 SRC="$HOME/Downloads/Video rouge_liquid.mp4"
-DEST=Woop/Media
-POSTER=Woop/Assets.xcassets/progress-pill-bas-poster.imageset
+DEST=Nosfy/Media
+POSTER=Nosfy/Assets.xcassets/progress-pill-bas-poster.imageset
 TMP=$(mktemp -d)
 
 nbf() {
@@ -49,7 +49,7 @@ ffmpeg -y -v error -i "$DEST/progress-pill-bas.mp4" -vf "select=eq(n\,0)" \
 mkdir -p "$POSTER"
 cp "$TMP/pose.jpg" "$POSTER/progress-pill-bas-poster.jpg"
 sed 's/home-fond-flamme-poster/progress-pill-bas-poster/g' \
-  Woop/Assets.xcassets/home-fond-flamme-poster.imageset/Contents.json \
+  Nosfy/Assets.xcassets/home-fond-flamme-poster.imageset/Contents.json \
   > "$POSTER/Contents.json"
 
 echo "aller $n img → $(nbf "$DEST/progress-pill-bas.mp4") img"

@@ -3,7 +3,7 @@
 #
 # Verdict Kathryn (26-08) : « le son de la lune de sang ! avant il y avait
 # quelque chose ! ». Elle a raison, et rien n'avait été supprimé :
-# `Woop/Sounds/MoonSplashTheme.m4a` (15,556 s) est intact dans le dépôt, et sa
+# `Nosfy/Sounds/MoonSplashTheme.m4a` (15,556 s) est intact dans le dépôt, et sa
 # classe `MoonTheme` (RocketHaptics.swift) est complète — volume, mixage
 # `.ambient`, fondu de sortie. Simplement, elle n'est appelée QUE depuis
 # `MoonSplash.swift`, le plan-séquence de 13,95 s mis en archive : le jour où
@@ -36,8 +36,8 @@
 # Une seconde d'écart et le son commente une image qui n'est plus là.
 set -e
 cd "$(dirname "$0")"
-SRC=../../Woop/Sounds/MoonSplashTheme.m4a
-DEST=../../Woop/Sounds/LuneSangTheme.m4a
+SRC=../../Nosfy/Sounds/MoonSplashTheme.m4a
+DEST=../../Nosfy/Sounds/LuneSangTheme.m4a
 
 # A — LA MONTÉE + LE PAD : 5,000 → 9,000 (4,00 s). Contigus dans la source,
 # donc AUCUN raccord au milieu : l'impact et le pad qui le suit sont le

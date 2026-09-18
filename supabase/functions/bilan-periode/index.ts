@@ -33,7 +33,7 @@ const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
 type Periode = "semaine" | "mois";
 
 const CONSIGNE: Record<string, string> = {
-  fr: `Tu écris la phrase du bilan d'une app de sport (Woop), sous les chiffres de la période.
+  fr: `Tu écris la phrase du bilan d'une app de sport (Nosfy), sous les chiffres de la période.
 Une ou deux phrases courtes, 200 caractères au plus, en français, tutoiement.
 Appuie-toi sur UN ou DEUX chiffres présents dans les données (volume, séances, pic de vitesse,
 efforts, record) — n'invente rien, ne cite pas de chiffre absent.
@@ -42,7 +42,7 @@ progression_kg) — recopie-les tels quels, ou ne les cite pas.
 Compare à la période précédente quand un écart est fourni (« +12 % », « deux séances de plus »).
 Pas de formule d'accueil, pas de liste, pas d'emoji, pas de guillemets, pas de titre.
 Si la période est trop maigre, dis-le en une phrase simple.`,
-  en: `You write the review line of a fitness app (Woop), shown under the period's numbers.
+  en: `You write the review line of a fitness app (Nosfy), shown under the period's numbers.
 One or two short sentences, 200 characters max, in English, second person.
 Lean on ONE or TWO numbers present in the data (volume, sessions, top speed, efforts, record)
 — never invent a number that is not there.

@@ -1,0 +1,37 @@
+{
+  "lu_le_utc": "2026-09-18T06:35:26.319003+00:00",
+  "projet": {
+    "status": "ACTIVE_HEALTHY",
+    "region": "eu-west-2"
+  },
+  "auth": {
+    "external_apple_enabled": true,
+    "external_apple_client_id": "fr.kathryn.woop",
+    "disable_signup": false,
+    "external_email_enabled": true,
+    "external_anonymous_users_enabled": false,
+    "jwt_exp": 3600,
+    "security_refresh_token_rotation_enabled": null
+  },
+  "secrets_apple_presents": {
+    "APPLE_KEY_ID": false,
+    "APPLE_TEAM_ID": false,
+    "APPLE_PRIVATE_KEY": false
+  },
+  "compte_existant": {
+    "compte": "9f5b775d",
+    "apple": true,
+    "seances_total": 1,
+    "seances_finies": 0,
+    "seances_ouvertes": 1,
+    "finies_moins_une_minute": 0,
+    "series": 0,
+    "phases_cardio": 0,
+    "cartes": 0,
+    "sachets_non_scelles": 0,
+    "solde_or": 0,
+    "solde_argent": 0
+  },
+  "limite": "Lecture du serveur uniquement ; le nombre local sur iPhone n'est pas mesuré. Aucun nettoyage.",
+  "identification": "Profil au prénom Kathryn/Kiki Style et identité Apple ; correspondance avec la session iPhone non vérifiée."
+}

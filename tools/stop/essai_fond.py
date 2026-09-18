@@ -22,9 +22,9 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from scipy import ndimage as ndi
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MP4 = f"{REPO}/Woop/Media/stop-bat-loop.mp4"
-MASK = f"{REPO}/Woop/Assets.xcassets/stop-bat-masque.imageset/stop-bat-masque.png"
-FONT = f"{REPO}/Woop/Fonts/Inter-Bold.otf"
+MP4 = f"{REPO}/Nosfy/Media/stop-bat-loop.mp4"
+MASK = f"{REPO}/Nosfy/Assets.xcassets/stop-bat-masque.imageset/stop-bat-masque.png"
+FONT = f"{REPO}/Nosfy/Fonts/Inter-Bold.otf"
 VIG = f"{REPO}/tools/stop/vignettes"
 SW, SH = 1080, 1562                     # la vidéo livrée
 ECH = 3.07                              # px/pt du téléphone (iPhone 17 Pro)
@@ -181,7 +181,7 @@ ETIQ = ["A - actuel (crete grise a 26%)", "B - inverse, lueur de sol BASSE",
 planche = Image.new("RGB", (tw * len(vign), th + zh + 34), (16, 16, 16))
 d = ImageDraw.Draw(planche)
 try:
-    petite = ImageFont.truetype(f"{REPO}/Woop/Fonts/Inter-Medium.otf", 19)
+    petite = ImageFont.truetype(f"{REPO}/Nosfy/Fonts/Inter-Medium.otf", 19)
 except Exception:
     petite = None
 for k, (_, im) in enumerate(vign):

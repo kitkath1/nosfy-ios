@@ -1,4 +1,29 @@
-# Règle multi-session (Woop)
+# Règle multi-session (Nosfy)
+
+## Session Nosfy / Apple / contrôle production — 18 septembre 2026
+
+Commit limité à cette session, demandé par Kathryn. Dossier principal
+`/Users/kathryn/Desktop/Nosfy` ; projet et schéma `Nosfy`, sources `Nosfy/`,
+`NosfyShared/`, `NosfyWidgets/`. Les anciens accès locaux masqués ne se
+versionnent pas. Utiliser les chemins Nosfy pour les nouveaux commits.
+Les déplacements partent des blobs HEAD : aucun correctif parallèle non
+committé de Forge, chauffe, stories ou Home/Route n’est emporté.
+
+Compte vide : premier galet en haut du chapitre1, aucun fait/date fictifs.
+Correction `EcranSpec.etapeEtFaits`, 34 contrôles Swift ; contrat Compte,
+Flow, Serveur et QA17 à jour. Aucun accès iPhone pour ce correctif.
+La progression non vide reste à terminer avant la qualification production.
+Preuves : `tools/duolingo/preuves-compte-vide-2026-09-18/README.md`.
+
+Clé Apple configurée ; sonde avec code factice réussie. Vrai échange et
+révocation à mesurer. Contrôle d’intégrité : une séance inexistante obtient
+20 pièces et un sachet ; test rouge, correctif pas encore déployé.
+Preuves : `tools/porte/preuves-apple-2026-09-18/README.md`,
+`tools/production/ETAT-PRODUCTION-2026-09-18.md` et
+`tools/nom/preuves-2026-09-18/README.md`.
+Release74 issue de l’arbre partagé installée et nom Nosfy relu ; la session
+Home/Route a ensuite posé75. Aucun nouveau binaire ni scénario physique
+pour ce commit. La session chauffe conserve le téléphone.
 
 ## Message à la session Forge — 17-09-2026, chantier Compte
 
@@ -20,7 +45,7 @@ Avancement Compte : migration `20260917184811_compte_objectif_atomique.sql`
 appliquée seule (objectif invalide refusé avant écriture), 32 tests API verts
 sur comptes jetables nettoyés. Corrections app : `InscriptionCompte.swift`,
 `VerificationCompte.swift`, `ProfilServeur.swift`, `AppleAuth.swift`,
-`NosfyOnboarding.swift`, hunks Compte de `WoopApp.swift` et `Compte.swift`.
+`NosfyOnboarding.swift`, hunks Compte de `NosfyApp.swift` et `Compte.swift`.
 Release simulateur compilée ; documentation `porte` et schémas actualisés.
 Preuves : `tools/porte/preuves-2026-09-17/README.md`.
 Complément du 18-09 : `verif_compte.py --flow`, 50 PASS ; compte neuf vide,
@@ -48,9 +73,9 @@ Concrètement, pour toute session :
 1. **Ne jamais `git add -A` ni `git add .`** — ça avalerait le travail non
    commité des autres sessions.
 2. **Committer par CHEMINS EXPLICITES**, uniquement les fichiers que CETTE
-   session a modifiés : `git add Woop/Views/MonFichier.swift`.
+   session a modifiés : `git add Nosfy/Views/MonFichier.swift`.
 3. Si un fichier contient à la fois mes changements ET ceux d'une autre session
-   (fichier « mixte » : souvent `WoopApp.swift`, `HomeNuit.swift`), **ne pas le
+   (fichier « mixte » : souvent `NosfyApp.swift`, `HomeNuit.swift`), **ne pas le
    committer en bloc** — soit ne pas le committer du tout (le laisser en working
    tree, il est déjà déployé sur l'appareil), soit stager seulement mes hunks.
 4. **Relire `git status` et `git log -3` AVANT chaque commit** — vérifier qu'on

@@ -1,5 +1,13 @@
 # PROMPT DE REPRISE — LA DUOLINGUO_PAGE (à coller dans la nouvelle session)
 
+> Actualisation18-09 — compte vide : **premier galet, en haut du chapitre1**,
+> faits et dates vides, récompenses à venir. La démo au troisième galet est
+> exclue quand aucune séance n'est terminée, même avec `-cheminReel`.
+> 34 contrôles Swift PASS ; iPhone à vérifier. La progression non vide reste
+> provisoire. Contrat app/backend et preuves :
+> `tools/duolingo/preuves-compte-vide-2026-09-18/README.md`.
+
+
 Copie tout ce qui suit dans la nouvelle session :
 
 ---

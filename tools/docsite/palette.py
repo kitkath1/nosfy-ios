@@ -31,9 +31,9 @@ ECRANS = [
     ('notifs',  'notifs',         'tools/notifs/captures/v7.png'),
     ('noir',    'booster noir',   'tools/sacre/noir/preview-face.png'),
     ('exo',     'page exo (v1)',  'tools/verre/archives/v1-noir-orange/g9-ferme.png'),
-    ('logo',    'logo lune',      'Woop/Media/carte-logo-ref.png'),
-    ('forge',   'booster orange', 'Woop/Assets.xcassets/booster-orange.imageset/booster-orange.png'),
-    ('porte',   'porte (lune)',   'Woop/Assets.xcassets/onb-lune-loop-poster.imageset/onb-lune-loop-poster.jpg'),
+    ('logo',    'logo lune',      'Nosfy/Media/carte-logo-ref.png'),
+    ('forge',   'booster orange', 'Nosfy/Assets.xcassets/booster-orange.imageset/booster-orange.png'),
+    ('porte',   'porte (lune)',   'Nosfy/Assets.xcassets/onb-lune-loop-poster.imageset/onb-lune-loop-poster.jpg'),
 ]
 
 def mediane(v):

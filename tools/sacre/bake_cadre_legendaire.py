@@ -30,7 +30,7 @@ LA RECETTE — et surtout ce qu'elle ne fait PAS :
   « full noir » veut dire jusque dans les noirs.
 
 Usage :  python3 tools/sacre/bake_cadre_legendaire.py
-Sortie : Woop/Media/carte-cadre-legendaire.png
+Sortie : Nosfy/Media/carte-cadre-legendaire.png
          tools/sacre/noir/preview-cadre-legendaire.png (la planche de verdict)
 """
 
@@ -39,7 +39,7 @@ from PIL import Image
 import numpy as np
 
 RACINE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MEDIA = os.path.join(RACINE, "Woop", "Media")
+MEDIA = os.path.join(RACINE, "Nosfy", "Media")
 SORTIE = os.path.join(RACINE, "tools", "sacre", "noir")
 
 FROID = np.array([0.96, 0.98, 1.00])   # le cheveu de froid

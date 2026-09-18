@@ -36,16 +36,16 @@
 # on choisit la FENÊTRE.
 #
 # ⚠️ AUCUNE LIGNE DE project.pbxproj À TOUCHER. Groupes synchronisés Xcode 16 :
-# déposer le .mp4 dans Woop/Media/ suffit (vérifié sur le bundle construit : 21
-# .mp4 dans Media/, 21 à la RACINE de Woop.app, aucun sous-dossier). En revanche
-# un nom de fichier doit être unique dans TOUT Woop/, pas seulement dans son
+# déposer le .mp4 dans Nosfy/Media/ suffit (vérifié sur le bundle construit : 21
+# .mp4 dans Media/, 21 à la RACINE de Nosfy.app, aucun sous-dossier). En revanche
+# un nom de fichier doit être unique dans TOUT Nosfy/, pas seulement dans son
 # dossier — les sous-dossiers sont aplatis.
 set -e
 cd "$(dirname "$0")"
 
 SRC=~/Downloads
-DEST=../../Woop/Media
-ASSETS=../../Woop/Assets.xcassets
+DEST=../../Nosfy/Media
+ASSETS=../../Nosfy/Assets.xcassets
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
@@ -182,7 +182,7 @@ echo "arrivée → $DEST/onb-arrivee.mp4  ($NARR images)"
 # LE GARDE-FOU DE LA CONSTANTE SWIFT. `PorteEntree.arriveeT` porte ce compte
 # d'images en toutes lettres ; s'il change, la partition (flamme à T−1,2,
 # habillage à T−1,1) se décale sans que rien ne le dise à l'écran.
-SWIFT=../../Woop/Views/PorteEntree.swift
+SWIFT=../../Nosfy/Views/PorteEntree.swift
 if ! grep -q "arriveeT: Double = $NARR.0 / 30.0" "$SWIFT"; then
   echo "   ⚠️  DÉSACCORD : le film fait $NARR images, mais PorteEntree.swift dit :"
   grep -n "arriveeT: Double" "$SWIFT" | sed 's/^/      /'

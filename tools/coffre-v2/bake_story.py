@@ -33,7 +33,7 @@ import os
 import subprocess
 
 RACINE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MEDIA = os.path.join(RACINE, "Woop", "Media")
+MEDIA = os.path.join(RACINE, "Nosfy", "Media")
 DL = os.path.expanduser("~/Downloads")
 
 CIBLE = (1206, 2622)

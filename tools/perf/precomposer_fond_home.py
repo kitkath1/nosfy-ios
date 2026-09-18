@@ -10,8 +10,8 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "Woop/Media/home-fond-precompose-393x709.mp4"
-POSTER = ROOT / "Woop/Assets.xcassets/home-fond-precompose-393x709.imageset"
+OUT = ROOT / "Nosfy/Media/home-fond-precompose-393x709.mp4"
+POSTER = ROOT / "Nosfy/Assets.xcassets/home-fond-precompose-393x709.imageset"
 W, H, SCALE = 393, 709, 2
 K = 874 / 2348
 width = round(1080 * K * SCALE)
@@ -33,10 +33,10 @@ filters = (
  "[addition][scrim]overlay=format=rgb:shortest=1,setsar=1,format=yuv420p[out]"
 )
 cmd = ["ffmpeg", "-y", "-v", "error", "-threads", "2",
- "-i", str(ROOT/"Woop/Media/home-fond-flamme.mp4"),
- "-i", str(ROOT/"Woop/Media/home-fond-pilule.mp4"),
+ "-i", str(ROOT/"Nosfy/Media/home-fond-flamme.mp4"),
+ "-i", str(ROOT/"Nosfy/Media/home-fond-pilule.mp4"),
  "-loop", "1", "-framerate", "24", "-i",
- str(ROOT/"Woop/Assets.xcassets/home-fond-scrim.imageset/home-fond-scrim.png"),
+ str(ROOT/"Nosfy/Assets.xcassets/home-fond-scrim.imageset/home-fond-scrim.png"),
  "-filter_complex_threads", "2", "-filter_complex", filters,
  "-map", "[out]", "-an", "-c:v", "libx264", "-threads", "2",
  "-preset", "medium", "-crf", "19", "-movflags", "+faststart", str(OUT)]

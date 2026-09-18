@@ -56,8 +56,8 @@ from PIL import Image
 import numpy as np
 
 RACINE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MEDIA = os.path.join(RACINE, "Woop", "Media")
-CATALOGUE = os.path.join(RACINE, "Woop", "Assets.xcassets")
+MEDIA = os.path.join(RACINE, "Nosfy", "Media")
+CATALOGUE = os.path.join(RACINE, "Nosfy", "Assets.xcassets")
 SORTIE = os.path.join(RACINE, "tools", "coffre-v2", "vignettes")
 
 CIBLE = (252, 435)

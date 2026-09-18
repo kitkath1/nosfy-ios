@@ -16,7 +16,7 @@ export function Rail() {
     <nav className="rail" id="rail" aria-label="Navigation">
       <div className="marque">
         <svg className="lune" viewBox="0 0 749 718" aria-hidden="true"><use href="#i-lune" /></svg>
-        <div><b>Woop</b><span>La chambre des machines</span></div>
+        <div><b>Nosfy</b><span>La chambre des machines</span></div>
       </div>
       <div className="menu">
         {PAGES.map((p, i) => {

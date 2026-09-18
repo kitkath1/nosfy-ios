@@ -22,7 +22,7 @@ OUT=tools/home-v2/films
 DUREE=${1:-24}
 mkdir -p "$OUT"
 
-APP="$DD/Build/Products/Debug-iphonesimulator/Woop.app"
+APP="$DD/Build/Products/Debug-iphonesimulator/Nosfy.app"
 xcrun simctl boot "$SIM" 2>/dev/null || true
 xcrun simctl install "$SIM" "$APP"
 xcrun simctl launch --terminate-running-process "$SIM" fr.kathryn.woop \

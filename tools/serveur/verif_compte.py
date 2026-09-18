@@ -18,9 +18,10 @@ from datetime import datetime, timedelta, timezone
 REPO = Path(__file__).resolve().parents[2]
 URL = "https://ytnnyjkramgiqyxdrkcu.supabase.co"
 KEY = re.search(r'"(sb_publishable_[A-Za-z0-9_-]+)"',
-                (REPO / "Woop/Services/Supabase.swift").read_text()).group(1)
+                (REPO / "Nosfy/Services/Supabase.swift").read_text()).group(1)
 ADMIN = (REPO / ".secrets/supabase-service-role").read_text().strip()
 FLOW = "--flow" in sys.argv
+INTEGRITE = "--integrite" in sys.argv
 
 
 def appel(path, body=None, jwt=None, method="POST", admin=False):
@@ -177,6 +178,22 @@ try:
         check(retrouve["solde_or"] == gagne["solde_or"]
               and retrouve["boosters_or"] == gagne["boosters_or"],
               "reconnexion : pièces et sachets retrouvés")
+    if INTEGRITE:
+        # Une clôture ne doit pas payer une séance absente. Un seul essai,
+        # sur le compte jetable de ce banc, effacé juste après.
+        avant = rpc("etat_coffre", jwt)
+        status, cloture = appel("/rest/v1/rpc/cloturer_seance", {
+            "p_workout": str(uuid.uuid4()), "p_series": 1}, jwt)
+        apres = rpc("etat_coffre", jwt)
+        check(apres["solde_or"] == avant["solde_or"]
+              and apres["boosters_or"] == avant["boosters_or"],
+              "intégrité : une séance inexistante ne crédite ni pièce ni sachet")
+        print("Mesure intégrité : " + json.dumps({
+            "http": status, "pieces_annoncees": cloture.get("pieces") if isinstance(cloture, dict) else None,
+            "raison_faits": cloture.get("faits_raison") if isinstance(cloture, dict) else None,
+            "solde_avant": avant["solde_or"], "solde_apres": apres["solde_or"],
+            "sachets_avant": avant["boosters_or"], "sachets_apres": apres["boosters_or"],
+        }, ensure_ascii=False), flush=True)
     status, suppression = appel("/functions/v1/supprimer-compte", {}, jwt)
     check(status == 200 and suppression.get("ok") is True and suppression.get("user_id") == uid,
           "suppression par la fonction utilisée dans l’app")

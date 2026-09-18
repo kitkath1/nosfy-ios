@@ -32,7 +32,7 @@
 # dans les lettres (setpts=1.5). L'éclair « bouge » franchement : ×2.
 set -e
 cd "$(dirname "$0")"
-DEST=../../Woop/Media
+DEST=../../Nosfy/Media
 
 # ── LE VERRE A — « Session » (pills_2, la bande CLAIRE) ────────────────────
 # v2 (verdict 26-08 : « on voit pas, c'est quasi tout noir — prendre la
@@ -153,7 +153,7 @@ echo "éclair → $DEST/story-eclair-loop.mp4"
 # masquée sur isReadyForDisplay) — posée dehors en additif on verrait
 # l'objet en double.
 for n in story-ended-verre-a story-ended-verre-b story-pilule-droite story-eclair-loop story-macro-bas story-macro-flanc; do
-  D=../../Woop/Assets.xcassets/$n-poster.imageset
+  D=../../Nosfy/Assets.xcassets/$n-poster.imageset
   mkdir -p "$D"
   ffmpeg -y -v error -i "$DEST/$n.mp4" -vf "select=eq(n\,0)" -vsync 0 -q:v 3 \
     "$D/$n-poster.jpg"

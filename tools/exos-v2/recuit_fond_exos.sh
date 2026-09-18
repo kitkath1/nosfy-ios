@@ -1,6 +1,6 @@
 #!/bin/zsh
 # LA RECUISSON DU FOND DE LA PAGE EXERCICES (22-08) — produit
-# Woop/Media/exos-fond-loop.mp4 depuis les deux sources de Kathryn.
+# Nosfy/Media/exos-fond-loop.mp4 depuis les deux sources de Kathryn.
 #
 # Sources : ~/Downloads/forme_glass_red_2.mp4 (le verre rouge, 169 frames)
 #           ~/Downloads/flamme_2.mp4          (la nappe de feu, 145 frames)
@@ -102,11 +102,11 @@ scale=1620:3522,format=yuv420p[out]" \
   -map "[out]" -c:v libx264 -preset slow -crf 18 \
   -pix_fmt yuv420p -g 48 -keyint_min 24 -sc_threshold 0 \
   -movflags +faststart -an \
-  ../../Woop/Media/exos-fond-loop.mp4
+  ../../Nosfy/Media/exos-fond-loop.mp4
 
-mkdir -p ../../Woop/Assets.xcassets/exos-fond-poster.imageset
-ffmpeg -y -v error -i ../../Woop/Media/exos-fond-loop.mp4 \
+mkdir -p ../../Nosfy/Assets.xcassets/exos-fond-poster.imageset
+ffmpeg -y -v error -i ../../Nosfy/Media/exos-fond-loop.mp4 \
   -vf "select=eq(n\,0)" -vsync 0 -q:v 3 \
-  ../../Woop/Assets.xcassets/exos-fond-poster.imageset/exos-fond-poster.jpg
+  ../../Nosfy/Assets.xcassets/exos-fond-poster.imageset/exos-fond-poster.jpg
 echo "pose  → Assets/exos-fond-poster"
-echo "cuit  → Woop/Media/exos-fond-loop.mp4"
+echo "cuit  → Nosfy/Media/exos-fond-loop.mp4"

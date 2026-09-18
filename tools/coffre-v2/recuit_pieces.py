@@ -199,7 +199,7 @@ def main():
     ap.add_argument("--marge", type=float, default=1.18,
                     help="la case vaut ce multiple du diamètre")
     ap.add_argument("--travail", type=int, default=1000, help="largeur de travail")
-    ap.add_argument("--out", default="Woop/Media")
+    ap.add_argument("--out", default="Nosfy/Media")
     args = ap.parse_args()
 
     tmp = tempfile.mkdtemp(prefix="recuit-piece-")

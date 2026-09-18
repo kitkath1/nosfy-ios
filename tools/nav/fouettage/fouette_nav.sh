@@ -30,10 +30,10 @@ if [ "$MODE" = "sonde" ]; then
 fi
 
 # 0) la copie est-elle montée ? (jamais builder le dépôt : la cible n'y est pas)
-xcodebuild -project "$COPIE/Woop.xcodeproj" -list 2>/dev/null | grep -q WoopUITests || {
+xcodebuild -project "$COPIE/Nosfy.xcodeproj" -list 2>/dev/null | grep -q NosfyUITests || {
   echo "COPIE NON MONTÉE ($COPIE) — lancer d'abord : $ICI/monte_banc.sh"; exit 2; }
 
-XCB=(xcodebuild -project "$COPIE/Woop.xcodeproj" -scheme WoopUITests
+XCB=(xcodebuild -project "$COPIE/Nosfy.xcodeproj" -scheme NosfyUITests
      -destination "platform=iOS Simulator,id=$SIM" -derivedDataPath "$DD")
 
 # 1) la charge (du DÉPÔT — la copie exclut tools/)
@@ -56,7 +56,7 @@ CAS=SAUTE; FILM=SAUTE
 # 4) les 10 cas — minuterie par test (un gel = timeout, jamais un hang)
 if [ "$MODE" = "tout" ] || [ "$MODE" = "cas" ]; then
   rm -rf "$SCRATCH/cas.xcresult"; E=0
-  "${XCB[@]}" test-without-building -only-testing:'WoopUITests/FouettageNavUITests' \
+  "${XCB[@]}" test-without-building -only-testing:'NosfyUITests/FouettageNavUITests' \
     -test-timeouts-enabled YES -default-test-execution-time-allowance 240 \
     -resultBundlePath "$SCRATCH/cas.xcresult" > "$SCRATCH/cas.log" 2>&1 || E=$?
   CAS=$E
@@ -72,7 +72,7 @@ if [ "$MODE" = "tout" ] || [ "$MODE" = "film" ]; then
     rm -rf "$SCRATCH/fr-nav"
     xcrun simctl io "$SIM" recordVideo --codec h264 "$SCRATCH/film-nav.mp4" & RECPID=$!
     sleep 2; EF=0
-    "${XCB[@]}" test-without-building -only-testing:'WoopUITests/FouettageNavFilm/testFilmRepliDepli' \
+    "${XCB[@]}" test-without-building -only-testing:'NosfyUITests/FouettageNavFilm/testFilmRepliDepli' \
       -test-timeouts-enabled YES -default-test-execution-time-allowance 240 \
       > "$SCRATCH/film.log" 2>&1 || EF=$?
     kill -INT "$RECPID" 2>/dev/null; wait "$RECPID" 2>/dev/null; sleep 2

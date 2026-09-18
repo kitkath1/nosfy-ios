@@ -35,7 +35,7 @@ from zoneinfo import ZoneInfo
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 URL = "https://ytnnyjkramgiqyxdrkcu.supabase.co"
-src = open(f"{REPO}/Woop/Services/Supabase.swift").read()
+src = open(f"{REPO}/Nosfy/Services/Supabase.swift").read()
 KEY = re.search(r'"(sb_publishable_[A-Za-z0-9_-]+)"', src).group(1)
 PARIS = ZoneInfo("Europe/Paris")
 

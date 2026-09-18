@@ -2,9 +2,9 @@
 """
 bake_sachet.py — LE SACHET HÉROS de la card booster, v3 : LE CORPS PAR LE PLASTIQUE.
 
-Entrée  : Woop/Assets.xcassets/booster-orange.imageset/booster-orange.png
+Entrée  : Nosfy/Assets.xcassets/booster-orange.imageset/booster-orange.png
           (1054 × 1408, RGBA — un VRAI détourage, fait hors d'ici.)
-Sortie  : Woop/Assets.xcassets/booster-hero.imageset/booster-hero.png
+Sortie  : Nosfy/Assets.xcassets/booster-hero.imageset/booster-hero.png
 
 L'HISTOIRE DE CE FICHIER, en trois verdicts de Kathryn (30-08) :
   v1  un alpha « de luminance » reparti du rendu → un voile gris rectangulaire
@@ -37,8 +37,8 @@ from PIL import Image
 from scipy import ndimage as ndi
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SRC = f"{REPO}/Woop/Assets.xcassets/booster-orange.imageset/booster-orange.png"
-OUT = f"{REPO}/Woop/Assets.xcassets/booster-hero.imageset"
+SRC = f"{REPO}/Nosfy/Assets.xcassets/booster-orange.imageset/booster-orange.png"
+OUT = f"{REPO}/Nosfy/Assets.xcassets/booster-hero.imageset"
 VIG = f"{REPO}/tools/sacre/vignettes"
 
 COUPE = 1322          # la fin réelle du cran du bas (+1) ; en dessous, le reflet
@@ -133,7 +133,7 @@ for piece, dist, prof in ((corps_px, dist_bas, 14.0), (cap, dist_haut, 6.0)):
     k = k * (piece[..., 3] > 128)
     piece[..., :3] = (piece[..., :3] * (1 - k[..., None]) + chaud * k[..., None]).round().astype(np.uint8)
 for nom, arr in (("booster-hero-cap", cap), ("booster-hero-corps", corps_px)):
-    d_ = f"{REPO}/Woop/Assets.xcassets/{nom}.imageset"
+    d_ = f"{REPO}/Nosfy/Assets.xcassets/{nom}.imageset"
     os.makedirs(d_, exist_ok=True)
     Image.fromarray(arr).save(f"{d_}/{nom}.png")
     with open(f"{d_}/Contents.json", "w") as f:

@@ -22,9 +22,9 @@ import re, json, os, sys, time, subprocess, urllib.request, urllib.error
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 URL = "https://ytnnyjkramgiqyxdrkcu.supabase.co"
-KEY = re.search(r'"(sb_publishable_[A-Za-z0-9_-]+)"', open(f"{REPO}/Woop/Services/Supabase.swift").read()).group(1)
+KEY = re.search(r'"(sb_publishable_[A-Za-z0-9_-]+)"', open(f"{REPO}/Nosfy/Services/Supabase.swift").read()).group(1)
 UD = "D8A31930-1D84-42BF-A129-051BB6B9195B"
-APP = "/private/tmp/woop-dd-serveur/Build/Products/Debug-iphonesimulator/Woop.app"
+APP = "/private/tmp/woop-dd-serveur/Build/Products/Debug-iphonesimulator/Nosfy.app"
 CHAMPS = ("faites", "precedent", "volume", "volume_precedent", "pic", "efforts", "temps_pics", "records_battus")
 
 

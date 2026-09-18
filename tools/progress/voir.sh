@@ -25,7 +25,7 @@ fi
 # ⚠️ `E=$?` DANS un `if ! cmd` rend le code de la NÉGATION. La seule forme
 # juste : `cmd || E=$?` (et le `||` protège aussi du `set -e`).
 E=0
-xcodebuild -project Woop.xcodeproj -scheme Woop -configuration Debug \
+xcodebuild -project Nosfy.xcodeproj -scheme Nosfy -configuration Debug \
   -destination 'generic/platform=iOS Simulator' \
   -derivedDataPath "$DD" build > "$LOG" 2>&1 || E=$?
 if [ $E -ne 0 ]; then
@@ -34,7 +34,7 @@ if [ $E -ne 0 ]; then
   exit $E
 fi
 
-APP="$DD/Build/Products/Debug-iphonesimulator/Woop.app"
+APP="$DD/Build/Products/Debug-iphonesimulator/Nosfy.app"
 # C'est la DATE DU DYLIB qu'on lit : elle prouve que le binaire posé est le
 # nôtre, pas celui d'avant.
 echo "dylib : $(stat -f '%Sm %z' "$APP/Woop.debug.dylib" 2>/dev/null || echo ABSENT)"

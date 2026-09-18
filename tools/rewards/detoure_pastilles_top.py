@@ -16,7 +16,7 @@ SORTIES = [
     ("~/Desktop/pailette_halt*.png", "sticker-pastille-haltere"),
 ]
 ASSETS = os.path.join(os.path.dirname(__file__),
-                      "..", "..", "Woop", "Assets.xcassets")
+                      "..", "..", "Nosfy", "Assets.xcassets")
 
 for pat, nom in SORTIES:
     src = glob.glob(os.path.expanduser(pat))[0]

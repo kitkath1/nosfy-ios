@@ -8,7 +8,7 @@ import os
 import re
 
 repo = Path(__file__).resolve().parents[2]
-source = (repo / "Woop/Services/Supabase.swift").read_text()
+source = (repo / "Nosfy/Services/Supabase.swift").read_text()
 actor = "import Foundation\n" + source[source.index("actor SupabaseSession {"):]
 live = "--live" in sys.argv
 env = dict(os.environ)
@@ -24,12 +24,12 @@ with tempfile.TemporaryDirectory(prefix="woop-session-") as dossier:
     if live:
         # Compile les vrais clients et le vrai décodeur d'annonces, pour vérifier
         # le contrat front/backend avec les réponses de la base vivante.
-        regles = (repo / "Woop/Views/RestartSheet.swift").read_text()
+        regles = (repo / "Nosfy/Views/RestartSheet.swift").read_text()
         debut = regles.index("struct ReglesAnnonces: Equatable {")
         fin = regles.index("\n/// LE DÉCIDEUR À BUDGET", debut)
         extrait_regles = dossier / "ReglesAnnonces.swift"
         extrait_regles.write_text("import Foundation\n" + regles[debut:fin])
-        autres = [str(repo / "Woop/Services/SacreServeur.swift"), str(extrait_regles)]
+        autres = [str(repo / "Nosfy/Services/SacreServeur.swift"), str(extrait_regles)]
     subprocess.run(["swiftc", "-parse-as-library", "-module-cache-path", str(dossier / "cache"),
                     str(extrait), str(repo / "tools/serveur/tests" / ("session_live.swift" if live else "session_regression.swift")),
                     *autres,

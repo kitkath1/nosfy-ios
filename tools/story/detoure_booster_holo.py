@@ -11,7 +11,7 @@ from PIL import Image
 from scipy import ndimage
 import json
 
-src = "Woop/Assets.xcassets/sticker-booster.imageset/sticker-booster.png"
+src = "Nosfy/Assets.xcassets/sticker-booster.imageset/sticker-booster.png"
 im = Image.open(src).convert("RGBA")
 rgba = np.array(im)
 hsv = np.array(im.convert("RGB").convert("HSV")).astype(float) / 255
@@ -41,7 +41,7 @@ alpha = np.clip(m, 0, 1) * A
 a8 = (alpha * 255).astype(np.uint8)
 out = np.dstack([np.full_like(a8, 255), np.full_like(a8, 255),
                  np.full_like(a8, 255), a8])
-d = "Woop/Assets.xcassets/sticker-booster-holo.imageset"
+d = "Nosfy/Assets.xcassets/sticker-booster-holo.imageset"
 import os; os.makedirs(d, exist_ok=True)
 Image.fromarray(out).save(f"{d}/sticker-booster-holo.png")
 json.dump({"images": [

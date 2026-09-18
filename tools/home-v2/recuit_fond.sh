@@ -1,6 +1,6 @@
 #!/bin/zsh
 # LA RECUISSON DU FOND DE LA HOME (jalon V1, plan §9) — reproduit
-# Woop/Media/home-fond-loop.mp4 depuis les deux sources de Kathryn.
+# Nosfy/Media/home-fond-loop.mp4 depuis les deux sources de Kathryn.
 #
 # Sources : ~/Downloads/pills_2.mp4 + ~/Downloads/flamme.mp4
 #           (2160×3836, 24 i/s, 6 s, noirs à VRAI 0 — mesuré)
@@ -92,13 +92,13 @@ color=c=black:s=1080x2348:r=24,format=gbrp[bg];\
   -map "[out]" -c:v libx264 -preset slow -crf 21 \
   -pix_fmt yuv420p -g 12 -keyint_min 12 -sc_threshold 0 \
   -movflags +faststart -an \
-  ../../Woop/Media/home-fond-loop.mp4
+  ../../Nosfy/Media/home-fond-loop.mp4
 
 # L'IMAGE DE POSE : la première frame, en dur dans les assets. La vidéo est
 # posée DESSUS — si le décodeur rate une frame ou si la couche n'est pas
 # encore prête, c'est elle qu'on voit, jamais du noir.
-ffmpeg -y -v error -i ../../Woop/Media/home-fond-loop.mp4 \
+ffmpeg -y -v error -i ../../Nosfy/Media/home-fond-loop.mp4 \
   -vf "select=eq(n\,0)" -vsync 0 -q:v 3 \
-  ../../Woop/Assets.xcassets/home-fond-poster.imageset/home-fond-poster.jpg
+  ../../Nosfy/Assets.xcassets/home-fond-poster.imageset/home-fond-poster.jpg
 echo "pose  → Assets/home-fond-poster" 
-echo "cuit → Woop/Media/home-fond-loop.mp4"
+echo "cuit → Nosfy/Media/home-fond-loop.mp4"

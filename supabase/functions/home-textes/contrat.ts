@@ -73,7 +73,7 @@ export function valider(value: unknown, langue: "fr" | "en", revision: string): 
 }
 
 export function consigne(langue: "fr" | "en"): string {
-  return `Write a complete catalogue for Woop, a premium fitness app, in ${langue === "fr" ? "natural French, tutoiement, gender neutral" : "natural English"}.
+  return `Write a complete catalogue for Nosfy, a premium fitness app, in ${langue === "fr" ? "natural French, tutoiement, gender neutral" : "natural English"}.
 Short, warm, playful, calm confidence. No guilt, shaming, pain, insults, promises of results or invented facts. No names, numbers, emoji, HTML, headings or medical advice.
 For French, the user explicitly wants occasional English touches: at most three depart variants may include flow, reset, Go or Let’s go; at most one Home variant may include flow. Keep the surrounding sentence genuinely French. No systematic anglicisms or gendered/inclusive-dot adjectives.
 Exactly 3 variants for each Home state, 27 DIFFERENT variants for depart. Each line <= 24 characters, short enough for a 300pt line of Inter Semibold 30. Buttons <= 15 characters.

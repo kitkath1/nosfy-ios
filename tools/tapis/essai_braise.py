@@ -7,7 +7,7 @@ essai_braise.py — LA BRAISE DES DEUX PASTILLES, CUITE SANS BUILDER.
 
 L'école `tools/stop/essai_fond.py` : composer et TRANCHER en deux minutes, au
 lieu de rejuger des builds à l'œil. Ici on ne compose pas une approximation :
-on RE-JOUE `glowShade` / `eclipseWorld` (Woop/LiquidLens.metal:488-628) à la
+on RE-JOUE `glowShade` / `eclipseWorld` (Nosfy/LiquidLens.metal:488-628) à la
 constante près, en numpy. Les nombres sortent du même calcul que le téléphone.
 
 ⚠️ LA FAUTE DU 31-08, MESURÉE, QUE CE FICHIER EXISTE POUR NE PAS REFAIRE.
@@ -15,7 +15,7 @@ Les deux pastilles du J0 sont sorties GRISES — verdict de Kathryn : « les
 couleurs sont noir dégradé beurk ». Mesuré sur la capture, encre masquée :
     aura chrono   R 0,189 G 0,131 B 0,100   G/R 0,694   B/R 0,528
     aura vitesse  R 0,213 G 0,178 B 0,160   G/R 0,833   B/R 0,747
-La loi de la maison (Woop/VerreCoulant.metal:72, LiquidLens.metal:90-105) :
+La loi de la maison (Nosfy/VerreCoulant.metal:72, LiquidLens.metal:90-105) :
     « R reste à 1,000, TOUJOURS. On va vers le rouge en baissant le VERT,
       jamais en baissant le rouge ni en montant le bleu. »
     braise = G/R 0,30-0,45   ·   B/R ≤ 0,03   ·   le feu de la maison n'a
@@ -49,7 +49,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 # ── LES CONSTANTES, chacune avec sa raison ────────────────────────────────
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-FONT = REPO + "/Woop/Fonts/Inter-Medium.otf"
+FONT = REPO + "/Nosfy/Fonts/Inter-Medium.otf"
 VIG = REPO + "/tools/tapis/vignettes"      # planches : NOM FIXE, écrasé
 
 R = 100.0          # rayon de lentille, en unités du shader (cote*0.36)
@@ -85,7 +85,7 @@ PALIERS = [
 ]
 
 
-# ── LE PORT FIDÈLE DU SHADER (Woop/LiquidLens.metal) ──────────────────────
+# ── LE PORT FIDÈLE DU SHADER (Nosfy/LiquidLens.metal) ──────────────────────
 def fract(x):
     return x - np.floor(x)
 

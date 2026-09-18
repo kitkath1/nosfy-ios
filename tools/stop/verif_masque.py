@@ -20,8 +20,8 @@ from PIL import Image
 from scipy import ndimage as ndi
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MP4 = f"{REPO}/Woop/Media/stop-bat-loop.mp4"
-MASK = f"{REPO}/Woop/Assets.xcassets/stop-bat-masque.imageset/stop-bat-masque.png"
+MP4 = f"{REPO}/Nosfy/Media/stop-bat-loop.mp4"
+MASK = f"{REPO}/Nosfy/Assets.xcassets/stop-bat-masque.imageset/stop-bat-masque.png"
 VIG = f"{REPO}/tools/stop/vignettes"
 CW, CH = 1080, 1562
 PT = CW / 332

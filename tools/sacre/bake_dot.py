@@ -5,7 +5,7 @@ bake_dot.py — LA VIDÉO EST LE MUR : le fond de la card booster + les points.
 Entrée  : ~/Downloads/video_dot.mp4 — H.264 3836 × 2160 PAYSAGE, 24 img/s,
           121 images / 5,04 s, une piste audio (jetée). Une constellation de
           points dorés sur une grille, en x 24-76 %, y 38-61 % de l'image.
-Sortie  : Woop/Media/booster-dot-loop.mp4 — PORTRAIT 1080 × 1512 (= la card
+Sortie  : Nosfy/Media/booster-dot-loop.mp4 — PORTRAIT 1080 × 1512 (= la card
           314 × 440 pt à 3,44 px/pt, ratio 1,40), palindrome 240 images, 10 s.
 
 CE QUE LA MESURE A TRANCHÉ (PLAN-BOOSTER-CARD.md §2) :
@@ -36,8 +36,8 @@ from PIL import Image, ImageDraw
 
 SRC = os.path.expanduser("~/Downloads/video_dot.mp4")
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-OUT_MP4 = f"{REPO}/Woop/Media/booster-dot-loop.mp4"
-HERO = f"{REPO}/Woop/Assets.xcassets/booster-hero.imageset/booster-hero.png"
+OUT_MP4 = f"{REPO}/Nosfy/Media/booster-dot-loop.mp4"
+HERO = f"{REPO}/Nosfy/Assets.xcassets/booster-hero.imageset/booster-hero.png"
 VIG = f"{REPO}/tools/sacre/vignettes"
 
 CW, CH = 1080, 1512                  # la card 314 × 440 pt

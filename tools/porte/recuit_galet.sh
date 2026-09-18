@@ -28,7 +28,7 @@
 # ⚠️ À lancer depuis la racine du dépôt.
 set -e
 SRC="$HOME/Downloads/video_gaet.mp4"
-OUT="Woop/Media/welcome-galet-premiere.mp4"
+OUT="Nosfy/Media/welcome-galet-premiere.mp4"
 ffmpeg -y -v error -i "$SRC" -an \
   -vf "trim=end=7.0,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=1.8,curves=all='0/0 0.12/0 0.30/0.22 0.60/0.60 1/1',vignette=angle=PI/3.6:mode=forward,fade=t=in:st=0:d=0.5,fade=t=out:st=8.2:d=0.6,scale=1280:720:flags=lanczos,format=yuv420p" \
   -c:v libx264 -preset slow -crf 21 -movflags +faststart "$OUT"

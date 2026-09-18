@@ -22,8 +22,8 @@ set -u
 UDID=${UDID:-022244AD-484B-5489-A884-6B781A82E372}
 APP_ID=fr.kathryn.woop
 SP=/private/tmp/claude-501/-Users-kathryn-Desktop-woochoper-ios/814d894b-8a59-4029-ab4d-ac3d8b350f45/scratchpad
-BIN_R=${BIN_R:-"$SP/dd-release-phone/Build/Products/Release-iphoneos/Woop.app"}
-BIN_D=${BIN_D:-"$SP/dd-phone/Build/Products/Debug-iphoneos/Woop.app"}
+BIN_R=${BIN_R:-"$SP/dd-release-phone/Build/Products/Release-iphoneos/Nosfy.app"}
+BIN_D=${BIN_D:-"$SP/dd-phone/Build/Products/Debug-iphoneos/Nosfy.app"}
 MANCHES=${MANCHES:-"R D D R"}
 DUREE=${DUREE:-60}
 CHAUFFE=15

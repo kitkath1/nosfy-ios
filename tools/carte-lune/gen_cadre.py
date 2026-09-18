@@ -15,7 +15,7 @@ vit à sd≈0,008), disque gardé à cœur de rampe (r 0,110) dilaté de 2 px.
 Les chanfreins TR/BR/BL sont ajustés sur les cœurs orange du liseré
 (résidus < 1,5 px), reculés de 7 px côté art (trait + halo + 2 px).
 
-Sorties : Woop/Media/carte-cadre.png (RGBA, taille de la carte)
+Sorties : Nosfy/Media/carte-cadre.png (RGBA, taille de la carte)
         + ~/Downloads/woop-carte-lune/cadre-debug.png (cadre sur magenta).
 """
 import numpy as np
@@ -23,8 +23,8 @@ from PIL import Image, ImageFilter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "Woop" / "Media" / "carte-lune-1.png"
-DST = ROOT / "Woop" / "Media" / "carte-cadre.png"
+SRC = ROOT / "Nosfy" / "Media" / "carte-lune-1.png"
+DST = ROOT / "Nosfy" / "Media" / "carte-cadre.png"
 DBG = Path.home() / "Downloads" / "woop-carte-lune" / "cadre-debug.png"
 
 img = np.asarray(Image.open(SRC).convert("RGBA"))

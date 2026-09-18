@@ -1,10 +1,10 @@
-# Woop — Design System
+# Nosfy — Design System
 
 App perso muscu/cardio. Direction : **premium minimal, monochrome blanc sur noir profond**, violet en unique couleur d'accent. Tout ce qui « sent le procédural », le néon épais ou le cartoon est hors-jeu. Les micro-détails comptent : le design se juge sur des crops zoomés et des captures comparées à des références réelles.
 
 ## Fondations
 
-- **Palette** ([Theme.swift](Woop/Theme.swift)) : fond `woopBase` quasi noir à dominante froide ; surfaces « métal » en 3 tons (`woopMetalHigh/Mid/Low`) ; violet en 3 niveaux (`woopViolet`, `VioletCore`, `VioletDeep`) — un assaisonnement, jamais une teinte ; encres blanches à 3 opacités (`inkPrimary/Secondary/Muted`).
+- **Palette** ([Theme.swift](Nosfy/Theme.swift)) : fond `woopBase` quasi noir à dominante froide ; surfaces « métal » en 3 tons (`woopMetalHigh/Mid/Low`) ; violet en 3 niveaux (`woopViolet`, `VioletCore`, `VioletDeep`) — un assaisonnement, jamais une teinte ; encres blanches à 3 opacités (`inkPrimary/Secondary/Muted`).
 - **Matière** : toute carte = dégradé métal + reflet spéculaire + biseau 1 pt (`metalSurface`).
 - **Token de lumière — azimut ~225°** : la seule source de la scène est le cœur de la nébuleuse en **bas à gauche**. Les biseaux des cartes s'allument côté bas-gauche et s'éteignent vers le haut-droite : les cartes sont des objets DANS le ciel, jamais posés dessus. Toute nouvelle surface suit ce token.
 - **Chromie une seule famille** : le fond est N&B strict (±3,5 % max), ses ombres portent un sous-ton légèrement **violacé** (la famille de la marque — le CTA émerge du fond au lieu de vibrer contre lui). Le glow du CTA est contenu (il ne doit jamais teinter le ciel).
@@ -13,7 +13,7 @@ App perso muscu/cardio. Direction : **premium minimal, monochrome blanc sur noir
 
 ## Le ciel de la home (DemonSky)
 
-Fond nébuleuse photoréaliste N&B — référence : une astrophoto réelle (cœur cramé blanc en bas-gauche, voûte noire étoilée, nuages volumétriques éclairés par la tranche, grain argentique). Fichiers : [DemonSky.metal](Woop/DemonSky.metal), [DemonSky.swift](Woop/DemonSky.swift), [NebulaNoise.swift](Woop/NebulaNoise.swift), intégré via `WoopBackground` (animé sur la home seulement, image figée ailleurs).
+Fond nébuleuse photoréaliste N&B — référence : une astrophoto réelle (cœur cramé blanc en bas-gauche, voûte noire étoilée, nuages volumétriques éclairés par la tranche, grain argentique). Fichiers : [DemonSky.metal](Nosfy/DemonSky.metal), [DemonSky.swift](Nosfy/DemonSky.swift), [NebulaNoise.swift](Nosfy/NebulaNoise.swift), intégré via `WoopBackground` (animé sur la home seulement, image figée ailleurs).
 
 ### Architecture
 
@@ -104,9 +104,9 @@ Absent au repos : le contraste fait le wahou.
 tout appel à l'action majeur) : un bijou d'obsidienne — fumée noire vivante
 serclée d'une hairline qui scintille. Référence : capture d'un bouton premium
 (ligne inégale, halos discrets, fumée). Fichiers :
-[DiamondButton.metal](Woop/DiamondButton.metal) (l'écrin, une passe),
+[DiamondButton.metal](Nosfy/DiamondButton.metal) (l'écrin, une passe),
 `DiamondPrimaryButton` dans
-[ConnexionButtonLab.swift](Woop/Views/ConnexionButtonLab.swift) (texte +
+[ConnexionButtonLab.swift](Nosfy/Views/ConnexionButtonLab.swift) (texte +
 flèche ; `DiamondConnexionButton` en est l'alias historique). Banc d'essai :
 argument de lancement `-buttonLab` → page noire nue.
 
@@ -170,8 +170,8 @@ Le petit frère SOBRE du bouton primaire — avec lui, le trio de l'auth :
 **input vide / input actif / bouton**. La hiérarchie est le cœur du
 composant : le bouton est le bijou, l'input est l'écrin fermé qui s'éveille
 au toucher. Shader `diamondInput`/`inputRim` dans
-[DiamondButton.metal](Woop/DiamondButton.metal), vue `DiamondInputField`
-dans [ConnexionButtonLab.swift](Woop/Views/ConnexionButtonLab.swift).
+[DiamondButton.metal](Nosfy/DiamondButton.metal), vue `DiamondInputField`
+dans [ConnexionButtonLab.swift](Nosfy/Views/ConnexionButtonLab.swift).
 Banc : `-buttonLab` (vide + actif empilés au-dessus du bouton).
 
 - **Fond** : métal noir qui brille à peine — dégradé vertical (5,2 % → 2,4 %),
@@ -200,8 +200,8 @@ Banc : `-buttonLab` (vide + actif empilés au-dessus du bouton).
 
 Le bouton icône du système (retour, fermetures) — remplacera les boutons
 de navigation actuels. `DiamondBackButton` dans
-[ConnexionButtonLab.swift](Woop/Views/ConnexionButtonLab.swift), anneau
-`diamondRing` dans [DiamondButton.metal](Woop/DiamondButton.metal).
+[ConnexionButtonLab.swift](Nosfy/Views/ConnexionButtonLab.swift), anneau
+`diamondRing` dans [DiamondButton.metal](Nosfy/DiamondButton.metal).
 
 - **Forme** : disque de 46 pt, en tête de pile côté gauche.
 - **Fond** : Liquid Glass NATIF (`glassEffect(.regular.tint(noir 0.45)
@@ -216,7 +216,7 @@ de navigation actuels. `DiamondBackButton` dans
 ## La surface « diamant » (toutes les cartes)
 
 `DiamondSurface` / `.diamondSurface(cornerRadius:neon:)` dans
-[Theme.swift](Woop/Theme.swift) — la surface de base de l'app, celle que
+[Theme.swift](Nosfy/Theme.swift) — la surface de base de l'app, celle que
 portent `WoopCard` et toutes les cartes. Elle remplace l'ancienne « surface
 métal » (dégradé `#191920` → `#07070A` + reflet spéculaire blanc 7,5 % en
 haut), qui lisait gris-vert sur le fond quasi noir.
@@ -256,8 +256,8 @@ flottent. C'est aussi ce qui autorise à mélanger les formats de photo (4:5,
 
 La carte « Objectif hebdomadaire » de la home — la seule surface de l'app qui
 porte un ciel INTÉRIEUR. Tout en une passe :
-[ObjectiveJewel.metal](Woop/ObjectiveJewel.metal) (`objectiveJewel`), vue
-`JewelSurface` dans [ObjectiveCard.swift](Woop/Views/ObjectiveCard.swift).
+[ObjectiveJewel.metal](Nosfy/ObjectiveJewel.metal) (`objectiveJewel`), vue
+`JewelSurface` dans [ObjectiveCard.swift](Nosfy/Views/ObjectiveCard.swift).
 Banc : `-cardLab` → page noire, la carte au repos et sa copie « doigt posé ».
 
 **Trajet des itérations (leçons)** : mesa + nébuleuse spectaculaire → rejetée
@@ -327,8 +327,8 @@ que seule la lumière du sertissage détache de la page.
 ## La carte « obsidienne » (verre fumé noir, source hors champ)
 
 Le DOUBLON de travail de la carte Objectif : même contrat, autre matière.
-[ObsidianCard.metal](Woop/ObsidianCard.metal) (`obsidianSurface`), vue
-`ObsidianGlassCard` dans [ObsidianCard.swift](Woop/Views/ObsidianCard.swift).
+[ObsidianCard.metal](Nosfy/ObsidianCard.metal) (`obsidianSurface`), vue
+`ObsidianGlassCard` dans [ObsidianCard.swift](Nosfy/Views/ObsidianCard.swift).
 Banc : `-obsidianLab`. La carte bijou reste intacte : les deux sont
 interchangeables sur la home, on peut les comparer sans rien réécrire.
 
@@ -452,12 +452,12 @@ Ils sont le fruit de plusieurs allers-retours sur simulateur et ne doivent pas
 LA carte de séance de la home : noir mat brossé à reflets chauds, tube de
 néon qui ne vit que du geste, reflet posé sur un sol poli. Extraite en
 composants design-system le 2026-08-18 (chantier carnet de cuir) :
-[SwapCardSurface.swift](Woop/Views/SwapCardSurface.swift) — l'écrin
+[SwapCardSurface.swift](Nosfy/Views/SwapCardSurface.swift) — l'écrin
 (`SwapCardSurface`), l'en-tête (`SwapCardHeading`), le cartouche
 (`SwapCardStat`). Le shader : `swapCard` dans
-[AuroraHome.metal](Woop/AuroraHome.metal). La mise en scène (pile,
+[AuroraHome.metal](Nosfy/AuroraHome.metal). La mise en scène (pile,
 éventail, reflet, gerbe, gestes, haptiques) reste à `SwapDeck` dans
-[HomeAuroraView.swift](Woop/Views/HomeAuroraView.swift). Bancs :
+[HomeAuroraView.swift](Nosfy/Views/HomeAuroraView.swift). Bancs :
 `-homeLab` (la home), `-deckLab` (la pile seule), `-deckSwiped` (geste
 figé), `-deckBurst` (la gerbe en boucle).
 
@@ -505,7 +505,7 @@ Le catalogue est illustré par des **photographies**, plus par des figures
 vectorielles (`ExerciseFigures` / `FigureEngine` supprimés). Registre :
 clair-obscur, fond noir absolu, corps en silhouette, et le muscle travaillé
 en surbrillance blanche anatomique. Composant : `ExercisePhoto` dans
-[ExercisePhoto.swift](Woop/Views/ExercisePhoto.swift), assets `exo-<id>`.
+[ExercisePhoto.swift](Nosfy/Views/ExercisePhoto.swift), assets `exo-<id>`.
 
 - **Vignette de grille** (`fills: true`) : la photo REMPLIT la carte, bord à
   bord, recadrée au centre — c'est là que tombe le muscle en lumière sur
@@ -548,8 +548,8 @@ Le second rôle sous le primaire (« CRÉER UN COMPTE »).
 Le chrono d'effort en scène : un disque de velours noir posé sur la nuit,
 QUATRE lumières qui tournent derrière — le disque les occulte, elles le
 couronnent. `EclipseCounter` dans
-[CounterLab.swift](Woop/Views/CounterLab.swift), tout l'arrière dans
-[EclipseHalo.metal](Woop/EclipseHalo.metal) (`eclipseHalo`), banc `-counterLab`
+[CounterLab.swift](Nosfy/Views/CounterLab.swift), tout l'arrière dans
+[EclipseHalo.metal](Nosfy/EclipseHalo.metal) (`eclipseHalo`), banc `-counterLab`
 (+ `-counterPressed` : bouffée figée au pic).
 
 - **Forme** : disque 250 pt, hôte shader avec débord ×0,58 — et un
@@ -584,7 +584,7 @@ couronnent. `EclipseCounter` dans
   (« cheap »).
 - **Le son** : tic minuscule chaque seconde (`DialTick`), un ton plus bas au
   passage de la minute (`DialTock`), souffle feutré au tap (`DialTap`) —
-  synthétisés (modes résonants amortis + choc filtré, Woop/Sounds), joués en
+  synthétisés (modes résonants amortis + choc filtré, Nosfy/Sounds), joués en
   `.ambient` + `mixWithOthers` : le cadran ne coupe jamais la musique de la
   salle. Vibration du tap : `.impact(flexibility: .soft, intensity: 0.85)`.
 - **Le spotlight de la nuit** (`nightSpotlight`, plein écran sous le cadran) :

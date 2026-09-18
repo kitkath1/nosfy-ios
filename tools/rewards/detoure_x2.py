@@ -19,7 +19,7 @@ from scipy import ndimage
 import os, json
 
 ASSETS = os.path.join(os.path.dirname(__file__), "..", "..",
-                      "Woop", "Assets.xcassets")
+                      "Nosfy", "Assets.xcassets")
 CTRL = os.environ.get("CTRL_DIR", "/tmp")
 
 

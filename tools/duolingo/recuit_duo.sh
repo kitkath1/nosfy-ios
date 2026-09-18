@@ -1,6 +1,6 @@
 #!/bin/zsh
 # LA CUISSON DE LA DUOLINGUO_PAGE (24-08, 2e salve) — produit les 8
-# fichiers Woop/Media/duo-*.mp4 + leurs 8 poses, depuis les sources.
+# fichiers Nosfy/Media/duo-*.mp4 + leurs 8 poses, depuis les sources.
 # Plan : tools/duolingo/PLAN-DUOLINGUO.md §3. Les pieges payes qu'on ne
 # repaie pas :
 #  1. JAMAIS -ss : tout trim/roll DANS le graphe (trim+setpts). Un fondu
@@ -23,8 +23,8 @@
 #     (duo-verre-rouge) est mort.
 set -e
 cd "$(dirname "$0")"
-OUT=../../Woop/Media
-ASSETS=../../Woop/Assets.xcassets
+OUT=../../Nosfy/Media
+ASSETS=../../Nosfy/Assets.xcassets
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
@@ -264,7 +264,7 @@ TMP="$TMP" python3 - <<'EOF'
 import numpy as np, os, glob
 from PIL import Image
 tmp = os.environ["TMP"]
-out = "../../Woop/Media"
+out = "../../Nosfy/Media"
 names = ["duo-galet-noir","duo-feu-blanc","duo-galet-rouge",
          "duo-feu-rouge","duo-galet-rougebleu","duo-flamme-bleue"]
 print(f"{'fichier':28s} {'couture':>8s} {'bordH p99':>10s} {'bordB p99':>10s} {'noir p50':>9s} {'Mo':>6s}")
@@ -282,4 +282,4 @@ for n in names:
 print(f"{'TOTAL':28s} {'':8s} {'':10s} {'':10s} {'':9s} {total:6.1f}")
 EOF
 echo ""
-echo "cuit -> Woop/Media/duo-*.mp4 (6) + Assets duo-*-poster (6)"
+echo "cuit -> Nosfy/Media/duo-*.mp4 (6) + Assets duo-*-poster (6)"

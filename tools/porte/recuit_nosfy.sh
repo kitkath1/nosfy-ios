@@ -1,5 +1,5 @@
 #!/bin/zsh
-# LA CUISSON DE L'ACCUEIL DE NOSFY (13-09) — produit Woop/Media/nosfy-accueil-loop.mp4
+# LA CUISSON DE L'ACCUEIL DE NOSFY (13-09) — produit Nosfy/Media/nosfy-accueil-loop.mp4
 # et le poster, depuis ~/Downloads/welcome_nosty.mp4 (3840×2160 HEVC 10 bits, 7,04 s,
 # 169 images, fond noir vrai, la bête au centre, oreilles au bord haut, corps coupé
 # par le bord bas — mesuré). Plan : tools/porte/PLAN-ACCUEIL-NOSFY.md §2.
@@ -14,8 +14,8 @@
 #     retour va de 167 à 1 (ni 168 ni 0 en double) → 169 + 167 = 336 images = 14 s.
 set -e
 SRC="$HOME/Downloads/welcome_nosty.mp4"
-OUT="Woop/Media/nosfy-accueil-loop.mp4"
-POSTER_DIR="Woop/Assets.xcassets/nosfy-accueil-poster.imageset"
+OUT="Nosfy/Media/nosfy-accueil-loop.mp4"
+POSTER_DIR="Nosfy/Assets.xcassets/nosfy-accueil-poster.imageset"
 X264=(-c:v libx264 -preset slow -crf 20 -pix_fmt yuv420p -g 48 -keyint_min 48 -sc_threshold 0 -movflags +faststart -an)
 # H = 900 ; haut 6 % = 54 ; bas 15 % = 135 (luma) ; chroma à demi-résolution.
 # 13-09, 2e cuisson (« un peu plus fondue ») : haut 12 % (108), bas 28 % (252),

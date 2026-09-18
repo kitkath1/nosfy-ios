@@ -22,7 +22,7 @@ def edite(chemin, vieux, neuf, temoin):
 
 
 # B) WoopApp — la sonde d'état en overlay de la racine
-edite(base + "/Woop/WoopApp.swift",
+edite(base + "/Nosfy/NosfyApp.swift",
       """            RootView()
                 .preferredColorScheme(.dark)
                 .tint(.woopViolet)""",
@@ -35,7 +35,7 @@ edite(base + "/Woop/WoopApp.swift",
 # C) PageCard — la marque de bande, DERNIER modificateur de la computed
 #    `bande` (le code actuel finit par .onGeometryChange ; l'ancienne
 #    ancre `.background { PanBande }` N'EXISTE PLUS).
-edite(base + "/Woop/Views/PageCard.swift",
+edite(base + "/Nosfy/Views/PageCard.swift",
       """            NavEtat.shared.bandeVisiblePubliee = bandeVisible
         }
     }

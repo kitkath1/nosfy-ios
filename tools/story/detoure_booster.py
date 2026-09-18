@@ -44,7 +44,7 @@ y0, y1 = max(0, ys.min() - 2), min(rgb.shape[0], ys.max() + 3)
 x0, x1 = max(0, xs.min() - 2), min(rgb.shape[1], xs.max() + 3)
 out = np.dstack([rgb, a8])[y0:y1, x0:x1]
 
-d = "Woop/Assets.xcassets/sticker-booster.imageset"
+d = "Nosfy/Assets.xcassets/sticker-booster.imageset"
 os.makedirs(d, exist_ok=True)
 Image.fromarray(out).save(f"{d}/sticker-booster.png")
 json.dump({"images": [

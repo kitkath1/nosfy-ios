@@ -4,13 +4,13 @@
 # nomme-les bien en composant pour qu'on puisse éditer ou pas ») — une capture par variante,
 # prise au simulateur sur le banc de chaque composant, FIGÉE quand le banc le permet.
 #
-#   tools/docsite/capturer-popups.sh [UDID-simulateur] [Woop.app]
+#   tools/docsite/capturer-popups.sh [UDID-simulateur] [Nosfy.app]
 #   → tools/docsite/shots/pop-<nom>.png (1206 × 2622), puis `cd docs/site && npm run captures`.
 #
 # Chaque ligne : nom · arguments de lancement · délai (s) avant la capture.
 set -u
 SIM=${1:-D8A31930-1D84-42BF-A129-051BB6B9195B}
-APP=${2:-/private/tmp/claude-501/-Users-kathryn-Desktop-woochoper-ios/814d894b-8a59-4029-ab4d-ac3d8b350f45/scratchpad/dd-chambre/Build/Products/Debug-iphonesimulator/Woop.app}
+APP=${2:-/private/tmp/claude-501/-Users-kathryn-Desktop-woochoper-ios/814d894b-8a59-4029-ab4d-ac3d8b350f45/scratchpad/dd-chambre/Build/Products/Debug-iphonesimulator/Nosfy.app}
 ICI="$(cd "$(dirname "$0")" && pwd)"
 SHOTS="$ICI/shots"
 mkdir -p "$SHOTS"

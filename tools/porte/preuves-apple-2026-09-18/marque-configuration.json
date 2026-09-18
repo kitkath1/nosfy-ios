@@ -1,0 +1,16 @@
+[
+  {
+    "TARGET_NAME": "Woop",
+    "INFOPLIST_KEY_CFBundleDisplayName": "Nosfy",
+    "PRODUCT_BUNDLE_IDENTIFIER": "fr.kathryn.woop",
+    "DEVELOPMENT_TEAM": "V45F4LUU8D"
+  },
+  {
+    "plist": "Woop/Info.plist",
+    "CFBundleName": "Nosfy"
+  },
+  {
+    "plist": "WoopWidgets/Info.plist",
+    "CFBundleName": "Nosfy Widgets"
+  }
+]

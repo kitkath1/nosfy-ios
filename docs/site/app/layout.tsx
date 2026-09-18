@@ -6,7 +6,7 @@ import { Sprite } from '@/components/Sprite'
 import { Rail, Barre } from '@/components/Rail'
 import { Boot } from '@/components/Boot'
 
-// Inter, la police de l'app (Woop/Fonts/), auto-hébergée : le sous-ensemble latin de la
+// Inter, la police de l'app (Nosfy/Fonts/), auto-hébergée : le sous-ensemble latin de la
 // variable (opsz + wght), 100 Ko — zéro requête réseau, la même Inter hors ligne.
 const inter = localFont({
   src: '../fonts/InterVariable-latin.woff2',
@@ -17,8 +17,8 @@ const inter = localFont({
 })
 
 export const metadata = {
-  title: 'Documentation Woop',
-  description: "L'état vérifié du back-end de Woop : ce qui marche, ce qui ment, ce qui manque.",
+  title: 'Documentation Nosfy',
+  description: "L'état vérifié du back-end de Nosfy : ce qui marche, ce qui ment, ce qui manque.",
 }
 
 export default function Layout({ children }: { children: ReactNode }) {

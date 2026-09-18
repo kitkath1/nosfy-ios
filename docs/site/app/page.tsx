@@ -39,7 +39,7 @@ export default function Site() {
         )
       })}
       <p className="pied">
-        Woop · <span className="mono">ytnnyjkramgiqyxdrkcu</span> · les états sont écrits à la main dans <span className="mono">content/</span>, le build ne fait que la mise en forme · dernière passe le {dernierePasse()}.
+        Nosfy · <span className="mono">ytnnyjkramgiqyxdrkcu</span> · les états sont écrits à la main dans <span className="mono">content/</span>, le build ne fait que la mise en forme · dernière passe le {dernierePasse()}.
       </p>
     </>
   )

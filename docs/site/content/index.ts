@@ -124,7 +124,7 @@ export function verdict(f: Familles): string {
   if (f.trancher && f.valider) return `${f.trancher + f.valider} choses t'attendent`
   if (f.trancher) return f.trancher > 1 ? `${f.trancher} décisions t'attendent` : `1 décision t'attend`
   if (f.valider) return `${f.valider} à valider ensemble`
-  if (f.chantier) return `${f.chantier} en chantier, rien à faire pour toi`
+  if (f.chantier) return `${f.chantier} en chantier`
   if (f.bon) return 'Tout est bon.'
   return 'rien à dire'
 }
@@ -136,7 +136,7 @@ export function verdictCourt(f: Familles): string {
   if (f.trancher && f.valider) return `${f.trancher} à trancher · ${f.valider} à valider`
   if (f.trancher) return f.trancher > 1 ? `${f.trancher} décisions t'attendent` : `1 décision t'attend`
   if (f.valider) return `${f.valider} à valider ensemble`
-  if (f.chantier) return 'rien à faire pour toi'
+  if (f.chantier) return 'voir les points ouverts'
   if (f.bon) return 'tout est bon'
   return 'rien à dire'
 }

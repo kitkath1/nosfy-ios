@@ -57,7 +57,7 @@ import numpy as np
 from PIL import Image
 
 RACINE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MEDIA = os.path.join(RACINE, "Woop", "Media")
+MEDIA = os.path.join(RACINE, "Nosfy", "Media")
 SORTIE = os.path.join(RACINE, "tools", "coffre-v2", "vignettes")
 SOURCE = os.path.expanduser("~/Downloads/video_crop.mp4")
 

@@ -4,10 +4,10 @@ bake_stop.py — LA BÊTE DU STOP, cuite pour la card (J0 de PLAN-STOP-CARD.md).
 
 Entrée  : ~/Downloads/chauve-souri_stop.mp4 (H.264 3836×2160, 24 img/s, 121 images,
           fond à 0,0 EXACT hors la bête — mesuré).
-Sorties : Woop/Media/stop-bat-loop.mp4
+Sorties : Nosfy/Media/stop-bat-loop.mp4
               1080×1562 (= la card 332×480 pt à 3,253 px/pt), palindrome 240 images
               (10,0 s), NOIR EXACT + la bête posée.
-          Woop/Assets.xcassets/stop-bat-masque.imageset/stop-bat-masque.png
+          Nosfy/Assets.xcassets/stop-bat-masque.imageset/stop-bat-masque.png
               la silhouette STATIQUE INVERSE, EN RGBA (blanc + alpha) — le
               masque du MUR (fond + mot), jamais de la vidéo.
           tools/stop/vignettes/stop-bat-planche.png — la planche du raccord.
@@ -37,8 +37,8 @@ from scipy import ndimage as ndi
 
 SRC = os.path.expanduser("~/Downloads/chauve-souri_stop.mp4")
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-OUT_MP4 = f"{REPO}/Woop/Media/stop-bat-loop.mp4"
-OUT_SET = f"{REPO}/Woop/Assets.xcassets/stop-bat-masque.imageset"
+OUT_MP4 = f"{REPO}/Nosfy/Media/stop-bat-loop.mp4"
+OUT_SET = f"{REPO}/Nosfy/Assets.xcassets/stop-bat-masque.imageset"
 VIG = f"{REPO}/tools/stop/vignettes"
 
 SW, SH = 3836, 2160            # la source

@@ -334,7 +334,7 @@
    "hauteur": 521,
    "source": "tools/docsite/shots/pop-welcome-back-prod.png",
    "octets": 7066,
-   "composant": "WoopApp.swift → RewardPopup(.welcome, .video) sans videoNom"
+   "composant": "NosfyApp.swift → RewardPopup(.welcome, .video) sans videoNom"
   },
   {
    "nom": "pop-premiere-galet",
@@ -472,7 +472,7 @@
    "fichier": "captures/popups/reward-piece-1.jpg",
    "largeur": 320,
    "hauteur": 180,
-   "source": "Woop/Media/reward-piece-1.mp4 (image extraite à ~45 %)",
+   "source": "Nosfy/Media/reward-piece-1.mp4 (image extraite à ~45 %)",
    "octets": 7086,
    "composant": "Moment fiche — pop-up vidéo réglée backend · reward-piece-1"
   },
@@ -482,7 +482,7 @@
    "fichier": "captures/popups/reward-piece-2.jpg",
    "largeur": 320,
    "hauteur": 180,
-   "source": "Woop/Media/reward-piece-2.mp4 (image extraite à ~45 %)",
+   "source": "Nosfy/Media/reward-piece-2.mp4 (image extraite à ~45 %)",
    "octets": 12829,
    "composant": "Moment fiche — pop-up vidéo réglée backend · reward-piece-2"
   },
@@ -492,7 +492,7 @@
    "fichier": "captures/popups/reward-piece-3.jpg",
    "largeur": 320,
    "hauteur": 180,
-   "source": "Woop/Media/reward-piece-3.mp4 (image extraite à ~45 %)",
+   "source": "Nosfy/Media/reward-piece-3.mp4 (image extraite à ~45 %)",
    "octets": 7610,
    "composant": "Moment fiche — pop-up vidéo réglée backend · reward-piece-3"
   },
@@ -502,7 +502,7 @@
    "fichier": "captures/popups/reward-piece-4.jpg",
    "largeur": 320,
    "hauteur": 180,
-   "source": "Woop/Media/reward-piece-4.mp4 (image extraite à ~45 %)",
+   "source": "Nosfy/Media/reward-piece-4.mp4 (image extraite à ~45 %)",
    "octets": 6739,
    "composant": "Moment fiche — pop-up vidéo réglée backend · reward-piece-4"
   },
@@ -512,7 +512,7 @@
    "fichier": "captures/popups/reward-piece-5.jpg",
    "largeur": 320,
    "hauteur": 180,
-   "source": "Woop/Media/reward-piece-5.mp4 (image extraite à ~45 %)",
+   "source": "Nosfy/Media/reward-piece-5.mp4 (image extraite à ~45 %)",
    "octets": 5574,
    "composant": "Moment fiche — pop-up vidéo réglée backend · reward-piece-5"
   },
@@ -522,7 +522,7 @@
    "fichier": "captures/popups/reward-rare.jpg",
    "largeur": 320,
    "hauteur": 180,
-   "source": "Woop/Media/reward-rare.mp4 (image extraite à ~45 %)",
+   "source": "Nosfy/Media/reward-rare.mp4 (image extraite à ~45 %)",
    "octets": 7230,
    "composant": "Moment fiche — pop-up vidéo réglée backend · reward-rare"
   },
@@ -532,7 +532,7 @@
    "fichier": "captures/popups/reward-fire.jpg",
    "largeur": 320,
    "hauteur": 180,
-   "source": "Woop/Media/reward-fire.mp4 (image extraite à ~45 %)",
+   "source": "Nosfy/Media/reward-fire.mp4 (image extraite à ~45 %)",
    "octets": 4953,
    "composant": "Moment fiche — pop-up vidéo réglée backend · reward-fire"
   },
@@ -542,7 +542,7 @@
    "fichier": "captures/popups/reward-lune.jpg",
    "largeur": 320,
    "hauteur": 180,
-   "source": "Woop/Media/reward-lune.mp4 (image extraite à ~45 %)",
+   "source": "Nosfy/Media/reward-lune.mp4 (image extraite à ~45 %)",
    "octets": 2808,
    "composant": "Moment fiche — pop-up vidéo réglée backend · reward-lune"
   },
@@ -552,7 +552,7 @@
    "fichier": "captures/popups/reward-nosfy-coins.jpg",
    "largeur": 320,
    "hauteur": 180,
-   "source": "Woop/Media/reward-nosfy-coins.mp4 (image extraite à ~45 %)",
+   "source": "Nosfy/Media/reward-nosfy-coins.mp4 (image extraite à ~45 %)",
    "octets": 6616,
    "composant": "RewardCheminVariants.RecompensePieces (route) · reward-nosfy-coins"
   }
@@ -583,7 +583,7 @@
    "fichier": "captures/hero/forge.png",
    "largeur": 400,
    "hauteur": 534,
-   "source": "Woop/Assets.xcassets/booster-orange.imageset/booster-orange.png",
+   "source": "Nosfy/Assets.xcassets/booster-orange.imageset/booster-orange.png",
    "octets": 30394
   },
   "histoire": {
@@ -604,7 +604,7 @@
    "fichier": "captures/hero/porte.jpg",
    "largeur": 400,
    "hauteur": 870,
-   "source": "Woop/Assets.xcassets/onb-lune-loop-poster.imageset/onb-lune-loop-poster.jpg",
+   "source": "Nosfy/Assets.xcassets/onb-lune-loop-poster.imageset/onb-lune-loop-poster.jpg",
    "octets": 34956
   }
  },

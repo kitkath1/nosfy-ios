@@ -16,7 +16,7 @@ import urllib.request
 import uuid
 
 repo = Path(__file__).resolve().parents[2]
-source = (repo / "Woop/Services/Supabase.swift").read_text()
+source = (repo / "Nosfy/Services/Supabase.swift").read_text()
 base = re.search(r'https://[a-z0-9]+\.supabase\.co', source).group()
 cle = re.search(r'sb_publishable_[A-Za-z0-9_-]+', source).group()
 

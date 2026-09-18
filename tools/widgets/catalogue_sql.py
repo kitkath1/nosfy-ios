@@ -2,7 +2,7 @@
 """
 LE CATALOGUE DES EXERCICES → SQL (13-09).
 
-Le catalogue vit dans Woop/Models.swift (`ExerciseCatalog.all`) et nulle part
+Le catalogue vit dans Nosfy/Models.swift (`ExerciseCatalog.all`) et nulle part
 ailleurs. Le serveur en a besoin pour NOMMER ce qu'il compte (widget_volume,
 widget_peak, profil().exercices) : ce script lit le Swift et écrit une
 migration qui pose (ou remet à jour) la table `exercices`, ligne par ligne,
@@ -18,7 +18,7 @@ reste la source ; la table est le miroir que le serveur lit.
 import re, sys, datetime
 
 RACINE = __file__.rsplit("/tools/", 1)[0]
-swift = open(RACINE + "/Woop/Models.swift", encoding="utf-8").read()
+swift = open(RACINE + "/Nosfy/Models.swift", encoding="utf-8").read()
 pat = re.compile(r'Exercise\(\s*id: "([^"]+)", name: "([^"]+)",\s*category: \.(\w+), equipment: \.(\w+), tracking: \.(\w+),\s*muscle: "([^"]*)",\s*cue: "([^"]*)",\s*mistake: "([^"]*)"\s*\)', re.S)
 rows = pat.findall(swift)
 if not rows:
@@ -31,7 +31,7 @@ out = sys.argv[1] if len(sys.argv) > 1 else None
 lignes = []
 lignes.append("-- ════════════════════════════════════════════════════════════════════════")
 lignes.append("-- LE CATALOGUE DES EXERCICES, AU SERVEUR — généré par tools/widgets/catalogue_sql.py")
-lignes.append(f"-- depuis Woop/Models.swift (ExerciseCatalog.all), le {datetime.date.today().isoformat()} : {len(rows)} exercices.")
+lignes.append(f"-- depuis Nosfy/Models.swift (ExerciseCatalog.all), le {datetime.date.today().isoformat()} : {len(rows)} exercices.")
 lignes.append("--")
 lignes.append("-- Le catalogue Swift reste LA source (l'écran ne lit jamais cette table) ;")
 lignes.append("-- la table est le miroir que le serveur lit pour NOMMER ce qu'il compte :")

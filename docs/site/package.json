@@ -1,8 +1,8 @@
 {
-  "name": "woop-chambre-des-machines",
+  "name": "nosfy-chambre-des-machines",
   "version": "2.0.0",
   "private": true,
-  "description": "Le site de documentation de Woop — source Next.js, livrable = un seul index.html",
+  "description": "Le site de documentation de Nosfy — source Next.js, livrable = un seul index.html",
   "engines": { "node": ">=24" },
   "scripts": {
     "dev": "next dev -p 3111",

@@ -1,5 +1,13 @@
 # Écran — LE CHEMIN (page Duolingo)
 
+> Actualisation18-09 — compte vide : **premier galet, en haut du chapitre1**,
+> faits et dates vides, récompenses à venir. La démo au troisième galet est
+> exclue quand aucune séance n'est terminée, même avec `-cheminReel`.
+> 34 contrôles Swift PASS ; iPhone à vérifier. La progression non vide reste
+> provisoire. Contrat app/backend et preuves :
+> `tools/duolingo/preuves-compte-vide-2026-09-18/README.md`.
+
+
 `Woop/Views/DuolinguoPage.swift` · état partagé `DepartEtat.shared`
 (`Woop/Views/DepartSeance.swift`) · nœuds `Woop/Views/GaletEtape.swift` ·
 récompenses `Woop/Views/RewardChemin.swift` · **la card de la home**
@@ -135,7 +143,7 @@ prête.
 |---|---|
 | **Chargement** | ⚠️ **il n'y en a pas.** `etapeEtFaits` est un calcul synchrone sur les séances locales : la page s'affiche pleine ou fausse, jamais « en cours ». Le **claim**, lui, attend le serveur (§ 3) sans état visible vérifié (**?**). À prévoir quand le chemin viendra du serveur — et la CIBLE 30-08 met « un petit chargement » sur la **page noire** d'avant le chemin (§ 6.2), pas sur la route |
 | **Vide** (aucune séance jamais faite) | le chemin **commence aujourd'hui** : rang 0 = actif, tout le reste verrouillé, les deux récompenses éteintes |
-| **Démo** (le défaut, et c'est la règle pour l'instant) | deux séances faites, la troisième en cours, le reste en flamme. `-cheminReel` bascule sur la vraie dérivation par dates. ⚠️ **La démo existe parce que la base contient des séances vieilles de plusieurs semaines** : compter les jours depuis la première envoyait le chemin au chapitre 5, tout allumé |
+| **Démo** (historique non vide seulement, provisoire) | deux séances faites, la troisième en cours, le reste en flamme. `-cheminReel` bascule sur la vraie dérivation par dates. ⚠️ **La démo existe parce que la base contient des séances vieilles de plusieurs semaines** : compter les jours depuis la première envoyait le chemin au chapitre 5, tout allumé |
 | **Erreur** | **Révisé `9ef6da1`.** Le claim **attend** le serveur ; un échec — réseau, ou une réponse `200 {raison: noeud_invalide / piste_invalide}` que `depuisServeur` traduit en `nil` (`RewardChemin.swift:34-35`) — rend `false` : haptique d'avertissement, la card ne s'ouvre pas, le nœud n'est pas marqué réclamé (`RewardChemin.swift:196-199`, `WoopApp.swift:678-688`). Le commentaire `WoopApp.swift:671-677` dit que la page grave le galet au tap et le **dégrave** sur `false` ; ce geste dans `DuolinguoPage` n'a pas été relu le 30-08 (**?**). Pas de message à l'écran. **PÉRIMÉ** : « le claim part par l'outbox, l'écran affiche le gain tout de suite et ne saura pas s'il est refusé » |
 | **Au-delà du chemin** | borné à 5 × 9 nœuds = **35 séances**. ? — ce qui se passe à la 36ᵉ n'est pas défini |
 

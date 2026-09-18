@@ -1,3 +1,8 @@
+<Decision titre="Intégrité des gains — blocage production mesuré le 18 septembre">
+  <p>Sur un compte temporaire, <code>cloturer_seance</code> a crédité 20 pièces et un sachet pour une séance inexistante. Les tables restent fermées aux écritures directes ; la fonction autorisée ne valide pas suffisamment ce qu’elle rémunère. Le test <code>verif_compte.py --integrite</code> échoue et ses comptes ont été nettoyés.</p>
+  <p>La RPC est signalée en rouge dans <a href="#serveur" data-saut="serveur">Serveur</a>. Son correctif devra préserver les reprises après coupure réseau ; il n’est pas déployé par ce contrôle. Preuve : <code>tools/production/preuves-2026-09-18/integrite-gains.log</code>.</p>
+</Decision>
+
 <div className="reveal">
 
 ## Ce qui ment

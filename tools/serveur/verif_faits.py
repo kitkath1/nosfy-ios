@@ -27,7 +27,7 @@ from zoneinfo import ZoneInfo
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 URL = "https://ytnnyjkramgiqyxdrkcu.supabase.co"
 REF = "ytnnyjkramgiqyxdrkcu"
-KEY = re.search(r'"(sb_publishable_[A-Za-z0-9_-]+)"', open(f"{REPO}/Woop/Services/Supabase.swift").read()).group(1)
+KEY = re.search(r'"(sb_publishable_[A-Za-z0-9_-]+)"', open(f"{REPO}/Nosfy/Services/Supabase.swift").read()).group(1)
 GESTION = open(f"{REPO}/.secrets/supabase-access-token").read().strip()
 PARIS = ZoneInfo("Europe/Paris")
 

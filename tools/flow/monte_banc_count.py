@@ -11,14 +11,14 @@ if copie == repo:
     raise SystemExit("Une copie isolée est obligatoire")
 nav = repo / "tools/nav/fouettage"
 subprocess.run([sys.executable, str(nav / "applique_patch.py"),
-                str(copie / "Woop.xcodeproj/project.pbxproj")], check=True)
-scheme = copie / "Woop.xcodeproj/xcshareddata/xcschemes"
+                str(copie / "Nosfy.xcodeproj/project.pbxproj")], check=True)
+scheme = copie / "Nosfy.xcodeproj/xcshareddata/xcschemes"
 scheme.mkdir(parents=True, exist_ok=True)
-shutil.copy2(nav / "WoopUITests.xcscheme", scheme)
-tests = copie / "WoopUITests"
+shutil.copy2(nav / "NosfyUITests.xcscheme", scheme)
+tests = copie / "NosfyUITests"
 tests.mkdir(exist_ok=True)
 shutil.copy2(repo / "tools/flow/CountdownUITests.swift", tests)
-app = copie / "Woop/WoopApp.swift"
+app = copie / "Nosfy/NosfyApp.swift"
 s = app.read_text()
 ancre = """            if let film = filmDepart {
 """

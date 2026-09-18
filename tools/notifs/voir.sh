@@ -15,7 +15,7 @@ DD=dd-notif
 OUT=tools/notifs/captures
 mkdir -p "$OUT"
 
-xcodebuild -project Woop.xcodeproj -scheme Woop -configuration Debug \
+xcodebuild -project Nosfy.xcodeproj -scheme Nosfy -configuration Debug \
   -destination 'generic/platform=iOS Simulator' \
   -derivedDataPath "$DD" build > /tmp/notif-build.log 2>&1
 E=$?
@@ -25,7 +25,7 @@ if [ $E -ne 0 ]; then
   exit $E
 fi
 
-APP="$DD/Build/Products/Debug-iphonesimulator/Woop.app"
+APP="$DD/Build/Products/Debug-iphonesimulator/Nosfy.app"
 echo "dylib : $(stat -f '%Sm %z' "$APP/Woop.debug.dylib" 2>/dev/null || echo absent)"
 
 xcrun simctl boot "$SIM" 2>/dev/null || true

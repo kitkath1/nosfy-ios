@@ -4,7 +4,7 @@
 # ce banc-ci exerce la RÉCEPTION (shouldReceive, porte scroll, direction).
 #
 # Réutilise le banc nav (patron offert par la session 07, 03-09) :
-# monte_banc.sh monte la copie jetable + la cible WoopUITests (dossier
+# monte_banc.sh monte la copie jetable + la cible NosfyUITests (dossier
 # synchronisé : notre fichier déposé compile tout seul), puis on ne joue
 # QUE la classe FouettageReceptionUITests, sur NOTRE sim.
 #
@@ -27,9 +27,9 @@ mkdir -p "$SCRATCH"
 
 # 1) monter la copie (idempotent) + déposer NOTRE cas
 "$DEPOT/tools/nav/fouettage/monte_banc.sh" "$COPIE" || exit 1
-cp "$ICI/tests/FouettageReceptionUITests.swift" "$COPIE/WoopUITests/" || exit 1
+cp "$ICI/tests/FouettageReceptionUITests.swift" "$COPIE/NosfyUITests/" || exit 1
 
-XCB=(xcodebuild -project "$COPIE/Woop.xcodeproj" -scheme WoopUITests
+XCB=(xcodebuild -project "$COPIE/Nosfy.xcodeproj" -scheme NosfyUITests
      -destination "platform=iOS Simulator,id=$SIM" -derivedDataPath "$DD")
 
 # 2) build-for-testing — code de sortie NU (jamais de pipe sur la ligne)
@@ -50,7 +50,7 @@ xcrun simctl uninstall "$SIM" "$APP" 2>/dev/null
 rm -rf "$SCRATCH/reception.xcresult"
 E=0
 "${XCB[@]}" test-without-building \
-  -only-testing:'WoopUITests/FouettageReceptionUITests' \
+  -only-testing:'NosfyUITests/FouettageReceptionUITests' \
   -test-timeouts-enabled YES -default-test-execution-time-allowance 240 \
   -resultBundlePath "$SCRATCH/reception.xcresult" \
   > "$SCRATCH/cas.log" 2>&1 || E=$?

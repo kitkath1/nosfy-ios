@@ -25,7 +25,7 @@ def edite(chemin, vieux, neuf, temoin):
 
 
 # A) WoopApp — la sonde d'état en overlay de la racine.
-edite(base + "/Woop/WoopApp.swift",
+edite(base + "/Nosfy/NosfyApp.swift",
       """            RootView()
                 .preferredColorScheme(.dark)
                 .tint(.woopViolet)""",
@@ -41,14 +41,14 @@ edite(base + "/Woop/WoopApp.swift",
 #    DÉCLARÉE MAIS JAMAIS MONTÉE — du code mort. Une marque posée là ne
 #    s'exécute jamais et le banc croit que la séance n'existe pas.
 #    (Payé une fois, le 04-09 : 8 cas rouges sur `seance=0`.)
-edite(base + "/Woop/Views/PageCard.swift",
+edite(base + "/Nosfy/Views/PageCard.swift",
       """        .onDisappear { NavEtat.shared.retirerBande(jeton) }""",
       """        .onDisappear { NavEtat.shared.retirerBande(jeton) }
         .modifier(FouettageBandeMarque(enSeance: enSeance))""",
       "FouettageBandeMarque(enSeance:")
 
 # C) PiluleVagabonde — la marque du CORPS de la pilule (son rect visible).
-edite(base + "/Woop/Views/PiluleVagabonde.swift",
+edite(base + "/Nosfy/Views/PiluleVagabonde.swift",
       """            .sondeCadence("pilule")
             .accessibilityIdentifier("seance-pastille")
     }""",
@@ -61,7 +61,7 @@ edite(base + "/Woop/Views/PiluleVagabonde.swift",
 # D) PiluleVagabonde — la marque de L'ÎLE (dernier modificateur de `ile`).
 # (05-09 : `isSource:` est arrivé avec le fondu croisé ; 06-09 V2 : la
 #  position suit l'état fine/gonflée — l'ancre suit, encore.)
-edite(base + "/Woop/Views/PiluleVagabonde.swift",
+edite(base + "/Nosfy/Views/PiluleVagabonde.swift",
       """        .position(x: UIScreen.main.bounds.width / 2,
                   y: doigtIle || SouffleBanc.horloge
                       ? IleGeo.capsuleCentreY : IleGeo.babyCentreY)
@@ -76,7 +76,7 @@ edite(base + "/Woop/Views/PiluleVagabonde.swift",
       "FouettageIleMarque()")
 
 # D bis) Compter l'action réelle du stop, maintenant placé à droite.
-edite(base + "/Woop/Views/PiluleVagabonde.swift",
+edite(base + "/Nosfy/Views/PiluleVagabonde.swift",
       """                    .highPriorityGesture(TapGesture().onEnded {
                         Haptique.moyen()
                         onStop()
@@ -89,7 +89,7 @@ edite(base + "/Woop/Views/PiluleVagabonde.swift",
       "nbStop += 1")
 
 # E) PiluleVagabonde — la marque du GRAND PLAYER (sa présence EST le test).
-edite(base + "/Woop/Views/PiluleVagabonde.swift",
+edite(base + "/Nosfy/Views/PiluleVagabonde.swift",
       """        .sondeCadence("player-morph")""",
       """        .sondeCadence("player-morph")
         .modifier(FouettageGrandPlayerMarque())""",
@@ -98,7 +98,7 @@ edite(base + "/Woop/Views/PiluleVagabonde.swift",
 # F) DIAGNOSTIC DE GESTE — des prints DANS le geste de la pastille (copie
 #    jetable seulement). Un compteur d'état ne dit pas si `onChanged` a
 #    été appelé : seul le geste lui-même peut le dire.
-edite(base + "/Woop/Views/PiluleVagabonde.swift",
+edite(base + "/Nosfy/Views/PiluleVagabonde.swift",
       """                    .onChanged { v in etat.suivre(v.translation) }""",
       """                    .onChanged { v in
                         FouettagePiluleFaits.shared.nbChanged += 1
@@ -106,7 +106,7 @@ edite(base + "/Woop/Views/PiluleVagabonde.swift",
                     }""",
       "nbChanged += 1")
 
-edite(base + "/Woop/Views/PiluleVagabonde.swift",
+edite(base + "/Nosfy/Views/PiluleVagabonde.swift",
       """                    .exclusively(before: TapGesture().onEnded {
                         guard !etat.enVol, !etat.enDrag else { return }""",
       """                    .exclusively(before: TapGesture().onEnded {
@@ -125,7 +125,7 @@ edite(base + "/Woop/Views/PiluleVagabonde.swift",
 #    la variable d'environnement FOUET_SANS_MATCHED=1.
 import os
 if os.environ.get("FOUET_SANS_MATCHED") == "1":
-    edite(base + "/Woop/Views/PiluleVagabonde.swift",
+    edite(base + "/Nosfy/Views/PiluleVagabonde.swift",
           """            .matchedGeometryEffect(id: "pilule-vol", in: vol,
                                    isSource: !etat.dansIle)
             .position(x: UIScreen.main.bounds.width / 2, y: y)""",

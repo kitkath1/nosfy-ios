@@ -3,13 +3,13 @@ import { join } from 'node:path'
 
 /**
  * Les glyphes filaires (tracés Lucide, MIT) et la lune de l'app — le premier <path> de
- * Woop/AppIcon.icon/Assets/lune (2).svg avec son dégradé blanc → blanc .70, sans le flou
+ * Nosfy/AppIcon.icon/Assets/lune (2).svg avec son dégradé blanc → blanc .70, sans le flou
  * Figma. Le sprite est VISIBLE mais de taille nulle : un dégradé défini dans un
  * <svg display:none> ne peint pas (payé en v1 : la lune invisible).
  */
 const LUNE = (() => {
   try {
-    const svg = readFileSync(join(process.cwd(), '..', '..', 'Woop/AppIcon.icon/Assets/lune (2).svg'), 'utf8')
+    const svg = readFileSync(join(process.cwd(), '..', '..', 'Nosfy/AppIcon.icon/Assets/lune (2).svg'), 'utf8')
     const m = svg.match(/<path d="([^"]+)" fill="url\(#paint0_linear/)
     return m ? m[1] : ''
   } catch { return '' }

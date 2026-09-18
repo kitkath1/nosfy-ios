@@ -1,0 +1,17 @@
+{
+  "project" : {
+    "configurations" : [
+      "Debug",
+      "Release"
+    ],
+    "name" : "Nosfy",
+    "schemes" : [
+      "Nosfy",
+      "NosfyWidgets"
+    ],
+    "targets" : [
+      "Nosfy",
+      "NosfyWidgets"
+    ]
+  }
+}

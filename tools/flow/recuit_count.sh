@@ -3,7 +3,7 @@
 set -euo pipefail
 ici="$(cd "$(dirname "$0")" && pwd)"
 source_count="${1:-$HOME/Downloads/count.mp4}"
-cible_count="${2:-$ici/../../Woop/Media/count.mp4}"
+cible_count="${2:-$ici/../../Nosfy/Media/count.mp4}"
 mkdir -p "$(dirname "$cible_count")"
 ffmpeg -hide_banner -loglevel warning -y -i "$source_count" \
   -map 0:v:0 -map '0:a:0?' \

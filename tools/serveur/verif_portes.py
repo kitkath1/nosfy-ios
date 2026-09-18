@@ -33,7 +33,7 @@ import re, json, base64, subprocess, urllib.request, urllib.error, sys, os
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 URL = "https://ytnnyjkramgiqyxdrkcu.supabase.co"
-src = open(f"{REPO}/Woop/Services/Supabase.swift").read()
+src = open(f"{REPO}/Nosfy/Services/Supabase.swift").read()
 KEY = re.search(r'"(sb_publishable_[A-Za-z0-9_-]+)"', src).group(1)
 
 

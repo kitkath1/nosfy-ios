@@ -94,7 +94,7 @@ if len(ys):
 
 # ── LA BÊTE : par le masque cuit, replacé aux cotes de la card ────────────
 MASK = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                    "..", "..", "Woop", "Assets.xcassets",
+                    "..", "..", "Nosfy", "Assets.xcassets",
                     "stop-bat-masque.imageset", "stop-bat-masque.png")
 if os.path.exists(MASK):
     # ⚠️ L'ALPHA, pas la luminance : depuis la correction du 29-08 le masque

@@ -5,7 +5,7 @@ Verdict : le whoop de MoonGlide était « très triste » (le cube du
 splash). Ici : un fragment d'arpège MINEUR en clochettes douces —
 sol 4, si bémol 4, ré 5 — l'ascension poétique et mélancolique, portée
 par un souffle d'air. Trois partiels par cloche, attaque feutrée,
-longue traîne. Sortie : Woop/Media/BoosterLeve.wav
+longue traîne. Sortie : Nosfy/Media/BoosterLeve.wav
 """
 
 import math
@@ -65,7 +65,7 @@ for i in range(N):
     fade = min(1.0, (DUREE - t) / 0.3)
     mix[i] *= gain * fade
 
-with wave.open("/Users/kathryn/Desktop/woochoper-ios/Woop/Media/BoosterLeve.wav", "w") as w:
+with wave.open("/Users/kathryn/Desktop/woochoper-ios/Nosfy/Media/BoosterLeve.wav", "w") as w:
     w.setnchannels(1)
     w.setsampwidth(2)
     w.setframerate(SR)

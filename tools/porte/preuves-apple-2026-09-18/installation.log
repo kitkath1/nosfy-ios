@@ -1,0 +1,31 @@
+PASS format Key ID / Team ID
+PASS fichier PKCS8 présent
+PASS clé EC P-256 lisible
+PASS quatre secrets Apple configurés
+PASS présence des quatre secrets relue
+PASS compte QA temporaire créé
+PASS session QA ordinaire
+{
+  "lu_le_utc": "2026-09-18T06:57:55.403477+00:00",
+  "key_id": "JBXG6FH45V",
+  "team_id": "V45F4LUU8D",
+  "client_id": "fr.kathryn.woop",
+  "secrets_presents": {
+    "APPLE_KEY_ID": true,
+    "APPLE_TEAM_ID": true,
+    "APPLE_CLIENT_ID": true,
+    "APPLE_PRIVATE_KEY": true
+  },
+  "probe": {
+    "http": 502,
+    "raison": "apple_400",
+    "apple_error": "invalid_grant"
+  },
+  "connexion_apple_reelle_testee": false,
+  "revocation_reelle_testee": false
+}
+PASS la fonction joint Apple avec la clé chargée
+PASS Apple refuse le code factice (invalid_grant)
+PASS compte QA temporaire supprimé
+PASS suppression du compte QA relue
+Configuration mesurée ; vraie connexion et révocation Apple encore à tester.

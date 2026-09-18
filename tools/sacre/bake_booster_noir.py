@@ -3,7 +3,7 @@
 
 Le maillage `booster.bin` lit UNE texture 2048² qui porte les DEUX peaux du
 sachet côte à côte. Les rectangles sont MESURÉS sur l'atlas jaune existant
-(`Woop/Media/booster-color.png`, le reste de l'image est du noir pur) :
+(`Nosfy/Media/booster-color.png`, le reste de l'image est du noir pur) :
 
     FACE : colonnes 722 → 1317, lignes 57 → 1989   (596 × 1933)
     DOS  : colonnes 1428 → 2023, lignes 57 → 1989  (596 × 1933)
@@ -35,7 +35,7 @@ d'encre disparaît dans l'anneau. Son intensité se règle ensuite côté matiè
 
 Usage :  python3 tools/sacre/bake_booster_noir.py
 Entrées : ~/Desktop/face_booster_noir.png, ~/Desktop/dos_booster_noir.png
-Sorties : Woop/Media/booster-noir-color.png, Woop/Media/booster-noir-emiss.png
+Sorties : Nosfy/Media/booster-noir-color.png, Nosfy/Media/booster-noir-emiss.png
           tools/sacre/noir/preview-*.png (les planches de verdict)
 """
 
@@ -45,7 +45,7 @@ import numpy as np
 
 RACINE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 BUREAU = os.path.expanduser("~/Desktop")
-MEDIA = os.path.join(RACINE, "Woop", "Media")
+MEDIA = os.path.join(RACINE, "Nosfy", "Media")
 SORTIE = os.path.join(RACINE, "tools", "sacre", "noir")
 
 ATLAS = 2048

@@ -12,31 +12,31 @@ COPIE="${1:-/tmp/woop-navtest}"
 
 mkdir -p "$COPIE"
 rsync -a --delete --exclude .git --exclude 'dd-*' --exclude build \
-  --exclude docs --exclude tools --exclude WoopUITests \
-  --exclude 'Woop.xcodeproj/xcuserdata' \
-  "$DEPOT/Woop" "$DEPOT/WoopShared" "$DEPOT/WoopWidgets" \
-  "$DEPOT/Woop.xcodeproj" "$COPIE/" || exit 1
+  --exclude docs --exclude tools --exclude NosfyUITests \
+  --exclude 'Nosfy.xcodeproj/xcuserdata' \
+  "$DEPOT/Nosfy" "$DEPOT/NosfyShared" "$DEPOT/NosfyWidgets" \
+  "$DEPOT/Nosfy.xcodeproj" "$COPIE/" || exit 1
 
-# 1) le pbxproj : la cible WoopUITests (patch par ANCRES, refuse si déjà là)
+# 1) le pbxproj : la cible NosfyUITests (patch par ANCRES, refuse si déjà là)
 # (le rsync vient de remettre le pbxproj VIERGE du dépôt : le patch
 #  s'applique à chaque montage — un échec ici = une ancre a bougé)
-python3 "$ICI/applique_patch.py" "$COPIE/Woop.xcodeproj/project.pbxproj" || exit 1
+python3 "$ICI/applique_patch.py" "$COPIE/Nosfy.xcodeproj/project.pbxproj" || exit 1
 
 # 2) le scheme partagé
-mkdir -p "$COPIE/Woop.xcodeproj/xcshareddata/xcschemes"
-cp "$ICI/WoopUITests.xcscheme" "$COPIE/Woop.xcodeproj/xcshareddata/xcschemes/"
+mkdir -p "$COPIE/Nosfy.xcodeproj/xcshareddata/xcschemes"
+cp "$ICI/NosfyUITests.xcscheme" "$COPIE/Nosfy.xcodeproj/xcshareddata/xcschemes/"
 
 # 3) les hooks app (FouettageNav.swift + 2 édits par ancres)
-cp "$ICI/hooks/FouettageNav.swift" "$COPIE/Woop/Views/"
+cp "$ICI/hooks/FouettageNav.swift" "$COPIE/Nosfy/Views/"
 python3 "$ICI/applique_hooks.py" "$COPIE" || exit 1
 
 # 4) les fichiers de test
-mkdir -p "$COPIE/WoopUITests"
+mkdir -p "$COPIE/NosfyUITests"
 cp "$ICI/tests/BancNav.swift" "$ICI/tests/FouettageNavUITests.swift" \
-   "$ICI/tests/FouettageNavFilm.swift" "$COPIE/WoopUITests/"
+   "$ICI/tests/FouettageNavFilm.swift" "$COPIE/NosfyUITests/"
 
 # 5) la preuve que la structure tient
-plutil -lint "$COPIE/Woop.xcodeproj/project.pbxproj" || exit 1
-xcodebuild -project "$COPIE/Woop.xcodeproj" -list 2>/dev/null | grep -q WoopUITests || {
-  echo "la cible WoopUITests n'apparaît pas"; exit 1; }
+plutil -lint "$COPIE/Nosfy.xcodeproj/project.pbxproj" || exit 1
+xcodebuild -project "$COPIE/Nosfy.xcodeproj" -list 2>/dev/null | grep -q NosfyUITests || {
+  echo "la cible NosfyUITests n'apparaît pas"; exit 1; }
 echo "BANC MONTÉ dans $COPIE (code du jour re-synchronisé)"
