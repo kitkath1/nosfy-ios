@@ -1281,6 +1281,14 @@ struct CourantAscendant: View {
 /// mouvements continus), gestes UIKit — le hit-test décide si le doigt
 /// fait tourner le sachet ou tranche la bande (la découpe ne s'arme que
 /// recto posé face caméra).
+private final class BoosterPoseSCNView: SCNView {
+    var apresLayout: (() -> Void)?
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        apresLayout?()
+    }
+}
+
 struct BoosterStage: UIViewRepresentable {
     var still: Bool
     var frozenTear: Float?
@@ -1303,6 +1311,10 @@ struct BoosterStage: UIViewRepresentable {
     /// MÊME à 60 fps — le géant du profil scrollé hors de vue coûtait
     /// 560×700 en continu sous toute la page.
     var paused: Bool = false
+    /// Un décor visible peut dormir sans disparaître : conserver sa pose
+    /// en image et détacher la scène. Réservé au sachet non interactif du
+    /// Profil ; le manège et le sachet manipulable gardent leurs gestes.
+    var poseAuRepos: Bool = false
     /// Le profil présente son sachet à 30 Hz ; les autres hôtes gardent
     /// leur cadence, notamment la cérémonie à 60 Hz.
     var preferredFramesPerSecond: Int = 60
@@ -1326,7 +1338,10 @@ struct BoosterStage: UIViewRepresentable {
     var cadreDecoupe: Bool = false
 
     func makeUIView(context: Context) -> SCNView {
-        let view = SCNView()
+        let view = BoosterPoseSCNView()
+        view.apresLayout = { [weak coordinateur = context.coordinator] in
+            coordinateur?.actualiserPose()
+        }
         if NavDiagnostic.actif {
             NavDiagnostic.enregistrer(view, role: "booster") {
                 [weak coordinateur = context.coordinator] in
@@ -1405,7 +1420,7 @@ struct BoosterStage: UIViewRepresentable {
         if CommandLine.arguments.contains("-boosterHoldDemo") {
             context.coordinator.holdDemo()
         }
-        context.coordinator.setPaused(paused)
+        context.coordinator.appliquerRepos(paused: paused, poseVisible: poseAuRepos)
         return view
     }
 
@@ -1419,7 +1434,7 @@ struct BoosterStage: UIViewRepresentable {
         if uiView.preferredFramesPerSecond != preferredFramesPerSecond {
             uiView.preferredFramesPerSecond = preferredFramesPerSecond
         }
-        context.coordinator.setPaused(paused)
+        context.coordinator.appliquerRepos(paused: paused, poseVisible: poseAuRepos)
     }
 
     /// LE MANÈGE NE DOIT PAS SURVIVRE À SON ÉCRAN. Sans ce démontage, sa
@@ -1438,6 +1453,53 @@ struct BoosterStage: UIViewRepresentable {
     final class Coordinator: NSObject, UIGestureRecognizerDelegate,
                              SCNSceneRendererDelegate {
         private weak var view: SCNView?
+        private var pauseDemandee = false
+        private var poseDemandee = false
+        private var imageDeRepos: UIImageView?
+        private var taillePose = CGSize.zero
+        private var capturePoseEnCours = false
+
+        func appliquerRepos(paused: Bool, poseVisible: Bool) {
+            pauseDemandee = paused
+            poseDemandee = poseVisible
+            actualiserPose()
+        }
+
+        func actualiserPose() {
+            guard !demonte, !frozen, !capturePoseEnCours, let view else { return }
+            capturePoseEnCours = true
+            defer { capturePoseEnCours = false }
+            if pauseDemandee {
+                imageDeRepos?.removeFromSuperview()
+                imageDeRepos = nil
+                setPaused(true)
+                return
+            }
+            guard poseDemandee else {
+                setPaused(false)
+                imageDeRepos?.removeFromSuperview()
+                imageDeRepos = nil
+                return
+            }
+            // La première mise à jour précède parfois le layout. Attendre
+            // sa taille réelle évite de garder une capture vide au montage.
+            guard view.bounds.width > 0, view.bounds.height > 0 else { return }
+            if imageDeRepos == nil || taillePose != view.bounds.size {
+                setPaused(false)
+                let pose = view.snapshot()
+                let image = imageDeRepos ?? UIImageView()
+                image.image = pose
+                image.frame = view.bounds
+                image.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+                image.isUserInteractionEnabled = false
+                image.accessibilityIdentifier = "booster-pose-repos"
+                if image.superview == nil { view.addSubview(image) }
+                imageDeRepos = image
+                taillePose = view.bounds.size
+                NavDiagnostic.noter("booster-pose-repos", destination: "image-visible")
+            }
+            setPaused(true)
+        }
         /// La scène a mis de VRAIS pixels à l'écran — flag + IDENTITÉ
         /// de scène lus/écrits ENSEMBLE sous verrou (fil de rendu ↔
         /// main). L'identité protège le replay : une frame de
@@ -1976,6 +2038,9 @@ struct BoosterStage: UIViewRepresentable {
         func teardown() {
             guard !demonte else { return }
             demonte = true
+            imageDeRepos?.removeFromSuperview()
+            imageDeRepos = nil
+            (view as? BoosterPoseSCNView)?.apresLayout = nil
             hostPaused = true
             stopSpin()
             stopScroll()

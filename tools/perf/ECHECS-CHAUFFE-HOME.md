@@ -1,5 +1,18 @@
 # Chauffe Home — registre des échecs et des mesures invalides
 
+### E76 — Reboot76, suspension XCTest et décor Profil non protégé
+
+18-09 : deux captures Instruments rompues ; fragment1,475495s invalide pour
+un contrôle système app arrêtée. Repos explicite210s vers thermique0, puis
+verrou iOS. Reprise partie nominale : app suspendue après34s, requête Retour
+expirée. Le spindump confirme une suspension, pas un gel du fil principal.
+Au retour actif, thermique1→2 ; le sachet conserve30rendus/s sous protection1.
+SIGTERM confirmé11:24:22, restauration sans sonde puis arrêt11:25:26.
+Le defer XCTest ne garantit pas l’arrêt après un échec de requête Objective-C ;
+la garde du runner ne couvre pas son attente bloquée. Collecte USB sans relance
+après lenteur CoreDevice. Correctif78 du décor préparé ; pas encore installé.
+[Reprise, preuves et limites](campagnes/2026-09-18-chauffe76-apres-reboot/etat.md).
+
 ### Live Activity lune — 18-09 : exports du banc invalides, aucune mesure thermique
 
 Le banc partagé SwiftUI a d’abord été exporté avec ImageRenderer : jauge native

@@ -1,0 +1,16 @@
+{
+  "collecte_utc": "2026-09-18T09:23:49.384051+00:00",
+  "udid": "00008120-001E4CDC0A85A01E",
+  "appareil": "iPhone de Frédéric",
+  "transport": "afcclient --container fr.kathryn.woop",
+  "sources": {
+    "vol": {
+      "source": "vol-20260918-111828.jsonl",
+      "lignes": 65
+    },
+    "nav": {
+      "source": "nav-20260918-111828.jsonl",
+      "lignes": 88
+    }
+  }
+}

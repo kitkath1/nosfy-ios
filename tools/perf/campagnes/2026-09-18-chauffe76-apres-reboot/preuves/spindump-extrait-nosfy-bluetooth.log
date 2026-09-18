@@ -1,0 +1,267 @@
+Date/Time:        2026-09-18 11:20:01.471 +0200
+End time:         2026-09-18 11:20:06.469 +0200
+OS Version:       iPhone OS 26.6.1 (Build 23G83)
+Architecture:     arm64e
+Report Version:   72
+Incident Identifier: C3A4AA94-3DC1-400C-9673-3D6CC4EDF07A
+
+Data Source:      Stackshots
+Shared Cache:     3E3E28EB-075F-3EEC-AC1C-4C3EF03A1AEB slid base address 0x18e2ac000, slide 0xe2ac000 (System Primary)
+Shared Cache:     89C2FAD3-5D22-36FE-9E3B-588C9BFF8634 slid base address 0x18a560000, slide 0xa560000 (DriverKit)
+Shared Cache:     3E3E28EB-075F-3EEC-AC1C-4C3EF03A1AEB slid base address 0x1912d8000, slide 0x112d8000
+Reason:           Requested by testmanagerd [549] - XCTest Diagnostics
+
+Command:          Nosfy
+Path:             /private/var/containers/Bundle/Application/2AED8012-779B-4FF8-A66D-3EBBE13B796B/Nosfy.app/Nosfy
+Identifier:       fr.kathryn.woop
+Version:          1.0 (76)
+Is First Party:   No
+Beta Identifier:  FA5C03F0-D7C5-4924-98A6-082A9E871984
+Architecture:     arm64
+Parent:           launchd [1]
+PID:              773
+Time Since Fork:  93s
+
+Duration:         5.00s
+Steps:            430 (10ms sampling interval, 47 samples avoided due to audio)
+
+Hardware model:   iPhone15,4
+Active cpus:      6
+Memory size:      5.55 GB
+HW page size:     16384
+VM page size:     16384
+Shared cache residency: 8.63% (516.30 MB / 5981.02 MB)
+
+Time Since Boot:  899s
+Time Awake Since Boot: 899s
+Time Since Wake:  n/a (machine hasn't slept)
+
+Total CPU Time:   10.301s (19.8G cycles, 32.7G instructions, 0.61c/i, 1.92GHz avg)
+Advisory levels:  Battery -> 3, User -> 3, ThermalPressure -> 10, Combined -> 1
+Free disk space:  34.69 GB/119.08 GB, low space threshold 150 MB
+Vnodes Available: 60.03% (12007/20000, 10000 allocated, 10000 soft limit)
+Models:           none
+
+Preferred User Language: fr-FR
+Country Code:     FR
+Keyboards:        fr_FR AZERTY-French, emoji Emoji
+OS Cryptex File Extents: 1904
+
+----------------------------------------
+Heavy format: stacks are sorted by count
+----------------------------------------
+
+
+
+Process:          Nosfy [773] (suspended)
+UUID:             47A48872-A1E2-3608-8DA4-0258F974B47D
+Path:             /private/var/containers/Bundle/Application/2AED8012-779B-4FF8-A66D-3EBBE13B796B/Nosfy.app/Nosfy
+Identifier:       fr.kathryn.woop
+Version:          1.0 (76)
+Is First Party:   No
+Beta Identifier:  FA5C03F0-D7C5-4924-98A6-082A9E871984
+Shared Cache:     3E3E28EB-075F-3EEC-AC1C-4C3EF03A1AEB slid base address 0x18e2ac000, slide 0xe2ac000 (System Primary)
+Architecture:     arm64
+Parent:           launchd [1]
+RunningBoard Mgd: Yes
+UID:              501
+Memory Limit:     3072MB
+Jetsam Priority:  0
+Footprint:        220.77 MB
+Time Since Fork:  93s
+Num samples:      430 (1-430)
+Note:             Suspended for 430 samples
+Num threads:      14
+
+  Thread 0x5f65    430 samples (1-430)    priority 4 (base 4)    last ran 57.276s ago
+  430  start + 6928 (dyld + 19484) [0x18e3cdc1c]
+    430  main + 64 (Nosfy + 8505308) [0x1009907dc]
+      430  static App.main() + 172 (SwiftUI + 183368) [0x19a84bc48]
+        430  runApp<A>(_:) + 112 (SwiftUI + 184564) [0x19a84c0f4]
+          430  closure #1 in KitRendererCommon(_:) + 168 (SwiftUI + 198000) [0x19a84f570]
+            430  UIApplicationMain + 332 (UIKitCore + 573784) [0x197460158]
+              430  -[UIApplication _run] + 796 (UIKitCore + 1185392) [0x1974f5670]
+                430  GSEventRunModal + 120 (GraphicsServices + 5272) [0x237791498]
+                  430  _CFRunLoopRunSpecificWithOptions + 532 (CoreFoundation + 189772) [0x1917c154c]
+                    430  __CFRunLoopRun + 1188 (CoreFoundation + 193296) [0x1917c2310]
+                      430  __CFRunLoopServiceMachPort + 160 (CoreFoundation + 414580) [0x1917f8374]
+                        430  mach_msg + 24 (libsystem_kernel.dylib + 16504) [0x240e04078]
+                          430  mach_msg_overwrite + 424 (libsystem_kernel.dylib + 16940) [0x240e0422c]
+                            430  <patched truncated backtrace>
+                              430  mach_msg2_trap + 8 (libsystem_kernel.dylib + 3284) [0x240e00cd4]
+                               *430  ??? (<10241393-C062-3B67-8C8F-41A79A2F6B39> + 660772) [0xfffffff009f9d524] (suspended)
+
+  Thread 0x5f6b    430 samples (1-430)    priority 4 (base 4)    last ran 57.354s ago
+  430  start_wqthread + 0 (libsystem_pthread.dylib + 2232) [0x1f113e8b8]
+   *430  ??? (<10241393-C062-3B67-8C8F-41A79A2F6B39> + 660772) [0xfffffff009f9d524] (suspended)
+
+  Thread 0x5f6d    430 samples (1-430)    priority 4 (base 4)    last ran 56.715s ago
+  430  start_wqthread + 0 (libsystem_pthread.dylib + 2232) [0x1f113e8b8]
+   *430  ??? (<10241393-C062-3B67-8C8F-41A79A2F6B39> + 660772) [0xfffffff009f9d524] (suspended)
+
+  Thread 0x5f7a    430 samples (1-430)    priority 4 (base 4)    last ran 57.345s ago
+  430  start_wqthread + 0 (libsystem_pthread.dylib + 2232) [0x1f113e8b8]
+   *430  ??? (<10241393-C062-3B67-8C8F-41A79A2F6B39> + 660772) [0xfffffff009f9d524] (suspended)
+
+  Thread 0x5f7f    430 samples (1-430)    priority 4 (base 4)    last ran 53.590s ago
+  430  start_wqthread + 0 (libsystem_pthread.dylib + 2232) [0x1f113e8b8]
+   *430  ??? (<10241393-C062-3B67-8C8F-41A79A2F6B39> + 660772) [0xfffffff009f9d524] (suspended)
+
+  Thread 0x5f81    Thread name "com.apple.uikit.eventfetch-thread"    430 samples (1-430)    priority 4 (base 4)    last ran 58.740s ago
+  430  thread_start + 8 (libsystem_pthread.dylib + 2252) [0x1f113e8cc]
+    430  _pthread_start + 136 (libsystem_pthread.dylib + 17464) [0x1f1142438]
+      430  __NSThread__start__ + 732 (Foundation + 583956) [0x18eab2914]
+        430  -[UIEventFetcher threadMain] + 420 (UIKitCore + 945836) [0x1974baeac]
+          430  -[NSRunLoop(NSRunLoop) runUntilDate:] + 64 (Foundation + 43992) [0x18ea2ebd8]
+            430  -[NSRunLoop(NSRunLoop) runMode:beforeDate:] + 212 (Foundation + 44272) [0x18ea2ecf0]
+              430  _CFRunLoopRunSpecificWithOptions + 532 (CoreFoundation + 189772) [0x1917c154c]
+                430  __CFRunLoopRun + 1188 (CoreFoundation + 193296) [0x1917c2310]
+                  430  __CFRunLoopServiceMachPort + 160 (CoreFoundation + 414580) [0x1917f8374]
+                    430  mach_msg + 24 (libsystem_kernel.dylib + 16504) [0x240e04078]
+                      430  mach_msg_overwrite + 424 (libsystem_kernel.dylib + 16940) [0x240e0422c]
+                        430  <patched truncated backtrace>
+                          430  mach_msg2_trap + 8 (libsystem_kernel.dylib + 3284) [0x240e00cd4]
+                           *430  ??? (<10241393-C062-3B67-8C8F-41A79A2F6B39> + 138940) [0xfffffff009f1debc] (suspended)
+
+  Thread 0x5f82    430 samples (1-430)    priority 4 (base 4)    last ran 57.087s ago
+  430  start_wqthread + 0 (libsystem_pthread.dylib + 2232) [0x1f113e8b8]
+   *430  ??? (<10241393-C062-3B67-8C8F-41A79A2F6B39> + 660772) [0xfffffff009f9d524] (suspended)
+
+  Thread 0x5f83    430 samples (1-430)    priority 4 (base 4)    last ran 30.092s ago
+  430  start_wqthread + 0 (libsystem_pthread.dylib + 2232) [0x1f113e8b8]
+   *430  ??? (<10241393-C062-3B67-8C8F-41A79A2F6B39> + 660772) [0xfffffff009f9d524] (suspended)
+
+  Thread 0x5f8f    Thread name "com.apple.CoreMotion.MotionThread"    430 samples (1-430)    priority 4 (base 4)    last ran 57.087s ago
+  430  thread_start + 8 (libsystem_pthread.dylib + 2252) [0x1f113e8cc]
+    430  _pthread_start + 136 (libsystem_pthread.dylib + 17464) [0x1f1142438]
+      430  ??? (CoreMotion + 91516) [0x1aa8d457c]
+        430  CFRunLoopRun + 64 (CoreFoundation + 912868) [0x191871de4]
+          430  _CFRunLoopRunSpecificWithOptions + 532 (CoreFoundation + 189772) [0x1917c154c]
+            430  __CFRunLoopRun + 1188 (CoreFoundation + 193296) [0x1917c2310]
+              430  __CFRunLoopServiceMachPort + 160 (CoreFoundation + 414580) [0x1917f8374]
+                430  mach_msg + 24 (libsystem_kernel.dylib + 16504) [0x240e04078]
+                  430  mach_msg_overwrite + 424 (libsystem_kernel.dylib + 16940) [0x240e0422c]
+                    430  <patched truncated backtrace>
+                      430  mach_msg2_trap + 8 (libsystem_kernel.dylib + 3284) [0x240e00cd4]
+                       *430  ??? (<10241393-C062-3B67-8C8F-41A79A2F6B39> + 660772) [0xfffffff009f9d524] (suspended)
+
+  Thread 0x5f98    Thread name "com.apple.NSURLConnectionLoader"    430 samples (1-430)    priority 4 (base 4)    last ran 89.924s ago
+  430  thread_start + 8 (libsystem_pthread.dylib + 2252) [0x1f113e8cc]
+    430  _pthread_start + 136 (libsystem_pthread.dylib + 17464) [0x1f1142438]
+      430  __NSThread__start__ + 732 (Foundation + 583956) [0x18eab2914]
+        430  +[__CFN_CoreSchedulingSetRunnable _run:] + 416 (CFNetwork + 596820) [0x1a6cd1b54]
+          430  _CFRunLoopRunSpecificWithOptions + 532 (CoreFoundation + 189772) [0x1917c154c]
+            430  __CFRunLoopRun + 1188 (CoreFoundation + 193296) [0x1917c2310]
+              430  __CFRunLoopServiceMachPort + 160 (CoreFoundation + 414580) [0x1917f8374]
+                430  mach_msg + 24 (libsystem_kernel.dylib + 16504) [0x240e04078]
+                  430  mach_msg_overwrite + 424 (libsystem_kernel.dylib + 16940) [0x240e0422c]
+                    430  <patched truncated backtrace>
+                      430  mach_msg2_trap + 8 (libsystem_kernel.dylib + 3284) [0x240e00cd4]
+                       *430  ??? (<10241393-C062-3B67-8C8F-41A79A2F6B39> + 138940) [0xfffffff009f1debc] (suspended)
+
+  Thread 0x5f99    Thread name "caulk::deferred_logger"    430 samples (1-430)    priority 4 (base 4)    last ran 92.891s ago
+  430  thread_start + 8 (libsystem_pthread.dylib + 2252) [0x1f113e8cc]
+    430  _pthread_start + 136 (libsystem_pthread.dylib + 17464) [0x1f1142438]
+      430  void* caulk::thread_proxy<std::__1::tuple<caulk::thread::attributes, void (caulk::concurrent::details::worker_thread::*)(), std::__1::tuple<caulk::concurrent::details::worker_thread*>>>(void*) + 96 (caulk + 32596) [0x2abd13f54]
+        430  caulk::concurrent::details::worker_thread::run() + 32 (caulk + 15544) [0x2abd0fcb8]
+          430  <patched truncated backtrace>
+            430  semaphore_wait_trap + 8 (libsystem_kernel.dylib + 3152) [0x240e00c50]
+             *430  ??? (<10241393-C062-3B67-8C8F-41A79A2F6B39> + 553160) [0xfffffff009f830c8] (suspended)
+
+  Thread 0x5f9a    Thread name "caulk.messenger.shared:high"    430 samples (1-430)    priority 4 (base 4)    last ran 92.891s ago
+  430  thread_start + 8 (libsystem_pthread.dylib + 2252) [0x1f113e8cc]
+    430  _pthread_start + 136 (libsystem_pthread.dylib + 17464) [0x1f1142438]
+      430  void* caulk::thread_proxy<std::__1::tuple<caulk::thread::attributes, void (caulk::concurrent::details::worker_thread::*)(), std::__1::tuple<caulk::concurrent::details::worker_thread*>>>(void*) + 96 (caulk + 32596) [0x2abd13f54]
+        430  caulk::concurrent::details::worker_thread::run() + 32 (caulk + 15544) [0x2abd0fcb8]
+          430  <patched truncated backtrace>
+            430  semaphore_wait_trap + 8 (libsystem_kernel.dylib + 3152) [0x240e00c50]
+             *430  ??? (<10241393-C062-3B67-8C8F-41A79A2F6B39> + 553160) [0xfffffff009f830c8] (suspended)
+
+  Thread 0x5fb0    Thread name "com.apple.scenekit.scnview-renderer"    430 samples (1-430)    priority 4 (base 4)    last ran 57.344s ago
+  430  thread_start + 8 (libsystem_pthread.dylib + 2252) [0x1f113e8cc]
+    430  _pthread_start + 136 (libsystem_pthread.dylib + 17464) [0x1f1142438]
+      430  __SCNRenderThread_start__ + 80 (SceneKit + 908212) [0x22f3fbbb4]
+        430  __85-[SCNView(SCNDisplayLink) _initializeDisplayLinkWithScreen:policy:completionHandler:]_block_invoke + 480 (SceneKit + 44376) [0x22f328d58]
+          430  -[NSRunLoop(NSRunLoop) runMode:beforeDate:] + 212 (Foundation + 44272) [0x18ea2ecf0]
+            430  _CFRunLoopRunSpecificWithOptions + 532 (CoreFoundation + 189772) [0x1917c154c]
+              430  __CFRunLoopRun + 1188 (CoreFoundation + 193296) [0x1917c2310]
+                430  __CFRunLoopServiceMachPort + 160 (CoreFoundation + 414580) [0x1917f8374]
+                  430  mach_msg + 24 (libsystem_kernel.dylib + 16504) [0x240e04078]
+                    430  mach_msg_overwrite + 424 (libsystem_kernel.dylib + 16940) [0x240e0422c]
+                      430  <patched truncated backtrace>
+                        430  mach_msg2_trap + 8 (libsystem_kernel.dylib + 3284) [0x240e00cd4]
+                         *430  ??? (<10241393-C062-3B67-8C8F-41A79A2F6B39> + 660772) [0xfffffff009f9d524] (suspended)
+
+  Thread 0x648c    Thread name "com.apple.SwiftUI.AsyncRenderer"    430 samples (1-430)    priority 4 (base 4)    last ran 57.809s ago
+  430  thread_start + 8 (libsystem_pthread.dylib + 2252) [0x1f113e8cc]
+    430  _pthread_start + 136 (libsystem_pthread.dylib + 17464) [0x1f1142438]
+      430  __NSThread__start__ + 732 (Foundation + 583956) [0x18eab2914]
+        430  @objc static ViewGraphDisplayLink.asyncThread(arg:) + 72 (SwiftUICore + 2290504) [0x19bd27348]
+          430  specialized static ViewGraphDisplayLink.asyncThread(arg:) + 760 (SwiftUICore + 2291288) [0x19bd27658]
+            430  -[NSRunLoop(NSRunLoop) run] + 64 (Foundation + 62204) [0x18ea332fc]
+              430  -[NSRunLoop(NSRunLoop) runMode:beforeDate:] + 212 (Foundation + 44272) [0x18ea2ecf0]
+                430  _CFRunLoopRunSpecificWithOptions + 532 (CoreFoundation + 189772) [0x1917c154c]
+                  430  __CFRunLoopRun + 1188 (CoreFoundation + 193296) [0x1917c2310]
+                    430  __CFRunLoopServiceMachPort + 160 (CoreFoundation + 414580) [0x1917f8374]
+                      430  mach_msg + 24 (libsystem_kernel.dylib + 16504) [0x240e04078]
+                        430  mach_msg_overwrite + 424 (libsystem_kernel.dylib + 16940) [0x240e0422c]
+                          430  <patched truncated backtrace>
+                            430  mach_msg2_trap + 8 (libsystem_kernel.dylib + 3284) [0x240e00cd4]
+                             *430  ??? (<10241393-C062-3B67-8C8F-41A79A2F6B39> + 138940) [0xfffffff009f1debc] (suspended)
+
+  Binary Images:
+           0x100174000 -        0x100ce7fff  fr.kathryn.woop 1.0 (76)                 <47A48872-A1E2-3608-8DA4-0258F974B47D>             /private/var/containers/Bundle/Application/2AED8012-779B-4FF8-A66D-3EBBE13B796B/Nosfy.app/Nosfy
+           0x18e3c9000 -        0x18e470fff  dyld (1387)                              <0F8D35B6-556F-3E34-8EAA-80AB54047DC5>             /usr/lib/dyld
+           0x18ea24000 -        0x18f8adcbf  com.apple.Foundation 6.9 (5026.6.7)      <73841AA3-BFDD-322D-8DC2-E5185A14DEE1>             /System/Library/Frameworks/Foundation.framework/Foundation
+           0x191793000 -        0x191d2fa3f  com.apple.CoreFoundation 6.9 (5026.6.7)  <101EB2F1-1915-34A0-8BC9-631D03753B84>             /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation
+           0x1973d4000 -        0x19991763f  com.apple.UIKitCore 1.0 (9126.6.8)       <0D94422F-FE7C-302E-B896-3BC5873C0CFC>             /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore
+           0x19a81f000 -        0x19baaa99f  com.apple.SwiftUI 7.6.1 (7.6.1)          <17ADC54E-93AB-3F13-B469-E3F53181FC4D>             /System/Library/Frameworks/SwiftUI.framework/SwiftUI
+           0x19baf8000 -        0x19c9f47bf  com.apple.SwiftUICore 7.6.1 (7.6.1)      <82A21CE4-4E43-38FB-9862-F0BE7B909DF1>             /System/Library/Frameworks/SwiftUICore.framework/SwiftUICore
+           0x1a6c40000 -        0x1a6ff077f  com.apple.CFNetwork 1.0 (3860.700.1)     <3AE849FE-8A7D-388C-86EF-64DEDB9FC5C6>             /System/Library/Frameworks/CFNetwork.framework/CFNetwork
+           0x1aa8be000 -        0x1aad1533f  com.apple.coremotion 3077.0.4 (3077.0.4) <33533CA9-F9FB-3516-AF0A-03C1B9469F97>             /System/Library/Frameworks/CoreMotion.framework/CoreMotion
+           0x1f113e000 -        0x1f114a4ef  libsystem_pthread.dylib (539.100.4)      <34B44744-BC64-386E-AB90-EEE86B23AC46>             /usr/lib/system/libsystem_pthread.dylib
+           0x22f31e000 -        0x22f7cce1f  com.apple.SceneKit 1.0 (608.600)         <6824F87C-D69B-3CC9-8164-F9BD471CE7A3>             /System/Library/Frameworks/SceneKit.framework/SceneKit
+           0x237790000 -        0x2377987bf  com.apple.GraphicsServices 1.0 (1.0)     <411165E2-EE8E-380E-B254-9977273971E3>             /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices
+           0x240e00000 -        0x240e3bb1f  libsystem_kernel.dylib (12377.162.14)    <18665B3F-6D51-33AB-B9E9-63062200EC42>             /usr/lib/system/libsystem_kernel.dylib
+           0x2abd0c000 -        0x2abd3501f  com.apple.audio.caulk 1.0 (214.701)      <5DD354FB-A86F-3732-8F36-A88736414F79>             /System/Library/PrivateFrameworks/caulk.framework/caulk
+   *0xfffffff009efc000 - 0xfffffff00a74bfff  ??? (25.6.0)                             <10241393-C062-3B67-8C8F-41A79A2F6B39>__TEXT_EXEC
+
+
+Process:          BTLEServer [427]
+UUID:             2C87E0C6-41E3-3B04-A419-58DA6F6EDD70
+Path:             /usr/sbin/BTLEServer
+Shared Cache:     3E3E28EB-075F-3EEC-AC1C-4C3EF03A1AEB slid base address 0x18e2ac000, slide 0xe2ac000 (System Primary)
+Architecture:     arm64e
+Parent:           launchd [1]
+UID:              501
+Sudden Term:      Tracked (allows idle exit)
+Memory Limit:     12MB
+Jetsam Priority:  120
+Footprint:        4496 KB
+Time Since Fork:  862s
+Num samples:      430 (1-430)
+Num threads:      2
+Note:             1 idle work queue thread omitted
+
+  Thread 0x1748    430 samples (1-430)    priority 31 (base 31)    last ran 293.131s ago
+  430  start + 6928 (dyld + 19484) [0x18e3cdc1c]
+    430  ??? (BTLEServer + 178880) [0x10243fac0]
+      430  -[NSRunLoop(NSRunLoop) run] + 64 (Foundation + 62204) [0x18ea332fc]
+        430  -[NSRunLoop(NSRunLoop) runMode:beforeDate:] + 212 (Foundation + 44272) [0x18ea2ecf0]
+          430  _CFRunLoopRunSpecificWithOptions + 532 (CoreFoundation + 189772) [0x1917c154c]
+            430  __CFRunLoopRun + 1188 (CoreFoundation + 193296) [0x1917c2310]
+              430  __CFRunLoopServiceMachPort + 160 (CoreFoundation + 414580) [0x1917f8374]
+                430  mach_msg + 24 (libsystem_kernel.dylib + 16504) [0x240e04078]
+                  430  mach_msg_overwrite + 424 (libsystem_kernel.dylib + 16940) [0x240e0422c]
+                    430  <patched truncated backtrace>
+                      430  mach_msg2_trap + 8 (libsystem_kernel.dylib + 3284) [0x240e00cd4]
+                       *430  ??? (<10241393-C062-3B67-8C8F-41A79A2F6B39> + 138940) [0xfffffff009f1debc]
+
+  Binary Images:
+           0x102414000 -        0x1024fbfff  BTLEServer (356.1)                      <2C87E0C6-41E3-3B04-A419-58DA6F6EDD70>             /usr/sbin/BTLEServer
+           0x18e3c9000 -        0x18e470fff  dyld (1387)                             <0F8D35B6-556F-3E34-8EAA-80AB54047DC5>             /usr/lib/dyld
+           0x18ea24000 -        0x18f8adcbf  com.apple.Foundation 6.9 (5026.6.7)     <73841AA3-BFDD-322D-8DC2-E5185A14DEE1>             /System/Library/Frameworks/Foundation.framework/Foundation
+           0x191793000 -        0x191d2fa3f  com.apple.CoreFoundation 6.9 (5026.6.7) <101EB2F1-1915-34A0-8BC9-631D03753B84>             /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation
+           0x240e00000 -        0x240e3bb1f  libsystem_kernel.dylib (12377.162.14)   <18665B3F-6D51-33AB-B9E9-63062200EC42>             /usr/lib/system/libsystem_kernel.dylib
+   *0xfffffff009efc000 - 0xfffffff00a74bfff  ??? (25.6.0)                            <10241393-C062-3B67-8C8F-41A79A2F6B39>__TEXT_EXEC
+

@@ -1,0 +1,142 @@
+{
+  "debut": "2026-09-18T11:09:11.480+02:00",
+  "duree_trace_s": 1.475495,
+  "cpu_running": [
+    {
+      "processus": "backboardd (70)",
+      "poids_ms": 537.0,
+      "equivalent_pct_un_coeur": 36.39
+    },
+    {
+      "processus": "Nosfy (461)",
+      "poids_ms": 394.0,
+      "equivalent_pct_un_coeur": 26.7
+    },
+    {
+      "processus": "kernel (0)",
+      "poids_ms": 174.0,
+      "equivalent_pct_un_coeur": 11.79
+    },
+    {
+      "processus": "DTServiceHub (483)",
+      "poids_ms": 142.0,
+      "equivalent_pct_un_coeur": 9.62
+    },
+    {
+      "processus": "logd (33)",
+      "poids_ms": 62.0,
+      "equivalent_pct_un_coeur": 4.2
+    },
+    {
+      "processus": "mediaplaybackd (269)",
+      "poids_ms": 38.0,
+      "equivalent_pct_un_coeur": 2.58
+    },
+    {
+      "processus": "videocodecd (278)",
+      "poids_ms": 26.0,
+      "equivalent_pct_un_coeur": 1.76
+    },
+    {
+      "processus": "remotepairingdeviced (64)",
+      "poids_ms": 21.0,
+      "equivalent_pct_un_coeur": 1.42
+    },
+    {
+      "processus": "mediaparserd (279)",
+      "poids_ms": 12.0,
+      "equivalent_pct_un_coeur": 0.81
+    },
+    {
+      "processus": "PerfPowerServices (494)",
+      "poids_ms": 10.0,
+      "equivalent_pct_un_coeur": 0.68
+    },
+    {
+      "processus": "com.apple.DriverKit-AppleBCMWLA (112)",
+      "poids_ms": 9.0,
+      "equivalent_pct_un_coeur": 0.61
+    },
+    {
+      "processus": "locationd (76)",
+      "poids_ms": 8.0,
+      "equivalent_pct_un_coeur": 0.54
+    },
+    {
+      "processus": "UserEventAgent (32)",
+      "poids_ms": 6.0,
+      "equivalent_pct_un_coeur": 0.41
+    },
+    {
+      "processus": "sharingd (74)",
+      "poids_ms": 4.0,
+      "equivalent_pct_un_coeur": 0.27
+    },
+    {
+      "processus": "audiomxd (110)",
+      "poids_ms": 2.0,
+      "equivalent_pct_un_coeur": 0.14
+    },
+    {
+      "processus": "symptomsd (141)",
+      "poids_ms": 2.0,
+      "equivalent_pct_un_coeur": 0.14
+    },
+    {
+      "processus": "powerd (48)",
+      "poids_ms": 2.0,
+      "equivalent_pct_un_coeur": 0.14
+    },
+    {
+      "processus": "bluetoothd (97)",
+      "poids_ms": 2.0,
+      "equivalent_pct_un_coeur": 0.14
+    },
+    {
+      "processus": "SpringBoard (35)",
+      "poids_ms": 1.0,
+      "equivalent_pct_un_coeur": 0.07
+    },
+    {
+      "processus": "contextstored (67)",
+      "poids_ms": 1.0,
+      "equivalent_pct_un_coeur": 0.07
+    },
+    {
+      "processus": "watchdogd (61)",
+      "poids_ms": 1.0,
+      "equivalent_pct_un_coeur": 0.07
+    },
+    {
+      "processus": "OpalDeviceActivityMonitor (468)",
+      "poids_ms": 1.0,
+      "equivalent_pct_un_coeur": 0.07
+    },
+    {
+      "processus": "audioclocksyncd (213)",
+      "poids_ms": 1.0,
+      "equivalent_pct_un_coeur": 0.07
+    },
+    {
+      "processus": "cameracaptured (68)",
+      "poids_ms": 1.0,
+      "equivalent_pct_un_coeur": 0.07
+    },
+    {
+      "processus": "callservicesd (153)",
+      "poids_ms": 1.0,
+      "equivalent_pct_un_coeur": 0.07
+    },
+    {
+      "processus": "com.apple.dt.instruments.dtsecu (484)",
+      "poids_ms": 1.0,
+      "equivalent_pct_un_coeur": 0.07
+    },
+    {
+      "processus": "duetexpertd (513)",
+      "poids_ms": 1.0,
+      "equivalent_pct_un_coeur": 0.07
+    }
+  ],
+  "limite": "Samples statistiques Running ; aucune mesure de watts ou de température."
+}

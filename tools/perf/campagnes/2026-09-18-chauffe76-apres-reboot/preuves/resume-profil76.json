@@ -1,0 +1,35 @@
+{
+  "profil-nominal": {
+    "lignes": 19,
+    "t": [
+      15.2,
+      33.5
+    ],
+    "duree": 18.3,
+    "cpu_mediane": 39,
+    "callbacks_mediane": 60.1,
+    "thermiques": [
+      0
+    ],
+    "protection": [
+      0
+    ]
+  },
+  "profil-repris": {
+    "lignes": 20,
+    "t": [
+      300.9,
+      320.2
+    ],
+    "duree": 19.3,
+    "cpu_mediane": 23.0,
+    "callbacks_mediane": 60.1,
+    "thermiques": [
+      1,
+      2
+    ],
+    "protection": [
+      1
+    ]
+  }
+}

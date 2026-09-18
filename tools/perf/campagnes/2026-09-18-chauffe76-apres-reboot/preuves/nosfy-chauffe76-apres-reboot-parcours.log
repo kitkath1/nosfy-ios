@@ -1,0 +1,44 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-stories71-runtime-dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun -destination platform=iOS,id=00008120-001E4CDC0A85A01E -parallel-testing-enabled NO "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testParcours76" -resultBundlePath /tmp/nosfy-chauffe76-apres-reboot-parcours.xcresult
+
+2026-09-18 11:09:52.917 xcodebuild[77436:18869522] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/nosfy-chauffe76-apres-reboot-parcours.xcresult
+
+2026-09-18 11:09:52.935 xcodebuild[77436:18869522] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 11:09:53.036 xcodebuild[77436:18869522] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 11:09:53.179 xcodebuild[77436:18869522] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-18 11:09:55.503 xcodebuild[77436:18869522] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 11:10:01.906191+0200 NavRuntimeUITests-Runner[567:11404] [Default] Running tests...
+2026-09-18 11:10:07.102 xcodebuild[77436:18869522] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-18 11:10:09.049.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-18 11:10:09.049.
+Test Suite 'NavRuntimeUITests' started at 2026-09-18 11:10:09.050.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testParcours76]' started.
+    t =     0.00s Start Test at 2026-09-18 11:10:09.051
+    t =     0.04s Set Up
+THERMIQUE AU DEPART 1
+/tmp/woop-stories71-runtime/NavRuntimeUITests.swift:41: -[NavRuntimeUITests.NavRuntimeUITests testParcours76] : Test skipped - Départ nominal requis pour cette endurance
+    t =     0.04s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testParcours76]' skipped (0.051 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-18 11:10:09.102.
+	 Executed 1 test, with 1 test skipped and 0 failures (0 unexpected) in 0.051 (0.052) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-18 11:10:09.102.
+	 Executed 1 test, with 1 test skipped and 0 failures (0 unexpected) in 0.051 (0.053) seconds
+Test Suite 'Selected tests' passed at 2026-09-18 11:10:09.103.
+	 Executed 1 test, with 1 test skipped and 0 failures (0 unexpected) in 0.051 (0.054) seconds
+2026-09-18 11:10:09.317 xcodebuild[77436:18869522] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 11:10:09.453 xcodebuild[77436:18869522] [MT] IDETestOperationsObserverDebug: 13.942 elapsed -- Testing started completed.
+2026-09-18 11:10:09.453 xcodebuild[77436:18869522] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-18 11:10:09.453 xcodebuild[77436:18869522] [MT] IDETestOperationsObserverDebug: 13.942 sec, +13.942 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/nosfy-chauffe76-apres-reboot-parcours.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

@@ -1,0 +1,30 @@
+▲ Next.js 16.3.3 (webpack)
+✓ Running next.config.ts took 87ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 4.5s
+  Running TypeScript ...
+  Finished TypeScript in 7.7s ...
+  Collecting page data using 5 workers ...
+  Generating static pages using 5 workers (0/4) ...
+  Generating static pages using 5 workers (1/4) 
+  Generating static pages using 5 workers (2/4) 
+  Generating static pages using 5 workers (3/4) 
+✓ Generating static pages using 5 workers (4/4) in 1290ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+└ ○ /icon.svg
+
+
+○  (Static)  prerendered as static content
+
+inliner : /private/tmp/nosfy-session-commits/checkout/docs/site/out/index.html
+   retirés  : 24 <script> · 7 <link> · 0 attributs Next · 284 commentaires RSC · 1 meta
+   inlinés  : 1 feuille(s) (49636 o) · 1 url() (99780 o) · 58 média(s) (498198 o) · site.js (9066 o)
+   titre    : Documentation Nosfy
+   livrable : /private/tmp/nosfy-session-commits/checkout/docs/site/index.html · 1928914 o (1.93 Mo) · 1 <script>
+   ✔ écrit

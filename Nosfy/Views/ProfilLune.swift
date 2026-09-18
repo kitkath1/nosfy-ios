@@ -4,6 +4,13 @@ import SwiftUI
 
 // MARK: - LA PAGE PROFIL — la maison des cartes
 
+private enum ReposDecorProfil {
+    static var actif: Bool {
+        ProtectionThermique.shared.ambianceAuRepos
+            || CommandLine.arguments.contains("-profilRepos")
+    }
+}
+
 /// La refonte du 14-08 (« on va s'amuser un peu !! ») : l'ancienne page à
 /// trois cartes est morte. À sa place : le halo de la home versé depuis la
 /// DROITE (`bgAuroraProfil`, le champ miroité), le rond aux initiales en
@@ -1067,12 +1074,13 @@ struct TirageBooster: View {
     /// doit pas continuer à rendre. La même porte couvre les deux sachets.
     private var dort: Bool {
         ongletCache || scenePhase != .active || SacreEtat.shared.manegeOuvert
+            || RythmeEcran.shared.storyVisible
     }
     /// À 110 pt de scroll, le fondu du footer vaut exactement zéro.
     /// L'invitation a sa propre porte : elle ne pilote ni le rendu 3D
     /// ni les gestes, et ne se réveille pas pour vérifier une invisibilité.
     private var invitationAuRepos: Bool {
-        dort || scrollY >= 110 || ouvert || enterre || planque
+        dort || ReposDecorProfil.actif || scrollY >= 110 || ouvert || enterre || planque
             || tire != 0 || pousse != 0
     }
     private var cadenceBooster: Int {
@@ -1129,6 +1137,7 @@ struct TirageBooster: View {
                                      // (l'opacité seule ne suspend pas
                                      // un SCNView — 60 fps pour rien).
                                      paused: dort || fondu < 0.02,
+                                     poseAuRepos: ReposDecorProfil.actif,
                                      preferredFramesPerSecond: cadenceBooster)
                             .frame(width: 560, height: 700)
                             .rotationEffect(.degrees(-8))
@@ -1147,7 +1156,7 @@ struct TirageBooster: View {
                         // `if fondu > 0.1` structurel insérait/retirait
                         // ce sous-arbre à CHAQUE frame de scroll autour
                         // du seuil : le « beug sévère » des réapparitions.
-                        FlechesInvite(taille: 15, paused: dort || fondu <= 0)
+                        FlechesInvite(taille: 15, paused: dort || ReposDecorProfil.actif || fondu <= 0)
                             .offset(x: 0,
                                     y: -152 + enfoui + pousse
                                         - tire - invite)
@@ -1204,7 +1213,7 @@ struct TirageBooster: View {
                         // blanches l'invitent. Un tap (ou un tirage) et
                         // le géant rejaillit.
                         VStack(spacing: 7) {
-                            FlechesInvite(taille: 12, paused: dort || fondu <= 0)
+                            FlechesInvite(taille: 12, paused: dort || ReposDecorProfil.actif || fondu <= 0)
                             // ⚠️ LA BRAISE NE SE REDESSINE PLUS, ELLE
                             // S'ANIME (05-09, voir `LisereRespirant`) :
                             // l'horloge refabriquait deux gaussiennes et le
@@ -1239,7 +1248,7 @@ struct TirageBooster: View {
                             }
                             .frame(width: 40, height: 40)
                             } else {
-                                PoigneeBraise(paused: dort || fondu <= 0)
+                                PoigneeBraise(paused: dort || ReposDecorProfil.actif || fondu <= 0)
                             }
                         }
                         .offset(y: 6)
@@ -1412,7 +1421,7 @@ struct TirageBooster: View {
                 // sa respiration interne, une DANSE lente : balancement
                 // ±2,5° et souffle d'échelle, périodes premières.
                 TimelineView(.animation(minimumInterval: RythmeEcran.pas,
-                                        paused: dort)) { tl in
+                                        paused: dort || ReposDecorProfil.actif)) { tl in
                     let t = tl.date.timeIntervalSinceReferenceDate
                     BoosterStage(still: false, frozenTear: nil,
                                  startOpen: false, paused: dort,
@@ -1626,7 +1635,7 @@ private struct RondAvatarAnime: View {
     private var immobile: Bool {
         !monte || !visibleDansScroll || ongletCache
             || scenePhase != .active || reduceMotion
-            || RythmeEcran.dort("profile")
+            || RythmeEcran.dort("profile") || ReposDecorProfil.actif
     }
 
     /// Les deux phases — les seules choses qui bougent.
@@ -2455,7 +2464,7 @@ struct BanniereHalos: View {
     private var dort: Bool {
         !monte || !visibleDansScroll || ongletCache
             || scenePhase != .active || reduceMotion
-            || RythmeEcran.dort("profile")
+            || RythmeEcran.dort("profile") || ReposDecorProfil.actif
     }
 
     var body: some View {

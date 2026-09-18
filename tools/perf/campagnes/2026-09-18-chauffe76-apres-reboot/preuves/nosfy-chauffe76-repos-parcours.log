@@ -1,0 +1,95 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-stories71-runtime-dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun -destination platform=iOS,id=00008120-001E4CDC0A85A01E -parallel-testing-enabled NO "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testRepriseApresRepos76" -resultBundlePath /tmp/nosfy-chauffe76-repos-parcours.xcresult
+
+2026-09-18 11:11:32.825 xcodebuild[78047:18874731] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/nosfy-chauffe76-repos-parcours.xcresult
+
+2026-09-18 11:11:32.832 xcodebuild[78047:18874731] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 11:11:32.925 xcodebuild[78047:18874731] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-18 11:11:33.667 xcodebuild[78047:18874731] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 11:11:33.810 xcodebuild[78047:18874731] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 11:11:36.145269+0200 NavRuntimeUITests-Runner[582:12874] [Default] Running tests...
+2026-09-18 11:11:36.199894+0200 NavRuntimeUITests-Runner[582:12884] [General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-18 11:11:36.604.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-18 11:11:36.604.
+Test Suite 'NavRuntimeUITests' started at 2026-09-18 11:11:36.605.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testRepriseApresRepos76]' started.
+    t =     0.00s Start Test at 2026-09-18 11:11:36.608
+    t =     0.02s Set Up
+    t =     0.02s Terminate fr.kathryn.woop:461
+2026-09-18 11:11:36.919 xcodebuild[78047:18874731] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+REPOS APP FERMEE 0s THERMIQUE 1 à 2026-09-18 09:11:37 +0000
+2026-09-18 11:11:47.398 xcodebuild[78047:18874731] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 11:11:49.824 xcodebuild[78047:18874731] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+REPOS APP FERMEE 15s THERMIQUE 1 à 2026-09-18 09:11:52 +0000
+REPOS APP FERMEE 30s THERMIQUE 1 à 2026-09-18 09:12:07 +0000
+REPOS APP FERMEE 45s THERMIQUE 1 à 2026-09-18 09:12:22 +0000
+REPOS APP FERMEE 60s THERMIQUE 1 à 2026-09-18 09:12:37 +0000
+2026-09-18 11:12:51.603 xcodebuild[78047:18874731] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+REPOS APP FERMEE 75s THERMIQUE 1 à 2026-09-18 09:12:52 +0000
+2026-09-18 11:13:04.175 xcodebuild[78047:18874731] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 11:13:04.376 xcodebuild[78047:18874731] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+REPOS APP FERMEE 90s THERMIQUE 1 à 2026-09-18 09:13:07 +0000
+REPOS APP FERMEE 105s THERMIQUE 1 à 2026-09-18 09:13:22 +0000
+REPOS APP FERMEE 120s THERMIQUE 1 à 2026-09-18 09:13:37 +0000
+REPOS APP FERMEE 135s THERMIQUE 1 à 2026-09-18 09:13:52 +0000
+REPOS APP FERMEE 150s THERMIQUE 1 à 2026-09-18 09:14:07 +0000
+REPOS APP FERMEE 165s THERMIQUE 1 à 2026-09-18 09:14:22 +0000
+REPOS APP FERMEE 180s THERMIQUE 1 à 2026-09-18 09:14:37 +0000
+REPOS APP FERMEE 195s THERMIQUE 1 à 2026-09-18 09:14:52 +0000
+REPOS APP FERMEE 210s THERMIQUE 0 à 2026-09-18 09:15:07 +0000
+THERMIQUE AU DEPART 0
+    t =   211.12s Open fr.kathryn.woop
+    t =   211.12s     Launch fr.kathryn.woop
+    t =   211.13s         Device orientation changed to Portrait
+    t =   211.14s         Device orientation changed to Face Up
+    t =   211.16s         Device orientation changed to Portrait
+    t =   211.16s         Device orientation changed to Face Up
+/tmp/woop-stories71-runtime/NavRuntimeUITests.swift:47: error: -[NavRuntimeUITests.NavRuntimeUITests testRepriseApresRepos76] : Failed to launch fr.kathryn.woop: The request to open "fr.kathryn.woop" failed. The request was denied by service delegate (SBMainWorkspace) for reason: Locked ("Unable to launch fr.kathryn.woop because the device was not, or could not be, unlocked"). (Underlying Error: L’opération n’a pas pu s’achever. Unable to launch fr.kathryn.woop because the device was not, or could not be, unlocked.)
+    t =   211.27s Tear Down
+2026-09-18 11:15:08.106 xcodebuild[78047:18874731] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testRepriseApresRepos76]' failed (211.903 seconds).
+Test Suite 'NavRuntimeUITests' failed at 2026-09-18 11:15:08.512.
+	 Executed 1 test, with 1 failure (0 unexpected) in 211.903 (211.907) seconds
+Test Suite 'NavRuntimeUITests.xctest' failed at 2026-09-18 11:15:08.513.
+	 Executed 1 test, with 1 failure (0 unexpected) in 211.903 (211.908) seconds
+Test Suite 'Selected tests' failed at 2026-09-18 11:15:08.514.
+	 Executed 1 test, with 1 failure (0 unexpected) in 211.903 (211.910) seconds
+2026-09-18 11:15:39.290 xcodebuild[78047:18889981]  IDETestOperationsObserverDebug: Failure collecting diagnostics from devices: Process exited with error 1:
+ ERROR: The operation couldn?t be completed. (CoreDeviceCLISupport.DiagnoseError error 0.)
+This tool generates files that allow Apple to investigate issues with your
+computer and help improve Apple products. The files might contain personal
+information found on your device or associated with your Apple Account(s),
+including but not limited to your name, serial numbers of your device,
+your device name, your device's location over the last one to two days,
+your attached peripheral devices, your user name, your email address and
+email settings, file paths, file names, Siri suggestions, your computer's
+IP addresses, and network connection information.
+
+This information is used by Apple in accordance with its privacy policy
+(www.apple.com/privacy) and is not shared with any other company. By using
+this tool and sending the results to Apple, you consent to Apple using the
+contents of these files to improve Apple products.
+
+An error occurred while running devicectl diagnose. Will archive the diagnostics collected thus far.
+Wrote file to /tmp/nosfy-chauffe76-repos-parcours.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+Partial devicectl diagnose bundle located here: /tmp/nosfy-chauffe76-repos-parcours.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+
+2026-09-18 11:15:39.292 xcodebuild[78047:18874731] [MT] IDETestOperationsObserverDebug: 245.623 elapsed -- Testing started completed.
+2026-09-18 11:15:39.292 xcodebuild[78047:18874731] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-18 11:15:39.293 xcodebuild[78047:18874731] [MT] IDETestOperationsObserverDebug: 245.623 sec, +245.623 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/nosfy-chauffe76-repos-parcours.xcresult
+
+Failing tests:
+	NavRuntimeUITests.testRepriseApresRepos76()
+
+** TEST EXECUTE FAILED **
+
+Testing started
