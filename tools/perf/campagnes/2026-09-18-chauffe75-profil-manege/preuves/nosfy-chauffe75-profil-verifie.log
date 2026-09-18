@@ -1,0 +1,142 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-stories71-runtime-dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun -destination platform=iOS,id=00008120-001E4CDC0A85A01E -parallel-testing-enabled NO -resultBundlePath /tmp/nosfy-chauffe75-profil-verifie.xcresult
+
+2026-09-18 10:16:25.669 xcodebuild[49207:18669080] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/nosfy-chauffe75-profil-verifie.xcresult
+
+2026-09-18 10:16:25.673 xcodebuild[49207:18669080] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 10:16:25.772 xcodebuild[49207:18669080] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 10:16:25.889 xcodebuild[49207:18669080] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-18 10:16:27.515 xcodebuild[49207:18669080] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 10:16:27.753 xcodebuild[49207:18669080] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 10:16:29.868 xcodebuild[49207:18669080] [MT] Run Destination Preflight: The destination is not ready.
+Error Domain=com.apple.dt.deviceprep Code=-3 "Unlock iPhone de Frédéric to Continue" UserInfo={NSRecoveryAttempter=<_DVTErrorRecoveryHandler: 0xb1f8f0200>, NSLocalizedRecoveryOptions=(
+    "Cancel Testing"
+), NSLocalizedRecoverySuggestion=Xcode cannot launch NavRuntimeUITests on iPhone de Frédéric because the device is locked., DVTRecoveryBlockKey=<__NSMallocBlock__: 0xb1e8adb30>, NSLocalizedDescription=Unlock iPhone de Frédéric to Continue}
+2026-09-18 10:16:29.868 xcodebuild[49207:18669080] [MT] Run Destination Preflight: Waiting for the destination to become ready.
+2026-09-18 10:16:49.579 xcodebuild[49207:18669080] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 10:16:53.479 xcodebuild[49207:18669080] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 10:16:58.467235+0200 NavRuntimeUITests-Runner[47954:3654073] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'All tests' started at 2026-09-18 10:17:00.053.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-18 10:17:00.053.
+Test Suite 'NavRuntimeUITests' started at 2026-09-18 10:17:00.053.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testProfilPuisRepos]' started.
+    t =     0.00s Start Test at 2026-09-18 10:17:00.054
+    t =     0.05s Set Up
+    t =     0.05s Open fr.kathryn.woop
+    t =     0.05s     Launch fr.kathryn.woop
+2026-09-18 10:17:00.334 xcodebuild[49207:18669080] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     0.25s         Setting up automation session
+    t =     0.26s         Wait for fr.kathryn.woop to idle
+    t =     1.75s Waiting 20.0s for "person" Button to exist
+    t =     2.79s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =     2.79s         Checking existence of `"person" Button`
+    t =     2.92s         Capturing element debug description
+    t =     3.84s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =     3.84s         Checking existence of `"person" Button`
+    t =     3.91s         Capturing element debug description
+    t =     4.84s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =     4.84s         Checking existence of `"person" Button`
+    t =     4.91s         Capturing element debug description
+    t =     5.84s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =     5.84s         Checking existence of `"person" Button`
+    t =     5.91s         Capturing element debug description
+    t =     6.84s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =     6.84s         Checking existence of `"person" Button`
+    t =     6.91s         Capturing element debug description
+    t =     7.84s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =     7.85s         Checking existence of `"person" Button`
+    t =     7.92s         Capturing element debug description
+    t =     8.85s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =     8.85s         Checking existence of `"person" Button`
+    t =     8.92s         Capturing element debug description
+    t =     9.85s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =     9.85s         Checking existence of `"person" Button`
+    t =     9.93s         Capturing element debug description
+    t =    10.76s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =    10.76s         Checking existence of `"person" Button`
+    t =    10.83s         Capturing element debug description
+    t =    11.76s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =    11.76s         Checking existence of `"person" Button`
+    t =    11.83s         Capturing element debug description
+    t =    12.76s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =    12.76s         Checking existence of `"person" Button`
+    t =    12.83s         Capturing element debug description
+    t =    13.76s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =    13.76s         Checking existence of `"person" Button`
+    t =    13.83s         Capturing element debug description
+    t =    14.76s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =    14.76s         Checking existence of `"person" Button`
+    t =    14.82s         Capturing element debug description
+    t =    15.76s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =    15.76s         Checking existence of `"person" Button`
+    t =    15.83s         Capturing element debug description
+    t =    16.76s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =    16.76s         Checking existence of `"person" Button`
+    t =    16.83s         Capturing element debug description
+    t =    17.85s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =    17.85s         Checking existence of `"person" Button`
+    t =    17.92s         Capturing element debug description
+    t =    18.85s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =    18.85s         Checking existence of `"person" Button`
+    t =    18.92s         Capturing element debug description
+    t =    19.85s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =    19.85s         Checking existence of `"person" Button`
+    t =    19.92s         Capturing element debug description
+    t =    20.85s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =    20.85s         Checking existence of `"person" Button`
+    t =    20.92s         Capturing element debug description
+    t =    21.76s     Checking `Expect predicate `existsNoRetry == 1` for object "person" Button`
+    t =    21.76s         Checking existence of `"person" Button`
+    t =    21.83s         Capturing element debug description
+    t =    21.83s     Checking existence of `"person" Button`
+    t =    21.87s Collecting debug information to assist test failure triage
+    t =    21.87s     Requesting snapshot of accessibility hierarchy for app with pid 47956
+/tmp/woop-stories71-runtime/NavRuntimeUITests.swift:12: error: -[NavRuntimeUITests.NavRuntimeUITests testProfilPuisRepos] : XCTAssertTrue failed
+    t =    22.05s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testProfilPuisRepos]' failed (22.477 seconds).
+Test Suite 'NavRuntimeUITests' failed at 2026-09-18 10:17:22.532.
+	 Executed 1 test, with 1 failure (0 unexpected) in 22.477 (22.479) seconds
+Test Suite 'NavRuntimeUITests.xctest' failed at 2026-09-18 10:17:22.533.
+	 Executed 1 test, with 1 failure (0 unexpected) in 22.477 (22.480) seconds
+Test Suite 'All tests' failed at 2026-09-18 10:17:22.534.
+	 Executed 1 test, with 1 failure (0 unexpected) in 22.477 (22.481) seconds
+2026-09-18 10:17:23.233 xcodebuild[49207:18669080] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 10:17:55.601 xcodebuild[49207:18672926]  IDETestOperationsObserverDebug: Failure collecting diagnostics from devices: Process exited with error 1:
+ ERROR: The operation couldn?t be completed. (CoreDeviceCLISupport.DiagnoseError error 0.)
+This tool generates files that allow Apple to investigate issues with your
+computer and help improve Apple products. The files might contain personal
+information found on your device or associated with your Apple Account(s),
+including but not limited to your name, serial numbers of your device,
+your device name, your device's location over the last one to two days,
+your attached peripheral devices, your user name, your email address and
+email settings, file paths, file names, Siri suggestions, your computer's
+IP addresses, and network connection information.
+
+This information is used by Apple in accordance with its privacy policy
+(www.apple.com/privacy) and is not shared with any other company. By using
+this tool and sending the results to Apple, you consent to Apple using the
+contents of these files to improve Apple products.
+
+An error occurred while running devicectl diagnose. Will archive the diagnostics collected thus far.
+Wrote file to /tmp/nosfy-chauffe75-profil-verifie.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+Partial devicectl diagnose bundle located here: /tmp/nosfy-chauffe75-profil-verifie.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+
+2026-09-18 10:17:55.616 xcodebuild[49207:18669080] [MT] IDETestOperationsObserverDebug: 88.095 elapsed -- Testing started completed.
+2026-09-18 10:17:55.616 xcodebuild[49207:18669080] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-18 10:17:55.616 xcodebuild[49207:18669080] [MT] IDETestOperationsObserverDebug: 88.095 sec, +88.095 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/nosfy-chauffe75-profil-verifie.xcresult
+
+Failing tests:
+	NavRuntimeUITests.testProfilPuisRepos()
+
+** TEST EXECUTE FAILED **
+
+Testing started

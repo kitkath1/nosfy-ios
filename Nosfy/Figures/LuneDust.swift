@@ -35,6 +35,10 @@ final class DustChime {
         }
     }
 
+    func stop() {
+        players.forEach { $0.stop() }
+    }
+
     func puff() {
         prepare()
         guard !players.isEmpty else { return }
@@ -62,14 +66,32 @@ final class LuneBreath {
         guard CHHapticEngine.capabilitiesForHardware().supportsHaptics,
               engine == nil else { return }
         engine = try? CHHapticEngine()
-        engine?.resetHandler = { [weak self] in try? self?.engine?.start() }
+        engine?.playsHapticsOnly = true
+        engine?.isAutoShutdownEnabled = true
+        // Un reset ne doit pas rallumer une carte déjà fermée.
+        engine?.resetHandler = {}
         engine?.stoppedHandler = { _ in }
         try? engine?.start()
+        NavDiagnostic.noter("haptique-carte-demarre")
+    }
+
+    func stop() {
+        engine?.resetHandler = {}
+        engine?.stoppedHandler = { _ in }
+        engine?.stop { erreur in
+            DispatchQueue.main.async {
+                NavDiagnostic.noter("haptique-carte-arrete",
+                    destination: erreur == nil ? "ok" : "erreur")
+            }
+        }
+        engine = nil
     }
 
     /// Le tap : l'expiration du contour.
     func exhale() {
+        prepare()
         guard let engine else { return }
+        try? engine.start()
         let tap = CHHapticEvent(
             eventType: .hapticTransient,
             parameters: [
@@ -101,7 +123,9 @@ final class LuneBreath {
     /// moment où la vitre passe (~1,15 s — le cadre sort de l'écran). La
     /// main doit sentir qu'elle ENTRE quelque part, pas qu'un mode change.
     func dive() {
+        prepare()
         guard let engine else { return }
+        try? engine.start()
         let prise = CHHapticEvent(
             eventType: .hapticTransient,
             parameters: [

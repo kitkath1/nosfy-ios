@@ -1,5 +1,32 @@
 # Chauffe Home — registre des échecs et des mesures invalides
 
+### E75 — Profil75, charge Bluetooth hors app et validation76 encore ouverte
+
+18-09 : forte chauffe après manège, carte, Profil et stories. La trace nommée
+profil-cpu était en réalité la Home : capture vérifiée, attribution rectifiée.
+B1/A/B2 Profil75 :16/21/18% CPU médian, thermique0/0→1/1 ; Instruments
+Metal recouvre une partie de A. Pas de pourcentage causal propre. Profil rangé
+reste coûteux. Contrôle app arrêtée : BTLEServer11110ms de CPU Running sur
+11,435537s (~97% d’un cœur), aucun sample Nosfy. L’origine accessoire n’est
+pas prouvée ; le fonctionnement avec écouteurs reste requis.
+PowerProfiler refuse deux attaches PID, puis tous-processus pour Location
+Energy Model ; aucune mesure d’énergie valide. Deux exports prématurés
+échouent avant finalisation ; reprise sur les mêmes traces sauvegardées.
+Métal : avertissements de symbolication, intervalles GPU exportés ; calcul
+initial de l’union incorrect (latence confondue avec durée), corrigé avant
+publication. Un sélecteur Profil cherchait la nav absente et échoue ; arrêt
+explicite du processus, garde thermique dans le prochain runner. Deux verrous
+iOS résolus par déverrouillage utilisateur. Rapport, sources, journaux et
+captures : [campagne75/76](campagnes/2026-09-18-chauffe75-profil-manege/etat.md).
+Release76 installée : deux parcours courts PASS67,505s et35,585s. Endurance
+SKIP au départ non nominal ; première passe thermique1, seconde sonde0→1.
+Arrêt moteurs booster/carte confirmé, pas de clôture thermique. Restauration
+-sansSondeVol et capture normale confirmées. Liste Documents/vol échoue car
+le dossier n’existe pas ; reprise sur Documents. Pas de validation TestFlight.
+
+
+
+
 ### E72 — Fermeture widgets : reproduction59 et simulateur perdu
 
 17-09 : le tirage depuis le contenu ne ferme pas la chambre, échec25,382s

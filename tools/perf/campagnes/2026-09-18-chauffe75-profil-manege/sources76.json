@@ -1,0 +1,12 @@
+{
+  "build": 76,
+  "head_lors_releve": "be29b547541b01f4cdb57f739bdeb16d489706ae",
+  "note": "Sources propres inchangées pendant compilation. Arbre partagé : autres changements compilés, sans attribution à cette correction.",
+  "sources": {
+    "Nosfy/Views/BoosterLab.swift": "5ead32c9175b69a077f4069262e2579ff929be9fac4f29e5e72b71d4e57eba1f",
+    "Nosfy/Views/CarteLuneLab.swift": "60e95e269f2863528d1fbca8acfbde5f983296e1973d897f4917babed90aa335",
+    "Nosfy/Figures/LuneDust.swift": "f4090727d538b8309a5d374dbe70af9e9c2cefda765138ba623702446396fbca",
+    "Nosfy/Figures/RocketHaptics.swift": "79c101cbc12e992bf164f138e256261f2230fb3b159c402e6c4bd26e787d3ec4"
+  },
+  "info_plist": "76"
+}

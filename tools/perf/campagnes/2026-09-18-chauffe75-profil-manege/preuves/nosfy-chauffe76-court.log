@@ -1,0 +1,166 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-stories71-runtime-dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun -destination platform=iOS,id=00008120-001E4CDC0A85A01E -parallel-testing-enabled NO "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testFonctionnel76" -resultBundlePath /tmp/nosfy-chauffe76-court.xcresult
+
+2026-09-18 10:50:13.820 xcodebuild[66089:18786675] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/nosfy-chauffe76-court.xcresult
+
+2026-09-18 10:50:13.827 xcodebuild[66089:18786675] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 10:50:13.919 xcodebuild[66089:18786675] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-18 10:50:14.391 xcodebuild[66089:18786675] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 10:50:14.533 xcodebuild[66089:18786675] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 10:50:16.459210+0200 NavRuntimeUITests-Runner[48296:3678796] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-18 10:50:16.961.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-18 10:50:16.962.
+Test Suite 'NavRuntimeUITests' started at 2026-09-18 10:50:16.962.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testFonctionnel76]' started.
+    t =     0.00s Start Test at 2026-09-18 10:50:16.963
+    t =     0.02s Set Up
+THERMIQUE IPHONE 1 à 2026-09-18 08:50:16 +0000
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+    t =     0.16s         Setting up automation session
+    t =     0.25s         Wait for fr.kathryn.woop to idle
+2026-09-18 10:50:17.470 xcodebuild[66089:18786675] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     1.65s Waiting 20.0s for "Cartes collectées" StaticText to exist
+    t =     2.67s     Checking `Expect predicate `existsNoRetry == 1` for object "Cartes collectées" StaticText`
+    t =     2.67s         Checking existence of `"Cartes collectées" StaticText`
+    t =     2.79s Find the Application 'fr.kathryn.woop'
+    t =     3.00s Added attachment named '76-court-profil'
+FENETRE court-profil DEBUT 2026-09-18 08:50:19 +0000
+THERMIQUE IPHONE 1 à 2026-09-18 08:50:24 +0000
+FENETRE court-profil FIN 2026-09-18 08:50:24 +0000
+    t =     8.01s Get all elements bound by index for: Elements matching predicate '"Retour" IN identifiers'
+    t =     8.08s Find the "Retour" Button
+    t =     8.14s Tap "Retour" Button
+    t =     8.14s     Wait for fr.kathryn.woop to idle
+    t =     8.15s     Find the "Retour" Button
+    t =     8.19s     Check for interrupting elements affecting "Retour" Button
+    t =     8.26s     Synthesize event
+    t =     8.56s     Wait for fr.kathryn.woop to idle
+    t =     9.52s Waiting 10.0s for "story-test-ouvrir" Button to exist
+    t =    10.55s     Checking `Expect predicate `existsNoRetry == 1` for object "story-test-ouvrir" Button`
+    t =    10.55s         Checking existence of `"story-test-ouvrir" Button`
+    t =    10.63s Tap "story-test-ouvrir" Button
+    t =    10.63s     Wait for fr.kathryn.woop to idle
+    t =    10.63s     Find the "story-test-ouvrir" Button
+    t =    10.66s     Check for interrupting elements affecting "story-test-ouvrir" Button
+    t =    10.69s     Synthesize event
+    t =    10.99s     Wait for fr.kathryn.woop to idle
+    t =    11.00s Waiting 5.0s for "story-etat" StaticText to exist
+    t =    12.04s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    12.04s         Checking existence of `"story-etat" StaticText`
+    t =    12.09s Tap Application 'fr.kathryn.woop'[0.85, 0.09]
+    t =    12.09s     Wait for fr.kathryn.woop to idle
+    t =    12.10s     Find the Application 'fr.kathryn.woop'
+    t =    12.13s     Check for interrupting elements affecting "Nosfy" Application
+    t =    12.16s     Synthesize event
+    t =    12.16s         Find the Application 'fr.kathryn.woop'
+    t =    12.18s         Find the Application 'fr.kathryn.woop'
+    t =    12.20s         Find the Application 'fr.kathryn.woop'
+    t =    12.49s     Wait for fr.kathryn.woop to idle
+    t =    12.50s Find the "story-etat" StaticText
+FENETRE court-story-1 DEBUT 2026-09-18 08:50:29 +0000
+THERMIQUE IPHONE 1 à 2026-09-18 08:50:34 +0000
+FENETRE court-story-1 FIN 2026-09-18 08:50:34 +0000
+    t =    17.53s Tap Application 'fr.kathryn.woop'[0.85, 0.09]
+    t =    17.53s     Wait for fr.kathryn.woop to idle
+    t =    17.54s     Find the Application 'fr.kathryn.woop'
+    t =    17.59s     Check for interrupting elements affecting "Nosfy" Application
+    t =    17.63s     Synthesize event
+    t =    17.64s         Find the Application 'fr.kathryn.woop'
+    t =    17.66s         Find the Application 'fr.kathryn.woop'
+    t =    17.69s         Find the Application 'fr.kathryn.woop'
+    t =    17.99s     Wait for fr.kathryn.woop to idle
+    t =    17.99s Find the "story-etat" StaticText
+FENETRE court-story-2 DEBUT 2026-09-18 08:50:34 +0000
+THERMIQUE IPHONE 1 à 2026-09-18 08:50:39 +0000
+FENETRE court-story-2 FIN 2026-09-18 08:50:39 +0000
+    t =    23.03s Tap Application 'fr.kathryn.woop'[0.85, 0.09]
+    t =    23.03s     Wait for fr.kathryn.woop to idle
+    t =    23.03s     Find the Application 'fr.kathryn.woop'
+    t =    23.07s     Check for interrupting elements affecting "Nosfy" Application
+    t =    23.11s     Synthesize event
+    t =    23.11s         Find the Application 'fr.kathryn.woop'
+    t =    23.13s         Find the Application 'fr.kathryn.woop'
+    t =    23.16s         Find the Application 'fr.kathryn.woop'
+    t =    23.45s     Wait for fr.kathryn.woop to idle
+    t =    23.45s Find the "story-etat" StaticText
+FENETRE court-story-3 DEBUT 2026-09-18 08:50:40 +0000
+THERMIQUE IPHONE 1 à 2026-09-18 08:50:45 +0000
+FENETRE court-story-3 FIN 2026-09-18 08:50:45 +0000
+    t =    28.49s Press Application 'fr.kathryn.woop'[0.50, 0.14] for 0.1 seconds, then drag to Application 'fr.kathryn.woop'[0.50, 0.75] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    28.49s     Wait for fr.kathryn.woop to idle
+    t =    28.49s     Find the Application 'fr.kathryn.woop'
+    t =    28.54s     Check for interrupting elements affecting "Nosfy" Application
+    t =    28.57s     Synthesize event
+    t =    28.58s         Find the Application 'fr.kathryn.woop'
+    t =    28.60s         Find the Application 'fr.kathryn.woop'
+    t =    28.62s         Find the Application 'fr.kathryn.woop'
+    t =    28.64s         Find the Application 'fr.kathryn.woop'
+    t =    28.66s         Find the Application 'fr.kathryn.woop'
+    t =    30.00s     Wait for fr.kathryn.woop to idle
+    t =    30.01s Waiting 5.0s for "story-test-ouvrir" Button to exist
+    t =    31.03s     Checking `Expect predicate `existsNoRetry == 1` for object "story-test-ouvrir" Button`
+    t =    31.03s         Checking existence of `"story-test-ouvrir" Button`
+    t =    31.08s Tap "booster-test-ouvrir" Button
+    t =    31.08s     Wait for fr.kathryn.woop to idle
+    t =    31.08s     Find the "booster-test-ouvrir" Button
+    t =    31.11s     Check for interrupting elements affecting "booster-test-ouvrir" Button
+    t =    31.15s     Synthesize event
+    t =    31.43s     Wait for fr.kathryn.woop to idle
+FENETRE court-booster DEBUT 2026-09-18 08:50:48 +0000
+THERMIQUE IPHONE 1 à 2026-09-18 08:50:53 +0000
+THERMIQUE IPHONE 1 à 2026-09-18 08:50:58 +0000
+THERMIQUE IPHONE 1 à 2026-09-18 08:51:03 +0000
+FENETRE court-booster FIN 2026-09-18 08:51:03 +0000
+    t =    46.45s Find the Application 'fr.kathryn.woop'
+    t =    46.70s Added attachment named '76-court-carte'
+    t =    46.71s Pressing Home button
+    t =    49.17s Open fr.kathryn.woop
+    t =    49.17s     Activate fr.kathryn.woop
+    t =    49.23s         Wait for fr.kathryn.woop to idle
+FENETRE court-carte-reprise DEBUT 2026-09-18 08:51:06 +0000
+THERMIQUE IPHONE 1 à 2026-09-18 08:51:11 +0000
+FENETRE court-carte-reprise FIN 2026-09-18 08:51:11 +0000
+    t =    54.30s Get all elements bound by index for: Elements matching predicate '"Retour" IN identifiers'
+    t =    54.36s Find the "Retour" Button
+    t =    54.41s Tap "Retour" Button
+    t =    54.41s     Wait for fr.kathryn.woop to idle
+    t =    54.42s     Find the "Retour" Button
+    t =    54.45s     Check for interrupting elements affecting "Retour" Button
+    t =    54.48s     Synthesize event
+    t =    54.78s     Wait for fr.kathryn.woop to idle
+    t =    54.78s Waiting 5.0s for "story-test-ouvrir" Button to exist
+    t =    55.79s     Checking `Expect predicate `existsNoRetry == 1` for object "story-test-ouvrir" Button`
+    t =    55.79s         Checking existence of `"story-test-ouvrir" Button`
+FENETRE court-home-retour DEBUT 2026-09-18 08:51:12 +0000
+THERMIQUE IPHONE 1 à 2026-09-18 08:51:17 +0000
+THERMIQUE IPHONE 1 à 2026-09-18 08:51:22 +0000
+FENETRE court-home-retour FIN 2026-09-18 08:51:22 +0000
+    t =    65.84s Find the Application 'fr.kathryn.woop'
+    t =    66.05s Added attachment named '76-court-home'
+    t =    66.05s Terminate fr.kathryn.woop:48297
+    t =    67.06s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testFonctionnel76]' passed (67.505 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-18 10:51:24.470.
+	 Executed 1 test, with 0 failures (0 unexpected) in 67.505 (67.508) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-18 10:51:24.471.
+	 Executed 1 test, with 0 failures (0 unexpected) in 67.505 (67.509) seconds
+Test Suite 'Selected tests' passed at 2026-09-18 10:51:24.472.
+	 Executed 1 test, with 0 failures (0 unexpected) in 67.505 (67.511) seconds
+2026-09-18 10:51:25.590 xcodebuild[66089:18786675] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 10:51:25.744 xcodebuild[66089:18786675] [MT] IDETestOperationsObserverDebug: 71.350 elapsed -- Testing started completed.
+2026-09-18 10:51:25.744 xcodebuild[66089:18786675] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-18 10:51:25.744 xcodebuild[66089:18786675] [MT] IDETestOperationsObserverDebug: 71.350 sec, +71.350 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/nosfy-chauffe76-court.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

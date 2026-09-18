@@ -1,0 +1,193 @@
+{
+  "nosfy-chauffe76": {
+    "therm_complet": {
+      "1": 62
+    },
+    "home_retour": {
+      "n": 9,
+      "debut": 57.0,
+      "fin": 65.2,
+      "cpu_mediane": 5,
+      "img_mediane": 60.1,
+      "pire_ms": 17
+    },
+    "events": [
+      {
+        "event": "booster-pause",
+        "t": 0.201,
+        "therm": 1,
+        "resultat": "vue=ObjectIdentifier(0x0000000109f56300);scene=ObjectIdentifier(0x000000011c1c8b40);camera=ObjectIdentifier(0x000000011a1da6c0);sceneTime=0.0;rendus=0"
+      },
+      {
+        "event": "haptique-booster-arrete",
+        "t": 0.264,
+        "therm": 1,
+        "resultat": "ok"
+      },
+      {
+        "event": "booster-reprise",
+        "t": 0.276,
+        "therm": 1,
+        "resultat": "vue=ObjectIdentifier(0x0000000109f56300);scene=ObjectIdentifier(0x000000011c1c8b40);camera=ObjectIdentifier(0x000000011a1da6c0);sceneTime=0.0;rendus=0"
+      },
+      {
+        "event": "booster-pause",
+        "t": 8.031,
+        "therm": 1,
+        "resultat": "vue=ObjectIdentifier(0x0000000109f56300);scene=ObjectIdentifier(0x000000011c1c8b40);camera=ObjectIdentifier(0x000000011a1da6c0);sceneTime=0.0;rendus=225"
+      },
+      {
+        "event": "haptique-booster-arrete",
+        "t": 8.213,
+        "therm": 1,
+        "resultat": "ok"
+      },
+      {
+        "event": "story-ouverte",
+        "t": 10.463,
+        "therm": 1,
+        "resultat": ""
+      },
+      {
+        "event": "mouvement-demarre",
+        "t": 17.469,
+        "therm": 1,
+        "resultat": ""
+      },
+      {
+        "event": "mouvement-arrete",
+        "t": 23.251,
+        "therm": 1,
+        "resultat": ""
+      },
+      {
+        "event": "story-fermee",
+        "t": 29.781,
+        "therm": 1,
+        "resultat": ""
+      },
+      {
+        "event": "haptique-booster-demarre",
+        "t": 32.491,
+        "therm": 1,
+        "resultat": ""
+      },
+      {
+        "event": "haptique-carte-demarre",
+        "t": 39.831,
+        "therm": 1,
+        "resultat": ""
+      },
+      {
+        "event": "haptique-booster-arrete",
+        "t": 40.401,
+        "therm": 1,
+        "resultat": "ok"
+      },
+      {
+        "event": "booster-relais",
+        "t": 40.529,
+        "therm": 1,
+        "resultat": "scene=0;liens=0;gyro=0"
+      },
+      {
+        "event": "haptique-carte-arrete",
+        "t": 46.764,
+        "therm": 1,
+        "resultat": "ok"
+      },
+      {
+        "event": "haptique-carte-demarre",
+        "t": 49.502,
+        "therm": 1,
+        "resultat": ""
+      },
+      {
+        "event": "booster-demontage",
+        "t": 54.256,
+        "therm": 1,
+        "resultat": "scene=0;liens=0;gyro=0;haptique=0"
+      },
+      {
+        "event": "haptique-carte-arrete",
+        "t": 54.278,
+        "therm": 1,
+        "resultat": "ok"
+      }
+    ],
+    "SceneKit_final": [
+      {
+        "alpha": 1,
+        "alphaCumule": 1,
+        "bounds": {
+          "hauteur": 700,
+          "largeur": 560,
+          "x": 0,
+          "y": 0
+        },
+        "cacheeDansHierarchie": false,
+        "cadreFenetre": null,
+        "fenetrePrincipale": false,
+        "identite": "ObjectIdentifier(0x0000000109f56300)",
+        "isHidden": false,
+        "isPlaying": false,
+        "rendersContinuously": false,
+        "rendusTermines": 231,
+        "role": "booster",
+        "scenePaused": null,
+        "taille": {
+          "hauteur": 700,
+          "largeur": 560
+        },
+        "windowNonNil": false
+      }
+    ]
+  },
+  "nosfy-chauffe76-manege": {
+    "therm_complet": {
+      "0": 11,
+      "1": 13
+    },
+    "home_retour": {
+      "n": 7,
+      "debut": 20.8,
+      "fin": 26.9,
+      "cpu_mediane": 6,
+      "img_mediane": 60.1,
+      "pire_ms": 17
+    },
+    "events": [
+      {
+        "event": "haptique-booster-demarre",
+        "t": 6.005,
+        "therm": 0,
+        "resultat": ""
+      },
+      {
+        "event": "booster-pause",
+        "t": 8.423,
+        "therm": 0,
+        "resultat": "vue=ObjectIdentifier(0x0000000124d4b200);scene=ObjectIdentifier(0x000000011d802940);camera=ObjectIdentifier(0x000000011c1c66c0);sceneTime=0.0;rendus=248"
+      },
+      {
+        "event": "haptique-booster-arrete",
+        "t": 8.447,
+        "therm": 0,
+        "resultat": "ok"
+      },
+      {
+        "event": "booster-reprise",
+        "t": 10.906,
+        "therm": 0,
+        "resultat": "vue=ObjectIdentifier(0x0000000124d4b200);scene=ObjectIdentifier(0x000000011d802940);camera=ObjectIdentifier(0x000000011c1c66c0);sceneTime=0.0;rendus=248"
+      },
+      {
+        "event": "booster-demontage",
+        "t": 15.951,
+        "therm": 1,
+        "resultat": "scene=0;liens=0;gyro=0;haptique=0"
+      }
+    ],
+    "SceneKit_final": []
+  }
+}

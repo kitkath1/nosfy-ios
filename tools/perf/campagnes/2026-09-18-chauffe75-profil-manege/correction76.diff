@@ -1,0 +1,224 @@
+--- a/Nosfy/Views/BoosterLab.swift
++++ b/Nosfy/Views/BoosterLab.swift
+@@ -22,20 +22,29 @@
+         guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
+         engine = try? CHHapticEngine()
+         engine?.playsHapticsOnly = true
+-        engine?.stoppedHandler = { [weak self] _ in self?.needsRestart = true }
++        engine?.isAutoShutdownEnabled = true
++        engine?.stoppedHandler = { [weak self] _ in
++            DispatchQueue.main.async { self?.needsRestart = true }
++        }
+         engine?.resetHandler = { [weak self] in
+-            try? self?.engine?.start()
+-            self?.buildBed()
+-        }
+-        try? engine?.start()
+-        buildBed()
++            DispatchQueue.main.async {
++                self?.needsRestart = true
++                self?.bed = nil
++            }
++        }
++        // Le même coordinateur habille le décor du Profil : aucune
++        // vibration ne justifie de démarrer son moteur à la construction.
++        needsRestart = true
+     }
+ 
+     private func revive() {
+-        guard needsRestart else { return }
+-        try? engine?.start()
+-        buildBed()
+-        needsRestart = false
++        guard needsRestart, let engine else { return }
++        do {
++            try engine.start()
++            buildBed()
++            needsRestart = false
++            NavDiagnostic.noter("haptique-booster-demarre")
++        } catch { needsRestart = true }
+     }
+ 
+     private func buildBed() {
+@@ -61,6 +70,20 @@
+             .init(parameterID: .hapticIntensityControl,
+                   value: min(max(v, 0), 1), relativeTime: 0),
+         ], atTime: CHHapticTimeImmediate)
++    }
++
++    /// Un écran caché rend aussi son moteur haptique ; le prochain geste
++    /// le redémarre, sans perdre la scène ou sa pose.
++    func suspend() {
++        bedStop()
++        bed = nil
++        needsRestart = true
++        engine?.stop { erreur in
++            DispatchQueue.main.async {
++                NavDiagnostic.noter("haptique-booster-arrete",
++                    destination: erreur == nil ? "ok" : "erreur")
++            }
++        }
+     }
+ 
+     /// Fin définitive de cette cérémonie, même si un rappel la retient encore.
+@@ -1604,6 +1627,7 @@
+             }
+             guard hostPaused != paused else { return }
+             hostPaused = paused
++            if paused { haptics.suspend() }
+             if NavDiagnostic.actif {
+                 let scene = paused ? sceneSuspendue?.scene : view.scene
+                 let camera = paused ? sceneSuspendue?.camera : view.pointOfView
+@@ -3526,6 +3550,7 @@
+         func extinguishForHandoff() {
+             guard !demonte, !frozen, let stage, let view else { return }
+             frozen = true
++            haptics.suspend()
+             stopSpin()
+             stopScroll()
+             stopPlacing()
+--- a/Nosfy/Views/CarteLuneLab.swift
++++ b/Nosfy/Views/CarteLuneLab.swift
+@@ -259,6 +259,8 @@
+     var diveOnTap = false
+ 
+     @Environment(\.accessibilityReduceMotion) private var reduceMotion
++    @Environment(\.scenePhase) private var scenePhase
++    @State private var moteursActifs = false
+ 
+     @State private var began = false
+     @State private var dragging = false
+@@ -469,7 +471,8 @@
+         GeometryReader { geo in
+             let cs = Self.cardSize(in: geo.size)
+             TimelineView(.animation(minimumInterval: 1.0 / 60.0,
+-                                    paused: frozen != nil && smokeFreeze != nil)) { tl in
++                                    paused: scenePhase != .active
++                                        || (frozen != nil && smokeFreeze != nil))) { tl in
+                 let tilt = tilt(at: tl.date)
+                 let t = Float(tl.date.timeIntervalSinceReferenceDate
+                     .truncatingRemainder(dividingBy: 900))
+@@ -681,15 +684,32 @@
+             mountAt = Date()
+             // Le neutre gyro = la pose de tenue de CET écran.
+             LuneMotion.shared.recalibrate()
++            actualiserMoteurs(visible: scenePhase == .active)
++        }
++        // Le crédit du poignet se rend au démontage (refcount) — hors
++        // du flow manège il n'y avait AUCUN teardown : le gyro tournait
++        // à 60 Hz pour toujours après une carte ouverte au profil.
++        .onChange(of: scenePhase) { _, phase in
++            actualiserMoteurs(visible: phase == .active)
++        }
++        .onDisappear {
++            diveGeneration += 1
++            actualiserMoteurs(visible: false)
++        }
++    }
++
++    private func actualiserMoteurs(visible: Bool) {
++        guard moteursActifs != visible else { return }
++        moteursActifs = visible
++        if visible {
+             LuneMotion.shared.start()
+             LuneBreath.shared.prepare()
+             DustChime.shared.prepare()
+-        }
+-        // Le crédit du poignet se rend au démontage (refcount) — hors
+-        // du flow manège il n'y avait AUCUN teardown : le gyro tournait
+-        // à 60 Hz pour toujours après une carte ouverte au profil.
+-        .onDisappear {
++        } else {
+             LuneMotion.shared.stop()
++            LuneBreath.shared.stop()
++            DustChime.shared.stop()
++            LuneSacre.shared.sortir(over: 0)
+         }
+     }
+ 
+--- a/Nosfy/Figures/LuneDust.swift
++++ b/Nosfy/Figures/LuneDust.swift
+@@ -35,6 +35,10 @@
+         }
+     }
+ 
++    func stop() {
++        players.forEach { $0.stop() }
++    }
++
+     func puff() {
+         prepare()
+         guard !players.isEmpty else { return }
+@@ -62,14 +66,32 @@
+         guard CHHapticEngine.capabilitiesForHardware().supportsHaptics,
+               engine == nil else { return }
+         engine = try? CHHapticEngine()
+-        engine?.resetHandler = { [weak self] in try? self?.engine?.start() }
++        engine?.playsHapticsOnly = true
++        engine?.isAutoShutdownEnabled = true
++        // Un reset ne doit pas rallumer une carte déjà fermée.
++        engine?.resetHandler = {}
+         engine?.stoppedHandler = { _ in }
+         try? engine?.start()
++        NavDiagnostic.noter("haptique-carte-demarre")
++    }
++
++    func stop() {
++        engine?.resetHandler = {}
++        engine?.stoppedHandler = { _ in }
++        engine?.stop { erreur in
++            DispatchQueue.main.async {
++                NavDiagnostic.noter("haptique-carte-arrete",
++                    destination: erreur == nil ? "ok" : "erreur")
++            }
++        }
++        engine = nil
+     }
+ 
+     /// Le tap : l'expiration du contour.
+     func exhale() {
++        prepare()
+         guard let engine else { return }
++        try? engine.start()
+         let tap = CHHapticEvent(
+             eventType: .hapticTransient,
+             parameters: [
+@@ -101,7 +123,9 @@
+     /// moment où la vitre passe (~1,15 s — le cadre sort de l'écran). La
+     /// main doit sentir qu'elle ENTRE quelque part, pas qu'un mode change.
+     func dive() {
++        prepare()
+         guard let engine else { return }
++        try? engine.start()
+         let prise = CHHapticEvent(
+             eventType: .hapticTransient,
+             parameters: [
+--- a/Nosfy/Figures/RocketHaptics.swift
++++ b/Nosfy/Figures/RocketHaptics.swift
+@@ -36,9 +36,11 @@
+         guard CHHapticEngine.capabilitiesForHardware().supportsHaptics,
+               engine == nil else { return }
+         engine = try? CHHapticEngine()
++        engine?.playsHapticsOnly = true
++        engine?.isAutoShutdownEnabled = true
+         // Le moteur s'arrête tout seul quand l'app passe en fond ; on le
+         // laisse repartir à la demande plutôt que de le tenir éveillé.
+-        engine?.resetHandler = { [weak self] in try? self?.engine?.start() }
++        engine?.resetHandler = {}
+         engine?.stoppedHandler = { _ in }
+         try? engine?.start()
+     }
+@@ -404,6 +406,13 @@
+     func stop(theme: Bool = true) {
+         try? player?.stop(atTime: CHHapticTimeImmediate)
+         player = nil
++        dragEnd()
++        engine?.stop { erreur in
++            DispatchQueue.main.async {
++                NavDiagnostic.noter("haptique-story-arrete",
++                    destination: erreur == nil ? "ok" : "erreur")
++            }
++        }
+         if theme { MoonTheme.shared.stop() }
+     }
+ 

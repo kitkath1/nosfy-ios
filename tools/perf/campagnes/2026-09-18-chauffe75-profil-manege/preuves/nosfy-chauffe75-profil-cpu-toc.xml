@@ -1,0 +1,203 @@
+<?xml version="1.0"?>
+
+<trace-toc>
+    <run number="1">
+        <info>
+            <target>
+                <device platform="iOS" model="iPhone 15" name="iPhone de Frédéric" os-version="26.6.1 (23G83)" uuid="00008120-001E4CDC0A85A01E"/>
+                <host-device platform="macOS" model="MacBook Air" name="MacBook Air de Kathryn (2)" os-version="26.5.1 (25F80)" uuid="C7E57B72-DF17-549A-994A-21EA2827A93E"/>
+                <all-processes/>
+            </target>
+            <summary>
+                <start-date>2026-09-18T09:56:39.746+02:00</start-date>
+                <end-date>2026-09-18T09:56:56.151+02:00</end-date>
+                <duration>16.404881</duration>
+                <end-reason>Time limit reached</end-reason>
+                <instruments-version>16.0 (17F42)</instruments-version>
+                <template-name>Time Profiler</template-name>
+                <recording-mode>Deferred</recording-mode>
+                <time-limit>15 seconds</time-limit>
+                <intruments-recording-settings>
+                    <instrument name="Hangs">
+                        <array>
+                            <dictionary>
+                                <key name="Reporting Threshold">Include Microhangs (&gt;250ms)</key>
+                            </dictionary>
+                        </array>
+                    </instrument>
+                </intruments-recording-settings>
+            </summary>
+        </info>
+        <processes>
+            <process name="CloudTelemetryService" pid="10853" path="/System/Library/PrivateFrameworks/CloudTelemetry.framework/XPCServices/CloudTelemetryService.xpc/CloudTelemetryService"/>
+            <process name="mobileassetd" pid="9469" path="/usr/libexec/mobileassetd"/>
+            <process name="dasd" pid="83" path="/usr/libexec/dasd"/>
+            <process name="powerd" pid="48" path="/System/Library/CoreServices/powerd.bundle/powerd"/>
+            <process name="com.apple.DriverKit-AppleBCMWLA" pid="112" path="/System/Library/DriverExtensions/com.apple.DriverKit-AppleBCMWLAN.dext/com.apple.DriverKit-AppleBCMWLAN"/>
+            <process name="mDNSResponder" pid="39615" path="/usr/sbin/mDNSResponder"/>
+            <process name="homed" pid="30916" path="/System/Library/PrivateFrameworks/HomeKitDaemon.framework/Support/homed"/>
+            <process name="testmanagerd" pid="41448" path="/System/Developer/usr/libexec/testmanagerd"/>
+            <process name="analyticsd" pid="257" path="/System/Library/PrivateFrameworks/CoreAnalytics.framework/Support/analyticsd"/>
+            <process name="intelligenceplatformd" pid="6098" path="/System/Library/PrivateFrameworks/IntelligencePlatformCore.framework/intelligenceplatformd"/>
+            <process name="itunesstored" pid="46820" path="/System/Library/PrivateFrameworks/iTunesStore.framework/Support/itunesstored"/>
+            <process name="fileproviderd" pid="43556" path="/System/Library/Frameworks/FileProvider.framework/Support/fileproviderd"/>
+            <process name="FindMyDeviceBluetoothExtension" pid="10548" path="/Applications/FindMyExtensionContainer.app/PlugIns/FindMyDeviceBluetoothExtension.appex/FindMyDeviceBluetoothExtension"/>
+            <process name="mediaparserd" pid="38600" path="/usr/libexec/mediaparserd"/>
+            <process name="notification_proxy" pid="46220" path="/usr/libexec/notification_proxy"/>
+            <process name="syncdefaultsd" pid="3986" path="/System/Library/PrivateFrameworks/SyncedDefaults.framework/Support/syncdefaultsd"/>
+            <process name="rtcreportingd" pid="9451" path="/usr/libexec/rtcreportingd"/>
+            <process name="amsengagementd" pid="46453" path="/System/Library/PrivateFrameworks/AppleMediaServicesUI.framework/amsengagementd"/>
+            <process name="launchd" pid="1" path="/sbin/launchd"/>
+            <process name="CommCenterMobileHelper" pid="46908" path="Unknown"/>
+            <process name="appplaceholdersyncd" pid="46508" path="/System/Library/CoreServices/appplaceholdersyncd"/>
+            <process name="akd" pid="10253" path="/System/Library/PrivateFrameworks/AuthKit.framework/akd"/>
+            <process name="healthd" pid="44" path="/System/Library/Frameworks/HealthKit.framework/healthd"/>
+            <process name="destinationd" pid="46933" path="Unknown"/>
+            <process name="sharingd" pid="74" path="/usr/libexec/sharingd"/>
+            <process name="amfid" pid="46174" path="/usr/libexec/amfid"/>
+            <process name="photoanalysisd" pid="46408" path="/System/Library/PrivateFrameworks/PhotoAnalysis.framework/Support/photoanalysisd"/>
+            <process name="bird" pid="4012" path="/System/Library/PrivateFrameworks/iCloudDriveCore.framework/bird"/>
+            <process name="replayd" pid="47199" path="Unknown"/>
+            <process name="configd" pid="45" path="/usr/libexec/configd"/>
+            <process name="CloudTelemetryService" pid="40761" path="/System/Library/PrivateFrameworks/CloudTelemetry.framework/XPCServices/CloudTelemetryService.xpc/CloudTelemetryService"/>
+            <process name="swcd" pid="42626" path="/usr/libexec/swcd"/>
+            <process name="amsaccountsd" pid="16813" path="/System/Library/PrivateFrameworks/AppleMediaServices.framework/amsaccountsd"/>
+            <process name="cfprefsd" pid="110" path="/usr/sbin/cfprefsd"/>
+            <process name="cameracaptured" pid="68" path="/usr/libexec/cameracaptured"/>
+            <process name="wirelessinsightsd" pid="3192" path="/System/Library/Frameworks/WirelessInsights.framework/Support/wirelessinsightsd"/>
+            <process name="logd" pid="33" path="/usr/libexec/logd"/>
+            <process name="gamepolicyd" pid="394" path="/usr/libexec/gamepolicyd"/>
+            <process name="managedappdistributiond" pid="44058" path="/System/Library/Frameworks/ManagedAppDistribution.framework/Support/managedappdistributiond"/>
+            <process name="watchlistd" pid="38204" path="/System/Library/PrivateFrameworks/WatchListKit.framework/Support/watchlistd"/>
+            <process name="promotedcontentd" pid="4007" path="/usr/libexec/promotedcontentd"/>
+            <process name="safetyalertsd" pid="94" path="/usr/libexec/safetyalertsd"/>
+            <process name="coreidvd" pid="46822" path="/usr/libexec/coreidvd"/>
+            <process name="WirelessRadioManagerd" pid="51" path="/usr/sbin/WirelessRadioManagerd"/>
+            <process name="imagent" pid="40069" path="/System/Library/PrivateFrameworks/IMCore.framework/imagent.app/imagent"/>
+            <process name="PerfPowerServices" pid="39173" path="/usr/libexec/PerfPowerServices"/>
+            <process name="ptpd" pid="46297" path="/usr/libexec/ptpd"/>
+            <process name="audioanalyticsd" pid="25217" path="/usr/libexec/audioanalyticsd"/>
+            <process name="audiomxd" pid="109" path="/usr/libexec/audiomxd"/>
+            <process name="gamecontrollerd" pid="42322" path="/usr/libexec/gamecontrollerd"/>
+            <process name="symptomsd-diag" pid="46970" path="Unknown"/>
+            <process name="com.apple.dt.instruments.dtsecu" pid="46742" path="/private/var/db/com.apple.xpc.roleaccountd.staging/exec/838860801.1152921500312187703.xpc/com.apple.dt.instruments.dtsecurity"/>
+            <process name="CategoriesService" pid="38391" path="/System/Library/PrivateFrameworks/Categories.framework/XPCServices/CategoriesService.xpc/CategoriesService"/>
+            <process name="searchpartyd" pid="40750" path="/usr/libexec/searchpartyd"/>
+            <process name="thermalmonitord" pid="66" path="/usr/libexec/thermalmonitord"/>
+            <process name="mediaplaybackd" pid="274" path="/usr/libexec/mediaplaybackd"/>
+            <process name="routined" pid="38" path="/usr/libexec/routined"/>
+            <process name="amsondevicestoraged" pid="46929" path="/System/Library/PrivateFrameworks/OnDeviceStorage.framework/Support/amsondevicestoraged"/>
+            <process name="CommCenter" pid="100" path="/System/Library/Frameworks/CoreTelephony.framework/Support/CommCenter"/>
+            <process name="SCHelper" pid="175" path="/System/Library/Frameworks/SystemConfiguration.framework/SCHelper"/>
+            <process name="AudioConverterService" pid="177" path="/System/Library/Frameworks/AudioToolbox.framework/XPCServices/AudioConverterService.xpc/AudioConverterService"/>
+            <process name="Nosfy" pid="47629" path="/var/containers/Bundle/Application/51AEF903-0129-4B72-A973-B78905C1525C/Nosfy.app/Nosfy"/>
+            <process name="replicatord" pid="47095" path="/System/Library/PrivateFrameworks/ReplicatorCore.framework/Support/replicatord"/>
+            <process name="asd" pid="46529" path="/usr/libexec/asd"/>
+            <process name="mapspushd" pid="38115" path="/System/Library/PrivateFrameworks/MapsSupport.framework/mapspushd"/>
+            <process name="heard" pid="272" path="/System/Library/PrivateFrameworks/HearingCore.framework/heard"/>
+            <process name="lsd" pid="116" path="/usr/libexec/lsd"/>
+            <process name="audioclocksyncd" pid="209" path="/usr/libexec/audioclocksyncd"/>
+            <process name="wifid" pid="53" path="/usr/sbin/wifid"/>
+            <process name="runningboardd" pid="34" path="/usr/libexec/runningboardd"/>
+            <process name="com.apple.CloudDocs.iCloudDriveF" pid="43563" path="/System/Library/PrivateFrameworks/CloudDocs.framework/PlugIns/com.apple.CloudDocs.iCloudDriveFileProvider.appex/com.apple.CloudDocs.iCloudDriveFileProvider"/>
+            <process name="backboardd" pid="70" path="/usr/libexec/backboardd"/>
+            <process name="UserEventAgent" pid="32" path="/usr/libexec/UserEventAgent"/>
+            <process name="softwareupdateservicesd" pid="396" path="/System/Library/PrivateFrameworks/SoftwareUpdateServices.framework/Support/softwareupdateservicesd"/>
+            <process name="BTLEServer" pid="30832" path="/usr/sbin/BTLEServer"/>
+            <process name="calaccessd" pid="142" path="/System/Library/PrivateFrameworks/CalendarDaemon.framework/Support/calaccessd"/>
+            <process name="cfprefsd" pid="107" path="/usr/sbin/cfprefsd"/>
+            <process name="DTServiceHub" pid="46642" path="/System/Library/PrivateFrameworks/DVTInstrumentsFoundation.framework/DTServiceHub"/>
+            <process name="avconferenced" pid="39252" path="/usr/libexec/avconferenced"/>
+            <process name="duetexpertd" pid="545" path="/usr/libexec/duetexpertd"/>
+            <process name="itunescloudd" pid="191" path="/System/Library/PrivateFrameworks/iTunesCloud.framework/Support/itunescloudd"/>
+            <process name="ScreenTimeAgent" pid="37684" path="/System/Library/PrivateFrameworks/ScreenTimeCore.framework/ScreenTimeAgent"/>
+            <process name="audioaccessoryd" pid="80" path="/usr/libexec/audioaccessoryd"/>
+            <process name="photosfaced" pid="46307" path="/usr/libexec/photosfaced"/>
+            <process name="callservicesd" pid="44297" path="/System/Library/PrivateFrameworks/TelephonyUtilities.framework/callservicesd"/>
+            <process name="appleh13camerad" pid="26260" path="/usr/sbin/appleh13camerad"/>
+            <process name="SetStoreUpdateService" pid="46524" path="/System/Library/PrivateFrameworks/CascadeSets.framework/XPCServices/SetStoreUpdateService.xpc/SetStoreUpdateService"/>
+            <process name="clipserviced" pid="46511" path="/System/Library/PrivateFrameworks/ClipServices.framework/clipserviced"/>
+            <process name="wifip2pd" pid="5394" path="/usr/libexec/wifip2pd"/>
+            <process name="familycircled" pid="36594" path="/System/Library/PrivateFrameworks/FamilyCircle.framework/familycircled"/>
+            <process name="kernel" pid="0" path="Unknown"/>
+            <process name="SpringBoard" pid="47190" path="/System/Library/CoreServices/SpringBoard.app/SpringBoard"/>
+            <process name="nanotimekitcompaniond" pid="47730" path="/System/Library/PrivateFrameworks/NanoTimeKit.framework/nanotimekitcompaniond"/>
+            <process name="lskdd" pid="44419" path="Unknown"/>
+            <process name="videocodecd" pid="273" path="/usr/libexec/videocodecd"/>
+            <process name="AutomationModeUI" pid="46648" path="/System/Library/PrivateFrameworks/AutomationMode.framework/AutomationModeUI.app/AutomationModeUI"/>
+            <process name="ProfileValidatedAppIdentityServ" pid="46635" path="/System/Library/PrivateFrameworks/ProfileValidatedAppIdentity.framework/XPCServices/ProfileValidatedAppIdentityService.xpc/ProfileValidatedAppIdentityService"/>
+            <process name="donotdisturbd" pid="38161" path="/System/Library/PrivateFrameworks/DoNotDisturbServer.framework/Support/donotdisturbd"/>
+            <process name="dtappserviced" pid="46223" path="/System/Developer/usr/libexec/dtappserviced"/>
+            <process name="biomed" pid="52" path="/System/Library/PrivateFrameworks/BiomeStreams.framework/Support/biomed"/>
+            <process name="symptomsd" pid="155" path="/usr/libexec/symptomsd"/>
+            <process name="bluetoothd" pid="97" path="/usr/sbin/bluetoothd"/>
+            <process name="dtdeviceinfod" pid="46224" path="/System/Developer/usr/libexec/dtdeviceinfod"/>
+            <process name="searchd" pid="309" path="/System/Library/PrivateFrameworks/Search.framework/searchd"/>
+            <process name="maild" pid="38249" path="/System/Library/PrivateFrameworks/EmailDaemon.framework/maild"/>
+            <process name="apsd" pid="149" path="/System/Library/PrivateFrameworks/ApplePushService.framework/apsd"/>
+            <process name="aonsensed" pid="72" path="/usr/libexec/aonsensed"/>
+            <process name="identityservicesd" pid="63" path="/System/Library/PrivateFrameworks/IDS.framework/identityservicesd.app/identityservicesd"/>
+            <process name="geod" pid="161" path="/System/Library/PrivateFrameworks/GeoServices.framework/geod"/>
+            <process name="nesessionmanager" pid="43880" path="/usr/libexec/nesessionmanager"/>
+            <process name="networkserviceproxy" pid="25790" path="/usr/libexec/networkserviceproxy"/>
+            <process name="NavRuntimeUITests-Runner" pid="47727" path="/private/var/containers/Bundle/Application/5E3B79D4-CFFA-4C7F-9603-A6B63A185CB0/NavRuntimeUITests-Runner.app/NavRuntimeUITests-Runner"/>
+            <process name="fmflocatord" pid="39454" path="/usr/libexec/fmflocatord"/>
+            <process name="notifyd" pid="105" path="/usr/sbin/notifyd"/>
+            <process name="mobiletimerd" pid="39022" path="/System/Library/PrivateFrameworks/MobileTimer.framework/Executables/mobiletimerd"/>
+            <process name="contextstored" pid="67" path="/System/Library/PrivateFrameworks/CoreDuetContext.framework/Resources/contextstored"/>
+            <process name="atc" pid="50" path="/usr/libexec/atc"/>
+            <process name="fitnessintelligenced" pid="47239" path="/System/Library/PrivateFrameworks/FitnessIntelligenceDaemonCore.framework/fitnessintelligenced"/>
+            <process name="remotepairingdeviced" pid="43421" path="/usr/libexec/remotepairingdeviced"/>
+            <process name="biometrickitd" pid="125" path="/usr/libexec/biometrickitd"/>
+            <process name="online-auth-agent" pid="43876" path="/usr/libexec/online-auth-agent"/>
+            <process name="icloudmailagent" pid="43486" path="/usr/libexec/icloudmailagent"/>
+            <process name="locationd" pid="76" path="/usr/libexec/locationd"/>
+            <process name="fseventsd" pid="101" path="/usr/libexec/fseventsd"/>
+            <process name="assistantd" pid="37" path="/System/Library/PrivateFrameworks/AssistantServices.framework/assistantd"/>
+            <process name="mediaremoted" pid="39" path="/System/Library/PrivateFrameworks/MediaRemote.framework/Support/mediaremoted"/>
+        </processes>
+        <data>
+            <table schema="tick" frequency="1" documentation="Provides modelers with a regular reference time for modeling fixed time-based statistics. The ticks are evenly spaced with a configurable frequency specifying the number of events to generate per second, so a tick schema with a frequency of 10 will generate a row every 100ms."/>
+            <table schema="life-cycle-period" target-pid="ALL" documentation="Identifies where an application is in its lifecycle."/>
+            <table schema="tick" frequency="10" documentation="Provides modelers with a regular reference time for modeling fixed time-based statistics. The ticks are evenly spaced with a configurable frequency specifying the number of events to generate per second, so a tick schema with a frequency of 10 will generate a row every 100ms."/>
+            <table schema="device-thermal-state-intervals" documentation="Denotes the current thermal state of the device."/>
+            <table category="PointsOfInterest" schema="os-log" documentation="Holds a message from the OS's Unified Logging and Tracing component."/>
+            <table schema="os-signpost" dynamic-tracing-enabled-subsystems="&quot;com.apple.neappprivacy&quot;" category="PointsOfInterest" documentation="Holds a signpost event from the OS's Unified Logging and Tracing component."/>
+            <table schema="os-signpost" category="InduceCondition" subsystem="&quot;com.apple.ConditionInducer.LowSeverity&quot;" documentation="Holds a signpost event from the OS's Unified Logging and Tracing component."/>
+            <table enable-priority-inversion-detection="0" target-pid="ALL" message-type="Fault" schema="os-log" category="&quot;Hang Risk&quot; &quot;Severe Hang Risk&quot; CFNetwork Contacts CoreML" subsystem="&quot;com.apple.runtime-issues&quot;" documentation="Holds a message from the OS's Unified Logging and Tracing component."/>
+            <table schema="hang-risks" detect-priority-inversions="0" target-pid="ALL"/>
+            <table hangs-threshold="250" schema="potential-hangs" target-pid="ALL"/>
+            <table exclude-os-logs="0" schema="global-poi-layout" target-pid="ALL" documentation="A point of interest that can be laid out on a graph view."/>
+            <table target-pid="ALL" context-switch-sampling="0" high-frequency-sampling="0" schema="time-profile" record-waiting-threads="0" needs-kernel-callstack="0" documentation="When combined with other time-profile samples, creates a statistical picture of where your application is spending its time."/>
+            <table schema="kdebug-signpost" target-pid="ALL" documentation="Marks a point in time denoted by a special type of kdebug trace."/>
+            <table codes="&quot;33,0x11&quot;" target="ALL" schema="kdebug-strings" documentation="Associates numeric arguments with strings in kdebug trace points."/>
+            <table schema="process-info" documentation="Associates processes with their process names."/>
+            <table schema="dyld-library-load" target-pid="ALL"/>
+            <table codes="&quot;0x1f,0x05&quot;" target="ALL" schema="kdebug-strings" documentation="Associates numeric arguments with strings in kdebug trace points."/>
+            <table codes="&quot;0x2b,0x87&quot;" target="ALL" schema="kdebug" documentation="Tracing the kernel and some system frameworks."/>
+            <table codes="&quot;0x1f,0x7&quot;" target="ALL" schema="kdebug" documentation="Tracing the kernel and some system frameworks."/>
+            <table target-pid="ALL" schema="region-of-interest" exclude-os-logs="0" documentation="Determined by the modelers and represent a focus area that the developer is likely to be intereseted in."/>
+            <table codes="&quot;0x07,0x00&quot; &quot;0x1f,0x05&quot;" target="ALL" schema="kdebug" documentation="Tracing the kernel and some system frameworks."/>
+            <table codes="&quot;0x2b,0x65&quot;" schema="kdebug" documentation="Tracing the kernel and some system frameworks."/>
+            <table codes="&quot;0x2b,0xd8&quot;" target="ALL" schema="kdebug" documentation="Tracing the kernel and some system frameworks."/>
+            <table codes="&quot;0x2b,0xdc&quot;" target="ALL" schema="kdebug" documentation="Tracing the kernel and some system frameworks."/>
+            <table codes="&quot;0x07,0x00&quot;" target="ALL" schema="kdebug" documentation="Tracing the kernel and some system frameworks."/>
+            <table codes="&quot;0x1,0x25&quot;" target="ALL" schema="kdebug" documentation="Tracing the kernel and some system frameworks."/>
+            <table codes="&quot;0x31,0xca&quot;" target="ALL" schema="kdebug" documentation="Tracing the kernel and some system frameworks."/>
+            <table codes="&quot;0x1,0xa&quot;" schema="kdebug" callstack="user" target="ALL" documentation="Tracing the kernel and some system frameworks."/>
+            <table codes="&quot;0x21,0xa&quot;" schema="kdebug" callstack="user" target="ALL" documentation="Tracing the kernel and some system frameworks."/>
+            <table codes="&quot;46,2&quot;" schema="kdebug" callstack="user" target="ALL" documentation="Tracing the kernel and some system frameworks."/>
+            <table codes="&quot;33,0x11&quot;" target="ALL" schema="kdebug" documentation="Tracing the kernel and some system frameworks."/>
+            <table schema="global-roi-layout" target-pid="ALL" documentation="Layout information for graphing regions of interest."/>
+            <table category="PointsOfInterest" schema="os-log-arg" documentation="Holds a metadata argument from the OS's Unified Logging and Tracing component."/>
+            <table codes="&quot;0x2d,*&quot;" schema="kdebug" callstack="user" target="ALL" documentation="Tracing the kernel and some system frameworks."/>
+            <table schema="gcd-perf-event" target-pid="ALL" documentation="Find sub-optimal uses of Grand Central Dispatch."/>
+            <table schema="thread-info" documentation="Associates threads with their owning process."/>
+            <table schema="runloop-events" target-pid="ALL"/>
+            <table exclude-os-logs="0" schema="roi-metadata" target-pid="ALL" documentation="Describes details about a given region of interest."/>
+            <table sample-rate-micro-seconds="1000" target="ALL" schema="time-sample" callstack="user" all-thread-states="NO" documentation="Holds a raw CPU profiling sample."/>
+            <table category="PointsOfInterest" schema="os-signpost-arg" documentation="Holds a signpost metadata argument from the OS's Unified Logging and Tracing component."/>
+        </data>
+        <tracks/>
+    </run>
+</trace-toc>

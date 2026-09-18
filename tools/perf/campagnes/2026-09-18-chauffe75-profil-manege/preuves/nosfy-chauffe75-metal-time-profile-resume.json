@@ -1,0 +1,223 @@
+{
+  "rows": 17752,
+  "process_weight_ms": [
+    [
+      "BTLEServer (30832)",
+      7332.0
+    ],
+    [
+      "backboardd (70)",
+      3982.0
+    ],
+    [
+      "DTServiceHub (46642)",
+      1978.0
+    ],
+    [
+      "Nosfy (48022)",
+      1526.0
+    ],
+    [
+      "kernel (0)",
+      1192.0
+    ],
+    [
+      "mediaplaybackd (274)",
+      428.0
+    ],
+    [
+      "logd (33)",
+      348.0
+    ],
+    [
+      "testmanagerd (41448)",
+      131.0
+    ],
+    [
+      "remotepairingdeviced (43421)",
+      116.0
+    ],
+    [
+      "identityservicesd (63)",
+      96.0
+    ],
+    [
+      "audiomxd (109)",
+      94.0
+    ],
+    [
+      "IMDPersistenceAgent (48030)",
+      69.0
+    ]
+  ],
+  "Nosfy_inclusive_ms": [
+    [
+      "CoreFoundation",
+      1172.0
+    ],
+    [
+      "Nosfy",
+      1147.0
+    ],
+    [
+      "UIKitCore",
+      1147.0
+    ],
+    [
+      "SwiftUI",
+      1147.0
+    ],
+    [
+      "GraphicsServices",
+      1146.0
+    ],
+    [
+      "dyld",
+      1146.0
+    ],
+    [
+      "QuartzCore",
+      1065.0
+    ],
+    [
+      "UpdateCycle",
+      1039.0
+    ],
+    [
+      "SwiftUICore",
+      884.0
+    ],
+    [
+      "AttributeGraph",
+      478.0
+    ],
+    [
+      "libdispatch.dylib",
+      399.0
+    ],
+    [
+      "libsystem_pthread.dylib",
+      391.0
+    ],
+    [
+      "libswiftCore.dylib",
+      227.0
+    ],
+    [
+      "SceneKit",
+      177.0
+    ],
+    [
+      "IOGPU",
+      151.0
+    ]
+  ],
+  "Nosfy_leaves_ms": [
+    [
+      [
+        "AttributeGraph",
+        "AG::Subgraph::update(unsigned int)"
+      ],
+      88.0
+    ],
+    [
+      [
+        "IOKit",
+        "iokit_user_client_trap"
+      ],
+      83.0
+    ],
+    [
+      [
+        "libsystem_pthread.dylib",
+        "start_wqthread"
+      ],
+      63.0
+    ],
+    [
+      [
+        "libobjc.A.dylib",
+        "objc_msgSend"
+      ],
+      46.0
+    ],
+    [
+      [
+        "libsystem_kernel.dylib",
+        "0x237150769"
+      ],
+      43.0
+    ],
+    [
+      [
+        "AttributeGraph",
+        "AG::Graph::UpdateStack::update()"
+      ],
+      30.0
+    ],
+    [
+      [
+        "AttributeGraph",
+        "AG::Graph::propagate_dirty(AG::AttributeID)"
+      ],
+      26.0
+    ],
+    [
+      [
+        "libsystem_kernel.dylib",
+        "0x237150a55"
+      ],
+      22.0
+    ],
+    [
+      [
+        "libsystem_kernel.dylib",
+        "0x237150cd5"
+      ],
+      21.0
+    ],
+    [
+      [
+        "libsystem_platform.dylib",
+        "_platform_memmove"
+      ],
+      19.0
+    ],
+    [
+      [
+        "libswiftCore.dylib",
+        "swift_retain"
+      ],
+      19.0
+    ],
+    [
+      [
+        "QuartzCore",
+        "CA::AttrList::get(unsigned int, _CAValueType, void*) const"
+      ],
+      18.0
+    ],
+    [
+      [
+        "libswiftCore.dylib",
+        "swift_release"
+      ],
+      16.0
+    ],
+    [
+      [
+        "libsystem_malloc.dylib",
+        "_xzm_free"
+      ],
+      15.0
+    ],
+    [
+      [
+        "AttributeGraph",
+        "AGGraphGetValue"
+      ],
+      12.0
+    ]
+  ],
+  "gpu_sums_overlap_possible_ms": []
+}

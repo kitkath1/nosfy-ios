@@ -1,0 +1,168 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-stories71-runtime-dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun -destination platform=iOS,id=00008120-001E4CDC0A85A01E -parallel-testing-enabled NO -resultBundlePath /tmp/nosfy-chauffe75-profil-cpu.xcresult
+
+2026-09-18 09:56:19.519 xcodebuild[41623:18611781] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/nosfy-chauffe75-profil-cpu.xcresult
+
+2026-09-18 09:56:19.526 xcodebuild[41623:18611781] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 09:56:19.618 xcodebuild[41623:18611781] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-18 09:56:20.091 xcodebuild[41623:18611781] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 09:56:20.292 xcodebuild[41623:18611781] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 09:56:22.734550+0200 NavRuntimeUITests-Runner[47727:3641417] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'All tests' started at 2026-09-18 09:56:23.812.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-18 09:56:23.812.
+Test Suite 'NavRuntimeUITests' started at 2026-09-18 09:56:23.812.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testRepriseObservee]' started.
+    t =     0.00s Start Test at 2026-09-18 09:56:23.816
+    t =     0.02s Set Up
+THERMIQUE AVANT: 0, APP: 4
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Activate fr.kathryn.woop
+    t =     0.05s         Wait for fr.kathryn.woop to idle
+    t =     0.06s Find the Application 'fr.kathryn.woop'
+2026-09-18 09:56:23.995 xcodebuild[41623:18611781] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     0.35s Added attachment named 'ecran-repris-sans-relance'
+    t =     0.35s Requesting snapshot of accessibility hierarchy for app with pid 47629
+    t =     0.52s Requesting snapshot of accessibility hierarchy for app with pid 47629
+CONTEXTE: Attributes: Application, 0x12c0b7980, pid: 47629, label: 'Nosfy'
+Element subtree:
+ →Application, 0x12c0b7980, pid: 47629, label: 'Nosfy'
+    Window (Main), 0x12c0b7ac0, {{0.0, 0.0}, {393.0, 852.0}}
+      Other, 0x12c0b7c00, {{0.0, 0.0}, {393.0, 852.0}}
+        Other, 0x12c0b7d40, {{0.0, 0.0}, {393.0, 852.0}}
+          Other, 0x12c0b7e80, {{0.0, 0.0}, {393.0, 852.0}}
+            Other, 0x12d5f8000, {{0.0, 0.0}, {393.0, 852.0}}
+              Other, 0x12d5f8140, {{0.0, 0.0}, {393.0, 852.0}}
+                Other, 0x12d5f8280, {{0.0, 0.0}, {393.0, 852.0}}
+                  Other, 0x12d5f83c0, {{0.0, 0.0}, {393.0, 852.0}}
+                    Other, 0x12d5f8500, {{0.0, 0.0}, {393.0, 852.0}}
+                      Other, 0x12d5f8640, {{0.0, 0.0}, {393.0, 852.0}}
+                        Other, 0x12d5f8780, {{0.0, 0.0}, {393.0, 852.0}}
+                          Other, 0x12d5f88c0, {{-4.7, 340.7}, {402.3, 427.3}}
+                          Other, 0x12d5f8a00, {{-4.7, 208.0}, {402.0, 321.7}}
+                          Image, 0x12d5f8b40, {{-4.7, 59.0}, {402.3, 874.0}}, label: 'home-fond-scrim'
+                          Other, 0x12d5f8c80, {{24.0, 33.0}, {251.3, 117.0}}, label: 'Allez, glisse pour lancer ta séance.'
+                            StaticText, 0x12d5f8dc0, {{24.0, 33.0}, {79.0, 36.3}}, label: 'Allez,'
+                            StaticText, 0x12d5f8f00, {{24.0, 73.3}, {83.0, 36.3}}, label: 'glisse'
+                            StaticText, 0x12d5f9040, {{114.2, 73.3}, {65.7, 36.3}}, label: 'pour'
+                            StaticText, 0x12d5f9180, {{187.0, 73.3}, {88.3, 36.3}}, label: 'lancer'
+                            StaticText, 0x12d5f92c0, {{24.0, 113.7}, {27.3, 36.3}}, label: 'ta'
+                            StaticText, 0x12d5f9400, {{58.3, 113.7}, {112.3, 36.3}}, label: 'séance.'
+                          Other, 0x12d5f9540, {{24.0, 66.8}, {239.3, 151.2}}, identifier: 'home-phrase', label: 'Bonjour Kathryn, Cette semaine, 2 séances Bien joué.'
+                            StaticText, 0x12d5f9680, {{24.0, 66.8}, {110.0, 36.3}}, label: 'Bonjour'
+                            StaticText, 0x12d5f97c0, {{141.0, 66.8}, {122.3, 36.3}}, label: 'Kathryn,'
+                            StaticText, 0x12d5f9900, {{24.0, 105.0}, {76.3, 36.3}}, label: 'Cette'
+                            StaticText, 0x12d5f9a40, {{107.3, 105.0}, {129.0, 36.3}}, label: 'semaine,'
+                            StaticText, 0x12d5f9b80, {{24.0, 143.3}, {18.3, 36.3}}, label: '2'
+                            StaticText, 0x12d5f9cc0, {{49.3, 143.3}, {119.0, 36.3}}, label: 'séances'
+                            StaticText, 0x12d5f9e00, {{24.0, 181.7}, {62.3, 36.3}}, label: 'Bien'
+                            StaticText, 0x12d5f9f40, {{93.3, 181.7}, {70.0, 36.3}}, label: 'joué.'
+                          StaticText, 0x12d5fa080, {{45.9, 317.5}, {19.0, 36.3}}, label: '2'
+                          StaticText, 0x12d5fa1c0, {{69.0, 333.1}, {17.0, 16.7}}, label: '/ 4'
+                          StaticText, 0x12d5fa300, {{45.9, 352.8}, {102.0, 10.3}}, label: 'Séances cette semaine'
+                          StaticText, 0x12d5fa440, {{46.9, 416.6}, {7.3, 9.3}}, label: 'M'
+                          StaticText, 0x12d5fa580, {{66.8, 416.6}, {5.3, 9.3}}, label: 'T'
+                          StaticText, 0x12d5fa6c0, {{84.4, 416.6}, {8.0, 9.3}}, label: 'W'
+                          StaticText, 0x12d5fa800, {{104.7, 416.6}, {5.3, 9.3}}, label: 'T'
+                          Other, 0x12d5fa940, {{122.0, 399.7}, {8.7, 8.7}}
+                          StaticText, 0x12d5faa80, {{123.8, 416.6}, {5.0, 9.3}}, label: 'F'
+                          StaticText, 0x12d5fabc0, {{142.6, 416.6}, {5.3, 9.3}}, label: 'S'
+                          StaticText, 0x12d5fad00, {{161.6, 416.6}, {5.3, 9.3}}, label: 'S'
+                          StaticText, 0x12d5fae40, {{62.2, 439.5}, {34.0, 10.3}}, label: '2 à faire'
+                          StaticText, 0x12d5faf80, {{229.9, 317.5}, {57.7, 36.3}}, label: '396'
+                          StaticText, 0x12d5fb0c0, {{289.6, 335.1}, {13.7, 14.3}}, label: 'kg'
+                          StaticText, 0x12d5fb200, {{229.9, 352.8}, {96.0, 10.3}}, label: 'Volume de la semaine'
+                          StaticText, 0x12d5fb340, {{231.9, 418.9}, {5.3, 6.7}}, label: 'M'
+                          StaticText, 0x12d5fb480, {{251.5, 418.9}, {4.0, 6.7}}, label: 'T'
+                          StaticText, 0x12d5fb5c0, {{269.6, 418.9}, {5.7, 6.7}}, label: 'W'
+                          StaticText, 0x12d5fb700, {{289.4, 418.9}, {4.0, 6.7}}, label: 'T'
+                          StaticText, 0x12d5fb840, {{308.5, 418.9}, {3.7, 6.7}}, label: 'F'
+                          StaticText, 0x12d5fb980, {{327.3, 418.9}, {4.0, 6.7}}, label: 'S'
+                          StaticText, 0x12d5fbac0, {{346.2, 418.9}, {4.0, 6.7}}, label: 'S'
+                          StaticText, 0x12d5fbc00, {{272.0, 436.9}, {42.0, 12.3}}, label: 'nouveau'
+                          StaticText, 0x12d5fbd40, {{260.8, 448.4}, {64.3, 7.3}}, label: 'vs la semaine passée'
+                          Image, 0x12d5fbe80, {{24.0, 491.7}, {354.0, 138.0}}
+                          StaticText, 0x12d5fc000, {{46.0, 542.3}, {81.3, 13.3}}, label: 'CHAPITRE 1'
+                          StaticText, 0x12d5fc140, {{46.0, 558.7}, {105.0, 20.3}}, label: 'Étape 3 sur 9'
+                          ScrollView, 0x12d5fc280, {{170.0, 491.7}, {208.0, 138.0}}
+                            Other, 0x12d5fc3c0, {{170.0, 375.7}, {208.0, 602.0}}
+                              Other, 0x12d5fc500, {{170.0, 375.7}, {208.0, 602.0}}
+                                StaticText, 0x12d5fc640, {{248.0, 418.7}, {52.0, 52.0}}, label: '16'
+                                StaticText, 0x12d5fc780, {{274.0, 476.7}, {52.0, 52.0}}, label: '17'
+                                StaticText, 0x12d5fc8c0, {{245.0, 531.7}, {58.0, 58.0}}, label: '18'
+                                Other, 0x12d5fca00, {{247.0, 533.7}, {54.0, 54.0}}
+                                Image, 0x12d5fcb40, {{248.0, 650.7}, {52.0, 52.0}}, identifier: 'flame', label: 'Flamme'
+                                Image, 0x12d5fcc80, {{274.0, 708.7}, {52.0, 52.0}}, identifier: 'flame', label: 'Flamme'
+                                Image, 0x12d5fcdc0, {{248.0, 766.7}, {52.0, 52.0}}, identifier: 'flame', label: 'Flamme'
+                          Other, 0x12d5fcf00, {{188.0, 695.0}, {17.0, 6.0}}
+                          Other, 0x12d5fd040, {{188.0, 704.0}, {17.0, 6.0}}
+                          StaticText, 0x12d5fd180, {{126.3, 717.8}, {140.3, 13.3}}, label: 'tire pour commencer'
+                          Button, 0x12d5fd2c0, {{321.7, 60.7}, {48.6, 48.6}}, label: 'Ton trésor'
+                          StaticText, 0x12d5fd400, {{39.6, 516.5}, {20.8, 17.0}}, label: 'KD'
+                          StaticText, 0x12d5fd540, {{80.8, 508.2}, {97.2, 33.6}}, label: 'Profile'
+                          StaticText, 0x12d5fd680, {{80.8, 508.2}, {98.6, 33.6}}, label: 'Profile'
+                          StaticText, 0x12d5fd7c0, {{58.9, 568.6}, {11.5, 10.0}}, label: '18.'
+                          StaticText, 0x12d5fd900, {{58.9, 577.7}, {14.9, 5.8}}, label: 'SEPT.'
+                          Image, 0x12d5fda40, {{66.7, 581.3}, {13.1, 13.1}}, label: 'sticker-flamme'
+                          StaticText, 0x12d5fdb80, {{80.8, 564.2}, {131.4, 33.6}}, label: 'Progress'
+                          StaticText, 0x12d5fdcc0, {{80.8, 564.2}, {132.9, 33.6}}, label: 'Progress'
+                          Image, 0x12d5fde00, {{57.6, 624.5}, {20.1, 24.9}}, label: 'exo-crunch-machine'
+                          StaticText, 0x12d5fdf40, {{80.8, 620.2}, {142.0, 33.6}}, label: 'Exercises'
+                          StaticText, 0x12d5fe080, {{80.8, 620.2}, {143.8, 33.6}}, label: 'Exercises'
+                Other, 0x12d5fe1c0, {{0.0, 769.0}, {393.0, 83.0}}
+                  Other, 0x12d5fe300, {{0.0, 0.0}, {393.0, 852.0}}
+                  Other, 0x12d5fe440, {{0.0, 769.0}, {393.0, 83.0}}
+              Other, 0x12d5fe580, {{98.7, 791.0}, {196.0, 44.0}}
+                Button, 0x12d5fe6c0, {{98.7, 791.0}, {44.0, 44.0}}, identifier: 'house.fill', label: 'Accueil', Selected
+                Button, 0x12d5fe800, {{174.7, 791.0}, {44.0, 44.0}}, identifier: 'figure.strengthtraining.functional', label: 'Entraînements'
+                Button, 0x12d5fe940, {{250.7, 791.0}, {44.0, 44.0}}, identifier: 'person', label: 'Profil'
+    Window, 0x12d5fea80, {{0.0, 0.0}, {393.0, 852.0}}
+      Other, 0x12d5febc0, {{0.0, 0.0}, {393.0, 852.0}}
+        Other, 0x12d5fed00, {{0.0, 0.0}, {393.0, 852.0}}
+Path to element:
+ →Application, 0x12c0b7980, pid: 47629, label: 'Nosfy'
+Query chain:
+ →Find: Application 'fr.kathryn.woop'
+  Output: {
+    Application, 0x12d5fee40, pid: 47629, label: 'Nosfy'
+  }
+
+PROFIL_PRET
+THERMIQUE 5s: 0
+2026-09-18 09:56:29.389 xcodebuild[41623:18611781] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+THERMIQUE 10s: 0
+THERMIQUE 15s: 0
+2026-09-18 09:56:42.176 xcodebuild[41623:18611781] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+THERMIQUE 20s: 0
+THERMIQUE 25s: 0
+THERMIQUE 30s: 1
+THERMIQUE 35s: 1
+THERMIQUE 40s: 1
+THERMIQUE 45s: 1
+    t =    45.61s Pressing Home button
+    t =    45.62s     Device orientation changed to Portrait
+    t =    45.62s     Device orientation changed to Face Up
+    t =    46.08s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testRepriseObservee]' passed (46.345 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-18 09:57:10.162.
+	 Executed 1 test, with 0 failures (0 unexpected) in 46.345 (46.350) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-18 09:57:10.163.
+	 Executed 1 test, with 0 failures (0 unexpected) in 46.345 (46.351) seconds
+Test Suite 'All tests' passed at 2026-09-18 09:57:10.164.
+	 Executed 1 test, with 0 failures (0 unexpected) in 46.345 (46.352) seconds
+2026-09-18 09:57:10.114 xcodebuild[41623:18611781] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 09:57:10.702 xcodebuild[41623:18611781] [MT] IDETestOperationsObserverDebug: 50.608 elapsed -- Testing started completed.
+2026-09-18 09:57:10.702 xcodebuild[41623:18611781] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-18 09:57:10.702 xcodebuild[41623:18611781] [MT] IDETestOperationsObserverDebug: 50.608 sec, +50.608 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/nosfy-chauffe75-profil-cpu.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

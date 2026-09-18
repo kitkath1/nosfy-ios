@@ -259,6 +259,8 @@ struct CarteVivante: View {
     var diveOnTap = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var moteursActifs = false
 
     @State private var began = false
     @State private var dragging = false
@@ -469,7 +471,8 @@ struct CarteVivante: View {
         GeometryReader { geo in
             let cs = Self.cardSize(in: geo.size)
             TimelineView(.animation(minimumInterval: 1.0 / 60.0,
-                                    paused: frozen != nil && smokeFreeze != nil)) { tl in
+                                    paused: scenePhase != .active
+                                        || (frozen != nil && smokeFreeze != nil))) { tl in
                 let tilt = tilt(at: tl.date)
                 let t = Float(tl.date.timeIntervalSinceReferenceDate
                     .truncatingRemainder(dividingBy: 900))
@@ -681,15 +684,32 @@ struct CarteVivante: View {
             mountAt = Date()
             // Le neutre gyro = la pose de tenue de CET écran.
             LuneMotion.shared.recalibrate()
-            LuneMotion.shared.start()
-            LuneBreath.shared.prepare()
-            DustChime.shared.prepare()
+            actualiserMoteurs(visible: scenePhase == .active)
         }
         // Le crédit du poignet se rend au démontage (refcount) — hors
         // du flow manège il n'y avait AUCUN teardown : le gyro tournait
         // à 60 Hz pour toujours après une carte ouverte au profil.
+        .onChange(of: scenePhase) { _, phase in
+            actualiserMoteurs(visible: phase == .active)
+        }
         .onDisappear {
+            diveGeneration += 1
+            actualiserMoteurs(visible: false)
+        }
+    }
+
+    private func actualiserMoteurs(visible: Bool) {
+        guard moteursActifs != visible else { return }
+        moteursActifs = visible
+        if visible {
+            LuneMotion.shared.start()
+            LuneBreath.shared.prepare()
+            DustChime.shared.prepare()
+        } else {
             LuneMotion.shared.stop()
+            LuneBreath.shared.stop()
+            DustChime.shared.stop()
+            LuneSacre.shared.sortir(over: 0)
         }
     }
 

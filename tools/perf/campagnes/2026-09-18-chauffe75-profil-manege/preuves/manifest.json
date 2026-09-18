@@ -1,0 +1,112 @@
+[
+  {
+    "path": "/tmp/nosfy-chauffe75-booster-ab.log",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-booster-ab.log",
+    "sha256": "fc675d5df80dcf7b5c2a5ea14a2f163739b6a5a5aa4c66e1131d2f861e8fabe1"
+  },
+  {
+    "path": "/tmp/nosfy-chauffe75-profil-verifie.log",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-profil-verifie.log",
+    "sha256": "913fa7995665d5dfebec679a3e6f9b6f264722549bdaa31b672efe75b9fa0bc8"
+  },
+  {
+    "path": "/tmp/nosfy-chauffe75-reprise.log",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-reprise.log",
+    "sha256": "1e17ef6f085fa619911517b5420223e755f23d3eaf0f9679ad4af5437570046a"
+  },
+  {
+    "path": "/tmp/nosfy-chauffe75-profil-cpu.log",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-profil-cpu.log",
+    "sha256": "32d3945c495463f1b94ac4b4e549fc79a88b831ef93d9d9c35d17b9446a52aa5"
+  },
+  {
+    "path": "/tmp/nosfy-chauffe75-systeme-cpu.json",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-systeme-cpu.json",
+    "sha256": "abf90069e7e2a049705c0be9cf7ff4fb1c0972bdfccb507bbd012f4f990eef01"
+  },
+  {
+    "path": "/tmp/nosfy-chauffe75-profil-cpu-resume.json",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-profil-cpu-resume.json",
+    "sha256": "3589ecfa966bac14980c84d5186602ae459e1ca195213a7f54e3adfe6289298c"
+  },
+  {
+    "path": "/tmp/nosfy-chauffe75-nosfy-arrete-resume.json",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-nosfy-arrete-resume.json",
+    "sha256": "3649d7d3c510eef17af0aa904d915a1d313320dcc83acfe22807813bf28dab07"
+  },
+  {
+    "path": "/tmp/nosfy-chauffe75-gpu-union.json",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-gpu-union.json",
+    "sha256": "1ad6353dcd80040091e98f8ab9ce62bdcc44a8557f4ccbe25fd299b30c17a4bc"
+  },
+  {
+    "path": "/tmp/nosfy-chauffe75-metal-time-profile-resume.json",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-metal-time-profile-resume.json",
+    "sha256": "2241d921b3795f3efeaf5361ff3af24b3a06bb8af5b907f2a535f368db4231c2"
+  },
+  {
+    "path": "/tmp/nosfy-chauffe75-BoosterCompareUITests.swift",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-BoosterCompareUITests.swift",
+    "sha256": "6c160de9a53b263ea18aa22109f7133f19fe934b20ac10b3993bb3cc6d164a40"
+  },
+  {
+    "path": "/tmp/nosfy-chauffe75-ab-vol-20260918-102220.jsonl",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-ab-vol-20260918-102220.jsonl",
+    "sha256": "408e870756437380cce9c6526bee24af72397c83791b76229d1599bcdb4ed189"
+  },
+  {
+    "path": "/tmp/nosfy-chauffe75-ab-vol-20260918-102324.jsonl",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-ab-vol-20260918-102324.jsonl",
+    "sha256": "655dd75934957ec4369adc9794f9c32afbc476947fde03bc94ce442a1772fc21"
+  },
+  {
+    "path": "/tmp/nosfy-chauffe75-ab-nav-20260918-102324.jsonl",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-ab-nav-20260918-102324.jsonl",
+    "sha256": "2e8d6bcd3bcf159c60aedcf83c6f955d76ecfdfcfb7adef056778c8a65bb3b8b"
+  },
+  {
+    "path": "/tmp/nosfy-chauffe75-ab-nav-20260918-102220.jsonl",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-ab-nav-20260918-102220.jsonl",
+    "sha256": "2040fd4293990602036f9fdfde695f4bca45964532c6294e02de88635fcaca09"
+  },
+  {
+    "path": "/tmp/nosfy-chauffe75-ab-nav-20260918-102116.jsonl",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-ab-nav-20260918-102116.jsonl",
+    "sha256": "f9c6e6ca88af4227bb24c3ecde5b2a04987b42a62b89236c25c6e0e7e1e6dd81"
+  },
+  {
+    "path": "/tmp/nosfy-chauffe75-ab-vol-20260918-102116.jsonl",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-ab-vol-20260918-102116.jsonl",
+    "sha256": "b7614ef0d9e1572dd50c3150b30935b164b50cea975e0a04980b13351d094681"
+  },
+  {
+    "path": "/tmp/nosfy-chauffe75-nav-profil-verifie.jsonl",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-nav-profil-verifie.jsonl",
+    "sha256": "9b7938fff9df406282981208f331e6773907d2476fc8efee176a7c725bb21e02"
+  },
+  {
+    "path": "/tmp/nosfy-chauffe75-vol-profil-verifie.jsonl",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-vol-profil-verifie.jsonl",
+    "sha256": "66b41a17e1edc506a38483d41ff23640754c25e4fcd65fadb44e110f657f5678"
+  },
+  {
+    "path": "/tmp/nosfy-chauffe75-nosfy-arrete-time-profile.xml",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-nosfy-arrete-time-profile.xml.gz",
+    "sha256_uncompressed": "2ec9b4bc0d04adbda8caa4ef8f5d6969fc00b258e5de02e2bbae605ba5d72a0d"
+  },
+  {
+    "path": "/tmp/nosfy-chauffe75-profil-metal-metal-gpu-intervals.xml",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-profil-metal-metal-gpu-intervals.xml.gz",
+    "sha256_uncompressed": "66159870ff669f7df639eb6ab3d9b19c25356580a0cf9435c3dd418c0262bdf5"
+  },
+  {
+    "path": "/tmp/nosfy-chauffe75-profil-metal-time-profile.xml",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-profil-metal-time-profile.xml.gz",
+    "sha256_uncompressed": "3d1baef3d9cd429aea70d31d6408c2393ed4e0697bf3af0794a2ce57944c33ef"
+  },
+  {
+    "path": "/tmp/nosfy-chauffe75-profil-cpu-profile.xml",
+    "archive": "tools/perf/campagnes/2026-09-18-chauffe75-profil-manege/preuves/nosfy-chauffe75-profil-cpu-profile.xml.gz",
+    "sha256_uncompressed": "0b50741ff9a6db55625d6dc104929fe90632361d4956fb8f4f2185d913b714d7"
+  }
+]

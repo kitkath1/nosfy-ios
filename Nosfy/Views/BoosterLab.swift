@@ -22,20 +22,29 @@ final class BoosterHaptics {
         guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
         engine = try? CHHapticEngine()
         engine?.playsHapticsOnly = true
-        engine?.stoppedHandler = { [weak self] _ in self?.needsRestart = true }
-        engine?.resetHandler = { [weak self] in
-            try? self?.engine?.start()
-            self?.buildBed()
+        engine?.isAutoShutdownEnabled = true
+        engine?.stoppedHandler = { [weak self] _ in
+            DispatchQueue.main.async { self?.needsRestart = true }
         }
-        try? engine?.start()
-        buildBed()
+        engine?.resetHandler = { [weak self] in
+            DispatchQueue.main.async {
+                self?.needsRestart = true
+                self?.bed = nil
+            }
+        }
+        // Le même coordinateur habille le décor du Profil : aucune
+        // vibration ne justifie de démarrer son moteur à la construction.
+        needsRestart = true
     }
 
     private func revive() {
-        guard needsRestart else { return }
-        try? engine?.start()
-        buildBed()
-        needsRestart = false
+        guard needsRestart, let engine else { return }
+        do {
+            try engine.start()
+            buildBed()
+            needsRestart = false
+            NavDiagnostic.noter("haptique-booster-demarre")
+        } catch { needsRestart = true }
     }
 
     private func buildBed() {
@@ -61,6 +70,20 @@ final class BoosterHaptics {
             .init(parameterID: .hapticIntensityControl,
                   value: min(max(v, 0), 1), relativeTime: 0),
         ], atTime: CHHapticTimeImmediate)
+    }
+
+    /// Un écran caché rend aussi son moteur haptique ; le prochain geste
+    /// le redémarre, sans perdre la scène ou sa pose.
+    func suspend() {
+        bedStop()
+        bed = nil
+        needsRestart = true
+        engine?.stop { erreur in
+            DispatchQueue.main.async {
+                NavDiagnostic.noter("haptique-booster-arrete",
+                    destination: erreur == nil ? "ok" : "erreur")
+            }
+        }
     }
 
     /// Fin définitive de cette cérémonie, même si un rappel la retient encore.
@@ -1604,6 +1627,7 @@ struct BoosterStage: UIViewRepresentable {
             }
             guard hostPaused != paused else { return }
             hostPaused = paused
+            if paused { haptics.suspend() }
             if NavDiagnostic.actif {
                 let scene = paused ? sceneSuspendue?.scene : view.scene
                 let camera = paused ? sceneSuspendue?.camera : view.pointOfView
@@ -3526,6 +3550,7 @@ struct BoosterStage: UIViewRepresentable {
         func extinguishForHandoff() {
             guard !demonte, !frozen, let stage, let view else { return }
             frozen = true
+            haptics.suspend()
             stopSpin()
             stopScroll()
             stopPlacing()

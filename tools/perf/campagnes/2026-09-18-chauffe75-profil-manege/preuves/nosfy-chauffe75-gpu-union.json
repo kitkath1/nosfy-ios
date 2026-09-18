@@ -1,0 +1,18 @@
+{
+  "duration_trace_s": 11.678581,
+  "limite": "Union des intervalles GPU Active exportés, sur tous les niveaux. Ni watts ni attribution des surfaces composées par backboardd. Les canaux et processus peuvent se chevaucher.",
+  "gpu_active_union_ms": {
+    "non attribué / tous": 11.893,
+    "non attribué / Fragment": 11.817,
+    "non attribué / Vertex": 0.724,
+    "non attribué / Compute": 0.453,
+    "backboardd (70) / tous": 3285.539,
+    "backboardd (70) / Vertex": 508.447,
+    "backboardd (70) / Fragment": 3077.754,
+    "backboardd (70) / Compute": 79.042,
+    "Nosfy (48022) / tous": 817.172,
+    "Nosfy (48022) / Vertex": 46.319,
+    "Nosfy (48022) / Fragment": 726.246,
+    "Nosfy (48022) / Compute": 53.438
+  }
+}

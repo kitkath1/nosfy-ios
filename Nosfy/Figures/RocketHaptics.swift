@@ -36,9 +36,11 @@ final class RocketHaptics {
         guard CHHapticEngine.capabilitiesForHardware().supportsHaptics,
               engine == nil else { return }
         engine = try? CHHapticEngine()
+        engine?.playsHapticsOnly = true
+        engine?.isAutoShutdownEnabled = true
         // Le moteur s'arrête tout seul quand l'app passe en fond ; on le
         // laisse repartir à la demande plutôt que de le tenir éveillé.
-        engine?.resetHandler = { [weak self] in try? self?.engine?.start() }
+        engine?.resetHandler = {}
         engine?.stoppedHandler = { _ in }
         try? engine?.start()
     }
@@ -404,6 +406,13 @@ final class RocketHaptics {
     func stop(theme: Bool = true) {
         try? player?.stop(atTime: CHHapticTimeImmediate)
         player = nil
+        dragEnd()
+        engine?.stop { erreur in
+            DispatchQueue.main.async {
+                NavDiagnostic.noter("haptique-story-arrete",
+                    destination: erreur == nil ? "ok" : "erreur")
+            }
+        }
         if theme { MoonTheme.shared.stop() }
     }
 

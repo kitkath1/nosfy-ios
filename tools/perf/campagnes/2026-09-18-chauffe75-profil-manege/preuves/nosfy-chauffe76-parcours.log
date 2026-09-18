@@ -1,0 +1,41 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-stories71-runtime-dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun -destination platform=iOS,id=00008120-001E4CDC0A85A01E -parallel-testing-enabled NO -resultBundlePath /tmp/nosfy-chauffe76-parcours.xcresult
+
+2026-09-18 10:49:10.131 xcodebuild[65798:18784085] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/nosfy-chauffe76-parcours.xcresult
+
+2026-09-18 10:49:10.132 xcodebuild[65798:18784085] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 10:49:10.235 xcodebuild[65798:18784085] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-18 10:49:11.265 xcodebuild[65798:18784085] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 10:49:11.411 xcodebuild[65798:18784085] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 10:49:13.795225+0200 NavRuntimeUITests-Runner[48289:3678158] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'All tests' started at 2026-09-18 10:49:15.301.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-18 10:49:15.301.
+Test Suite 'NavRuntimeUITests' started at 2026-09-18 10:49:15.301.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testParcours76]' started.
+    t =     0.00s Start Test at 2026-09-18 10:49:15.302
+    t =     0.02s Set Up
+/tmp/woop-stories71-runtime/NavRuntimeUITests.swift:40: -[NavRuntimeUITests.NavRuntimeUITests testParcours76] : Test skipped - Départ nominal requis pour cette endurance
+    t =     0.02s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testParcours76]' skipped (0.027 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-18 10:49:15.329.
+	 Executed 1 test, with 1 test skipped and 0 failures (0 unexpected) in 0.027 (0.028) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-18 10:49:15.330.
+	 Executed 1 test, with 1 test skipped and 0 failures (0 unexpected) in 0.027 (0.029) seconds
+Test Suite 'All tests' passed at 2026-09-18 10:49:15.331.
+	 Executed 1 test, with 1 test skipped and 0 failures (0 unexpected) in 0.027 (0.030) seconds
+2026-09-18 10:49:15.886 xcodebuild[65798:18784085] [MT] IDETestOperationsObserverDebug: 4.618 elapsed -- Testing started completed.
+2026-09-18 10:49:15.886 xcodebuild[65798:18784085] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-18 10:49:15.886 xcodebuild[65798:18784085] [MT] IDETestOperationsObserverDebug: 4.618 sec, +4.618 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/nosfy-chauffe76-parcours.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started
