@@ -31,10 +31,6 @@ capturer() {
 for robe in spotlight halo neon galet fire welcome welcomeTexte; do
   capturer "reward-$robe" 5 -rewardLab -robe $robe -rewardFreeze 0.6 -rewardNu
 done
-# ── la card Welcome Back de PRODUCTION telle qu'elle s'ouvre aujourd'hui (sans sa vidéo).
-#    ⚠️ Elle n'est DUE que si le compte du banc a une séance finie et n'a pas pris son +10
-#    du jour : libérer la ligne coin_ledger du jour avant, la remettre après (claim).
-capturer "welcome-back-prod" 14 -skipAuth -sessionAdoptee -sansVisite
 # ── la pop-up de première fois : 2 robes (galet = la vraie ; test = Nosfy de face) — la home
 #    arrive après le splash DEBUG (3,4 s), la pop-up 3 s plus tard : 13 s.
 capturer "premiere-galet"  13 -skipAuth -welcomePremiere galet -sansVisite

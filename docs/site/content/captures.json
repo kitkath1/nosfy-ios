@@ -327,16 +327,6 @@
    "composant": "RewardPopup(style: .welcome, robe: .texte)"
   },
   {
-   "nom": "pop-welcome-back-prod",
-   "legende": "Welcome Back · tel qu'il s'ouvre EN PROD (sans sa vidéo)",
-   "fichier": "captures/popups/pop-welcome-back-prod.jpg",
-   "largeur": 240,
-   "hauteur": 521,
-   "source": "tools/docsite/shots/pop-welcome-back-prod.png",
-   "octets": 7066,
-   "composant": "NosfyApp.swift → RewardPopup(.welcome, .video) sans videoNom"
-  },
-  {
    "nom": "pop-premiere-galet",
    "legende": "Première fois · Nosfy sur les galets",
    "fichier": "captures/popups/pop-premiere-galet.jpg",

@@ -131,10 +131,16 @@ struct RewardPopup: View {
     @State private var boum = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    private var videoEffective: String? {
+        if let videoNom { return videoNom }
+        guard style == .welcome, robe == .video else { return nil }
+        return "reward-welcome"
+    }
+
     var body: some View {
         RewardScene(p: p, count: count, title: title, subtitle: subtitle,
                     unit: unit, style: style, robe: robe,
-                    videoNom: videoNom,
+                    videoNom: videoEffective,
                     naissance: naissance, enSortie: enSortie,
                     posee: posee, fermer: fermer, onClaim: onClaim,
                     lignesGeantes: lignesGeantes, bouton: bouton, scrim: scrim,
