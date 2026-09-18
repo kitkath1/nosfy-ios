@@ -6,6 +6,10 @@ Un sachet orange de TEST posé sur son compte (origine cadeau, id dans
 tools/carte-lune/iphone-2026-09-18/orange-test-chevron-pose.json). App du commit
 8bbccfb0 déjà installée, relancée avec la sonde. → **LIBÉRÉ 18:50**, app relancée
 normalement. Chevron : retour home, sachet intact, manège repris, carte envolée (« c'est good »).
+→ commité 3f879fec (index temporaire). ⚠️ Session erreur : votre index porte briques.ts,
+mesures.ts et index.html d'AVANT 3f879fec — un `git commit` nu effacerait mes lignes
+(chevron) : `git add` de nouveau ces trois chemins depuis l'arbre avant de commiter.
+3f879fec remet aussi le `]` fermant à la fin de mesures.ts (acefb57c ne compilait pas).
 ⚠️ Ce commit remet le `]` fermant à la FIN de `docs/site/content/mesures.ts` : dans acefb57c
 il précédait l'entrée m-erreur-avion-iphone, la source ne compilait pas (`npm run artefact`
 refusait). Rien d'autre emporté ; vos autres lignes de mesures.ts restent dans l'arbre.
