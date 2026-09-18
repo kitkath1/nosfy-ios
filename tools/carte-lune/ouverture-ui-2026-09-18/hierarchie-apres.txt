@@ -1,0 +1,210 @@
+Application, 0x113434000, pid: 93374, label: 'Nosfy' <App element pid: 93374>
+  Window (Main), 0x113434a00, {{0.0, 0.0}, {393.0, 852.0}} <AX element pid: 93374, elementOrHash.elementID: 4365125632.4>
+    Other, 0x113434b40, {{0.0, 0.0}, {393.0, 852.0}} <AX element pid: 93374, elementOrHash.elementID: 4539999744.5>
+      Other, 0x113434c80, {{0.0, 0.0}, {393.0, 852.0}} <AX element pid: 93374, elementOrHash.elementID: 4541595648.6>
+        Other, 0x113434dc0, {{0.0, 0.0}, {393.0, 852.0}} <AX element pid: 93374, elementOrHash.elementID: 4365124608.7>
+          Other, 0x113435040, {{0.0, 0.0}, {393.0, 852.0}} <AX element pid: 93374, elementOrHash.elementID: 4539356416.8>
+            Other, 0x113435180, {{0.0, 0.0}, {393.0, 852.0}} <AX element pid: 93374, elementOrHash.elementID: 4365448320.9>
+              Other, 0x1134352c0, {{0.0, 0.0}, {393.0, 852.0}} <AX element pid: 93374, elementOrHash.elementID: 4540005376.12>
+                Other, 0x113435400, {{0.0, 0.0}, {393.0, 852.0}} <AX element pid: 93374, elementOrHash.elementID: 4539338688.14>
+                  Other, 0x113435540, {{0.0, 0.0}, {393.0, 852.0}} <AX element pid: 93374, elementOrHash.elementID: 4365131776.17>
+                    Other, 0x113435680, {{0.0, 0.0}, {393.0, 852.0}} <AX element pid: 93374, elementOrHash.elementID: 4539639872.18>
+                      Other, 0x1134357c0, {{-129.3, 0.0}, {652.0, 1238.6}} <AX element pid: 93374, elementOrHash.elementID: 4539638976.19>
+                        ScrollView, 0x113435900, {{0.0, 0.0}, {393.0, 852.0}} <AX element pid: 93374, elementOrHash.elementID: 4541050880.20>
+                          Other, 0x113435a40, {{0.0, 0.0}, {393.0, 1247.3}} <AX element pid: 93374, elementOrHash.elementID: 4766247424.27>
+                            Button, 0x113435b80, {{107.7, 189.0}, {34.3, 26.0}}, identifier: 'profil-booster-noir', label: '3 booster noir — ouvrir le manège des légendaires' <AX element pid: 93374, elementOrHash.elementID: 4539357312.34>
+                              Image, 0x113435cc0, {{107.7, 189.0}, {15.0, 26.0}} <AX element pid: 93374, elementOrHash.elementID: 4539353280.63>
+                              StaticText, 0x113435e00, {{132.0, 192.8}, {10.0, 18.3}}, label: '3' <AX element pid: 93374, elementOrHash.elementID: 4539356864.64>
+                            Button, 0x113435f40, {{174.7, 189.0}, {34.3, 26.0}}, identifier: 'profil-booster-orange', label: '3 booster — ouvrir le manège' <AX element pid: 93374, elementOrHash.elementID: 4539359104.35>
+                              Image, 0x113436080, {{174.7, 189.0}, {15.0, 26.0}} <AX element pid: 93374, elementOrHash.elementID: 4539358208.65>
+                              StaticText, 0x1134361c0, {{199.0, 192.8}, {10.0, 18.3}}, label: '3' <AX element pid: 93374, elementOrHash.elementID: 4539358656.66>
+                            Button, 0x113436300, {{241.0, 191.0}, {40.3, 22.0}}, label: '0 pièces d'argent — ouvrir le coffre' <AX element pid: 93374, elementOrHash.elementID: 4539362688.36>
+                              Image, 0x113436440, {{241.0, 191.0}, {22.0, 22.0}}, label: 'piece-argent-mini' <AX element pid: 93374, elementOrHash.elementID: 4539359552.67>
+                              StaticText, 0x113436580, {{271.0, 192.8}, {10.3, 18.3}}, label: '0' <AX element pid: 93374, elementOrHash.elementID: 4539360000.68>
+                            Button, 0x1134366c0, {{313.7, 190.4}, {47.3, 23.3}}, label: '10 pièces — ouvrir le coffre' <AX element pid: 93374, elementOrHash.elementID: 4539364928.37>
+                              Button, 0x113436800, {{313.7, 190.4}, {23.3, 23.3}}, label: 'Ton trésor' <AX element pid: 93374, elementOrHash.elementID: 4539364032.69>
+                              StaticText, 0x113436940, {{344.3, 192.8}, {16.7, 18.3}}, label: '10' <AX element pid: 93374, elementOrHash.elementID: 4539364480.70>
+                            StaticText, 0x113436a80, {{20.0, 279.0}, {17.0, 20.7}}, label: '—' <AX element pid: 93374, elementOrHash.elementID: 4539365824.38>
+                            StaticText, 0x113436bc0, {{20.0, 302.7}, {24.7, 14.7}}, label: '@—' <AX element pid: 93374, elementOrHash.elementID: 4539366272.39>
+                            StaticText, 0x113436d00, {{20.0, 343.3}, {199.7, 29.3}}, label: 'Cartes collectées' <AX element pid: 93374, elementOrHash.elementID: 4539366720.40>
+                            StaticText, 0x113436e40, {{39.0, 388.7}, {68.7, 18.3}}, label: 'Une Lune' <AX element pid: 93374, elementOrHash.elementID: 4539400192.41>
+                            StaticText, 0x113436f80, {{325.7, 397.0}, {29.0, 16.0}}, label: '0 / 5' <AX element pid: 93374, elementOrHash.elementID: 4539401088.42>
+                            Image, 0x1134370c0, {{366.7, 400.3}, {5.7, 9.7}}, identifier: 'chevron.right', label: 'Suivant' <AX element pid: 93374, elementOrHash.elementID: 4539401984.43>
+                            StaticText, 0x113437200, {{39.0, 408.0}, {40.3, 13.3}}, label: 'Normal' <AX element pid: 93374, elementOrHash.elementID: 4539400640.44>
+                            ScrollView, 0x113437340, {{0.0, 433.3}, {393.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4541038592.45>
+                              Other, 0x113437480, {{0.0, 433.3}, {488.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4766238208.71>
+                                Button, 0x1134375c0, {{20.0, 433.3}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 93374, elementOrHash.elementID: 4539404224.90>
+                                  Image, 0x113437700, {{20.0, 433.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539402432.126>
+                                  Image, 0x113437840, {{20.0, 433.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539402880.127>
+                                  Image, 0x113437980, {{20.0, 433.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539403328.128>
+                                  Image, 0x113437ac0, {{20.0, 433.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539403776.129>
+                                Button, 0x113437c00, {{112.0, 433.3}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 93374, elementOrHash.elementID: 4539408256.91>
+                                  Image, 0x113437d40, {{112.0, 433.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539404672.130>
+                                  Image, 0x113437e80, {{112.0, 433.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539405120.131>
+                                  Image, 0x103a4b340, {{112.0, 433.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539407360.132>
+                                  Image, 0x103a4b480, {{112.0, 433.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539407808.133>
+                                Button, 0x103a4b5c0, {{204.0, 433.3}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 93374, elementOrHash.elementID: 4539410944.92>
+                                  Image, 0x103a4b700, {{204.0, 433.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539408704.134>
+                                  Image, 0x103a4b840, {{204.0, 433.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539409152.135>
+                                  Image, 0x103a4b980, {{204.0, 433.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539410048.136>
+                                  Image, 0x103a4bac0, {{204.0, 433.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539410496.137>
+                                Button, 0x103a4bc00, {{296.0, 433.3}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 93374, elementOrHash.elementID: 4539414528.93>
+                                  Image, 0x103a4bd40, {{296.0, 433.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539411392.138>
+                                  Image, 0x103a4be80, {{296.0, 433.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539412288.139>
+                                  Image, 0x1134d8000, {{296.0, 433.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539412736.140>
+                                  Image, 0x1134d8140, {{296.0, 433.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539413632.141>
+                                Button, 0x1134d8280, {{388.0, 433.3}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 93374, elementOrHash.elementID: 4539417472.94>
+                                  Image, 0x1134d83c0, {{388.0, 433.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539414976.142>
+                                  Image, 0x1134d8500, {{388.0, 433.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539415424.143>
+                                  Image, 0x1134d8640, {{388.0, 433.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539416576.144>
+                                  Image, 0x1134d8780, {{388.0, 433.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539417024.145>
+                            StaticText, 0x1134d88c0, {{50.5, 578.7}, {85.3, 18.3}}, label: 'Deux Lunes' <AX element pid: 93374, elementOrHash.elementID: 4539418368.46>
+                            StaticText, 0x1134d8a00, {{325.7, 587.0}, {29.0, 16.0}}, label: '0 / 3' <AX element pid: 93374, elementOrHash.elementID: 4539419264.47>
+                            Image, 0x1134d8b40, {{366.7, 590.3}, {5.7, 9.7}}, identifier: 'chevron.right', label: 'Suivant' <AX element pid: 93374, elementOrHash.elementID: 4539419712.48>
+                            StaticText, 0x1134d8c80, {{50.5, 598.0}, {49.7, 13.3}}, label: 'Plus rare' <AX element pid: 93374, elementOrHash.elementID: 4539418816.49>
+                            ScrollView, 0x1134d8dc0, {{0.0, 623.3}, {393.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4541041664.50>
+                              Other, 0x1134d8f00, {{0.0, 623.3}, {304.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4766242816.72>
+                                Button, 0x1134d9040, {{20.0, 623.3}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 93374, elementOrHash.elementID: 4539421952.95>
+                                  Image, 0x1134d9180, {{20.0, 623.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539420160.146>
+                                  Image, 0x1134d92c0, {{20.0, 623.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539420608.147>
+                                  Image, 0x1134d9400, {{20.0, 623.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539421056.148>
+                                  Image, 0x1134d9540, {{20.0, 623.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539421504.149>
+                                Button, 0x1134d9680, {{112.0, 623.3}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 93374, elementOrHash.elementID: 4539424192.96>
+                                  Image, 0x1134d97c0, {{112.0, 623.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539422400.150>
+                                  Image, 0x1134d9900, {{112.0, 623.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539422848.151>
+                                  Image, 0x1134d9a40, {{112.0, 623.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539423296.152>
+                                  Image, 0x1134d9b80, {{112.0, 623.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539423744.153>
+                                Button, 0x1134d9cc0, {{204.0, 623.3}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 93374, elementOrHash.elementID: 4539426432.97>
+                                  Image, 0x1134d9e00, {{204.0, 623.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539424640.154>
+                                  Image, 0x1134d9f40, {{204.0, 623.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539425088.155>
+                                  Image, 0x1134da080, {{204.0, 623.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539425536.156>
+                                  Image, 0x1134da1c0, {{204.0, 623.3}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539425984.157>
+                            StaticText, 0x1134da300, {{62.0, 769.0}, {84.0, 18.3}}, label: 'Trois Lunes' <AX element pid: 93374, elementOrHash.elementID: 4539427328.51>
+                            StaticText, 0x1134da440, {{325.7, 777.3}, {29.0, 16.0}}, label: '0 / 3' <AX element pid: 93374, elementOrHash.elementID: 4539428672.52>
+                            Image, 0x1134da580, {{366.7, 780.7}, {5.7, 9.7}}, identifier: 'chevron.right', label: 'Suivant' <AX element pid: 93374, elementOrHash.elementID: 4539429120.53>
+                            StaticText, 0x1134da6c0, {{62.0, 788.3}, {50.3, 13.3}}, label: 'Très rare' <AX element pid: 93374, elementOrHash.elementID: 4539428224.54>
+                            ScrollView, 0x1134da800, {{0.0, 813.7}, {393.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4541044736.55>
+                              Other, 0x1134da940, {{0.0, 813.7}, {304.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4766244352.73>
+                                Button, 0x1134daa80, {{20.0, 813.7}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 93374, elementOrHash.elementID: 4539431808.98>
+                                  Image, 0x1134dabc0, {{20.0, 813.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539429568.158>
+                                  Image, 0x1134dad00, {{20.0, 813.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539430016.159>
+                                  Image, 0x1134dae40, {{20.0, 813.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539430464.160>
+                                  Image, 0x1134daf80, {{20.0, 813.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539431360.161>
+                                Button, 0x1134db0c0, {{112.0, 813.7}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 93374, elementOrHash.elementID: 4539451584.99>
+                                  Image, 0x1134db200, {{112.0, 813.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539432256.162>
+                                  Image, 0x1134db340, {{112.0, 813.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539449344.163>
+                                  Image, 0x1134db480, {{112.0, 813.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539449792.164>
+                                  Image, 0x1134db5c0, {{112.0, 813.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539450688.165>
+                                Button, 0x1134db700, {{204.0, 813.7}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 93374, elementOrHash.elementID: 4539454272.100>
+                                  Image, 0x1134db840, {{204.0, 813.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539452032.166>
+                                  Image, 0x1134db980, {{204.0, 813.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539452480.167>
+                                  Image, 0x1134dbac0, {{204.0, 813.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539452928.168>
+                                  Image, 0x1134dbc00, {{204.0, 813.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539453824.169>
+                            StaticText, 0x1134dbd40, {{73.5, 959.0}, {97.0, 18.3}}, label: 'Quatre Lunes' <AX element pid: 93374, elementOrHash.elementID: 4539455168.56>
+                            StaticText, 0x1134dbe80, {{325.7, 967.3}, {29.0, 16.0}}, label: '0 / 3' <AX element pid: 93374, elementOrHash.elementID: 4539456064.57>
+                            Image, 0x1134dc000, {{366.7, 970.7}, {5.7, 9.7}}, identifier: 'chevron.right', label: 'Suivant' <AX element pid: 93374, elementOrHash.elementID: 4539456960.58>
+                            StaticText, 0x1134dc140, {{73.5, 978.3}, {62.3, 13.3}}, label: 'Légendaire' <AX element pid: 93374, elementOrHash.elementID: 4539455616.59>
+                            ScrollView, 0x1134dc280, {{0.0, 1003.7}, {393.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4541047808.60>
+                              Other, 0x1134dc3c0, {{0.0, 1003.7}, {304.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4766245888.74>
+                                Button, 0x1134dc500, {{20.0, 1003.7}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 93374, elementOrHash.elementID: 4365466048.101>
+                                  Image, 0x1134dc640, {{20.0, 1003.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539457408.170>
+                                  Image, 0x1134dc780, {{20.0, 1003.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539458304.171>
+                                  Image, 0x1134dc8c0, {{20.0, 1003.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539458752.172>
+                                  Image, 0x1134dca00, {{20.0, 1003.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539459648.173>
+                                Button, 0x1134dcb40, {{112.0, 1003.7}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 93374, elementOrHash.elementID: 4539630464.102>
+                                  Image, 0x1134dcc80, {{112.0, 1003.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4365462016.174>
+                                  Image, 0x1134dcdc0, {{112.0, 1003.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4365462464.175>
+                                  Image, 0x1134dcf00, {{112.0, 1003.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539629568.176>
+                                  Image, 0x1134dd040, {{112.0, 1003.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539630016.177>
+                                Button, 0x1134dd180, {{204.0, 1003.7}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 93374, elementOrHash.elementID: 4539633152.103>
+                                  Image, 0x1134dd2c0, {{204.0, 1003.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539630912.178>
+                                  Image, 0x1134dd400, {{204.0, 1003.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539631808.179>
+                                  Image, 0x1134dd540, {{204.0, 1003.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539632256.180>
+                                  Image, 0x1134dd680, {{204.0, 1003.7}, {80.0, 123.3}} <AX element pid: 93374, elementOrHash.elementID: 4539632704.181>
+                          Other, 0x1134dd7c0, {{360.0, 55.0}, {30.0, 742.0}}, label: 'Barre de défilement verticale, 2 pages', value: 0 % <AX element pid: 93374, elementOrHash.elementID: 4766252544.28>
+                            Other, 0x1134dd900, {{387.0, 58.0}, {3.0, 489.3}} <AX element pid: 93374, elementOrHash.elementID: 4539532160.61>
+                          Other, 0x1134dda40, {{360.0, 55.0}, {30.0, 742.0}}, label: 'Barre de défilement verticale, 2 pages', value: 0 % <AX element pid: 93374, elementOrHash.elementID: 4766252544.28>
+                            Other, 0x1134ddb80, {{387.0, 58.0}, {3.0, 489.3}} <AX element pid: 93374, elementOrHash.elementID: 4539532160.61>
+                        StaticText, 0x1134ddcc0, {{175.3, 79.7}, {42.3, 20.7}}, label: 'Profil' <AX element pid: 93374, elementOrHash.elementID: 4539634496.21>
+                        Button, 0x1134dde00, {{20.0, 63.0}, {44.0, 44.0}}, label: 'Retour' <AX element pid: 93374, elementOrHash.elementID: 4539635840.22>
+                          Image, 0x1134ddf40, {{20.0, 63.0}, {44.0, 44.0}}, identifier: 'chevron.left', label: 'Retour' <AX element pid: 93374, elementOrHash.elementID: 4539634944.29>
+                          Image, 0x1134de080, {{37.0, 78.3}, {7.7, 13.3}}, identifier: 'chevron.left', label: 'Retour' <AX element pid: 93374, elementOrHash.elementID: 4539635392.30>
+                        Button, 0x1134de1c0, {{329.0, 63.0}, {44.0, 44.0}}, label: 'Réglages' <AX element pid: 93374, elementOrHash.elementID: 4539637184.23>
+                          Image, 0x1134de300, {{329.0, 63.0}, {44.0, 44.0}}, identifier: 'gearshape', label: 'gearshape' <AX element pid: 93374, elementOrHash.elementID: 4539636288.31>
+                          Image, 0x1134de440, {{343.0, 77.0}, {16.3, 16.3}}, identifier: 'gearshape', label: 'gearshape' <AX element pid: 93374, elementOrHash.elementID: 4539636736.32>
+                        Other, 0x1134de580, {{-129.3, 467.4}, {652.0, 771.1}} <AX element pid: 93374, elementOrHash.elementID: 4541603968.24>
+                          Other, 0x1134de6c0, {{-129.3, 467.4}, {652.0, 771.1}} <AX element pid: 93374, elementOrHash.elementID: 4541201600.33>
+                            Other, 0x1134de800, {{87.0, 698.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4744190208.62>
+                              Other, 0x1134de940, {{87.0, 698.2}, {220.9, 321.5}}, identifier: 'berceau' <AX element pid: 93374, elementOrHash.elementID: 4744190848.75>
+                                Other, 0x1134dea80, {{87.0, 698.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4744190528.104>
+                                  Other, 0x1134debc0, {{87.0, 698.2}, {220.9, 321.5}}, identifier: 'corps' <AX element pid: 93374, elementOrHash.elementID: 4744193088.182>
+                                  Other, 0x1134ded00, {{87.0, 698.2}, {220.9, 321.5}}, identifier: 'bande' <AX element pid: 93374, elementOrHash.elementID: 4744195648.183>
+                                  Other, 0x1134dee40, {{87.0, 698.2}, {220.9, 321.5}}, identifier: 'lune' <AX element pid: 93374, elementOrHash.elementID: 4744196608.184>
+                                  Other, 0x1134def80, {{87.0, 698.2}, {220.9, 321.5}}, identifier: 'carte' <AX element pid: 93374, elementOrHash.elementID: 4744197568.185>
+                                    Other, 0x1134df0c0, {{117.1, 743.5}, {163.6, 251.1}} <AX element pid: 93374, elementOrHash.elementID: 4744198528.187>
+                                  Other, 0x1134df200, {{87.0, 698.2}, {220.9, 321.5}}, identifier: 'poudre' <AX element pid: 93374, elementOrHash.elementID: 4744191168.186>
+                                    Other, 0x1134df340, {{87.0, 698.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4744199168.188>
+                              Other, 0x1134df480, {{87.0, 698.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4744199808.76>
+                                Other, 0x1134df5c0, {{86.2, 692.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765630464.105>
+                                Other, 0x1134df700, {{86.2, 692.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765631104.106>
+                              Other, 0x1134df840, {{87.0, 698.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765631744.77>
+                                Other, 0x1134df980, {{86.2, 692.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765632064.107>
+                                Other, 0x1134dfac0, {{86.2, 692.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765632704.108>
+                              Other, 0x1134dfc00, {{87.0, 698.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765633344.78>
+                                Other, 0x1134dfd40, {{86.2, 692.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765633664.109>
+                                Other, 0x1134dfe80, {{86.2, 692.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765634304.110>
+                              Other, 0x1134e0000, {{87.0, 698.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765634944.79>
+                                Other, 0x1134e0140, {{86.2, 692.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765635264.111>
+                                Other, 0x1134e0280, {{86.2, 692.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765635904.112>
+                              Other, 0x1134e03c0, {{87.0, 698.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765636544.80>
+                                Other, 0x1134e0500, {{86.2, 692.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765636864.113>
+                                Other, 0x1134e0640, {{86.2, 692.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765637504.114>
+                              Other, 0x1134e0780, {{87.0, 698.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765638144.81>
+                                Other, 0x1134e08c0, {{86.2, 692.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765638464.115>
+                                Other, 0x1134e0a00, {{86.2, 692.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765639104.116>
+                              Other, 0x1134e0b40, {{87.0, 698.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765639744.82>
+                                Other, 0x1134e0c80, {{86.2, 692.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765640064.117>
+                                Other, 0x1134e0dc0, {{86.2, 692.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765640704.118>
+                              Other, 0x1134e0f00, {{87.0, 698.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765641344.83>
+                                Other, 0x1134e1040, {{86.2, 692.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765641664.119>
+                                Other, 0x1134e1180, {{86.2, 692.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765642304.120>
+                              Other, 0x1134e12c0, {{87.0, 698.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765642944.84>
+                                Other, 0x1134e1400, {{86.2, 692.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765643264.121>
+                                Other, 0x1134e1540, {{86.2, 692.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765643904.122>
+                              Other, 0x1134e1680, {{87.0, 698.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765644544.85>
+                                Other, 0x1134e17c0, {{86.2, 692.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765644864.123>
+                                Other, 0x1134e1900, {{86.2, 692.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765645504.124>
+                              Other, 0x1134e1a40, {{87.0, 698.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765646464.86>
+                                Other, 0x1134e1b80, {{-1971.0, 868.2}, {4459.5, 739.8}} <AX element pid: 93374, elementOrHash.elementID: 4744191808.125>
+                              Other, 0x1134e1cc0, {{87.0, 698.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4744191488.87>
+                              Other, 0x1134e1e00, {{87.0, 698.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765843776.88>
+                              Other, 0x1134e1f40, {{87.0, 698.2}, {220.9, 321.5}} <AX element pid: 93374, elementOrHash.elementID: 4765844096.89>
+                        Image, 0x1134e2080, {{190.0, 651.7}, {13.0, 7.7}}, identifier: 'chevron.up', label: 'Monter' <AX element pid: 93374, elementOrHash.elementID: 4539638080.25>
+                        Image, 0x1134e21c0, {{190.0, 657.0}, {13.0, 7.7}}, identifier: 'chevron.up', label: 'Monter' <AX element pid: 93374, elementOrHash.elementID: 4539638528.26>
+              Other, 0x1134e2300, {{0.0, 769.0}, {393.0, 83.0}} <AX element pid: 93374, elementOrHash.elementID: 4540020288.13>
+                Other, 0x1134e2440, {{0.0, 0.0}, {393.0, 852.0}} <AX element pid: 93374, elementOrHash.elementID: 4539310848.15>
+                Other, 0x1134e2580, {{0.0, 769.0}, {393.0, 83.0}} <AX element pid: 93374, elementOrHash.elementID: 4540003840.16>
+            Button, 0x1134e26c0, {{314.0, 113.0}, {65.0, 25.3}}, label: '▶ Nosfy' <AX element pid: 93374, elementOrHash.elementID: 4539355520.10>
+            StaticText, 0x1134e2800, {{184.7, 816.7}, {23.7, 1.3}}, identifier: 'cartes-qa-collection', label: 'orange=3;noir=3;references=0;exemplaires=0' <AX element pid: 93374, elementOrHash.elementID: 4539355968.11>
+    Other, 0x1134e2940, {{0.0, 0.0}, {393.0, 852.0}} <AX element pid: 93374, elementOrHash.elementID: 4768472576.200>
+      Other, 0x1134e2a80, {{0.0, 0.0}, {393.0, 852.0}} <AX element pid: 93374, elementOrHash.elementID: 4365137920.202>
+        Other, 0x1134e2bc0, {{0.0, 0.0}, {393.0, 852.0}} <AX element pid: 93374, elementOrHash.elementID: 4539658496.204>
+          Image, 0x1134e2d00, {{0.0, 0.0}, {393.0, 852.0}} <AX element pid: 93374, elementOrHash.elementID: 4539690816.222>
+          Image, 0x1134e2e40, {{0.0, 0.0}, {393.0, 852.0}} <AX element pid: 93374, elementOrHash.elementID: 4539691264.223>
+          Image, 0x1134e2f80, {{0.0, 0.0}, {393.0, 852.0}} <AX element pid: 93374, elementOrHash.elementID: 4539691712.224>
+          Button, 0x1134e30c0, {{22.0, 63.0}, {44.0, 44.0}}, label: 'Fermer' <AX element pid: 93374, elementOrHash.elementID: 4539693056.225>
+            Image, 0x1134e3200, {{22.0, 63.0}, {44.0, 44.0}}, identifier: 'chevron.left', label: 'Retour' <AX element pid: 93374, elementOrHash.elementID: 4539692160.262>
+            Image, 0x1134e3340, {{39.0, 78.3}, {7.7, 13.3}}, identifier: 'chevron.left', label: 'Retour' <AX element pid: 93374, elementOrHash.elementID: 4539692608.263>
+          StaticText, 0x1134e3480, {{80.0, 66.8}, {203.3, 36.3}}, label: 'Récompenses' <AX element pid: 93374, elementOrHash.elementID: 4539693504.226>
+          Image, 0x1134e35c0, {{-33.9, 432.4}, {134.6, 134.6}} <AX element pid: 93374, elementOrHash.elementID: 4539693952.227>
+          Image, 0x1134e3700, {{129.2, 225.3}, {134.7, 232.5}} <AX element pid: 93374, elementOrHash.elementID: 4539646848.228>
+          Image, 0x1134e3840, {{292.4, 432.4}, {134.6, 134.6}} <AX element pid: 93374, elementOrHash.elementID: 4539648192.229>
+          Image, 0x1134e3980, {{471.6, 380.1}, {102.4, 176.7}} <AX element pid: 93374, elementOrHash.elementID: 4539646400.230>
+          StaticText, 0x1134e3ac0, {{151.7, 169.0}, {89.7, 17.0}}, label: 'Booster Lune' <AX element pid: 93374, elementOrHash.elementID: 4539651776.231>
+          StaticText, 0x1134e3c00, {{78.5, 191.0}, {236.0, 18.3}}, label: 'Un sachet de cartes du set Lune.' <AX element pid: 93374, elementOrHash.elementID: 4539650880.232>
+          Image, 0x1134e3d40, {{177.0, 623.3}, {15.3, 26.0}}, label: 'booster-hero' <AX element pid: 93374, elementOrHash.elementID: 4539655360.233>
+          StaticText, 0x1134e3e80, {{203.7, 626.0}, {11.0, 20.7}}, label: '3' <AX element pid: 93374, elementOrHash.elementID: 4539654912.234>
+          Image, 0x1134ec000, {{153.0, 701.3}, {18.7, 18.7}} <AX element pid: 93374, elementOrHash.elementID: 4539656256.235>
+          StaticText, 0x1134ec140, {{177.8, 701.5}, {62.3, 18.3}}, label: '10 / 100' <AX element pid: 93374, elementOrHash.elementID: 4539656704.236>
+          Button, 0x1134ec280, {{36.7, 764.3}, {320.0, 58.0}}, label: 'OUVRIR' <AX element pid: 93374, elementOrHash.elementID: 4539657152.237>
+          Image, 0x1134ec3c0, {{327.0, 63.0}, {44.0, 44.0}}, identifier: 'list.bullet', label: 'Historique des gains' <AX element pid: 93374, elementOrHash.elementID: 4539657600.238>
