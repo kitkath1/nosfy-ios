@@ -63,6 +63,16 @@ final class BoosterHaptics {
         ], atTime: CHHapticTimeImmediate)
     }
 
+    /// Fin définitive de cette cérémonie, même si un rappel la retient encore.
+    func shutdown() {
+        bedStop()
+        engine?.resetHandler = {}
+        engine?.stoppedHandler = { _ in }
+        engine?.stop(completionHandler: nil)
+        bed = nil
+        engine = nil
+    }
+
     func bedStop() {
         try? bed?.stop(atTime: CHHapticTimeImmediate)
     }
@@ -481,6 +491,7 @@ final class BoosterSFX {
 ///   `-boosterNoir` habille le sachet de la ROBE NOIRE (le manège des
 ///     légendaires — même expérience, même braise, un autre dessin).
 struct BoosterLab: View {
+    @Environment(\.scenePhase) private var scenePhase
     private static let still = CommandLine.arguments.contains("-boosterStill")
     private static let dos = CommandLine.arguments.contains("-boosterDos")
     private static let mylar = CommandLine.arguments.contains("-boosterMylar")
@@ -568,6 +579,7 @@ struct BoosterLab: View {
                                  cine: Self.cine,
                                  handle: handle,
                                  forge: appMode || Self.scelle,
+                                 paused: scenePhase != .active,
                                  robe: robeEffective,
                                  cadreDecoupe: true)
                         .ignoresSafeArea()
@@ -587,7 +599,8 @@ struct BoosterLab: View {
                         let projW = H * 0.41647
                         let cardW = min(projW + 46, 426)
                         let cardH = projW * 1448.0 / 1086.0
-                        TimelineView(.animation(minimumInterval: 1.0 / 60)) { tl in
+                        TimelineView(.animation(minimumInterval: 1.0 / 60,
+                                                paused: scenePhase != .active)) { tl in
                             let age = tl.date.timeIntervalSince(registreBorn)
                             // — LE VOL (l'avion) : fonction pure du temps.
                             // Cabrée, montée quadratique, dérive, roulis,
@@ -991,12 +1004,14 @@ final class BoosterHandle: ObservableObject {
 /// NOUVELLE, la dernière atterrit dans un éclat bref, et c'est elle qui
 /// allume le mot. Monochrome blanc — l'or appartient à la carte.
 struct SacreRegistre: View {
+    @Environment(\.scenePhase) private var scenePhase
     var lunes: Int
     var nouvelle: Bool
     var born: Date
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60)) { tl in
+        TimelineView(.animation(minimumInterval: 1.0 / 60,
+                                paused: scenePhase != .active)) { tl in
             let age = tl.date.timeIntervalSince(born)
             VStack(spacing: 13) {
                 HStack(spacing: 9) {
@@ -1044,7 +1059,7 @@ struct NouveauMot: View {
         let breath = 0.86 + 0.14 * sin(max(age - 1.1, 0) * 2 * .pi / 6.5)
         let sweep = (age - 2.6).truncatingRemainder(dividingBy: 5.2) / 0.9
 
-        Text("NOUVEAU")
+        Text(L("NOUVEAU", "NEW"))
             .font(.system(size: 12, weight: .light))
             .kerning(4.5)
             .foregroundStyle(LinearGradient(
@@ -1064,7 +1079,7 @@ struct NouveauMot: View {
                                       y: g.size.height / 2)
                     }
                 }
-                .mask(Text("NOUVEAU")
+                .mask(Text(L("NOUVEAU", "NEW"))
                     .font(.system(size: 12, weight: .light)).kerning(4.5))
             }
             .mask(GeometryReader { g in
@@ -1520,10 +1535,12 @@ struct BoosterStage: UIViewRepresentable {
         private var inviteTimer: Timer?
         private var inviteWanted = false
         private var hostPaused = false
+        private var demonte = false
         private var sceneSuspendue: (scene: SCNScene, camera: SCNNode?,
                                       temps: TimeInterval)?
 
         private func startInvite() {
+            guard !demonte, !frozen else { return }
             inviteWanted = true
             inviteTimer?.invalidate()
             inviteTimer = nil
@@ -1560,7 +1577,7 @@ struct BoosterStage: UIViewRepresentable {
         /// On détache la scène du renderer, en gardant ses objets, sa caméra
         /// et son temps pour le retour. Aucun attach/teardown ni Sacre.
         func setPaused(_ paused: Bool) {
-            guard !frozen, let view else { return }
+            guard !demonte, !frozen, let view else { return }
             if paused {
                 if view.isPlaying { view.isPlaying = false }
                 if view.rendersContinuously { view.rendersContinuously = false }
@@ -1648,6 +1665,7 @@ struct BoosterStage: UIViewRepresentable {
         }
 
         func startHold() {
+            guard !demonte, !frozen else { return }
             guard holdLink == nil else { return }
             stopInvite()
             // Le pulse du tell rendrait folles les écritures `lipGlow`
@@ -1932,6 +1950,9 @@ struct BoosterStage: UIViewRepresentable {
         /// Le son SORT en fondu : l'ambiance est retenue le temps qu'il
         /// s'achève, parce que son `deinit` couperait le moteur net.
         func teardown() {
+            guard !demonte else { return }
+            demonte = true
+            hostPaused = true
             stopSpin()
             stopScroll()
             stopPlacing()
@@ -1969,6 +1990,24 @@ struct BoosterStage: UIViewRepresentable {
             }
             view?.isPlaying = false
             view?.rendersContinuously = false
+            // Une action SceneKit ou un rappel déjà en file peut retenir le
+            // coordinateur après dismantle. Couper aussi sa scène empêche
+            // ces fins de cérémonie de rallumer un moteur hors écran.
+            stage?.scene.isPaused = true
+            stage?.scene.rootNode.removeAllActions()
+            stage?.scene.rootNode.enumerateChildNodes { node, _ in
+                node.removeAllActions()
+                node.removeAllAnimations()
+                node.removeAllParticleSystems()
+            }
+            view?.scene = nil
+            sceneSuspendue = nil
+            stage = nil
+            haptics.shutdown()
+            handle?.coordinator = nil
+            handle = nil
+            NavDiagnostic.noter("booster-demontage",
+                destination: "scene=0;liens=0;gyro=0;haptique=0")
             print("[booster-bench] démontage : liens coupés, gyro arrêté, "
                   + "sonnant=\(BoosterAmbience.sounding)")
         }
@@ -1989,6 +2028,7 @@ struct BoosterStage: UIViewRepresentable {
         private var motionClient = false
 
         private func startGalleryGyro() {
+            guard !demonte, !frozen else { return }
             guard gyroLink == nil else { return }
             if !motionClient, !hostPaused {
                 motionClient = true
@@ -2043,6 +2083,7 @@ struct BoosterStage: UIViewRepresentable {
         }
 
         private func startSpin() {
+            guard !demonte, !frozen else { return }
             stopSpin()
             let link = CADisplayLink(target: self, selector: #selector(spinStep(_:)))
             link.isPaused = hostPaused
@@ -2061,6 +2102,7 @@ struct BoosterStage: UIViewRepresentable {
         /// les feux montent en cascade (le fond d'abord, le central en
         /// dernier), la caméra recule — ~1,45 s, gestes verrouillés.
         private func beginPlacing() {
+            guard !demonte, !frozen else { return }
             guard let stage else { return }
             mode = .placing
             stage.floorNode.opacity = 0
@@ -2234,6 +2276,7 @@ struct BoosterStage: UIViewRepresentable {
         // MARK: le spin du sachet central dans l'anneau
 
         private func startRingSpin() {
+            guard !demonte, !frozen else { return }
             stopRingSpin()
             let link = CADisplayLink(target: self,
                                      selector: #selector(ringSpinStep(_:)))
@@ -2293,6 +2336,7 @@ struct BoosterStage: UIViewRepresentable {
         // MARK: la galerie — défilement, engagement, retour
 
         private func startScroll() {
+            guard !demonte, !frozen else { return }
             stopScroll()
             let link = CADisplayLink(target: self,
                                      selector: #selector(scrollStep(_:)))
@@ -3480,8 +3524,19 @@ struct BoosterStage: UIViewRepresentable {
         /// (wantsHDR n'est pas animable — la marche est cachée), et la
         /// SCNView rend le GPU. CarteVivante règne seule.
         func extinguishForHandoff() {
-            guard let stage, let view else { return }
+            guard !demonte, !frozen, let stage, let view else { return }
             frozen = true
+            stopSpin()
+            stopScroll()
+            stopPlacing()
+            stopRingSpin()
+            stopGalleryGyro()
+            stopHold()
+            stopInvite()
+            if motionClient {
+                motionClient = false
+                LuneMotion.shared.stop()
+            }
             stage.cardNode.isHidden = true
             stage.cameraNode.camera?.wantsHDR = false
             view.gestureRecognizers?.forEach { $0.isEnabled = false }
@@ -3490,10 +3545,24 @@ struct BoosterStage: UIViewRepresentable {
             // dernière frame reste affichée à jamais (la nappe de braise
             // sous la carte — le « trop éclairé en bas » payé au banc).
             // Le noir du ZStack prend le relais, CarteVivante règne.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak view] in
-                view?.isPlaying = false
-                view?.rendersContinuously = false
-                view?.isHidden = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self, weak view] in
+                guard let self, !self.demonte, self.frozen, let view,
+                      view.scene === stage.scene else { return }
+                view.isPlaying = false
+                view.rendersContinuously = false
+                view.isHidden = true
+                // Comme pour la pause du profil : les drapeaux de rendu
+                // seuls ne suffisent pas. Le résultat est déjà recouvert ;
+                // aucune image de la scène ne doit encore être produite.
+                stage.scene.isPaused = true
+                stage.scene.rootNode.removeAllActions()
+                stage.scene.rootNode.enumerateChildNodes { node, _ in
+                    node.removeAllActions()
+                    node.removeAllAnimations()
+                    node.removeAllParticleSystems()
+                }
+                view.scene = nil
+                NavDiagnostic.noter("booster-relais", destination: "scene=0;liens=0;gyro=0")
             }
         }
     }

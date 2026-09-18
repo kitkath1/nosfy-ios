@@ -1,0 +1,21 @@
+{
+  "rendus_apres_relais": [
+    546,
+    546,
+    546,
+    546,
+    546
+  ],
+  "etats_apres_demontage": 115,
+  "etats_avec_scene_apres_demontage": 0,
+  "transitions_thermiques": [
+    {
+      "t": 1.0,
+      "therm": 0
+    },
+    {
+      "t": 9.1,
+      "therm": 1
+    }
+  ]
+}
