@@ -1,0 +1,55 @@
+{
+ "user": "9f5b775d-6e40-4af6-b3a2-ac81386f7641",
+ "boosters": [
+  {
+   "id": "c6d4d23c-46db-499d-a5b0-3a2103b6693e",
+   "robe": null,
+   "origine": "seance",
+   "opened_at": "2026-09-18T14:38:50.270127+00:00",
+   "revealed_at": "2026-09-18T14:38:58.685735+00:00",
+   "card_id": "6ab3e4be-78f7-527f-b8f2-bee33e9cb6c1"
+  },
+  {
+   "id": "f347cb69-42cc-4728-8275-7f639a9a7d70",
+   "robe": null,
+   "origine": "seance",
+   "opened_at": "2026-09-18T14:39:53.326328+00:00",
+   "revealed_at": "2026-09-18T14:40:00.587691+00:00",
+   "card_id": "1ff5a6c5-cc82-550a-83d3-b1d22210e063"
+  },
+  {
+   "id": "9dd137cd-f174-4127-982f-f0e20e4881e4",
+   "robe": "noire",
+   "origine": "cadeau",
+   "opened_at": "2026-09-18T15:01:43.451617+00:00",
+   "revealed_at": "2026-09-18T15:01:51.392366+00:00",
+   "card_id": "1d5e44d0-d271-5572-a143-a0d174d34712"
+  },
+  {
+   "id": "74b39e3d-1ecd-4816-8e67-f5ae87b60bda",
+   "robe": "lune",
+   "origine": "cadeau",
+   "opened_at": "2026-09-18T15:39:23.786446+00:00",
+   "revealed_at": "2026-09-18T15:39:31.33453+00:00",
+   "card_id": "f6b1fc9e-4cf2-5fe6-bd25-0196c380b342"
+  }
+ ],
+ "cards": [
+  {
+   "card_id": "6ab3e4be-78f7-527f-b8f2-bee33e9cb6c1",
+   "booster_id": "c6d4d23c-46db-499d-a5b0-3a2103b6693e"
+  },
+  {
+   "card_id": "1ff5a6c5-cc82-550a-83d3-b1d22210e063",
+   "booster_id": "f347cb69-42cc-4728-8275-7f639a9a7d70"
+  },
+  {
+   "card_id": "1d5e44d0-d271-5572-a143-a0d174d34712",
+   "booster_id": "9dd137cd-f174-4127-982f-f0e20e4881e4"
+  },
+  {
+   "card_id": "f6b1fc9e-4cf2-5fe6-bd25-0196c380b342",
+   "booster_id": "74b39e3d-1ecd-4816-8e67-f5ae87b60bda"
+  }
+ ]
+}

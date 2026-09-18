@@ -117,3 +117,29 @@ Sonde (`vol-20260918-164822.jsonl`, 869 lignes) :
 
 Fermé en plus : le manège noir de bout en bout (Ouvrir → légendaire → envol →
 collection). Toujours ouvert : le chevron, la coupure réseau, l'endurance.
+
+## Troisième passe, 18:40 → 18:47 — LE CHEVRON pendant le manège (sachet orange de test)
+
+Sur son « vas-y » : un sachet orange de test posé (`orange-test-chevron-pose.json`,
+id `74b39e3d`, origine cadeau, 15:37:44 UTC), app du commit 8bbccfb0 relancée avec
+la sonde (`nav-20260918-173744.jsonl`, `vol-20260918-173744.jsonl`). Son mot :
+« oui c'est good j'ai testé ».
+
+Journal nav (t depuis 17:37:44) : Profil 60,8 s → coffre → **manège 74,6 s →
+chevron → `selection home` 75,9 s** → Profil 87,0 s → coffre → manège 97,4 s
+(reprise) → carte révélée 106,3 s → envol, retour Profil 110,4 s.
+
+Serveur (`serveur-apres-chevron.json`) : le sachet de test n'a été ouvert QU'UNE
+fois — 15:39:23 UTC (= t ≈ 99 s, le second manège), révélé 15:39:31, carte
+`f6b1fc9e` ; `user_cards` = 4. Le premier manège, quitté par le chevron, n'a rien
+consommé : **le chevron rend la home sans perdre le sachet, et le manège reprend.**
+
+Sonde : thermique 0 sur toute la passe ; manège 1 → chevron 41,5 % CPU (n = 2),
+home après le chevron 9 % (60 img/s), reprise du manège 30,5 % (60 img/s, à-coup
+153 ms), envol 50 %. Un `gel` de 2 s à t = 18,6 s sur la HOME à 2 % CPU — avant
+tout geste Cartes, l'app probablement passée inactive (verrouillage ou lancement) ;
+pas le manège.
+
+Fermé : la sortie par le chevron pendant le manège (home, sachet intact, reprise).
+Toujours ouvert : la coupure réseau pendant l'ouverture, l'endurance thermique,
+ses verdicts d'œil sur le shiny et le contraste des trois familles.

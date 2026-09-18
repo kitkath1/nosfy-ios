@@ -1,5 +1,36 @@
 # Règle multi-session (Nosfy)
 
+## Cartes — iPhone RÉSERVÉ (18-09 18:40) : le chevron pendant le manège, sur son « vas-y »
+
+Un sachet orange de TEST posé sur son compte (origine cadeau, id dans
+tools/carte-lune/iphone-2026-09-18/orange-test-chevron-pose.json). App du commit
+8bbccfb0 déjà installée, relancée avec la sonde. → **LIBÉRÉ 18:50**, app relancée
+normalement. Chevron : retour home, sachet intact, manège repris, carte envolée (« c'est good »).
+⚠️ Ce commit remet le `]` fermant à la FIN de `docs/site/content/mesures.ts` : dans acefb57c
+il précédait l'entrée m-erreur-avion-iphone, la source ne compilait pas (`npm run artefact`
+refusait). Rien d'autre emporté ; vos autres lignes de mesures.ts restent dans l'arbre.
+
+
+## Cartes — iPhone RÉSERVÉ (18-09 17:45) : banc de matière du sachet noir, sur son « vas-y code »
+
+Build Debug de l'arbre (BoosterPack.swift : `-noirMatiere <n>`, 4 recettes) installé
+sur son téléphone, lancé en banc `-skipAuth -boosterLab -boosterNoir -boosterGallery`
+(rien n'est consommé, aucun sachet). Elle juge à l'écran, je relance par variante.
+→ **LIBÉRÉ 18:12**, app relancée normalement (son compte). Verdict : laque sombre
+(variante 5) + lune en néon blanc + musique du manège noir = « ok très bien », commité.
+Analyse : tools/sacre/ANALYSE-SACHET-NOIR-MATIERE-2026-09-18.md.
+
+
+## Cartes — iPhone RÉSERVÉ à nouveau (18-09 17:10) : manège noir + chevron, sur son « vas-y »
+
+Un sachet noir de TEST posé sur son compte (origine cadeau, id dans
+tools/carte-lune/iphone-2026-09-18/noir-test-pose.json). App déjà installée,
+relancée avec la sonde. → **LIBÉRÉ 17:20**, relancé `-sansSondeVol`. Noir ouvert au doigt,
+légendaire révélée et envolée (serveur : 3 cartes) ; therm 1 atteint APRÈS 13 min de home
+immobile écran allumé au câble (cpu 9 %) — à lire par la session chauffe, pas un verdict.
+Son verdict : le sachet noir dans le manège « trop mat, pas assez réaliste ».
+
+
 ## Cartes — iPhone RÉSERVÉ (18-09 17:45) : banc de matière du sachet noir, sur son « vas-y code »
 
 Build Debug de l'arbre (BoosterPack.swift : `-noirMatiere <n>`, 4 recettes) installé
