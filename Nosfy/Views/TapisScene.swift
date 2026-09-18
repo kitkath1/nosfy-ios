@@ -663,7 +663,8 @@ struct TapisScene: View {
                 // LA PRISE en premier, les taps DEVANT : dans le
                 // chevauchement, c'est le tap du chrono qui doit gagner.
                 PriseVitesse(etat: vit, seance: seance, largeur: w,
-                             haut: h * 0.50, bas: h - 110)
+                             haut: max(0, h * Self.yVitesseF - TapisCotes.rayonDisque - 44),
+                             bas: h - 102)
                 zonesTactiles(w: w, h: h)
                 pied(w: w, h: h)
                 fete
@@ -1277,13 +1278,12 @@ final class EtatVitesse {
     var continu: Double
     /// La valeur CRANTÉE — la seule qui parte dans l'état de séance.
     var valeur: Double
-    /// La valeur au moment où le doigt s'est posé, et la course morte du seuil.
+    /// La valeur au moment où le doigt s'est posé.
     /// ⚠️ C'EST ÇA, LA POSITION ABSOLUE : on ne cumule RIEN. Un événement
     /// perdu, une reprise, un doigt qui s'arrête — rien ne peut faire dériver
     /// une soustraction faite depuis le point de pose. L'entrée angulaire,
     /// elle, additionnait des deltas : elle dérivait à la moindre coupure.
     var base: Double
-    var morte: CGFloat = 0
     var prise = false
     var dernierClic: Date?
     /// Les deux horodatages de la FUMÉE.
@@ -1343,6 +1343,7 @@ private struct PriseVitesse: View {
     @State private var clic = UIImpactFeedbackGenerator(style: .rigid)
     /// Le jeton du repli différé : un nouveau toucher l'invalide.
     @State private var tourFermeture = 0
+    @GestureState private var doigtPose = false
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -1362,19 +1363,31 @@ private struct PriseVitesse: View {
             .onChange(of: scenePhase) { _, phase in
                 if phase != .active, etat.prise { relacher() }
             }
+            .onChange(of: doigtPose) { _, pose in
+                // GestureState retombe aussi si iOS annule le geste sans onEnded.
+                if !pose, etat.prise { relacher() }
+            }
+            .onDisappear {
+                if etat.prise { relacher() }
+                tourFermeture += 1
+                etat.arcOuvert = false
+                etat.toucheDebut = nil
+                etat.toucheFin = nil
+            }
     }
 
     private var glisse: some Gesture {
-        // 2 pt et non 8 : la course morte se RETRANCHE (`morte`), elle ne se
-        // subit pas — sinon les deux premiers points du geste sont mangés.
-        DragGesture(minimumDistance: 2)
+        // Le contact ouvre, même sans déplacement. Le même geste prend la
+        // glisse ensuite : aucun second appui ni premier mouvement perdu.
+        DragGesture(minimumDistance: 0)
+            .updating($doigtPose) { _, pose, _ in pose = true }
             .onChanged { v in
+                guard !seance.terminee else { return }
                 if !etat.prise {
                     etat.prise = true
-                    withAnimation(.easeOut(duration: 0.22)) { etat.arcOuvert = true }
+                    withAnimation(.easeOut(duration: 0.16)) { etat.arcOuvert = true }
                     tourFermeture += 1
                     etat.base = etat.valeur
-                    etat.morte = v.translation.width
                     etat.toucheDebut = Date()
                     etat.toucheFin = nil
                     // Le clic PRÉPARÉ à la saisie : la latence du premier coup
@@ -1385,7 +1398,7 @@ private struct PriseVitesse: View {
                 // vitesse — le sens d'un curseur, et celui que les chiffres
                 // suivent à l'écran.
                 var p = etat.base
-                    + Double(v.translation.width - etat.morte) / pasGlisse
+                    + Double(v.translation.width) / pasGlisse
                 // Élastique aux bornes : la matière RÉSISTE, elle ne bute pas.
                 if p < vMin { p = vMin + (p - vMin) * 0.30 }
                 if p > vMax { p = vMax + (p - vMax) * 0.30 }
@@ -1417,14 +1430,17 @@ private struct PriseVitesse: View {
     }
 
     private func relacher() {
+        guard etat.prise else { return }
         etat.prise = false
         etat.toucheFin = Date()
-        // Le halo blanc + la dalle disent « c'est enregistré ».
-        seance.vitesseScellee = Date()
-        seance.vitesseChoisie = Int(etat.valeur.rounded())
-        // AU LONG (G7) : le sceau d'une autre allure ferme le segment couru
-        // et en ouvre un — le graphe a son profil, le barème ses minutes.
-        seance.sceller(etat.valeur)
+        let aChange = etat.valeur != etat.base
+        if aChange, !seance.terminee {
+            // Un tap ouvre seulement la molette. La confirmation et le
+            // segment d'allure sont réservés à un changement de valeur.
+            seance.vitesseScellee = Date()
+            seance.vitesseChoisie = Int(etat.valeur.rounded())
+            seance.sceller(etat.valeur)
+        }
         withAnimation(.spring(response: 0.30, dampingFraction: 0.78)) {
             etat.continu = etat.valeur
         }
@@ -1433,12 +1449,15 @@ private struct PriseVitesse: View {
         // nouveau toucher annule le repli (on peut se raviser).
         tourFermeture += 1
         let tour = tourFermeture
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+        // Après un tap, laisser le temps de reprendre la molette en courant.
+        // Après un réglage, garder le repli bref qui libère l'écran.
+        DispatchQueue.main.asyncAfter(deadline: .now() + (aChange ? 0.55 : 2.4)) {
             guard tour == tourFermeture, !etat.prise else { return }
             withAnimation(.easeInOut(duration: 0.34)) { etat.arcOuvert = false }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            if !etat.prise { etat.toucheDebut = nil }
+            guard tour == tourFermeture, !etat.prise else { return }
+            etat.toucheDebut = nil
         }
     }
 }
