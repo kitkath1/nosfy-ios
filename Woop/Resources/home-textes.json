@@ -2,7 +2,7 @@
   {
     "schema": 1,
     "langue": "fr",
-    "revision": "fr-sobre-20260918-01",
+    "revision": "fr-bilan-20260918-02",
     "variantes": {
       "vide": [
         {
@@ -73,9 +73,9 @@
           "id": "fr-active-1",
           "fragments": [
             "{salut}",
-            "Déjà",
+            "Cette semaine,",
             "{seances}",
-            "cette semaine."
+            "Bien joué."
           ],
           "bouton": null
         },
@@ -85,7 +85,7 @@
             "{salut}",
             "Cette semaine,",
             "{seances}",
-            "Bien joué."
+            "Bravo."
           ],
           "bouton": null
         },
@@ -95,7 +95,7 @@
             "{salut}",
             "Cette semaine,",
             "{seances}",
-            "À ton rythme."
+            "Beau travail."
           ],
           "bouton": null
         }
@@ -414,7 +414,7 @@
   {
     "schema": 1,
     "langue": "en",
-    "revision": "ia-relue-20260916-03",
+    "revision": "en-bilan-20260918-02",
     "variantes": {
       "vide": [
         {
@@ -485,9 +485,9 @@
           "id": "en-active-1",
           "fragments": [
             "{salut}",
-            "So far this week",
+            "This week,",
             "{seances}",
-            "Fancy one more?"
+            "Well done."
           ],
           "bouton": null
         },
@@ -495,9 +495,9 @@
           "id": "en-active-2",
           "fragments": [
             "{salut}",
-            "This week’s tally",
+            "This week,",
             "{seances}",
-            "Ready for the next?"
+            "Nice work."
           ],
           "bouton": null
         },
@@ -505,9 +505,9 @@
           "id": "en-active-3",
           "fragments": [
             "{salut}",
-            "Your week so far",
+            "This week,",
             "{seances}",
-            "Want a little extra?"
+            "Keep it up."
           ],
           "bouton": null
         }

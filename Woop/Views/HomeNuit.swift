@@ -336,9 +336,9 @@ enum PhraseTexte {
         if faits > 0 {
             let mot = L(faits == 1 ? "séance" : "séances", faits == 1 ? "workout" : "workouts")
             return [PhraseFragment(salut, clair: true),
-                    PhraseFragment(L("Déjà", "you’ve done"), clair: false),
+                    PhraseFragment(L("Cette semaine,", "This week,"), clair: false),
                     PhraseFragment("\(faits) \(mot)", clair: true),
-                    PhraseFragment(L("cette semaine.", "this week."), clair: false)]
+                    PhraseFragment(L("Bien joué.", "Well done."), clair: false)]
         }
         return [PhraseFragment(salut, clair: true),
                 PhraseFragment(L("Ta prochaine", "no workout yet"), clair: false),
@@ -399,12 +399,8 @@ enum PhraseTexte {
 
     /// LA PHRASE PENDANT UNE SÉANCE (02-09).
     ///
-    /// ⚠️ **QUATRE LIGNES, ET CE N'EST PAS NÉGOCIABLE.** La phrase d'accueil
-    /// est ancrée par le HAUT, celle du départ par le BAS, et
-    /// `DepartCine.courseTexte` (441) est la distance mesurée entre leurs deux
-    /// bas. Une phrase de séance à trois ou cinq lignes déplacerait ce bas de
-    /// 38 pt et rendrait FAUX le raccord du fondu croisé du départ — le texte
-    /// sauterait à l'instant précis où les mots se substituent.
+    /// Quatre fragments éditoriaux. Un prénom long ajoute une ligne visuelle
+    /// à la salutation ; le mobilier et le raccord du départ en tiennent compte.
     ///
     /// ⚠️ **MÊME ALTERNANCE, MÊME FIN SUR UN SOURD** : c'est elle qui fait
     /// lire le bloc comme une voix, pas les mots.
@@ -594,6 +590,16 @@ struct PhraseVue: View, Animatable {
             .enumerated().map { PhraseFragment($0.element, clair: $0.offset.isMultiple(of: 2)) }
     }
 
+    private var largeurTexte: CGFloat { min(params.largeur, max(1, ecran - 48)) }
+
+    private var fragmentsAffiches: [PhraseFragment] {
+        let dits = fragmentsDits
+        guard let salut = dits.first, salut.objectif == nil else { return dits }
+        return ParoleLigne.lignesSalutation(salut.texte, largeur: largeurTexte,
+                                           taille: params.taille, tracking: params.tracking)
+            .map { PhraseFragment($0, clair: salut.clair) } + dits.dropFirst()
+    }
+
     var animatableData: Double {
         get { p }
         set { p = newValue }
@@ -627,7 +633,7 @@ struct PhraseVue: View, Animatable {
     /// Les lignes qui passent sous le dégradé du bloc — toutes, sauf celle qui
     /// porterait un galet.
     private var masquees: [PhraseFragment] {
-        horsMasque == nil ? fragmentsDits : Array(fragmentsDits.dropLast())
+        horsMasque == nil ? fragmentsAffiches : Array(fragmentsAffiches.dropLast())
     }
 
     var body: some View {
@@ -657,9 +663,10 @@ struct PhraseVue: View, Animatable {
                 ligne(derniere, index: fragments.count - 1)
             }
         }
-        .frame(width: params.largeur, alignment: .leading)
+        .frame(width: largeurTexte, alignment: .leading)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(fragmentsDits.map(\.texte).joined(separator: " "))
+        .accessibilityIdentifier("home-phrase")
         // La protection/Reduce Motion coupe la lecture, jamais le texte posé.
         .opacity(etatVoix != nil && contexteVoix.visible && !lecture.presente ? 0 : 1)
         .onAppear { montee = true }
@@ -694,7 +701,7 @@ struct PhraseVue: View, Animatable {
                                 : (cleParole ?? fragmentsDits.map(\.texte).joined(separator: "|")),
                             taille: params.taille, tracking: params.tracking,
                             opacite: f.clair ? 1 : sourd(index),
-                            retard: ParoleLigne.retard(apres: Array(fragmentsDits.prefix(index))),
+                            retard: ParoleLigne.retard(apres: Array(fragmentsAffiches.prefix(index))),
                             active: contexteVoix.visible && animationParole
                                 && (etatVoix == nil || lecture.presente))
                     .frame(height: params.taille * 1.21)
@@ -2341,10 +2348,10 @@ struct HomeNuitPage: View {
     /// revient. Elle tient compte du zoom arrière du mode édition (0,96
     /// autour du centre de la rangée, qui est à x = 201) : sans ça la
     /// prise de relais saute de 4 pt et de 4 %.
-    private func origineSlot(_ i: Int, _ h: CGFloat) -> CGRect {
+    private func origineSlot(_ i: Int, _ h: CGFloat, _ largeur: CGFloat) -> CGRect {
         let z = 1 - 0.04 * editionP
         let cx = 201 + (CGFloat(24 + i * 184 + 85) - 201) * z
-        let cy = Self.yCards(h) + 85
+        let cy = Self.yCards(h) + supplementSalutation(largeur) + 85
         let cote = 170 * z
         return CGRect(x: cx - cote / 2, y: cy - cote / 2,
                       width: cote, height: cote)
@@ -2472,6 +2479,14 @@ struct HomeNuitPage: View {
         h * 0.620 - remonteePhrase
     }
 
+    private func supplementSalutation(_ largeur: CGFloat) -> CGFloat {
+        guard let salut = fragmentsPhrase().first else { return 0 }
+        let lignes = ParoleLigne.lignesSalutation(salut.texte,
+            largeur: min(phrase.largeur, max(1, largeur - 48)),
+            taille: phrase.taille, tracking: phrase.tracking)
+        return CGFloat(lignes.count - 1) * (phrase.taille * 1.21 + phrase.interligne)
+    }
+
     /// LE SEUIL D'EXTINCTION DE LA PASTILLE, en points de course vers le haut.
     /// Assez haut pour ne pas s'éteindre sur un tremblement (le verrou d'axe
     /// se décide déjà à 4), assez bas pour que « dès qu'on pull » soit vrai —
@@ -2577,7 +2592,7 @@ struct HomeNuitPage: View {
                         VitrineHote(slot: vs,
                                     choix: choixPour(vs),
                                     depart: vitrineDepart,
-                                    origine: origineSlot(vs, geo.size.height),
+                                    origine: origineSlot(vs, geo.size.height, geo.size.width),
                                     faites: faitsAffiche, prevues: prevus,
                                     volume: stats?.volumeValeur ?? "0",
                                     volumeUnite: stats?.volumeUnite ?? "kg",
@@ -3383,7 +3398,8 @@ struct HomeNuitPage: View {
         let flouCards: CGFloat = enGeste ? 0 : coefSonde(5)
         let flouSemaine = coefSonde(6), flouPiece = coefSonde(7)
         // ── CE QUE FAIT L'HORLOGE ────────────────────────────────────────────
-        let chute = DepartCine.chuteTexte(e)
+        let supplement = supplementSalutation(geo.size.width)
+        let chute = DepartCine.chuteTexte(e) - supplement * DepartCine.bascule(e)
         let flou = DepartCine.sstep(DepartCine.flouAt,
                                     DepartCine.flouAt + DepartCine.flouFor, e)
         let mort = DepartCine.sstep(DepartCine.fadeAt,
@@ -3459,7 +3475,7 @@ struct HomeNuitPage: View {
                 // alors confondus en permanence — c'est ce qui autorise le fondu
                 // croisé à n'importe quel instant sans que la dernière ligne,
                 // celle qu'on lit, ne bouge d'un pixel.
-                .offset(y: chute - DepartCine.courseTexte)
+                .offset(y: chute - DepartCine.courseTexte + supplement)
                 .allowsHitTesting(false)
 
             // LE SLIDER VIT DANS L'ESPACE NOIR SOUS LA CARD — celui que la
@@ -3658,7 +3674,7 @@ struct HomeNuitPage: View {
                         .visiteAncre("visite-progression")
                         .environment(\.harmonieInter, true)
                         .padding(.leading, 24)
-                        .padding(.top, Self.yCards(geo.size.height))
+                        .padding(.top, Self.yCards(geo.size.height) + supplement)
                         .offset(y: 8 * net)
                         // ⚠️ FLOU PLAFONNÉ À 6 pt. Un blur posé sur du VERRE
                         // NATIF empile deux passes de flou — c'est
@@ -3737,7 +3753,7 @@ struct HomeNuitPage: View {
                         // sont son premier temps.
                         .visiteAncre("visite-galets")
                         .padding(.leading, 24)
-                        .padding(.top, Self.yRoute(geo.size.height))
+                        .padding(.top, Self.yRoute(geo.size.height) + supplement)
                         .offset(y: 8 * net)
                         // ⚠️ FLOU PLAFONNÉ À 6 pt — un blur sur du verre natif
                         // empile deux passes, et au-delà on paie pour du vide.
@@ -3780,7 +3796,7 @@ struct HomeNuitPage: View {
                             ouvrirChemin()
                         }
                         .padding(.leading, 24)
-                        .padding(.top, Self.yRoute(geo.size.height))
+                        .padding(.top, Self.yRoute(geo.size.height) + supplement)
                         .offset(y: 8 * net)
                         // ⚠️ FLOU PLAFONNÉ À 6 pt. Un blur posé sur du VERRE
                         // NATIF empile deux passes de flou — c'est
@@ -3810,18 +3826,18 @@ struct HomeNuitPage: View {
                                  min(24 + CGFloat(ls) * 184 + 181,
                                      geo.size.width - 12)
                                  - ListeEdition.largeur)
-                        .padding(.top, Self.yCards(geo.size.height) + 14)
+                        .padding(.top, Self.yCards(geo.size.height) + supplement + 14)
                     }
                     if let ps = poudreSlot {
                         PoudreAdieu(depuis: poudreDepuis)
                             .frame(width: 230, height: 230)
                             .padding(.leading, 24 + CGFloat(ps) * 184 - 30)
-                            .padding(.top, Self.yCards(geo.size.height) - 30)
+                            .padding(.top, Self.yCards(geo.size.height) + supplement - 30)
                     }
                     if refusP > 0.005 {
                         Chambre(p: refusP) { rp in RefusPopup(p: rp) }
                             .frame(maxWidth: .infinity)
-                            .padding(.top, Self.yCards(geo.size.height) - 88)
+                            .padding(.top, Self.yCards(geo.size.height) + supplement - 88)
                             .allowsHitTesting(false)
                     }
 

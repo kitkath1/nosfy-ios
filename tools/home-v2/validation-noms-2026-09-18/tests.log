@@ -1,0 +1,82 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project /tmp/woop-home-noms-20260918/runner/Woop.xcodeproj -scheme WoopUITests -destination "platform=iOS Simulator,id=B84E4C32-4874-4F79-BE45-C4120AB9D0A1" -derivedDataPath /tmp/woop-home-noms-20260918/runner-dd -resultBundlePath /tmp/woop-home-noms-20260918/tests.xcresult -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO test-without-building
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/tmp/woop-home-noms-20260918/tests.xcresult
+
+2026-09-18 09:26:27.790570+0200 WoopUITests-Runner[33339:18533391] [Default] Running tests...
+objc[33339]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x107ac4310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x106380398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'All tests' started at 2026-09-18 09:27:19.155.
+Test Suite 'WoopUITests.xctest' started at 2026-09-18 09:27:19.159.
+Test Suite 'HomePrenomsUITests' started at 2026-09-18 09:27:19.162.
+Test Case '-[WoopUITests.HomePrenomsUITests testAnglaisPrenomLong]' started.
+    t =     0.01s Start Test at 2026-09-18 09:27:19.168
+    t =     0.63s Set Up
+    t =     0.71s Open fr.kathryn.woop
+    t =     0.72s     Launch fr.kathryn.woop
+    t =     2.88s         Setting up automation session
+    t =     4.13s         Wait for fr.kathryn.woop to idle
+    t =     9.47s Waiting 20.0s for "home-phrase" Any to exist
+    t =    10.52s     Checking `Expect predicate `existsNoRetry == 1` for object "home-phrase" Any`
+    t =    10.52s         Checking existence of `"home-phrase" Any`
+    t =    10.78s Find the "home-phrase" Any
+    t =    10.82s Find the "home-phrase" Other
+    t =    19.92s Find the Application 'fr.kathryn.woop'
+    t =    20.72s Added attachment named 'en-long-1-workout'
+    t =    20.90s Tear Down
+    t =    20.93s     Terminate fr.kathryn.woop:33658
+Test Case '-[WoopUITests.HomePrenomsUITests testAnglaisPrenomLong]' passed (22.582 seconds).
+Test Case '-[WoopUITests.HomePrenomsUITests testFrancaisPrenomCourt]' started.
+    t =     0.00s Start Test at 2026-09-18 09:27:41.802
+    t =     0.19s Set Up
+    t =     0.19s Open fr.kathryn.woop
+    t =     0.20s     Launch fr.kathryn.woop
+    t =     2.05s         Setting up automation session
+    t =     2.78s         Wait for fr.kathryn.woop to idle
+    t =     6.65s Waiting 20.0s for "home-phrase" Any to exist
+    t =     7.69s     Checking `Expect predicate `existsNoRetry == 1` for object "home-phrase" Any`
+    t =     7.69s         Checking existence of `"home-phrase" Any`
+    t =     7.99s Find the "home-phrase" Any
+    t =     8.20s Find the "home-phrase" Other
+    t =    17.49s Find the Application 'fr.kathryn.woop'
+    t =    19.79s Added attachment named 'fr-court-1-seance'
+    t =    19.81s Tear Down
+    t =    19.83s     Terminate fr.kathryn.woop:33739
+Test Case '-[WoopUITests.HomePrenomsUITests testFrancaisPrenomCourt]' passed (21.032 seconds).
+Test Case '-[WoopUITests.HomePrenomsUITests testFrancaisPrenomLong]' started.
+    t =     0.01s Start Test at 2026-09-18 09:28:02.854
+    t =     0.09s Set Up
+    t =     0.09s Open fr.kathryn.woop
+    t =     0.09s     Launch fr.kathryn.woop
+    t =     1.62s         Setting up automation session
+    t =     2.81s         Wait for fr.kathryn.woop to idle
+    t =     7.04s Waiting 20.0s for "home-phrase" Any to exist
+    t =     8.10s     Checking `Expect predicate `existsNoRetry == 1` for object "home-phrase" Any`
+    t =     8.10s         Checking existence of `"home-phrase" Any`
+    t =     8.53s Find the "home-phrase" Any
+    t =     8.77s Find the "home-phrase" Other
+    t =    17.90s Find the Application 'fr.kathryn.woop'
+    t =    18.62s Added attachment named 'fr-long-3-seances'
+    t =    18.63s Tear Down
+    t =    18.64s     Terminate fr.kathryn.woop:33798
+Test Case '-[WoopUITests.HomePrenomsUITests testFrancaisPrenomLong]' passed (19.764 seconds).
+Test Suite 'HomePrenomsUITests' passed at 2026-09-18 09:28:22.609.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 63.378 (63.447) seconds
+Test Suite 'WoopUITests.xctest' passed at 2026-09-18 09:28:22.610.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 63.378 (63.451) seconds
+Test Suite 'All tests' passed at 2026-09-18 09:28:22.611.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 63.378 (63.456) seconds
+2026-09-18 09:28:23.134 xcodebuild[32454:18522158] [MT] IDETestOperationsObserverDebug: 293.123 elapsed -- Testing started completed.
+2026-09-18 09:28:23.134 xcodebuild[32454:18522158] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-18 09:28:23.134 xcodebuild[32454:18522158] [MT] IDETestOperationsObserverDebug: 293.123 sec, +293.123 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-home-noms-20260918/tests.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

@@ -1,0 +1,84 @@
+
+── 0. les prérequis
+   ✔ node v24.16.0 · Chrome ignoré (--sans-captures)
+
+── 1. le retard — le livrable est-il plus vieux que sa source ?
+   ✔ index.html est plus récent que content/ app/ components/ public/ fonts/ scripts/
+
+── 2. tsc --noEmit — une brique sans preuve ne compile pas
+   ✔ types
+
+── 3. la source — tests/contenu (ids, titres, preuves qui se lisent, SVG à jour)
+
+ RUN  v4.1.11 /private/tmp/woop-home-noms-20260918/doc/docs/site
+
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  09:27:01
+   Duration  4.54s (transform 1.67s, setup 0ms, import 473ms, tests 2.39s, environment 0ms)
+
+
+── 4. next build (export statique → docs/site/out/)
+▲ Next.js 16.3.3 (webpack)
+✓ Running next.config.ts took 171ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 7.2s
+  Running TypeScript ...
+  Finished TypeScript in 31.5s ...
+  Collecting page data using 5 workers ...
+  Generating static pages using 5 workers (0/4) ...
+  Generating static pages using 5 workers (1/4)
+  Generating static pages using 5 workers (2/4)
+  Generating static pages using 5 workers (3/4)
+✓ Generating static pages using 5 workers (4/4) in 6.2s
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+└ ○ /icon.svg
+
+
+○  (Static)  prerendered as static content
+
+   ✔ out/index.html
+
+── 5. l'inliner — rebâti à côté, comparé au livrable
+inliner : /private/tmp/woop-home-noms-20260918/doc/docs/site/out/index.html
+   retirés  : 25 <script> · 7 <link> · 0 attributs Next · 273 commentaires RSC · 1 meta
+   inlinés  : 1 feuille(s) (49636 o) · 1 url() (99780 o) · 58 média(s) (383018 o) · site.js (9066 o)
+   titre    : Documentation Nosfy
+   livrable : /private/tmp/woop-home-noms-20260918/doc/docs/site/out/livrable-verif.html · 1873520 o (1.87 Mo) · 1 <script>
+   ✔ écrit
+   ✔ identique octet pour octet : le livrable EST le build (frais, déterministe)
+
+── 6. vitest — l'invariant des pastilles et la robe, sur le livrable
+
+ RUN  v4.1.11 /private/tmp/woop-home-noms-20260918/doc/docs/site
+
+
+ Test Files  2 passed (2)
+      Tests  23 passed (23)
+   Start at  09:28:36
+   Duration  1.77s (transform 686ms, setup 0ms, import 240ms, tests 985ms, environment 0ms)
+
+
+── 7. la robe et l'autonomie, au grep sur docs/site/index.html
+   ✔ emoji dans un h1/h2/h3 : 0 (attendu = 0)
+   ✔ graisses de la page : 300 400 500 600 (⊆ 300 400 500 600)
+   ✔ @keyframes de la page (arrive · allume · reveal) : 2 (attendu ≤ 3)
+   ✔ backdrop-filter (règles, hors -webkit-) : 2 (attendu ≤ 4)
+   ✔ familles : 8 formes, toutes Inter ou mono système
+   ✔ dates relatives (depuis/posé/réparé aujourd'hui, ce matin) : 0 (attendu = 0)
+   ✔ %%{init : 0 (attendu = 0)
+   ✔ classDef : 0 (attendu = 0)
+   ✔ /_next/ : 0 (attendu = 0)
+   ✔ <script : 1 (attendu ≤ 1)
+   ✔ cdn. : 0 (attendu = 0)
+   ✔ transition sur un filtre : 0 (attendu = 0)
+   ✔ poids (o) : 1873520 (attendu < 2000000)
+
+✔ tout est vert (sans captures ni sondes) en 123 s

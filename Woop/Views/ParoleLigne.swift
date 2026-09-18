@@ -94,4 +94,19 @@ struct ParoleLigne: View {
         let suite = MotsFlou.partition(fragments.map { ($0.texte, $0.clair) } + [("suite", true)])
         return suite.last?.retard ?? 0
     }
+
+    /// La salutation garde son corps : le prénom passe en entier à la ligne
+    /// quand « Bonjour + prénom » ne tient plus dans la largeur disponible.
+    static func lignesSalutation(_ texte: String, largeur: CGFloat,
+                                  taille: CGFloat, tracking: CGFloat) -> [String] {
+        guard ["Bonjour ", "Hello ", "Allez ", "Alright ", "Hey ", "Salut "]
+            .contains(where: texte.hasPrefix),
+              let espace = texte.firstIndex(of: " ") else { return [texte] }
+        let font = UIFont(name: "Inter-SemiBold", size: taille)
+            ?? .systemFont(ofSize: taille, weight: .semibold)
+        let attributs: [NSAttributedString.Key: Any] = [.font: font, .kern: tracking]
+        guard (texte as NSString).size(withAttributes: attributs).width > largeur
+        else { return [texte] }
+        return [String(texte[..<espace]), String(texte[texte.index(after: espace)...])]
+    }
 }
