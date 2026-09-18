@@ -78,7 +78,8 @@ enum Compte {
                 print("[compte] déconnexion : \(finies.count) séance(s) poussée(s) avant d'oublier")
             } catch {
                 print("[compte] déconnexion REFUSÉE : \(finies.count) séance(s) non poussée(s) · \(error.localizedDescription)")
-                let m = "Connecte-toi au réseau d'abord : des séances ne sont pas encore envoyées."
+                let m = L("Connecte-toi au réseau d'abord : des séances ne sont pas encore envoyées.",
+                          "Connect to the network first: some sessions haven't been sent yet.")
                 etat.panne = m
                 return .refusee(m)
             }
@@ -87,7 +88,8 @@ enum Compte {
         let gainsRestants = await OutboxGains.shared.enAttente
         if gainsRestants > 0 {
             print("[compte] déconnexion REFUSÉE : \(gainsRestants) gain(s) encore en file")
-            let m = "Connecte-toi au réseau d'abord : des gains ne sont pas encore envoyés."
+            let m = L("Connecte-toi au réseau d'abord : des gains ne sont pas encore envoyés.",
+                      "Connect to the network first: some rewards haven't been sent yet.")
             etat.panne = m
             return .refusee(m)
         }
@@ -125,7 +127,8 @@ enum Compte {
             print("[compte] supprimer-compte → ok · révocation Apple : \(revocation) · user \(json["user_id"] as? String ?? "?")")
         } catch {
             print("[compte] suppression REFUSÉE (rien n'est effacé) · \(error.localizedDescription)")
-            let m = "La suppression n'a pas pu se faire. Vérifie le réseau et réessaie."
+            let m = L("La suppression n'a pas pu se faire. Vérifie le réseau et réessaie.",
+                      "The deletion could not be completed. Check the network and try again.")
             etat.panne = m
             return .refusee(m)
         }

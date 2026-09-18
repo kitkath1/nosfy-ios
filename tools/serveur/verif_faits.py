@@ -2,7 +2,7 @@
 """
 verif_faits.py — LES FAITS SE CALCULENT À LA CLÔTURE (15-09, étape 4a) :
 `calculer_faits_seance()` et l'enveloppe `cloturer_seance` qui rend `faits`.
-Compte de test, corps lus. Sème trois séances (par REST, comme l'app pousse), les
+Compte JETABLE (18-09), corps lus. Sème trois séances (par `synchroniser_seance`, comme l'app pousse depuis 083033), les
 clôture, puis LES RETIRE (séances + faits). ⚠️ Chaque clôture crédite le compte de test
 (séries × 20 + un sachet) : c'est voulu, la clôture doit être la vraie.
 
@@ -69,21 +69,35 @@ def verdict(cond, msg):
     else: N_KO += 1
 
 
-s, b = call("/auth/v1/token?grant_type=password", {"email": "kat44426+woop-forge-test@gmail.com", "password": "forge-test-2026"})
-jwt, uid = j(b).get("access_token"), j(b).get("user", {}).get("id")
-print("compte de test :", uid)
+# 18-09 : un COMPTE JETABLE (fenêtre vierge — le compte de test porte désormais des séances
+# d'autres sessions, ses « précédents » faussaient [1]). Créé confirmé par l'API admin, sans
+# e-mail ; effacé à la fin (la cascade emporte séances, faits, carnet, sachets).
+ADMIN = open(f"{REPO}/.secrets/supabase-service-role").read().strip()
+_email = f"kat44426+qa-faits-{uuid.uuid4().hex[:8]}@gmail.com"; _pw = "qa-faits-" + uuid.uuid4().hex[:12]
+_req = urllib.request.Request(URL + "/auth/v1/admin/users", data=json.dumps({"email": _email, "password": _pw, "email_confirm": True,
+                              "app_metadata": {"woop_qa": "verif_faits-2026-09-18"}}).encode(),
+                              headers={"apikey": ADMIN, "Authorization": f"Bearer {ADMIN}", "Content-Type": "application/json"}, method="POST")
+with urllib.request.urlopen(_req, timeout=60) as _r:
+    uid = json.loads(_r.read().decode())["id"]
+s, b = call("/auth/v1/token?grant_type=password", {"email": _email, "password": _pw})
+jwt = j(b).get("access_token")
+assert jwt and uid, "compte jetable : connexion impossible"
+print("compte jetable :", uid)
 semees = []
 
 
 def semer(debut, minutes, series, poids):
-    """une séance de fonte poussée comme l'app le fait : workouts → logged_exercises → strength_sets"""
+    """une séance de fonte poussée comme l'app le fait DEPUIS 083033 : un seul
+    instantané atomique `synchroniser_seance` (workout + exercice + séries) — le
+    semis REST table par table ne mène plus à la clôture (503 seance_a_synchroniser)."""
     wid = str(uuid.uuid4()); eid = str(uuid.uuid4())
     fin = debut + timedelta(minutes=minutes)
-    s1, b1 = call("/rest/v1/workouts", {"id": wid, "user_id": uid, "started_at": debut.isoformat(), "ended_at": fin.isoformat(), "notes": "verif_faits"}, jwt)
-    s2, b2 = call("/rest/v1/logged_exercises", {"id": eid, "workout_id": wid, "user_id": uid, "exercise_id": "hip-thrust", "position": 0}, jwt)
-    lignes = [{"id": str(uuid.uuid4()), "logged_exercise_id": eid, "user_id": uid, "reps": 10, "weight": poids, "position": i} for i in range(series)]
-    s3, b3 = call("/rest/v1/strength_sets", lignes, jwt)
-    assert s1 == 201 and s2 == 201 and s3 == 201, (s1, b1[:80], s2, b2[:80], s3, b3[:80])
+    body = {"p_workout": {"id": wid, "user_id": uid, "started_at": debut.isoformat(), "ended_at": fin.isoformat(), "notes": "verif_faits"},
+            "p_exercices": [{"id": eid, "user_id": uid, "workout_id": wid, "exercise_id": "hip-thrust", "position": 0}],
+            "p_series": [{"id": str(uuid.uuid4()), "user_id": uid, "logged_exercise_id": eid, "reps": 10, "weight": poids, "position": i} for i in range(series)],
+            "p_phases": [], "p_piscines": []}
+    s1, b1 = call("/rest/v1/rpc/synchroniser_seance", body, jwt)
+    assert s1 == 200, (s1, b1[:160])
     semees.append(wid)
     return wid
 
@@ -133,11 +147,12 @@ try:
     s, r4 = cloture(w_auj3, 1)
     verdict(s == 200 and (r4.get("faits") or []) == [], f"faits {r4.get('faits')} : pas de second « deuxième » (index partiel)")
 
-    print("\n[5] une séance jamais poussée")
+    print("\n[5] une séance jamais poussée — 083033 : la clôture REFUSE (503) et ne paie rien")
+    solde_avant = j(call("/rest/v1/rpc/etat_coffre", {}, jwt)[1]).get("solde_or")
     s, r5 = cloture(str(uuid.uuid4()), 3)
-    verdict(s == 200 and r5.get("faits") == [] and r5.get("faits_raison") == "seance_inconnue",
-            f"cloturer_seance → {s}, faits [], raison {r5.get('faits_raison')} — la clôture paie quand même ({r5.get('pieces')} pièces)")
-
+    solde_apres = j(call("/rest/v1/rpc/etat_coffre", {}, jwt)[1]).get("solde_or")
+    verdict(s == 503 and r5.get("message") == "seance_a_synchroniser" and solde_avant == solde_apres,
+            f"cloturer_seance → {s} {r5.get('message')} — rien payé (solde {solde_avant} → {solde_apres})")
     print("\n[6] les portes")
     s, b = call("/rest/v1/rpc/calculer_faits_seance", {"p_workout": w_auj}, None)
     verdict(s == 401, f"calculer_faits_seance sans jeton → {s}")
@@ -151,7 +166,11 @@ finally:
         sql(f"delete from public.workout_facts where workout_id = '{wid}'")
         sql(f"delete from public.workouts where id = '{wid}'")
     reste = sql(f"select count(*) as n from public.workouts where user_id = '{uid}' and notes = 'verif_faits'")[0]["n"]
-    print(f"   séances verif_faits restantes : {reste} · (les pièces et sachets de clôture restent, comme pour toute preuve)")
+    print(f"   séances verif_faits restantes : {reste}")
+    _del = urllib.request.Request(URL + f"/auth/v1/admin/users/{uid}", headers={"apikey": ADMIN, "Authorization": f"Bearer {ADMIN}"}, method="DELETE")
+    try:
+        with urllib.request.urlopen(_del, timeout=60) as _r: print(f"   compte jetable effacé : {_r.status} (la cascade emporte carnet, sachets, faits)")
+    except urllib.error.HTTPError as e: print(f"   ⚠️ compte jetable NON effacé : {e.code} — à reprendre : {uid}")
 
 print(f"\n{N_OK} ✓ · {N_KO} ✗ — " + ("TOUT EST VERT" if ok else "✗ AU MOINS UNE PREUVE MANQUE"))
 sys.exit(0 if ok else 1)

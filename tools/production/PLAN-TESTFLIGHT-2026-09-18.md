@@ -35,14 +35,20 @@ de la clé le 18-09).
    existe (5 août) mais son Issuer ID n'est nulle part : soit Kathryn le
    donne, soit l'envoi passe par le compte Xcode déjà connecté
    (`kathryn@soluo-avocats.fr`, c'est lui qui a signé l'export).
-3. **Deux fichiers de conformité absents** : `ITSAppUsesNonExemptEncryption`
-   (sans lui, chaque build reste « Missing Compliance » dans TestFlight
-   jusqu'à une réponse manuelle) et `PrivacyInfo.xcprivacy` (l'app touche
-   `UserDefaults` et `systemUptime` : raisons CA92.1 et 35F9.1 à déclarer,
-   sinon courriel ITMS-91053 à l'envoi et refus en revue).
-4. **CGU** : `ProfilLune.swift` affiche encore le texte d'attente. Pas
-   bloquant pour des testeurs internes ; bloquant pour la revue externe et
-   l'App Store. Le texte est à elle.
+3. **Conformité : posée le 18-09 à 12:36** — `ITSAppUsesNonExemptEncryption = false`
+   dans `Nosfy/Info.plist` et `NosfyWidgets/Info.plist` ; `Nosfy/PrivacyInfo.xcprivacy`
+   (aucun pistage ; UserDefaults CA92.1, systemUptime 35F9.1 ; identifiant Apple,
+   e-mail, prénom, séances, « but » liés à la personne, usage app). Vérifié dans le
+   bundle compilé (plutil : manifeste présent, clé `false` app + extension). Les
+   widgets n'appellent aucune API à raison requise. L'archive 79 ne les porte pas :
+   **re-archiver en 80** avant l'envoi. App Store Connect non lu.
+4. **CGU** : texte posé l'après-midi du 18-09 dans `Nosfy/Views/CGUPage.swift`
+   (14 articles, FR et EN par `L()`, version datée), à la place du texte
+   d'attente de `ProfilLune.swift`. Reste à elle : la relecture juridique
+   (identité de l'éditeur et adresse de contact, aujourd'hui renvoyées à la
+   fiche App Store ; âge minimal 15 ans ; droit français) et l'affichage
+   vérifié dans Réglages. Pas bloquant pour des testeurs internes ;
+   nécessaire pour la revue externe et l'App Store.
 
 ## Ce qui n'est pas mesuré sur le téléphone (Test QA)
 
@@ -51,6 +57,34 @@ interrompue), 14 (compte neuf → première séance → stories → coffre),
 15 (compte existant restitué), 17 (Route du compte vide) : `a_valider`.
 QA 18 (chauffe Profil/manège) : `ko`. QA 19 (Cartes) : « Ouvrir » non
 franchi dans 3 scénarios sur 4 au simulateur, révélation non validée.
+
+## Bancs rejoués le 18-09 à 12:18 (session CGU, sans téléphone ni simulateur)
+
+14 bancs PASS : Route vide 1277, compte `--flow` 50, gains/progression 35,
+parcours rewards (compte neuf → séances → lune → cartes → reconnexion), cartes
+28, portes 34, widgets serveur 10, collection 9 (banc corrigé : slots par
+référence, comme `ma_collection` depuis 84850), session 15, sync 12, pull 9,
+outbox 13, inscription 12, live activity 16. A/B/C lancés en parallèle (comptes
+jetables ou lecture seule), D en série.
+
+**12:32-12:40, suite** : les trois bancs ont été portés sur `synchroniser_seance`
+(faits sur compte jetable) et rejoués en série : **cardio 22 ✓, faits 14 ✓,
+coffre 53 ✓**. Le barème, les faits et la conversion tiennent après 083033 ;
+la séance jamais poussée ne paie plus (503, solde inchangé). Litiges levés sur
+le site. Le paragraphe ci-dessous décrit l'état d'avant portage.
+
+Trois bancs ne prouvaient plus rien à 12:19 :
+`verif_cardio` (3 ✓ · 21 ✗), `verif_faits` (2 ✓ · 12 ✗), `verif_backend_coffre`
+(partiel). Cause unique : ils sèment leurs séances par REST et `cloturer_seance`
+répond `503 seance_a_synchroniser` depuis 083033. Le serveur fait ce que la
+carte dit ; les montants cardio, les faits et la conversion n'ont pas été
+re-mesurés après 083033. `verif_forge` et `verif_backend_sachet` non lancés
+(ils font peindre une carte par OpenAI). Journaux hors Git : scratchpad de la
+session, `bancs/*.log`.
+
+Ce que ces bancs ne disent toujours pas : la feuille Apple réelle, la relance,
+la déconnexion/reconnexion et la première séance **sur l'iPhone** (QA 8-11,
+14, 15, 17). C'est l'étape 5, à deux, au câble.
 
 ## Le plan
 

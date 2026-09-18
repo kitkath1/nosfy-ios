@@ -158,17 +158,18 @@ final class SondeVol {
     func corps() { corpsCompte &+= 1 }
 
     /// Les passages dans les closures instrumentées, par groupe :
-    ///   0 widgets · 1 nappe/menu · 2 galets · 3 route · 4 semaine.
+    ///   0 widgets · 1 nappe/menu · 2 galets · 3 route · 4 semaine ·
+    ///   5 coffre (18-09 : le projecteur — la page n'avait aucun tic).
     /// Ce sont des comptes par intervalle de publication, pas des images
     /// GPU ni nécessairement des Hz : plusieurs vues partagent un groupe,
     /// et un intervalle de gel peut durer plus d'une seconde.
     @inline(__always)
     func tic(_ i: Int) {
-        guard i >= 0, i < 5 else { return }
+        guard i >= 0, i < 6 else { return }
         tics[i] &+= 1
     }
-    @ObservationIgnored private var tics = [Int](repeating: 0, count: 5)
-    private(set) var ticsParSeconde = [Int](repeating: 0, count: 5)
+    @ObservationIgnored private var tics = [Int](repeating: 0, count: 6)
+    private(set) var ticsParSeconde = [Int](repeating: 0, count: 6)
 
     /// Elle tape la pastille : « LÀ, ça a lagué ». La marque part dans la
     /// ligne de la seconde en cours.
@@ -277,7 +278,7 @@ final class SondeVol {
         if onglet == "?" { onglet = NavEtat.shared.page.rawValue }
         let bancHome: String = BancCoutHome.demande ? BancCoutHome.shared.phase.rawValue : "inactif"
         // Un format littéral évite une longue résolution des surcharges de +.
-        let format = "{\"t\":%.1f,\"img\":%.1f,\"pire\":%.0f,\"onglet\":\"%@\",\"seance\":%d,\"player\":%d,\"ile\":%d,\"drag\":%d,\"marque\":%d,\"gel\":%d,\"cpu\":%.0f,\"therm\":%d,\"corps\":%d,\"tics\":[%d,%d,%d,%d,%d],\"chemin\":%d,\"protection\":%d,\"bancHome\":\"%@\",\"welcome\":%d,\"premiere\":%d}\n"
+        let format = "{\"t\":%.1f,\"img\":%.1f,\"pire\":%.0f,\"onglet\":\"%@\",\"seance\":%d,\"player\":%d,\"ile\":%d,\"drag\":%d,\"marque\":%d,\"gel\":%d,\"cpu\":%.0f,\"therm\":%d,\"corps\":%d,\"tics\":[%d,%d,%d,%d,%d,%d],\"chemin\":%d,\"protection\":%d,\"bancHome\":\"%@\",\"welcome\":%d,\"premiere\":%d}\n"
         let ligne = String(format: format,
             t, cadence, min(pireMs, 2000), onglet,
             enSeance ? 1 : 0,
@@ -288,7 +289,7 @@ final class SondeVol {
             pireMs > 2000 ? 1 : 0,
             cpu, thermique, corpsParSeconde,
             ticsParSeconde[0], ticsParSeconde[1], ticsParSeconde[2],
-            ticsParSeconde[3], ticsParSeconde[4],
+            ticsParSeconde[3], ticsParSeconde[4], ticsParSeconde[5],
             DepartEtat.shared.cheminOuvert ? 1 : 0,
             ProtectionThermique.shared.ambianceAuRepos ? 1 : 0,
             bancHome,

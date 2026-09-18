@@ -121,6 +121,18 @@ final class RythmeEcran {
     /// rien. Une session qui « réparerait » en posant l'attribut rendrait
     /// toutes les portes sourdes.
     var ongletActif = "home"
+    /// Une story plein écran recouvre les pages gardées dans le TabView.
+    /// Chaque portail possède sa couverture : une fermeture tardive ne peut
+    /// pas réveiller la Home sous une autre story.
+    var stories: Set<UUID> = []
+    var storyVisible: Bool { !stories.isEmpty }
+    /// LES COVERS (18-09) — le coffre, le chemin, la fiche posée sur le
+    /// chemin : un `fullScreenCover` retire la page du dessous de l'écran,
+    /// **pas de ses horloges**. Même mécanisme que les stories, ensemble
+    /// séparé pour ne pas changer le sens de `storyVisible` (lu par le
+    /// châssis, le Profil et la sonde). Posé par `.couvreLaHome()`.
+    var couvertures: Set<UUID> = []
+    var couvert: Bool { !couvertures.isEmpty }
 
     /// ⚠️ LE PAS COMMUN — LA TROUVAILLE DU 05-09, et celle qui garde le
     /// dessin intact.
@@ -150,6 +162,32 @@ final class RythmeEcran {
     /// La porte d'une page quelconque, par son onglet.
     static func dort(_ onglet: String) -> Bool {
         if RythmeBanc.eteint { return false }
-        return shared.ongletActif != onglet
+        return shared.storyVisible || shared.couvert || shared.ongletActif != onglet
     }
+}
+
+// MARK: - La couverture d'un cover
+
+/// **LA COUVERTURE D'UN COVER** (18-09, analyse `tools/perf/ANALYSE-COFFRE-
+/// CHAUFFE-2026-09-18.md`, suspect n° 2). Les stories l'avaient
+/// (`StoryFlow.swift`, `onAppear`/`onDisappear` sur `stories`) ; le coffre,
+/// le chemin et la fiche ne l'avaient pas : sous eux, `dort("home")` disait
+/// non et les ≈ 93 battements/s de la Home immobile continuaient pour
+/// personne. Se pose sur CE QU'UN COVER PRÉSENTE. Une clé par cover : une
+/// fermeture tardive ne peut pas réveiller la Home sous un autre.
+/// Invisible par construction — la page couverte n'est pas à l'écran.
+struct CouvertureHome: ViewModifier {
+    @State private var couverture = UUID()
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear { RythmeEcran.shared.couvertures.insert(couverture) }
+            .onDisappear { RythmeEcran.shared.couvertures.remove(couverture) }
+    }
+}
+
+extension View {
+    /// Endort les horloges des pages gardées dans le TabView le temps que
+    /// ce contenu les recouvre.
+    func couvreLaHome() -> some View { modifier(CouvertureHome()) }
 }

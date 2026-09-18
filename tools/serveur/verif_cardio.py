@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 verif_cardio.py — L'ÉCONOMIE DU CARDIO (15-09) : le barème du serveur rend-il les montants du
-tableau ? Compte de test, corps lus. Sème des séances (par REST, comme l'app pousse), les
+tableau ? Compte de test, corps lus. Sème des séances (par `synchroniser_seance`, comme l'app pousse depuis 083033), les
 clôture, compare à PLAN-ECONOMIE-CARDIO.md §2, puis LES RETIRE. ⚠️ Chaque clôture crédite le
 compte de test (c'est voulu : la clôture doit être la vraie).
 
@@ -69,30 +69,39 @@ def verdict(cond, msg):
 s, b = call("/auth/v1/token?grant_type=password", {"email": "kat44426+woop-forge-test@gmail.com", "password": "forge-test-2026"})
 jwt, uid = j(b).get("access_token"), j(b).get("user", {}).get("id")
 print("compte de test :", uid)
+# L'heure SERVEUR au départ : le nettoyage reverse TOUT ce que ce run écrit au
+# carnet APRÈS cet instant (crédits cardio + les conversions et sachets que le
+# trigger de conversion crée quand le solde franchit 100).
+run_debut = sql("select now() as t")[0]["t"]
 semees = []
 maintenant = datetime.now(PARIS).replace(second=0, microsecond=0)
 
 
 def seance(exos, series_muscu=0, il_y_a_h=2):
-    """exos: liste de (exercise_id, phases[(kind, seconds, speed)] , longueurs|None)"""
+    """exos: liste de (exercise_id, phases[(kind, seconds, speed)] , longueurs|None).
+    Depuis 083033 : UN instantané `synchroniser_seance` (workout, exercices, séries,
+    phases, piscines) — le semis REST table par table ne mène plus à la clôture."""
     wid = str(uuid.uuid4())
     debut = maintenant - timedelta(hours=il_y_a_h)
-    assert call("/rest/v1/workouts", {"id": wid, "user_id": uid, "started_at": debut.isoformat(),
-                                      "ended_at": (debut + timedelta(minutes=40)).isoformat(), "notes": "verif_cardio"}, jwt)[0] == 201
+    body = {"p_workout": {"id": wid, "user_id": uid, "started_at": debut.isoformat(),
+                          "ended_at": (debut + timedelta(minutes=40)).isoformat(), "notes": "verif_cardio"},
+            "p_exercices": [], "p_series": [], "p_phases": [], "p_piscines": []}
     pos = 0
     if series_muscu > 0:
         eid = str(uuid.uuid4())
-        call("/rest/v1/logged_exercises", {"id": eid, "workout_id": wid, "user_id": uid, "exercise_id": "hip-thrust", "position": pos}, jwt); pos += 1
-        call("/rest/v1/strength_sets", [{"id": str(uuid.uuid4()), "logged_exercise_id": eid, "user_id": uid, "reps": 10, "weight": 40, "position": i} for i in range(series_muscu)], jwt)
+        body["p_exercices"].append({"id": eid, "workout_id": wid, "user_id": uid, "exercise_id": "hip-thrust", "position": pos}); pos += 1
+        body["p_series"] += [{"id": str(uuid.uuid4()), "logged_exercise_id": eid, "user_id": uid, "reps": 10, "weight": 40, "position": i} for i in range(series_muscu)]
     for ex, phases, longueurs in exos:
         eid = str(uuid.uuid4())
-        call("/rest/v1/logged_exercises", {"id": eid, "workout_id": wid, "user_id": uid, "exercise_id": ex, "position": pos}, jwt); pos += 1
+        body["p_exercices"].append({"id": eid, "workout_id": wid, "user_id": uid, "exercise_id": ex, "position": pos}); pos += 1
         if phases:
-            call("/rest/v1/cardio_phases", [{"id": str(uuid.uuid4()), "logged_exercise_id": eid, "user_id": uid,
-                                             "kind": k, "seconds": sec, "speed": v, "incline": 0, "cycle_index": 0, "position": i}
-                                            for i, (k, sec, v) in enumerate(phases)], jwt)
+            body["p_phases"] += [{"id": str(uuid.uuid4()), "logged_exercise_id": eid, "user_id": uid,
+                                  "kind": k, "seconds": sec, "speed": v, "incline": 0, "cycle_index": 0, "position": i}
+                                 for i, (k, sec, v) in enumerate(phases)]
         if longueurs is not None:
-            call("/rest/v1/piscine_longueurs", {"logged_exercise_id": eid, "user_id": uid, "longueurs": longueurs, "metres_par_longueur": 25}, jwt)
+            body["p_piscines"].append({"logged_exercise_id": eid, "user_id": uid, "longueurs": longueurs, "metres_par_longueur": 25})
+    s1, b1 = call("/rest/v1/rpc/synchroniser_seance", body, jwt)
+    assert s1 == 200, (s1, b1[:160])
     semees.append(wid)
     return wid
 
@@ -171,18 +180,21 @@ try:
     s, b = call("/rest/v1/rpc/pieces_cardio_seance", {"p_workout": semees[0]}, None)
     verdict(s == 401, f"pieces_cardio_seance sans jeton → {s}")
 finally:
-    print("\n[nettoyage] les séances semées, leurs faits, leurs longueurs, leurs lignes de journal")
+    print("\n[nettoyage] les séances semées, leurs faits, leurs longueurs, PUIS toute la contribution au carnet")
     for wid in semees:
-        # ⚠️ La clôture crédite le compte de test (cardio_seance + bonus_progres) : on efface
-        # AUSSI ces lignes, sinon chaque passage gonfle le solde du compte de test à vie
-        # (payé 15-09 : 45 lignes orphelines retrouvées et balayées à la main).
-        sql(f"delete from public.coin_ledger where user_id = '{uid}' and raison in ('cardio_seance','bonus_progres') and workout_id = '{wid}'")
         sql(f"delete from public.piscine_longueurs where logged_exercise_id in (select id from public.logged_exercises where workout_id = '{wid}')")
         sql(f"delete from public.workout_facts where workout_id = '{wid}'")
         sql(f"delete from public.workouts where id = '{wid}'")
+    # ⚠️⚠️ LA CLÔTURE EST RÉELLE : elle crédite (cardio_seance/bonus_progres) ET le trigger
+    # `coin_ledger_convertir` écrit -100 conversion_booster + un sachet dès que le solde
+    # franchit 100. Effacer les crédits SANS leurs conversions rend le carnet NÉGATIF
+    # (payé 15-09 : le compte de test à -8 087, résidu balayé à la main). On reverse donc
+    # TOUTE la contribution de CE run, par timestamp serveur — crédits, conversions, sachets.
+    sql(f"delete from public.coin_ledger where user_id = '{uid}' and raison in ('cardio_seance','bonus_progres','conversion_booster') and created_at >= '{run_debut}'")
+    sql(f"delete from public.user_boosters where user_id = '{uid}' and origine in ('conversion','seance') and obtained_at >= '{run_debut}'")
     reste = sql(f"select count(*) as n from public.workouts where user_id = '{uid}' and notes = 'verif_cardio'")[0]["n"]
-    orphelines = sql(f"select count(*) as n from public.coin_ledger l where l.user_id = '{uid}' and l.raison in ('cardio_seance','bonus_progres') and not exists (select 1 from public.workouts w where w.id = l.workout_id)")[0]["n"]
-    print(f"   séances verif_cardio restantes : {reste} · lignes cardio orphelines : {orphelines}")
+    solde = sql(f"select coalesce(sum(delta),0) as s from public.coin_ledger where user_id = '{uid}' and currency = 'yellow'")[0]["s"]
+    print(f"   séances verif_cardio restantes : {reste} · solde_or du compte : {solde} (le run n'a rien dû laisser)")
 
 print(f"\n{N_OK} ✓ · {N_KO} ✗ — " + ("TOUT EST VERT" if ok else "✗ AU MOINS UNE PREUVE MANQUE"))
 sys.exit(0 if ok else 1)

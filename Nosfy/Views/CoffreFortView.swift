@@ -589,6 +589,11 @@ struct CoffreFortFlow: View {
         // s'ouvre sur 0 et la roulette de `contentTransition(.numericText())`
         // fait défiler le solde depuis zéro à chaque ouverture du coffre.
         .onAppear { economie.poserMaquette(or: coins, journal: maquette) }
+        // 18-09 : le coffre est TOUJOURS un cover — sous lui, la Home (ou le
+        // Profil) dormait pour les stories, pas pour lui (suspect n° 2 de
+        // l'analyse chauffe du coffre). Ici et pas chez les appelants : la
+        // poignée ne bouge pas, et les quatre portes sont couvertes d'un coup.
+        .couvreLaHome()
         // Et le journal complet ne se demande QUE si on ouvre la page qui
         // l'affiche — 60 lignes ne servent nulle part ailleurs.
         .task { await economie.rafraichir(avecJournal: true) }

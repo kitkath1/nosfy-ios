@@ -139,7 +139,16 @@ solde0 = e0.get("solde_or", 0)
 series = max(3, math.ceil((prix - solde0) / taux))
 attendu_conv = (solde0 + series * taux) // prix
 print(f"    solde {solde0} + {series} × {taux} = {solde0 + series * taux} → {attendu_conv} conversion(s) attendue(s)")
-w = str(uuid.uuid4())
+w = str(uuid.uuid4()); e_w = str(uuid.uuid4())
+# 083033 : plus de clôture sans séance synchronisée — on pousse d'abord l'instantané
+# (workout + un exercice + `series` séries), comme l'app, puis on clôture.
+fin_w = datetime.now(ZoneInfo("UTC")) - timedelta(seconds=5)
+sy, by = call("/rest/v1/rpc/synchroniser_seance", {
+    "p_workout": {"id": w, "user_id": uid, "started_at": (fin_w - timedelta(minutes=20)).isoformat(), "ended_at": fin_w.isoformat(), "notes": "verif_backend_coffre"},
+    "p_exercices": [{"id": e_w, "user_id": uid, "workout_id": w, "exercise_id": "hip-thrust", "position": 0}],
+    "p_series": [{"id": str(uuid.uuid4()), "user_id": uid, "logged_exercise_id": e_w, "reps": 10, "weight": 20, "position": i} for i in range(series)],
+    "p_phases": [], "p_piscines": []}, jwt); print("   synchroniser_seance :", sy, by[:120])
+verdict(sy == 200, "la séance est synchronisée avant la clôture (083033)")
 s1, b1 = call("/rest/v1/rpc/cloturer_seance", {"p_workout": w, "p_series": series}, jwt); print("   #1 :", s1, b1[:320])
 r1 = j(b1)
 verdict(s1 == 200, "200")
@@ -215,8 +224,10 @@ si, bi = call("/rest/v1/workouts", rows_in, jwt); print("   fixture :", si, bi[:
 verdict(si in (200, 201), f"fixture semée ({si})")
 f = coffre(jwt).get("flamme", {})
 print("    flamme serveur :", f, "· J0 à 00:30 Paris =", fix[2].astimezone(ZoneInfo("UTC")).isoformat(), "en UTC")
-verdict(f.get("jours") == 2 and f.get("aujourdhui_fait") is True,
-        f"flamme = {f} — attendu {{jours: 2, aujourdhui_fait: true}} (J-1 + J0 ; en UTC, J0 serait HIER → aujourdhui_fait: false)")
+# 18-09 : le compte de test porte d'autres séances des jours précédents (sessions Compte/Cartes),
+# la flamme compte donc ≥ 2 ; l'exactitude est prouvée par le second témoin (calcul local) plus bas.
+verdict((f.get("jours") or 0) >= 2 and f.get("aujourdhui_fait") is True,
+        f"flamme = {f} — attendu {{jours ≥ 2, aujourdhui_fait: true}} (J-1 + J0 ; en UTC, J0 serait HIER → aujourdhui_fait: false)")
 sw, bw = call("/rest/v1/workouts?select=ended_at&ended_at=not.is.null&order=ended_at.desc", None, jwt, "GET")
 rows = j(bw) if sw == 200 else []
 verdict(sw == 200 and len(rows) >= 3, f"des séances LUES ({len(rows)}) — sinon la flamme n'est pas prouvée")
@@ -234,6 +245,10 @@ for d in jours:
 verdict(f.get("jours") == n and f.get("aujourdhui_fait") == fait_auj, f"second témoin : le calcul local rend {n} / {fait_auj}")
 sd, bd = call(f"/rest/v1/workouts?id=in.({','.join(ids)})", None, jwt, "DELETE"); print("   retrait :", sd, bd[:80])
 verdict(sd in (200, 204), "fixture retirée")
+# la séance de [1] : ses faits d'abord (FK), puis elle — les pièces et le sachet restent, comme pour toute preuve
+call(f"/rest/v1/workout_facts?workout_id=eq.{w}", None, jwt, "DELETE")
+sd1, bd1 = call(f"/rest/v1/workouts?id=eq.{w}", None, jwt, "DELETE"); print("   retrait séance [1] :", sd1, bd1[:80])
+verdict(sd1 in (200, 204), "séance de [1] retirée")
 
 print("\n[4] claim_booster — fermée par le DROIT")
 sc, bc = call("/rest/v1/rpc/claim_booster", {}, jwt); print("   :", sc, bc[:160])
@@ -264,13 +279,21 @@ if n5 is not None:
 else:
     print("   ⚠️ aucun nœud pièces libre sur le compte de test : la conversion par le CHEMIN n'est PAS prouvée ce tour")
 sn, bn = call("/rest/v1/rpc/tirer_noeud_chemin", {"p_noeud": 3, "p_pieces": True}, jwt)
-verdict(sn == 200 and j(bn).get("deja_reclame") is True and j(bn).get("sachets_convertis") == 0,
-        f"nœud 3 déjà tiré → rejeu, 0 converti ({bn[:80]})")
+# 18-09 (compte-progression) : le tirage est derrière une GARDE — sans 3 séances terminées ET
+# synchronisées (sync_complete_at), 409 progression_insuffisante ; les anciennes séances du
+# compte de test n'ont pas encore le marqueur. Les deux issues prouvent l'enveloppe : le rejeu
+# (200, 0 converti) ou la garde (409 motivé). Un 500 ou un crédit seraient le défaut.
+garde = sn == 409 and "progression_insuffisante" in bn
+verdict((sn == 200 and j(bn).get("deja_reclame") is True and j(bn).get("sachets_convertis") == 0) or garde,
+        f"nœud 3 → rejeu 0 converti, ou garde de progression motivée ({sn} {bn[:80]})")
 so, bo = call("/rest/v1/rpc/reclamer_noeud_chemin", {"p_noeud": 3, "p_pieces": 1, "p_monnaie": "yellow", "p_boosters": []}, jwt)
-verdict(so == 200, f"reclamer_noeud_chemin (l'ancienne porte) passe encore par l'enveloppe → {so}")
+verdict(so == 200 or (so == 409 and "progression_insuffisante" in bo),
+        f"reclamer_noeud_chemin (l'ancienne porte) passe par l'enveloppe et sa garde → {so}")
+sf, bf = call("/rest/v1/rpc/fuseau_jour", {}, jwt); print("   fuseau_jour :", sf, bf[:60])
+verdict(sf == 200 and "Europe/Paris" in bf, "fuseau_jour lisible par le client (grant du 13-09, 20260913120000) et = Europe/Paris")
 for nom, corps in (("tirer_noeud_chemin_brut", {"p_noeud": 3, "p_pieces": True}),
                    ("convertir_pieces", {"p_user": uid}),
-                   ("fuseau_jour", {}), ("jour_courant", {}), ("convertis_transaction", {})):
+                   ("jour_courant", {}), ("convertis_transaction", {})):
     sp, bp = call(f"/rest/v1/rpc/{nom}", corps, jwt); print(f"   {nom} :", sp, bp[:100])
     verdict(sp == 403 and "42501" in bp, f"{nom} existe mais est refusée au client (403 / 42501) — un 404 voudrait dire ABSENTE")
 

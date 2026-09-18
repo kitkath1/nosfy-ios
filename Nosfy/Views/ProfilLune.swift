@@ -892,7 +892,7 @@ struct ProfilLuneView: View {
         // La recette maison des titres (celle d'« Exercices ») : Inter
         // bold, tracking négatif, le dégradé titleFade — LA signature de
         // cohérence entre les pages.
-        Text("Cartes collectées")
+        Text(L("Cartes collectées", "Cards collected"))
             .font(.inter(24, .bold))
             .tracking(-0.3)
             .foregroundStyle(WoopGradient.titleFade)
@@ -1843,7 +1843,7 @@ struct ReglagesOverlay: View {
                     .padding(.top, 10)
                     .padding(.bottom, 16)
 
-                Text("Réglages")
+                Text(L("Réglages", "Settings"))
                     .font(.inter(21, .bold))
                     .foregroundStyle(Color.inkPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -1865,7 +1865,8 @@ struct ReglagesOverlay: View {
                         Text(prenom)
                             .font(.inter(16, .semibold))
                             .foregroundStyle(Color.inkPrimary)
-                        Text("\(pieces) pièces lune")
+                        Text(pieces == 1 ? L("1 pièce lune", "1 moon coin")
+                                         : L("\(pieces) pièces lune", "\(pieces) moon coins"))
                             .font(.inter(12, .regular))
                             .foregroundStyle(Color.inkMuted)
                     }
@@ -1875,8 +1876,13 @@ struct ReglagesOverlay: View {
                 .padding(.bottom, 18)
 
                 VStack(spacing: 0) {
+                    // `compte.travail` est une CLÉ d'état (« Déconnexion… » /
+                    // « Suppression… », posée par Compte.swift), pas un texte
+                    // affiché : l'affichage passe par L(), la clé ne bouge pas.
                     ligne("rectangle.portrait.and.arrow.right",
-                          compte.travail == "Déconnexion…" ? "Déconnexion…" : "Se déconnecter") {
+                          compte.travail == "Déconnexion…"
+                              ? L("Déconnexion…", "Signing out…")
+                              : L("Se déconnecter", "Sign out")) {
                         // LA DÉCONNEXION VRAIE (C2) : pousser ce qui attend
                         // (hors ligne → refus), /auth/v1/logout, effacer tout ce
                         // qui est à elle, la porte. Le panneau se ferme quand
@@ -1887,13 +1893,16 @@ struct ReglagesOverlay: View {
                         }
                     }
                     separateur
-                    ligne("doc.text", "Conditions générales d'utilisation") {
+                    ligne("doc.text", L("Conditions générales d'utilisation", "Terms of Use")) {
                         withAnimation(.easeOut(duration: 0.25)) {
                             showCGU = true
                         }
                     }
                     separateur
-                    ligne("trash", compte.travail == "Suppression…" ? "Suppression…" : "Supprimer mon compte",
+                    ligne("trash",
+                          compte.travail == "Suppression…"
+                              ? L("Suppression…", "Deleting…")
+                              : L("Supprimer mon compte", "Delete my account"),
                           teinte: Color(red: 1.0, green: 0.36, blue: 0.26)) {
                         guard compte.travail == nil else { return }
                         confirmeSuppression = true
@@ -1956,8 +1965,8 @@ struct ReglagesOverlay: View {
                 .zIndex(20)
             }
         }
-        .alert("Supprimer ton compte ?", isPresented: $confirmeSuppression) {
-            Button("Supprimer", role: .destructive) {
+        .alert(L("Supprimer ton compte ?", "Delete your account?"), isPresented: $confirmeSuppression) {
+            Button(L("Supprimer", "Delete"), role: .destructive) {
                 // LA SUPPRESSION VRAIE (C3-app) : `supprimer-compte` — le serveur
                 // révoque le jeton Apple (si la clé est là) et efface auth.users,
                 // la cascade emporte tout ; puis l'app oublie tout, la porte.
@@ -1966,9 +1975,10 @@ struct ReglagesOverlay: View {
                     if await Compte.supprimer(contexte: modelContext) == .faite { fermer() }
                 }
             }
-            Button("Annuler", role: .cancel) {}
+            Button(L("Annuler", "Cancel"), role: .cancel) {}
         } message: {
-            Text("Tes séances, tes cartes et tes pièces seront perdues pour toujours.")
+            Text(L("Tes séances, tes cartes et tes pièces seront perdues pour toujours.",
+                   "Your sessions, cards and coins will be lost forever."))
         }
     }
 
@@ -2004,34 +2014,8 @@ struct ReglagesOverlay: View {
     }
 }
 
-/// Les conditions générales — le gabarit est posé, LE TEXTE RESTE À
-/// RÉDIGER avant l'App Store.
-struct CGUPage: View {
-    var fermer: () -> Void
-
-    var body: some View {
-        ZStack {
-            Color.black.opacity(0.92).ignoresSafeArea()
-            VStack(spacing: 0) {
-                RangeeChips(retour: fermer) { EmptyView() }
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Conditions générales d'utilisation")
-                            .font(.inter(24, .bold))
-                            .foregroundStyle(Color.inkPrimary)
-                        Text("Le texte des conditions générales sera rédigé avant la publication sur l'App Store.")
-                            .font(.inter(15, .regular))
-                            .foregroundStyle(Color.inkSecondary)
-                        Spacer(minLength: 200)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 12)
-                }
-            }
-        }
-    }
-}
+// Les conditions générales (`CGUPage`) et leur texte, article par article
+// dans les deux langues, vivent dans `CGUPage.swift` (18-09).
 
 // MARK: - Le dos vide
 

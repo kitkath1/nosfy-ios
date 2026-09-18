@@ -2664,6 +2664,10 @@ struct HomeNuitPage: View {
                 }
             }
                 .environment(\.colorScheme, .dark)
+                // 18-09 : le chemin couvre la Home comme une story le fait
+                // (analyse chauffe du coffre, suspect n° 2) — sans ça ses
+                // horloges battaient sous lui.
+                .couvreLaHome()
                 .fullScreenCover(isPresented: $exoOuvert) {
                     ExercisesView(selection: Binding(
                         get: { .exercises },
@@ -2674,6 +2678,8 @@ struct HomeNuitPage: View {
                             }
                         }))
                         .environment(\.colorScheme, .dark)
+                        // Et la fiche posée sur le chemin : sa propre clé.
+                        .couvreLaHome()
                 }
         }
         .fullScreenCover(isPresented: $coffreOuvert) {

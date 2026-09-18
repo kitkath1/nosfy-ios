@@ -1,5 +1,23 @@
 # Règle multi-session (Nosfy)
 
+## CGU + anglais + bancs + conformité — session CGU, 18-09 après-midi, rien commité
+
+12:32-12:40 : `verif_cardio`, `verif_faits` (compte jetable), `verif_backend_coffre`
+portés sur `synchroniser_seance` → 22 / 14 / 53 ✓, litiges levés. Conformité
+posée : `ITSAppUsesNonExemptEncryption` (deux Info.plist) + `Nosfy/PrivacyInfo.xcprivacy`,
+vérifiés dans le bundle sim. Site republié v73. Toujours aucun iPhone, aucun index.
+~15:00 : lecture statique du coffre sur sa demande — `tools/perf/ANALYSE-COFFRE-CHAUFFE-2026-09-18.md`,
+E77 au registre, mesure `m-coffre-projecteur-chauffe` sur le site (v75). Deux suspects :
+`Projecteur` (3 flous plein cadre redessinés à 20 Hz, CoffreV2.swift:835-925) et les
+fullScreenCover coffre/chemin/fiche sans couverture `RythmeEcran.stories` (la Home ne
+dort pas dessous). Puis, sur son « bah fais » (~15:20) : hunks POSÉS dans
+`RythmeEcran.swift` (couvertures + `.couvreLaHome()`), `CoffreFortView.swift` (1 ligne),
+`HomeNuit.swift` (2 lignes), `NosfyApp.swift` (1 ligne sur le manège à la racine),
+`SondeVol.swift` (tics[5]), `CoffreV2.swift` (Projecteur : barreau, porte, tic — région
+835-870 seulement, les hunks Cartes du pied sont intacts). Build sim EXIT 0, dessin
+intact, rien mesuré. Session manège : le `.couvreLaHome()` sur `BoosterLab` à la racine
+n'endort que la Home/Profil dessous, il ne touche pas au manège lui-même.
+
 ## Cartes — iPhone RÉSERVÉ par la session Ouvrir (18-09 15:15, « vas-y » de Kathryn)
 
 Contrôle iPhone du parcours Cartes : build Debug de l'arbre partagé (correctif

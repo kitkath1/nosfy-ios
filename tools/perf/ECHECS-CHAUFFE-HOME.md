@@ -1,5 +1,22 @@
 # Chauffe Home — registre des échecs et des mesures invalides
 
+### E77 — Le coffre lu dans le code : projecteur redessiné à 20 Hz, Home éveillée sous le cover
+
+18-09 après-midi, lecture statique (aucune mesure) sur demande explicite.
+`CoffreV2.swift` n'a aucun `SondeVol.tic` : angle mort de toutes les campagnes.
+`Projecteur` (`:835-925`) reconstruit à 20 Hz trois flous gaussiens (19, 13, 11)
+plein cadre sous `compositingGroup` + `plusLighter` pour tourner une lumière
+de 13° et respirer une opacité — GPU invisible au `cpu` de la sonde, cohérent
+avec E76 (thermique 2, CPU bas). `Equatable` n'y change rien (fermeture de
+TimelineView). Les covers coffre / chemin / fiche (`HomeNuit.swift:2646-2679`)
+ne posent pas de couverture dans `RythmeEcran.stories` : `dortHome` reste faux
+sous eux, contrairement aux stories (`StoryFlow.swift:649`). Ordre de preuve
+proposé : barreau `-sansProjecteur` (à créer) puis couverture des covers, une
+balade par moteur, thermique 0 au départ, trajectoire thermique lue.
+Posé ensuite (compilé, non mesuré) : `.couvreLaHome()` sur coffre, chemin,
+fiche et manège ; `-sansProjecteur`, porte `paused` et `tics[5]` sur le
+projecteur. [Analyse ligne par ligne](ANALYSE-COFFRE-CHAUFFE-2026-09-18.md).
+
 ### E76 — Reboot76, suspension XCTest et décor Profil non protégé
 
 18-09 : deux captures Instruments rompues ; fragment1,475495s invalide pour

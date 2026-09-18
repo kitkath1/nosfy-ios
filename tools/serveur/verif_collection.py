@@ -72,8 +72,10 @@ verdict(all("scene" not in c for c in col), "aucune clé scene (20260915111000)"
 total = sum(c.get("nombre", 0) for c in col)
 n_sql = sql(f"select count(*) as n from public.user_cards where user_id = '{uid}'")[0]["n"]
 verdict(total == n_sql, f"somme des nombre = {total} = count(*) user_cards du compte ({n_sql}) : rien n'est perdu")
-familles = sql(f"select count(distinct (c.famille, c.rarete)) as n from public.user_cards u join public.cards c on c.id = u.card_id where u.user_id = '{uid}'")[0]["n"]
-verdict(len(col) == familles, f"{len(col)} familles = les familles distinctes en base ({familles})")
+# 18-09 (20260918084850) : ma_collection groupe par RÉFÉRENCE (card_id), plus par
+# (famille, rarete) — deux références d'une même famille font deux slots.
+familles = sql(f"select count(distinct u.card_id) as n from public.user_cards u where u.user_id = '{uid}'")[0]["n"]
+verdict(len(col) == familles, f"{len(col)} slots = les références distinctes en base ({familles})")
 for c in col[:3]:
     req = urllib.request.Request(f"{URL}/storage/v1/object/public/cards/{c['art_path']}", method="HEAD")
     try:

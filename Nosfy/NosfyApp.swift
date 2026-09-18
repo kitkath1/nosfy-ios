@@ -2021,6 +2021,11 @@ struct RootView: View {
                                }
                            })
                     .transition(.opacity)
+                    // 18-09 : le manège est un calque plein écran sur le
+                    // TabView — sans couverture, la Home et le Profil
+                    // battaient sous lui (QA 18 : « manège 3D, carte »).
+                    // Même mécanisme que les stories et le coffre.
+                    .couvreLaHome()
                     .zIndex(7)
             }
 

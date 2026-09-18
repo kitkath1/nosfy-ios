@@ -841,12 +841,44 @@ struct Projecteur: View, Equatable {
     /// 0 → 1 : éteint / nominal. Il monte au tap et sous le doigt.
     var force: Double = 1
 
+    /// **`-sansProjecteur`** (18-09) — LE BARREAU : le faisceau en pose fixe
+    /// (même image, balayage à 0, sans horloge). Sans lui on ne pourra
+    /// jamais l'accuser ni le disculper sur le téléphone. Lecture qui l'a
+    /// motivé : `tools/perf/ANALYSE-COFFRE-CHAUFFE-2026-09-18.md`, suspect
+    /// n° 1 — cette horloge refabrique trois flous plein cadre 20 fois par
+    /// seconde pour tourner une lumière de 13°.
+    static let sansHorloge = CommandLine.arguments.contains("-sansProjecteur")
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// `Equatable` à la main depuis que la vue lit l'environnement : on
+    /// compare ses ENTRÉES (la synthèse refuserait les wrappers). Un
+    /// changement d'environnement ou de protection réveille la vue par
+    /// sa propre dépendance, pas par le parent — c'est voulu.
+    static func == (a: Projecteur, b: Projecteur) -> Bool {
+        a.scene == b.scene && a.piece == b.piece
+            && a.pieceY == b.pieceY && a.force == b.force
+    }
+
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 20.0)) { tl in
-            let t = tl.date.timeIntervalSinceReferenceDate
-                .truncatingRemainder(dividingBy: 2310)
-            corps(balayage: balayageCoffre(t))
-                .opacity(force * (1 + 0.055 * sin(t * 2 * .pi / 5.5)))
+        Group {
+            if Self.sansHorloge {
+                corps(balayage: 0).opacity(force)
+            } else {
+                // LA PORTE : en arrière-plan, sous Reduce Motion ou sous
+                // protection thermique, le faisceau se pose (il ne
+                // disparaît pas) — comme les décors du Profil à chaud.
+                let dort = scenePhase != .active || reduceMotion
+                    || ProtectionThermique.shared.ambianceAuRepos
+                TimelineView(.animation(minimumInterval: 1.0 / 20.0,
+                                        paused: dort)) { tl in
+                    let _ = SondeVol.shared.tic(5)
+                    let t = tl.date.timeIntervalSinceReferenceDate
+                        .truncatingRemainder(dividingBy: 2310)
+                    corps(balayage: balayageCoffre(t))
+                        .opacity(force * (1 + 0.055 * sin(t * 2 * .pi / 5.5)))
+                }
+            }
         }
         .allowsHitTesting(false)
         .blendMode(.plusLighter)
