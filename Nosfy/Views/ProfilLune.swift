@@ -25,7 +25,10 @@ struct ProfilLuneView: View {
 
     @Query(sort: \Workout.startedAt, order: .reverse)
     private var workouts: [Workout]
-    @State private var showCoffre = false
+    /// Une seule valeur porte la présentation ET le cran demandé.
+    /// Deux @State séparés laissaient le cover capturer l’ancien cran0.
+    private struct DestinationCoffre: Identifiable { let id: Int }
+    @State private var destinationCoffre: DestinationCoffre?
     @State private var showReglages = false
     /// Le rebond de la pastille pièces au tap (0 → 1 → 0).
     @State private var coinKick: CGFloat = 0
@@ -318,8 +321,9 @@ struct ProfilLuneView: View {
                 }
             }
         }
-        .fullScreenCover(isPresented: $showCoffre) {
-            CoffreFortFlow(coins: pieces, onClose: { showCoffre = false })
+        .fullScreenCover(item: $destinationCoffre) { destination in
+            CoffreFortFlow(coins: pieces, onClose: { destinationCoffre = nil },
+                           pageInitiale: destination.id)
         }
         // ⚠️ **LE REPLI EST POSÉ AVANT LA PREMIÈRE IMAGE.** La pastille porte
         // `contentTransition(.numericText())` : si le solde arrivait de zéro
@@ -388,14 +392,15 @@ struct ProfilLuneView: View {
     /// forge a parlé pendant la cérémonie), son art au gabarit.
     private func lancerAccueil(carte: CarteEnvolee) {
         let d = collection.destination(rarete: carte.rarete,
-                                       famille: carte.famille)
+                                       famille: carte.famille, cardId: carte.cardId)
         arriveeArt = carte.art
         arriveePlein = carte.artPlein
         arriveeDepth = carte.depth
         withAnimation(.easeInOut(duration: 0.3)) {
             arriveeEnAttente = ArriveeCarte(
                 rarete: carte.rarete, famille: carte.famille,
-                slot: d.slot, doublon: d.doublon, nouvelle: d.nouvelle)
+                slot: d.slot, doublon: d.doublon, nouvelle: d.nouvelle,
+                cardId: carte.cardId, acquisitionId: carte.acquisitionId)
         }
     }
 
@@ -487,7 +492,7 @@ struct ProfilLuneView: View {
                                              famille: a.famille,
                                              art: arriveeArt ?? ArtDuSacre.art,
                                              artPlein: arriveePlein,
-                                             depth: arriveeDepth)
+                                             depth: arriveeDepth, cardId: a.cardId, acquisitionId: a.acquisitionId)
                         }
                         fumeeCentre = CGPoint(x: cible.midX, y: cible.midY)
                         fumeeBegan = Date()
@@ -582,8 +587,8 @@ struct ProfilLuneView: View {
             // de sachets, l'argent et l'or — TOUJOURS visibles, même à 0
             // (verdict 30-08). La pill booster est LA RÉCUPÉRATION du
             // parcours : dire « Plus tard » à la pop-up ne perd jamais un
-            // sachet, on revient le chercher ici, et elle ouvre le Manège
-            // DIRECTEMENT (pas de détour).
+            // sachet, on revient le chercher ici par sa page du coffre,
+            // dont le bouton ouvre le manège de la bonne couleur.
             .overlay(alignment: .bottomTrailing) {
                 tresorBanniere
             }
@@ -761,10 +766,12 @@ struct ProfilLuneView: View {
                         robe: .noire) {
                 ouvrirReserve(.noire)
             }
+            .accessibilityIdentifier("profil-booster-noir")
             .transition(.scale(scale: 0.7).combined(with: .opacity))
             PillBooster(nombre: SacreEtat.shared.boostersEnAttente) {
                 ouvrirReserve(.lune)
             }
+            .accessibilityIdentifier("profil-booster-orange")
             .transition(.scale(scale: 0.7).combined(with: .opacity))
         }
     }
@@ -777,16 +784,10 @@ struct ProfilLuneView: View {
         }
     }
 
-    /// La porte du manège depuis une pill — GARDÉE ICI : une pill visible
-    /// à 0 (30-08) n'ouvre pas un manège vide, et `ouvrirManege` ne compte
-    /// pas. À 0 le sachet a déjà tressailli sous le doigt (le kick de
-    /// `PillBooster`) : ça suffit, pas de troisième canal.
+    /// Les réserves ouvrent leur page du coffre, même à zéro.
+    /// La destination porte ensemble le cran et la présentation.
     private func ouvrirReserve(_ robe: RobeBooster) {
-        let nombre = robe == .noire
-            ? SacreEtat.shared.boostersNoirsEnAttente
-            : SacreEtat.shared.boostersEnAttente
-        guard nombre > 0 else { return }
-        SacreEtat.shared.ouvrirManege(robe: robe)
+        destinationCoffre = DestinationCoffre(id: robe == .noire ? 3 : 1)
     }
 
     /// LA PIÈCE D'ARGENT (30-08) — la sœur de la pastille d'or : même
@@ -804,7 +805,7 @@ struct ProfilLuneView: View {
                 argentKick = 0
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
-                showCoffre = true
+                destinationCoffre = DestinationCoffre(id: 2)
             }
         } label: {
             HStack(spacing: 7) {
@@ -843,7 +844,7 @@ struct ProfilLuneView: View {
                 coinKick = 0
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
-                showCoffre = true
+                destinationCoffre = DestinationCoffre(id: 0)
             }
         } label: {
             HStack(spacing: 7) {
@@ -914,6 +915,7 @@ struct ProfilLuneView: View {
         VStack(spacing: 22) {
             ForEach(Self.registresProfil, id: \.nom) { reg in
                 let collectees = collection.collectees(reg.cle)
+                let total = max(collectees.count, collection.totaux[reg.cle] ?? 4)
                 VStack(spacing: 12) {
                     HStack(spacing: 10) {
                         HStack(spacing: 2.5) {
@@ -933,7 +935,7 @@ struct ProfilLuneView: View {
                                 .foregroundStyle(Color.inkMuted)
                         }
                         Spacer()
-                        Text("\(collectees.count) / \(reg.total)")
+                        Text("\(collectees.count) / \(collection.totaux[reg.cle].map(String.init) ?? "—")")
                             .font(.inter(13, .semibold))
                             .monospacedDigit()
                             .foregroundStyle(Color.inkMuted)
@@ -967,6 +969,10 @@ struct ProfilLuneView: View {
                                         .onTapGesture {
                                             UIImpactFeedbackGenerator(
                                                 style: .light).impactOccurred()
+                                            guard o.artPlein != nil else {
+                                                Task { await collection.relire() }
+                                                return
+                                            }
                                             carteOuverteRarete = reg.cle
                                             withAnimation(.spring(
                                                 response: 0.42,
@@ -975,7 +981,7 @@ struct ProfilLuneView: View {
                                             }
                                         }
                                 }
-                                ForEach(collectees.count ..< reg.total,
+                                ForEach(collectees.count ..< total,
                                         id: \.self) { i in
                                     DosVide(pips: reg.pips)
                                         .id("slot-\(reg.cle)-\(i)")

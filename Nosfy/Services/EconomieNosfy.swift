@@ -82,7 +82,10 @@ final class EconomieWoop {
     /// répare. L'arbitre en tient UN, et `SacreEtat` lui délègue.
     var boosters: Int { serveur ? boostersServeur : maquetteBoosters }
     private(set) var boostersServeur = 0
-    var maquetteBoosters = 1
+    /// `-sansSachet` : la maquette naît SANS sachet — le barreau du panneau
+    /// du géant à vide (la jauge, « Verrouillé »), 15-09.
+    var maquetteBoosters =
+        CommandLine.arguments.contains("-sansSachet") ? 0 : 1
 
     /// Les sachets NOIRS ouvrables. ⚠️ Côté serveur, c'est le solde d'argent
     /// (le sachet noir naît au claim) PLUS le noir déjà payé, ouvert et pas
@@ -91,7 +94,14 @@ final class EconomieWoop {
     /// pas (app tuée pendant la peinture, 500, timeout), le compte à 0, la
     /// porte du manège FERMÉE — et la reprise que le serveur sait faire
     /// n'était plus jamais déclenchée. Le sachet payé restait dans le vide.
-    var boostersNoirs: Int { serveur ? argent + noirsOuverts : maquetteNoirs }
+    var boostersNoirs: Int { serveur ? noirsPossedes + argent / max(prixNoir, 1) : maquetteNoirs }
+    private(set) var noirsPossedes = 0
+    private(set) var prixNoir = 1
+    private var versionInventaire: Int64 = -1
+    private(set) var generationCartes = UUID()
+    private(set) var proprietaireCartes: String?
+    var retenirPourGalet = false
+    private var evenementsRetenus: [EvenementGain] = []
     private(set) var noirsOuverts = 0
     var maquetteNoirs = SacreEtat.bancNoir ? 1 : 0
     /// Où en est la jauge vers le prochain sachet, en pièces (0…prix−1).
@@ -231,13 +241,21 @@ final class EconomieWoop {
     func rafraichir(avecJournal: Bool = false) async {
         guard Self.possible, !chargement else { return }
         chargement = true
-        defer { chargement = false }
+        let generation = generationCartes
+        defer { if generation == generationCartes { chargement = false } }
         do {
             let jwt = try await SupabaseSession.shared.token()
+            let owner = try await SupabaseSession.shared.currentUserID()
             let e = try await SacreServeur.etatCoffre(jwt: jwt)
+            guard generation == generationCartes else { return }
+            proprietaireCartes = owner.lowercased()
             appliquer(e)
+            if let events = try? await CartesServeur.evenements(jwt: jwt), generation == generationCartes {
+                annoncer(events)
+            }
             if avecJournal {
                 let lignes = try await SacreServeur.historique(jwt: jwt)
+                guard generation == generationCartes else { return }
                 journal = lignes.map(Self.ligne)
             }
             derniereErreur = nil
@@ -253,6 +271,15 @@ final class EconomieWoop {
     /// la précédente. Les constantes de la maison (prix, pièces par série)
     /// restent : elles ne sont à personne.
     func oublier() {
+        generationCartes = UUID()
+        proprietaireCartes = nil
+        chargement = false
+        versionInventaire = -1
+        noirsPossedes = 0
+        evenementsRetenus.removeAll()
+        pileFinSeance.removeAll()
+        pousserApresStory = false
+        retenirPourGalet = false
         or = 0
         argent = 0
         boostersServeur = 0
@@ -268,7 +295,13 @@ final class EconomieWoop {
         derniereErreur = nil
     }
 
-    private func appliquer(_ e: SacreServeur.EtatCoffre) {
+    func appliquer(_ e: SacreServeur.EtatCoffre) {
+        if let v = e.version {
+            guard v >= versionInventaire else { return }
+            versionInventaire = v
+        }
+        noirsPossedes = e.boostersNoirs ?? e.noirsOuverts
+        prixNoir = e.prixNoir
         or = e.soldeOr
         argent = e.soldeArgent
         // `boosters_or` compte AUSSI l'orange ouvert non scellé des six
@@ -299,6 +332,15 @@ final class EconomieWoop {
     /// plusieurs sources. Refaire un aller-retour ici, ce serait recréer le
     /// défaut que cette réponse a été élargie pour supprimer.
     func appliquer(_ c: SacreServeur.ClotureSeance) {
+        if let recu = c.recu {
+            recevoir(recu)
+            if seanceStory == nil || seanceStory == c.workoutId {
+                clotureRepondue = true
+                dernierFaits = c.faits
+                dernierGainCardio = c.piecesCardio
+            }
+            return
+        }
         // La clôture a répondu (avant tout early return) : la story de fin d'un
         // cardio n'attend plus que ce signal pour rouler ses pièces.
         clotureRepondue = true
@@ -356,7 +398,9 @@ final class EconomieWoop {
     /// la réponse pour APRÈS la story, ET on repart d'un gain cardio à zéro —
     /// sinon la story d'une séance de MUSCU afficherait le cardio de la séance
     /// d'avant (`dernierGainCardio` persiste). La clôture le remettra si cardio.
-    func debutFinSeance() {
+    private var seanceStory: String?
+    func debutFinSeance(workoutId: UUID? = nil) {
+        seanceStory = workoutId?.uuidString.lowercased()
         pousserApresStory = true
         dernierGainCardio = 0
         clotureRepondue = false
@@ -369,6 +413,7 @@ final class EconomieWoop {
     /// serveur plus tardive repartira alors tout de suite.
     func viderFinSeance() {
         pousserApresStory = false
+        libererEvenements()
         guard !pileFinSeance.isEmpty else { return }
         FileAnnonces.shared.pousser(pileFinSeance)
         pileFinSeance.removeAll()
@@ -376,6 +421,7 @@ final class EconomieWoop {
 
     /// Un versement de connexion réglé : le solde est à jour sans relecture.
     func appliquer(_ r: SacreServeur.RetourQuotidien) {
+        if let recu = r.recu { recevoir(recu); return }
         or = r.solde
         reste = max(or, 0) % max(prixBooster, 1)
         // Crédité OU « déjà pris » : dans les deux cas le jour est réglé.
@@ -396,7 +442,6 @@ final class EconomieWoop {
     func reclamerRetour() {
         guard retourDisponible else { return }
         retourDisponible = false
-        FileAnnonces.shared.pousser(.retour(piecesRetourQuotidien))
         Task { await SacreServeur.reclamerRetourQuotidien() }
     }
 
@@ -429,33 +474,49 @@ final class EconomieWoop {
     @discardableResult
     func consommerBooster(legendaire: Bool) async -> String? {
         guard Self.possible else { return nil }
+        let generation = generationCartes
         do {
             let jwt = try await SupabaseSession.shared.token()
-            // ⚠️ DEUX PILES, DEUX PORTES (30-08). Le NOIR se consomme par
-            // `claim_booster_legendaire` — elle débite la pièce d'argent et
-            // crée le sachet OUVERT ; `ouvrir_booster(true)` exigeait
-            // `opened_at is null` et ne matchait donc JAMAIS un légendaire :
-            // la pile noire ne se consommait pas, la pièce d'argent n'était
-            // jamais débitée (la fonction n'avait aucun appelant).
-            let id: String?
-            if legendaire {
-                id = try await SacreServeur.claimLegendaire(jwt: jwt)
-            } else {
-                id = try await SacreServeur.ouvrirBooster(legendaire: false,
-                                                          jwt: jwt)
-            }
-            await rafraichir()
-            return id
+            // Deux stocks : noir offert d’abord, argent seulement sans noir possédé.
+            let owner = try await SupabaseSession.shared.currentUserID()
+            guard generation == generationCartes else { return nil }
+            let operation = CartesServeur.operation(user: owner, noir: legendaire)
+            let resultat = try await CartesServeur.objet("preparer_booster", jwt: jwt,
+                corps: ["p_operation": operation.uuidString.lowercased(), "p_legendaire": legendaire])
+            guard generation == generationCartes, let j = resultat as? [String: Any] else { return nil }
+            proprietaireCartes = owner.lowercased()
+            if let recu = RecuRecompense(j) { recevoir(recu) }
+            return j["booster_id"] as? String
         } catch {
             print("[économie] ouverture non enregistrée : \(error)")
             return nil
         }
     }
 
+    func recevoir(_ recu: RecuRecompense) {
+        guard proprietaireCartes == nil || proprietaireCartes == recu.userId.lowercased() else { return }
+        proprietaireCartes = recu.userId.lowercased()
+        appliquer(recu.coffre)
+        annoncer(recu.evenements)
+    }
+
+    private func annoncer(_ events: [EvenementGain]) {
+        let connus = Set(evenementsRetenus.map(\.id))
+        let nouveaux = events.filter { !connus.contains($0.id) && $0.userId.lowercased() == proprietaireCartes }
+        if pousserApresStory || retenirPourGalet { evenementsRetenus.append(contentsOf: nouveaux) }
+        else { FileAnnonces.shared.pousser(nouveaux) }
+    }
+
+    func libererEvenements() {
+        guard !pousserApresStory, !retenirPourGalet else { return }
+        FileAnnonces.shared.pousser(evenementsRetenus)
+        evenementsRetenus.removeAll()
+    }
+
     // ── LA TRADUCTION D'UNE LIGNE DE JOURNAL ────────────────────────────
 
     private static func ligne(_ l: SacreServeur.LigneGain) -> GainCoffre {
-        GainCoffre(id: identite(l),
+        GainCoffre(id: l.id ?? identite(l),
                    date: l.quand,
                    montant: l.montant,
                    robe: l.genre == "booster"

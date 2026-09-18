@@ -1,230 +1,51 @@
 import { GalerieCartes } from '@/components/GalerieCartes'
 
-<Decision titre="Cartes — trois familles retenues, branchement à terminer">
-  <p><b>Une collection commune, avec des illustrations créées par IA.</b> Une même référence doit donner la même image, le même nom et la même rareté chez tous ses propriétaires. Une nouvelle carte enrichit le catalogue ; chaque joueur obtient ensuite ses exemplaires par les règles du jeu.</p>
-  <p>Trois familles retenues le 18 septembre : <b>La Forêt des Veilles</b>, <b>Les Cimes Éteintes</b> et <b>Les Bois Sans Lune</b>. Les quatorze illustrations sont visibles ci-dessous, avec leurs noms FR/EN et leur rareté. Les personnages récurrents changent de pose et de scène entre les mondes.</p>
-  <p>Cette étape produit des images d’atelier et leur documentation. Aucun de ces nouveaux visuels n’est encore publié dans Supabase ou installé dans l’app. Le chapitre reste en chantier. Compte est suivi séparément dans son chapitre.</p>
+<Decision titre="Cartes — backend déployé, ouverture UI à terminer">
+  <p><b>Trois familles,14 références communes.</b> Même image, nom localisé et rareté pour tous ; exemplaires personnels. Anciennes cartes conservées.18-09 :28 API Cartes et35 régressions gains PASS.</p>
+  <p>Le banc app ne franchit pas encore Ouvrir. Révélation et retour collection non validés ; pas de « tout est bon » global. Chauffe, haptique et shiny animé restent ouverts.</p>
+</Decision>
+
+<Decision titre="Deux manèges : orange et noir">
+  <p><b>Orange :</b> sachets de séance, conversion des pièces et galets. <b>Noir :</b> légendaire garantie, offerte par Route ou obtenue contre argent. Un noir possédé s’ouvre gratuitement avant tout achat.</p>
+  <p>Deux entrées du profil, deux pages du coffre, deux stocks et reprises distincts. Les galets orange+noir et noir+noir gardent leurs sachets individuels.</p>
 </Decision>
 
 <GalerieCartes />
 
 <div className="reveal">
 
-## Une collection, plusieurs degrés de rencontre
+## Trois familles reconnaissables
 
-Une première collection raconte le même monde. D’autres collections pourront
-en explorer des lieux et des histoires, avec les quatre raretés dans chaque
-ensemble. Leur nombre et leurs noms ne sont pas encore fixés.
+- **La Forêt des Veilles / The Vigil Woods** : brume lunaire, nacre, braise discrète.
+- **Les Cimes Éteintes / The Darkened Peaks** : montagnes noires, suie, obsidienne et braises orange. Corbeau, chauve-souris, loup, dragon et deux paysages communs.
+- **Les Bois Sans Lune / The Moonless Woods** : vraie nuit sous les pins denses, clairière, noir et nacre blanche. Créatures récurrentes en nouvelles actions : suspendue, en bond, à l’atterrissage.
 
-Trois familles artistiques prédéfinies sont retenues. Elles doivent se reconnaître
-par leurs silhouettes, leur palette et leurs matières, avant même de lire leur nom.
+**Mêmes personnages, poses et scènes distinctes.** Changer angle, mouvement et interaction ; une recoloration ne suffit pas. Aucun univers marin. Noms FR/EN et sélection : `tools/carte-lune/familles-2026-09-18.json`.
 
-- **La Forêt des Veilles / The Vigil Woods** : forêt, brume lunaire, nacre et
-  braise discrète. La Veille / The Vigil ; Les Veilleuses / The Watchers ;
-  Le Passage / The Passage ; Le Souverain / The Sovereign.
-- **Les Cimes Éteintes / The Darkened Peaks** : ténèbres, montagnes noires,
-  braises orange, suie et obsidienne. Corbeau de Suie / Soot Raven, commune ;
-  Aile d’Ambre / Amberwing, rare ; Loup de Cendre / Ash Wolf, épique ;
-  Dragon d’Obsidienne / Obsidian Dragon, légendaire.
+## Découvrir au fil des séances
 
-Les communes peuvent aussi être de beaux paysages. Deux compléments ont été
-produits pour les Cimes : **La Faille Ardente / Emberrift** et **Le Col des Cendres /
-Ashen Pass**. Le corbeau, explicitement validé, est conservé. Les quatre créatures
-noir/orange ont été appréciées ensemble ; les paysages sont les compléments
-demandés puis revus en atelier. Noms FR/EN éditoriaux d’une même référence.
+Collection inconnue cachée, **cases vides comme dans le profil**, sans nom ni image avant acquisition. Les doubles partagent une référence ; deux scènes restent deux cartes. Comparaison entre amis plus tard.
 
-Les créatures marines sont écartées. Les premiers essais de Cimes sous la lune
-étaient trop clairs et trop proches de la forêt : cette version n’est pas retenue.
-Le soin reste élevé partout ; le spectaculaire et les reflets shiny noir/cuivre
-montent avec la rareté, particulièrement sur la chauve-souris et le dragon.
+Full art conservé, nom court et texte blanc minimal. Commune belle et intime, rare aux reflets ponctuels, épique en mouvement, légendaire souveraine :1/2/3/4 lunes, cadre argenté pour la légendaire. Le shiny peint monte avec la rareté ; son éveil animé reste à réaliser et mesurer, avec arrêt hors écran et protections thermiques. D’autres collections pourront explorer ces mondes.
 
-La sélection, ses noms et ses fichiers sont fixés dans
-`tools/carte-lune/familles-2026-09-18.json`. Ce manifeste est un contrat d’atelier,
-pas encore une source lue par l’app ni un catalogue publié.
+## Des légendaires avec une pratique normale
 
-**Les Bois Sans Lune / The Moonless Woods** complète la sélection : clairière
-commune v2, chauve-souris rare v3, loup épique v3 et corbeau légendaire v3.
-Nuit profonde sous les pins, noir et nacre blanche. Les personnages des Cimes
-reviennent dans de nouvelles actions : suspendue, en bond et à l’atterrissage.
-La sélection artistique est retenue ; cadrage et contraste iPhone restent à vérifier.
+Base **45/35/15/5**. Premier ordinaire rare+, au plus deux communes consécutives. Première légendaire au sixième ordinaire ou après deux séances éligibles ; suivantes après huit ordinaires ou trois séances. Première borne atteinte, à l’ouverture. Les absences ne remettent rien à zéro. Noir garanti, légendaires inconnues prioritaires.
 
-Le catalogue reste caché au joueur : découverte au fil des séances, **emplacements
-vides conservés comme dans le profil**, sans image ni nom dévoilé avant acquisition.
-Une carte obtenue remplit sa place. La comparaison avec les amis vient plus tard.
+16000 parcours simulés. Sans noirs, collection complète médiane55/22/14/9séances pour1/2/3/5ordinaires par séance. Scénarios, aucune rétention mesurée.
 
-## Reconnaître la rareté sans lire un long texte
+## Séance, galet, coffre, annonce, carte
 
-- **Commune · 1 lune.** Beauté intime, paysage vivant, lumière discrète.
-  Référence : La Veille.
-- **Rare · 2 lunes.** Présence reconnaissable, ailes nacrées et reflets ponctuels.
-  Référence : Les Veilleuses.
-- **Épique · 3 lunes.** Envergure, mouvement et ciel spectaculaire.
-  Référence : Le Passage.
-- **Légendaire · 4 lunes, cadre argenté.** Présence souveraine, noir profond,
-  argent et braise dans une matière singulière. Référence : Le Souverain.
+Séance sauvegardée et validée → reçu unique et coffre versionné → story/annonces → vrai sachet → attribution atomique → pixels vérifiés → révélation confirmée → collection par référence. Coupure ou rejeu reprend le même sachet sans second débit. Aucun appel IA pendant l’ouverture : les14 images sont publiées avant distribution. Les images Storage sont publiques ; le catalogue caché est une règle de découverte dans l’app.
 
-Ces noms sont provisoires. Toutes les raretés gardent une finition élevée.
-Les lunes sont déjà posées par le code ; les références générées sont des images
-nues qui seront habillées par ce cadre. Le cadrage final et la reconnaissance
-en petite vignette demandent encore une vérification.
-
-Le côté **shiny** des PNG du 18 septembre est encore peint. Kathryn demande
-désormais un éveil animé et une matière qui réagit au geste, propres à la créature.
-Illustration, poster et effet resteront identiques pour tous les propriétaires
-de la référence. Une variante distincte aurait sa propre référence officielle ;
-la distribution des shiny reste à définir, sans ajouter d’office une autre loterie.
-Réutiliser le moteur existant et vérifier son coût : effet sur la carte regardée,
-arrêt hors écran, protections thermiques et Reduce Motion.
-
-Le **full art**, le manège et le sachet noir à légendaire garantie sont conservés.
-Un nom court et du texte blanc minimal accompagnent la découverte ; une phrase
-poétique et le souvenir de la séance pourront vivre dans le détail. L’attachement
-repose sur ces rencontres, leurs souvenirs et un univers reconnaissable.
-
-Fichiers, prompts et revue artistique :
-`tools/carte-lune/references-2026-09-18/README.md`.
-Deuxième famille : `tools/carte-lune/cimes-eteintes-2026-09-18/README.md`.
-
-## De belles découvertes avec une pratique normale
-
-Une séance éligible apporte déjà un sachet forfaitaire ; les pièces peuvent en
-ajouter plusieurs par conversion. Avec les valeurs documentées et hors bonus,
-10 séries donnent 200 pièces : deux sachets convertis et un forfaitaire.
-
-Les poids actuels du code sont 60/27/10/3. À 3 % de légendaires, six séances de
-trois boosters ordinaires laissent encore 57,80 % de chances de n’en avoir aucune,
-hors sachets noirs. Le rythme doit donc être jugé en séances et en ouvertures.
-
-**Nouveau candidat, non déployé :** première légendaire au plus tard à
-l’ouverture qui suit la deuxième séance éligible, ou au sixième booster ordinaire ;
-puis après trois séances sans légendaire, ou huit boosters ordinaires.
-La première borne atteinte déclenche la garantie. Le joueur ouvre ses sachets
-quand il le souhaite ; une absence ne remet rien à zéro. Premier booster rare
-ou mieux, au plus deux communes consécutives. Sachet noir toujours légendaire.
-
-Poids proposés : 45/35/15/5, à simuler avec les garanties, les vrais gains et les
-doublons. Le résultat historique de 11,10 % concerne seulement l’ancien modèle
-6/12 ouvertures ; il ne valide pas ce nouveau candidat. Aucun taux effectif ni
-effet sur la rétention n’est mesuré pour ces nouvelles règles.
-
-## L’appel IA et le manège
-
-Dans le code relu le 18 septembre, l’appel part au choix du sachet dans le manège,
-après son ouverture serveur. Supabase choisit une image existante ou en génère
-une avec OpenAI. La fin de séance donne les gains ; elle ne lance pas directement
-la génération de cette carte. Ce n’est pas un appel à la conversation de développement.
-
-La cible du plan prépare les images en atelier, les sélectionne et les publie
-avant leur distribution. À l’ouverture, le serveur attribue une référence
-existante, puis l’app charge et dévoile cette vraie carte. Le manège conserve
-ses gestes et peut reprendre une attente réseau. Le skill guide les développeurs ;
-il n’est pas chargé automatiquement dans les requêtes OpenAI de l’app.
-
-Plan détaillé, propositions des mondes et calcul de rythme :
-`tools/carte-lune/PLAN-CARTES-MONDES-2026-09-18.md`.
-Skill créé et validé : `.agents/skills/woop-cartes/SKILL.md`, découvrable par
-`$woop-cartes`. La sélection actuelle porte sur quatorze références dans trois mondes.
-
-## Le catalogue existant, lu le 17 septembre
-
-Le serveur a été lu le 17 septembre : **9 illustrations pour 7 familles**,
-soit 6 communes, 2 rares, aucune épique et 1 légendaire. Les 25 familles prévues
-dans le code ne sont donc pas encore un ensemble de25 cartes publiées.
-
-La table `cards` contient les images communes ; `user_cards` contient les
-exemplaires personnels. Les 28 exemplaires actuels appartiennent à un seul
-compte. Le modèle permet à plusieurs joueurs de posséder la même carte ;
-le parcours avec deux comptes reste à tester.
-
-## Le problème principal : famille et carte sont confondues
-
-« Montagnes invisibles » et « Petite lune perdue » ont chacune deux images
-différentes dans le catalogue. Pourtant, `ma_collection()` regroupe les
-exemplaires par famille et n’affiche que l’illustration obtenue en dernier.
-Le téléphone utilise aussi la famille pour compter les doublons.
-
-Pour comparer les collections, **l’identité précise de la carte doit rester
-la même jusqu’à l’écran**. Deux versions officielles différentes ont chacune
-leur référence ; deux exemplaires d’une même référence forment un vrai doublon.
-
-## Point de départ artistique du 17 septembre
-
-Trois images existantes ont été regardées : Forêt de pins, Dragon des ténèbres,
-L’oiseau souverain. La direction nuit / lune / braise est cohérente. La commune
-est presque absorbée par le noir ; la légendaire peut gagner en singularité et
-en ampleur. Cette appréciation historique concerne ces trois PNG. Les quatre
-références du 18 septembre explorent désormais un monde sans dragon féérique.
-
-La charte demande déjà une finition élevée pour chaque rareté. La sélection
-doit vérifier le sujet en vignette, les plans de lumière, la matière, le cadrage
-sous le cadre réel et la cohérence de la lune. Les cartes communes restent
-belles ; les épiques et légendaires gagnent en présence et en mise en scène.
-
-</div>
-
-<Decision titre="Le fonctionnement à brancher après l’atelier">
-  <p><b>Atelier IA → sélection → publication → tirages dans le catalogue commun.</b> Les images peuvent être travaillées avant publication. Une carte publiée garde son illustration ; une nouvelle version possède une référence distincte.</p>
-  <p>Dans le fonctionnement lu le 17 septembre, 35 % des tirages ordinaires demandent une nouvelle image, et un catalogue vide pour la rareté tirée déclenche aussi une création. L’image entre aussitôt dans le catalogue. Le passage aux cartes sélectionnées à l’avance reste à implémenter ; la production des références n’a pas modifié ce comportement.</p>
-  <p><b>Règle de départ :</b> une illustration stable par référence publiée. Une variante future devra rester identifiable et commune à tous. Les images déjà possédées ne sont pas remplacées par les essais d’atelier.</p>
-</Decision>
-
-<div className="reveal">
-
-## Plan pour terminer Cartes
-
-1. Vérifier les quatorze arts dans le cadre réel, en vignette et sur iPhone.
-2. Publier un catalogue commun : identifiant stable, famille, personnage, noms
-   FR/EN, rareté, finition et image immuable. Préserver toutes les anciennes cartes.
-3. Attribuer, sceller et avancer les garanties dans une seule transaction,
-   avec verrouillage par joueur, provenance serveur et rejeu sans nouveau gain.
-4. Conserver `card_id` jusqu’au profil : vrais doublons, cache existant,
-   collection restaurée après connexion et emplacements manquants vides.
-5. Calibrer le nouveau rythme pour une, deux ou trois séances par semaine,
-   avec les gains réels, les sachets noirs et les doublons des 14 références.
-6. Tester deux comptes, panne/reprise, double appel, réinstallation et rendu
-   iPhone. Mesurer le shiny animé séparément avant de le déclarer prêt.
-
-Plan détaillé et critères de sortie :
-`tools/carte-lune/PLAN-BRANCHEMENT-CARTES-2026-09-18.md`.
-**Cette étape reste un plan : aucun branchement app/backend réalisé ici.**
-
-Le risque d’attribution a été identifié dans le code : le sachet est scellé,
-puis la collection est écrite séparément. Une panne entre ces deux écritures
-peut laisser une carte absente de la collection. Aucun cas correspondant n’a
-été observé dans la lecture actuelle ; la panne reste à reproduire au banc.
-
-Analyse complète et sources : `tools/carte-lune/ANALYSE-CARTES-2026-09-17.md`.
-
-## Ce qui ment
-
-<Liste page="forge" etats={['men']} />
+Deux comptes, concurrence, isolation, reconnexion et garanties testés. Preuves et limites : `tools/carte-lune/integration-2026-09-18/README.md`. Plan : `tools/carte-lune/PLAN-BRANCHEMENT-CARTES-2026-09-18.md`.
 
 ## Ce qui reste
 
-<Liste page="forge" etats={['loc', 'srv', 'abs']} mesures />
+<Liste page="forge" etats={['men', 'loc', 'srv', 'abs']} mesures />
 
 ## Ce qui tient, avec ses limites
 
 <Liste page="forge" etats={['ok']} />
 
 </div>
-
-<Savoir titre="Les anciens schémas restent dans les sources">
-  <p>Les schémas du 30 août précèdent l’envoi de <code>booster_id</code> et la relecture serveur de la collection. Ils sont conservés dans <code>content/schemas/</code>, sans être présentés comme le parcours actuel. Le diagramme du catalogue publié sera produit avec son branchement.</p>
-</Savoir>
-
-
-## Personnages récurrents, scènes distinctes
-
-Décision explicite de Kathryn : les mêmes personnages reviennent entre les
-familles. Conserver le visage, les proportions et les détails distinctifs du
-corbeau, de la chauve-souris et du loup en prenant les images validées comme
-références. **Changer la pose, l’angle, le mouvement et l’interaction avec le
-décor à chaque nouvelle carte de famille.** Une simple recoloration de la
-même pose ou le remplacement du fond ne suffit pas : cela paraît faux.
-La récurrence du personnage ne fusionne pas les références collectionnables ;
-chaque illustration officielle garde son identité et ses vrais doublons.
-
-Pour Les Bois Sans Lune : vraie nuit profonde sous des pins très denses,
-ombres noires, reflets nacrés blancs clairement perceptibles sur matière noire.
-Éviter le rendu de jour désaturé et les personnages simplement copiés-collés.

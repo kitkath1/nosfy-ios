@@ -1,16 +1,14 @@
 import UIKit
+import CryptoKit
 
 // MARK: - Le client de la forge serveur (forge-card)
 
 /// LE POINT DE RENCONTRE des deux chantiers : le flow booster (carrousel,
 /// ouverture) appelle `ForgeServeur.tirer(...)` et reçoit une
 /// `LuneForge.Carte` prête pour `CarteVivante(art:depth:)` — rien d'autre
-/// à savoir. Le serveur décide POOL-OU-NEUF (le « on a la même ! ») ;
-/// une carte du pool arrive en ~1 s, une neuve en 60-90 s : l'animation
-/// d'ouverture doit savoir attendre, jamais compter sur une durée fixe.
-///
-/// La clé publishable est une clé CLIENT (faite pour être embarquée) ;
-/// la clé OpenAI, elle, vit dans l'Edge Function — jamais ici.
+/// à savoir. Le serveur attribue une référence déjà publiée et commune.
+/// L’ouverture attend ses vrais pixels, vérifiés par leur empreinte.
+/// La clé publishable est une clé client ; aucun appel IA dans ce parcours.
 enum ForgeServeur {
     static let base = URL(string: "https://ytnnyjkramgiqyxdrkcu.supabase.co")!
     static let publishable = "sb_publishable__EHzc8KHeG_f3TdA6x2iag_F3fIW7v2"
@@ -26,13 +24,12 @@ enum ForgeServeur {
         }
     }
 
-    /// Le tirage. `famille`/`forceNeuf` sont des manettes d'atelier —
-    /// le flow réel appelle juste `tirer(jwt:workoutId:)`.
+    /// Le tirage exige boosterId ; les anciens paramètres d’atelier sont ignorés au serveur.
     static func tirer(jwt: String, workoutId: String? = nil,
                       famille: String? = nil,
                       forceNeuf: Bool = false,
                       boosterId: String? = nil) async throws -> LuneForge.Carte {
-        var corps: [String: Any] = [:]
+        var corps: [String: Any] = ["contract_version": 2]
         if let workoutId { corps["workout_id"] = workoutId }
         if let famille { corps["famille"] = famille }
         if forceNeuf { corps["force_new"] = true }
@@ -48,8 +45,8 @@ enum ForgeServeur {
         req.setValue(publishable, forHTTPHeaderField: "apikey")
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.httpBody = try JSONSerialization.data(withJSONObject: corps)
-        // Une carte NEUVE se peint en 60-90 s — le client attend large.
-        req.timeoutInterval = 300
+        // Une attente réseau peut être reprise avec le même sachet.
+        req.timeoutInterval = 45
 
         let (data, rep) = try await URLSession.shared.data(for: req)
         let code = (rep as? HTTPURLResponse)?.statusCode ?? 0
@@ -62,6 +59,7 @@ enum ForgeServeur {
         guard let json = try JSONSerialization.jsonObject(with: data)
                 as? [String: Any],
               let carte = json["card"] as? [String: Any],
+              let id = carte["id"] as? String,
               let nom = carte["famille"] as? String,
               let rarete = carte["rarete"] as? String,
               let scene = carte["scene"] as? String,
@@ -70,17 +68,28 @@ enum ForgeServeur {
 
         // L'illustration NUE du pool → l'habillage local (cadre + lunes
         // de rareté + depth v0) : le même code que la forge d'atelier.
-        let (png, _) = try await URLSession.shared.data(from: artUrl)
-        guard let illustration = UIImage(data: png) else {
+        let (png, imageResponse) = try await URLSession.shared.data(from: artUrl)
+        if let attendu = carte["art_sha256"] as? String {
+            let empreinte = SHA256.hash(data: png).map { String(format: "%02x", $0) }.joined()
+            guard empreinte == attendu else { throw Erreur.illustration }
+        }
+        guard (imageResponse as? HTTPURLResponse)?.statusCode == 200,
+              let illustration = UIImage(data: png) else {
             throw Erreur.illustration
         }
-        let (art, depth) = try LuneForge.habiller(illustration: illustration,
-                                                  rarete: rarete)
+        let (art, depth) = try await Task.detached(priority: .userInitiated) {
+            try LuneForge.habiller(illustration: illustration, rarete: rarete)
+        }.value
+        let dossier = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appending(path: "cartes-lune")
+        try? FileManager.default.createDirectory(at: dossier, withIntermediateDirectories: true)
+        try? png.write(to: dossier.appending(path: "\(id).png"), options: .atomic)
+        let noms = carte["noms"] as? [String: String] ?? [:]
+        let nomLocal = await MainActor.run { L(noms["fr"] ?? nom, noms["en"] ?? nom) }
         return LuneForge.Carte(
             art: art, depth: depth,
-            famille: LuneForge.Famille(nom: nom, rarete: rarete,
+            famille: LuneForge.Famille(nom: nomLocal, rarete: rarete,
                                        brief: "", dur: ""),
-            scene: scene)
+            scene: scene, cardId: id, acquisitionId: json["acquisition_id"] as? String)
     }
 
     // MARK: L'échafaudage du banc

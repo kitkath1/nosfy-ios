@@ -1,0 +1,9 @@
+{"upToDate":false,"dryRun":false,"migrations":["20260918084850_cartes_catalogue_et_recompenses.sql"],"seeds":[],"roles":[],"message":"Finished supabase db push."}
+
+Initialising login role...
+Connecting to remote database...
+Do you want to push these migrations to the remote database?
+ • 20260918084850_cartes_catalogue_et_recompenses.sql
+ [Y/n] y
+Applying migration 20260918084850_cartes_catalogue_et_recompenses.sql...
+Warning: failed to cache migrations catalog: error exporting pg-delta catalog: failed to run docker. Docker Desktop is a prerequisite for local development. Follow the official docs to install: https://docs.docker.com/desktop

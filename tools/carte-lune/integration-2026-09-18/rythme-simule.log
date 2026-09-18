@@ -1,0 +1,226 @@
+[
+  {
+    "boosters_par_seance": 1,
+    "noir_toutes_7_seances": false,
+    "joueurs": 2000,
+    "premiere_legendaire_seances": {
+      "mediane": 2.0,
+      "p95": 2,
+      "maximum": 2
+    },
+    "ecart_legendaire_seances": {
+      "mediane": 3,
+      "p95": 3,
+      "maximum": 3
+    },
+    "catalogue_complet_seances": {
+      "mediane": 55,
+      "p95": 120,
+      "maximum": 196
+    },
+    "complet_avant_200": 1997,
+    "decouvertes_apres_3_seances_moyenne": 2.9085,
+    "taux_effectifs": {
+      "rare": 0.24477,
+      "legendary": 0.34804,
+      "epic": 0.10504,
+      "common": 0.30215
+    }
+  },
+  {
+    "boosters_par_seance": 1,
+    "noir_toutes_7_seances": true,
+    "joueurs": 2000,
+    "premiere_legendaire_seances": {
+      "mediane": 2.0,
+      "p95": 2,
+      "maximum": 2
+    },
+    "ecart_legendaire_seances": {
+      "mediane": 3,
+      "p95": 3,
+      "maximum": 3
+    },
+    "catalogue_complet_seances": {
+      "mediane": 50,
+      "p95": 107,
+      "maximum": 190
+    },
+    "complet_avant_200": 1997,
+    "decouvertes_apres_3_seances_moyenne": 2.9085,
+    "taux_effectifs": {
+      "rare": 0.23724,
+      "legendary": 0.38827,
+      "common": 0.27245,
+      "epic": 0.10205
+    }
+  },
+  {
+    "boosters_par_seance": 2,
+    "noir_toutes_7_seances": false,
+    "joueurs": 2000,
+    "premiere_legendaire_seances": {
+      "mediane": 2.0,
+      "p95": 2,
+      "maximum": 2
+    },
+    "ecart_legendaire_seances": {
+      "mediane": 3,
+      "p95": 3,
+      "maximum": 3
+    },
+    "catalogue_complet_seances": {
+      "mediane": 22.0,
+      "p95": 44,
+      "maximum": 89
+    },
+    "complet_avant_200": 2000,
+    "decouvertes_apres_3_seances_moyenne": 5.1665,
+    "taux_effectifs": {
+      "rare": 0.32513,
+      "legendary": 0.19317,
+      "common": 0.34243,
+      "epic": 0.13928
+    }
+  },
+  {
+    "boosters_par_seance": 2,
+    "noir_toutes_7_seances": true,
+    "joueurs": 2000,
+    "premiere_legendaire_seances": {
+      "mediane": 2.0,
+      "p95": 2,
+      "maximum": 2
+    },
+    "ecart_legendaire_seances": {
+      "mediane": 2,
+      "p95": 3,
+      "maximum": 3
+    },
+    "catalogue_complet_seances": {
+      "mediane": 21.0,
+      "p95": 42,
+      "maximum": 92
+    },
+    "complet_avant_200": 2000,
+    "decouvertes_apres_3_seances_moyenne": 5.1975,
+    "taux_effectifs": {
+      "legendary": 0.22145,
+      "common": 0.32857,
+      "rare": 0.31513,
+      "epic": 0.13485
+    }
+  },
+  {
+    "boosters_par_seance": 3,
+    "noir_toutes_7_seances": false,
+    "joueurs": 2000,
+    "premiere_legendaire_seances": {
+      "mediane": 2.0,
+      "p95": 2,
+      "maximum": 2
+    },
+    "ecart_legendaire_seances": {
+      "mediane": 2,
+      "p95": 3,
+      "maximum": 3
+    },
+    "catalogue_complet_seances": {
+      "mediane": 14.0,
+      "p95": 29,
+      "maximum": 78
+    },
+    "complet_avant_200": 2000,
+    "decouvertes_apres_3_seances_moyenne": 6.9105,
+    "taux_effectifs": {
+      "legendary": 0.15664,
+      "common": 0.35418,
+      "rare": 0.34196,
+      "epic": 0.14722
+    }
+  },
+  {
+    "boosters_par_seance": 3,
+    "noir_toutes_7_seances": true,
+    "joueurs": 2000,
+    "premiere_legendaire_seances": {
+      "mediane": 2.0,
+      "p95": 2,
+      "maximum": 2
+    },
+    "ecart_legendaire_seances": {
+      "mediane": 2,
+      "p95": 3,
+      "maximum": 3
+    },
+    "catalogue_complet_seances": {
+      "mediane": 14.0,
+      "p95": 29,
+      "maximum": 77
+    },
+    "complet_avant_200": 2000,
+    "decouvertes_apres_3_seances_moyenne": 6.902,
+    "taux_effectifs": {
+      "rare": 0.33574,
+      "common": 0.34658,
+      "legendary": 0.17607,
+      "epic": 0.14162
+    }
+  },
+  {
+    "boosters_par_seance": 5,
+    "noir_toutes_7_seances": false,
+    "joueurs": 2000,
+    "premiere_legendaire_seances": {
+      "mediane": 2.0,
+      "p95": 2,
+      "maximum": 2
+    },
+    "ecart_legendaire_seances": {
+      "mediane": 1.0,
+      "p95": 2,
+      "maximum": 2
+    },
+    "catalogue_complet_seances": {
+      "mediane": 9.0,
+      "p95": 17,
+      "maximum": 32
+    },
+    "complet_avant_200": 2000,
+    "decouvertes_apres_3_seances_moyenne": 9.723,
+    "taux_effectifs": {
+      "rare": 0.34735,
+      "common": 0.35854,
+      "legendary": 0.147,
+      "epic": 0.14711
+    }
+  },
+  {
+    "boosters_par_seance": 5,
+    "noir_toutes_7_seances": true,
+    "joueurs": 2000,
+    "premiere_legendaire_seances": {
+      "mediane": 2.0,
+      "p95": 2,
+      "maximum": 2
+    },
+    "ecart_legendaire_seances": {
+      "mediane": 1.0,
+      "p95": 2,
+      "maximum": 2
+    },
+    "catalogue_complet_seances": {
+      "mediane": 8.0,
+      "p95": 17,
+      "maximum": 37
+    },
+    "complet_avant_200": 2000,
+    "decouvertes_apres_3_seances_moyenne": 9.7875,
+    "taux_effectifs": {
+      "epic": 0.14744,
+      "legendary": 0.15671,
+      "common": 0.35752,
+      "rare": 0.33833
+    }
+  }
+]

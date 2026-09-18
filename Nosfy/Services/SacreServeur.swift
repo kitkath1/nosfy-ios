@@ -103,6 +103,9 @@ enum SacreServeur {
         //    20260915190000 ; une base d'avant garde les défauts de l'app.
         let piecesParLongueur: Int?
         let piscineMax: Int?
+        var boostersNoirs: Int? = nil
+        var version: Int64? = nil
+        var prixNoir: Int = 1
     }
 
     private static let iso: ISO8601DateFormatter = {
@@ -126,6 +129,10 @@ enum SacreServeur {
         let data = try await rpc("etat_coffre", jwt: jwt)
         guard let j = try JSONSerialization.jsonObject(with: data)
                 as? [String: Any] else { throw Erreur.reponse }
+        return decoderCoffre(j)
+    }
+
+    static func decoderCoffre(_ j: [String: Any]) -> EtatCoffre {
         func n(_ k: String, _ defaut: Int) -> Int { (j[k] as? Int) ?? defaut }
         let flamme = j["flamme"] as? [String: Any]
         return EtatCoffre(soldeOr: n("solde_or", 0),
@@ -142,7 +149,10 @@ enum SacreServeur {
                           flammeJours: flamme?["jours"] as? Int,
                           flammeAujourdhui: flamme?["aujourdhui_fait"] as? Bool,
                           piecesParLongueur: j["pieces_par_longueur"] as? Int,
-                          piscineMax: j["cardio_piscine_max"] as? Int)
+                          piscineMax: j["cardio_piscine_max"] as? Int,
+                          boostersNoirs: j["boosters_noirs"] as? Int,
+                          version: (j["inventory_version"] as? NSNumber)?.int64Value,
+                          prixNoir: n("prix_booster_legendaire", 1))
     }
 
     /// Le solde de pièces d'ARGENT (dérivé côté serveur, jamais une colonne).
@@ -222,6 +232,7 @@ enum SacreServeur {
         /// et ce que ce crédit a fait naître comme sachets (100 → 1).
         let jour: String?
         let sachetsConvertis: Int
+        var recu: RecuRecompense? = nil
     }
 
     static func claimRetourQuotidien(jwt: String) async throws
@@ -231,7 +242,8 @@ enum SacreServeur {
                                montant: (j["montant"] as? Int) ?? 0,
                                solde: (j["solde"] as? Int) ?? 0,
                                jour: j["jour"] as? String,
-                               sachetsConvertis: (j["sachets_convertis"] as? Int) ?? 0)
+                               sachetsConvertis: (j["sachets_convertis"] as? Int) ?? 0,
+                               recu: RecuRecompense(j))
     }
 
     /// LA CLÔTURE D'UNE SÉANCE — les pièces **et** le sachet, en un appel.
@@ -307,6 +319,8 @@ enum SacreServeur {
         /// Le bonus « tu t'es dépassée » (30) quand un fait `top_cardio` a été
         /// rangé — une règle, pas un avis (option A' du plan économie).
         let bonusProgres: Int
+        var recu: RecuRecompense? = nil
+        var workoutId: String? = nil
     }
 
     /// Un fait de séance, tel que le serveur le range (`workout_facts`).
@@ -358,7 +372,8 @@ enum SacreServeur {
                              sachetCardio: (j["sachet_cardio"] as? Bool) ?? false,
                              cardioDetail: j["cardio_detail"] as? [String: Any] ?? [:],
                              cardioRejeu: (j["cardio_rejeu"] as? Bool) ?? false,
-                             bonusProgres: (j["bonus_progres"] as? Int) ?? 0)
+                             bonusProgres: (j["bonus_progres"] as? Int) ?? 0,
+                             recu: RecuRecompense(j), workoutId: workout.uuidString.lowercased())
     }
 
     /// ⚠️⚠️ **L'ÉTAPE 1 DU BRANCHEMENT, ET LA SEULE QUI NE RISQUE RIEN :
@@ -504,6 +519,7 @@ enum SacreServeur {
     }
 
     struct LigneGain {
+        var id: UUID? = nil
         let quand: Date
         /// `coins` ou `booster`.
         let genre: String
@@ -518,7 +534,7 @@ enum SacreServeur {
 
     static func historique(jwt: String, limite: Int = 60) async throws
         -> [LigneGain] {
-        let data = try await rpc("historique_gains", jwt: jwt,
+        let data = try await rpc("historique_gains_identifie", jwt: jwt,
                                  corps: ["p_limite": limite])
         guard let lignes = try JSONSerialization.jsonObject(with: data)
                 as? [[String: Any]] else { throw Erreur.reponse }
@@ -528,7 +544,7 @@ enum SacreServeur {
             let t = (l["quand"] as? String).flatMap { s in
                 iso.date(from: s) ?? ISO8601DateFormatter().date(from: s)
             }
-            return LigneGain(quand: t ?? Date(),
+            return LigneGain(id: (l["id"] as? String).flatMap(UUID.init(uuidString:)), quand: t ?? Date(),
                              genre: (l["genre"] as? String) ?? "coins",
                              motif: (l["motif"] as? String) ?? "",
                              montant: (l["montant"] as? Int) ?? 0,
@@ -565,6 +581,7 @@ enum SacreServeur {
         let cardId: String
         let artPath: String
         let derniere: Date?
+        var acquisitions: Set<String> = []
         /// L'URL publique de l'illustration nue (le bucket est public en
         /// lecture : c'est le set commun, pas une donnée du compte).
         var artURL: URL {
@@ -589,10 +606,13 @@ enum SacreServeur {
                   let rarete = l["rarete"] as? String,
                   let cardId = l["card_id"] as? String,
                   let artPath = l["art_path"] as? String else { return nil }
-            return FamilleCollection(famille: famille, rarete: rarete,
+            let noms = l["noms"] as? [String: String] ?? [:]
+            let nom = L(noms["fr"] ?? famille, noms["en"] ?? famille)
+            return FamilleCollection(famille: nom, rarete: rarete,
                                      nombre: max(l["nombre"] as? Int ?? 1, 1),
                                      cardId: cardId, artPath: artPath,
-                                     derniere: date(l["derniere"] as? String))
+                                     derniere: date(l["derniere"] as? String),
+                                     acquisitions: Set((l["acquisitions"] as? [[String: Any]] ?? []).compactMap { $0["id"] as? String }))
         }
     }
 

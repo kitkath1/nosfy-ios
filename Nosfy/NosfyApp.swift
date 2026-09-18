@@ -65,7 +65,14 @@ struct NosfyApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView()
+            Group {
+                #if DEBUG
+                if CommandLine.arguments.contains("-cartesQA") { CartesQABanc() }
+                else { RootView() }
+                #else
+                RootView()
+                #endif
+            }
                 .preferredColorScheme(.dark)
                 .tint(.woopViolet)
                 // LA BOÎTE NOIRE (05-09) — elle se balade, la sonde
@@ -649,7 +656,7 @@ struct RootView: View {
         // doit se dire APRÈS la story — sinon elle passe sous elle, invisible
         // (bug Kathryn 16-09). On lève le drapeau AVANT de déclencher la clôture ;
         // `enchainerApresStory` videra la pile.
-        if ouvre { EconomieWoop.shared.debutFinSeance() }
+        if ouvre { EconomieWoop.shared.debutFinSeance(workoutId: seance) }
         Task.detached {
             await SupabaseSync.shared.push([snapshot])
             // Banc `-cardioLent <s>` : simule la latence réseau d'un VRAI
@@ -730,7 +737,7 @@ struct RootView: View {
         // Les pièces de muscu et le sachet : le téléphone les connaît, il
         // les dit tout de suite. Les pièces CARDIO, seul le serveur les
         // connaît (le barème) : leur dalle arrive avec sa réponse.
-        if gain > 0 {
+        if gain > 0, !EconomieWoop.possible {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 FileAnnonces.shared.pousser([.pieces(gain), .sachet(1)])
             }

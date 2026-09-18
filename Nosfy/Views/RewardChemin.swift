@@ -231,13 +231,21 @@ enum TirageRecompense {
 
     /// L'aller-retour : le tirage serveur, puis la relecture des soldes.
     private func tirerAuServeur(_ id: Int, pieces: Bool) async -> RecompenseTiree? {
+        let generation = EconomieWoop.shared.generationCartes
         do {
             let jwt = try await SupabaseSession.shared.token()
+            guard generation == EconomieWoop.shared.generationCartes else { return nil }
+            EconomieWoop.shared.retenirPourGalet = true
             let j = try await SacreServeur.tirerNoeudChemin(id, pieces: pieces,
                                                             jwt: jwt)
+            guard generation == EconomieWoop.shared.generationCartes else { return nil }
+            if let recu = RecuRecompense(j) { EconomieWoop.shared.recevoir(recu) }
             await EconomieWoop.shared.rafraichir()
             return RecompenseTiree.depuisServeur(j)
         } catch {
+            guard generation == EconomieWoop.shared.generationCartes else { return nil }
+            EconomieWoop.shared.retenirPourGalet = false
+            EconomieWoop.shared.libererEvenements()
             print("[chemin] tirage serveur échoué : \(error)")
             return nil
         }
@@ -297,7 +305,7 @@ enum TirageRecompense {
         // dalle n'avait qu'une robe). L'événement fait la robe : pièces, pièce
         // d'argent (piste pièces, monnaie silver), ou sachet(s).
         let annonce: Annonce? = {
-            guard let t = tirage else { return nil }
+            guard !EconomieWoop.possible, let t = tirage else { return nil }
             switch t.type {
             case .coins:
                 return t.isLegendaryCurrency ? .argent(t.montant) : .pieces(t.montant)
@@ -308,6 +316,8 @@ enum TirageRecompense {
         withAnimation(.easeOut(duration: 0.28)) { ouverte = nil }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             self?.tirage = nil
+            EconomieWoop.shared.retenirPourGalet = false
+            EconomieWoop.shared.libererEvenements()
             guard let annonce else { return }
             FileAnnonces.shared.pousser(annonce)
         }

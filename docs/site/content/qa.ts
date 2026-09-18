@@ -16,6 +16,7 @@ import type { EtapeQA } from './types'
  * mesuré le 14-09 est dit pour mémoire, le verdict attend son téléphone.
  */
 export const ETAPES_QA: EtapeQA[] = [
+  {"id": "qa-19-cartes-deux-maneges", "n": 19, "titre": "Cartes : deux manèges et collection persistante", "geste": "Depuis Profil, ouvrir orange puis noir, interrompre et reprendre une ouverture, relancer la collection.", "front": "Bon cran du coffre, manège de la bonne couleur. Noir offert gratuit et légendaire ; cases inconnues vides, vraie carte retrouvée.", "back": "Stocks distincts, attribution atomique, même référence commune, exemplaires personnels et reçus rejouables sans second débit.", "frontVerdict": {"etat": "ko", "le": "18-09", "note": "Simulateur final :1PASS/4. Bon cran orange corrigé et vu ; les3 autres scénarios ne franchissent pas Ouvrir, sonde du manège absente. Révélation/collection non validées. iPhone réservé Compte. tools/carte-lune/integration-2026-09-18/ui-final.log"}, "backVerdict": {"etat": "valide", "le": "18-09", "note": "28 API Cartes et35 régressions gains PASS ; SQL rollback : garanties2/3séances et galets orange+noir/noir+noir PASS. tools/carte-lune/integration-2026-09-18/README.md"}},
   {
     id: 'qa-01-porte', n: 1, titre: 'Le lancement, téléphone vierge',
     geste: 'Ouvrir Nosfy après une installation propre (aucun argument, aucune session).',

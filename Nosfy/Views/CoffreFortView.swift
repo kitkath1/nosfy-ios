@@ -513,6 +513,10 @@ struct CoffreFortView: View {
 struct CoffreFortFlow: View {
     let coins: Int
     var onClose: () -> Void = {}
+    /// Le cran du manège à l'arrivée (15-09 : les quatre pastilles du profil
+    /// ouvrent le coffre « au bon item ») — 0 par défaut, la poignée des
+    /// quatre appelants existants ne bouge pas d'un caractère.
+    var pageInitiale: Int = 0
 
     /// ⚠️⚠️ **LA REQUÊTE N'EST PLUS LA VÉRITÉ, ELLE EST LE REPLI.** Elle vit
     /// toujours ICI et pas chez les quatre appelants (« la refonte remplace ce
@@ -576,7 +580,8 @@ struct CoffreFortFlow: View {
                 // et sa maquette est celle-ci.
                 CoffreV2Page(coins: economie.or,
                              gains: economie.journal,
-                             onClose: onClose)
+                             onClose: onClose,
+                             pageInitiale: pageInitiale)
             }
         }
         // ⚠️ **LE REPLI EST POSÉ AVANT LA PREMIÈRE IMAGE**, jamais après :

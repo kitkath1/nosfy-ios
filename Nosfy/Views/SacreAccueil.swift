@@ -45,142 +45,100 @@ enum GabaritCarte {
 
 // MARK: Le store de collection (v1 mémoire)
 
+@MainActor
 final class CollectionLune: ObservableObject {
     static let shared = CollectionLune()
-
     struct Obtenue: Identifiable {
-        let id = UUID()
+        var id = UUID()
         let famille: String
         var count: Int
-        /// La vignette au gabarit (la grille, la descente).
         let art: UIImage?
-        /// Le canvas COMPLET de la forge (1086×1448, cadre posé) et sa
-        /// depth — l'état résultat (la carte qui s'ouvre) vit dessus.
-        /// nil = le repli carte-lune-1.
         let artPlein: UIImage?
         let depth: UIImage?
     }
-
-    /// Les quatre registres, clés = la rareté de la forge.
     @Published private(set) var registres: [String: [Obtenue]] = [:]
+    @Published private(set) var totaux: [String: Int] = [:]
+    @Published private(set) var lueAuServeur = false
+    private var acquisitions: Set<String> = []
+    private var generation = UUID()
+    private var lecture = 0
 
-    /// Ce que l'arrivée doit savoir AVANT de voler : le slot visé,
-    /// doublon ou pas, nouveauté. Ne publie rien — `poser` publiera.
-    func destination(rarete: String, famille: String)
+    func destination(rarete: String, famille: String, cardId: String? = nil)
         -> (slot: Int, doublon: Bool, nouvelle: Bool) {
         let liste = registres[rarete] ?? []
-        if let i = liste.firstIndex(where: { $0.famille == famille }) {
-            return (i, true, false)
-        }
+        if let cardId, let i = liste.firstIndex(where: { $0.id.uuidString.lowercased() == cardId.lowercased() }) { return (i, true, false) }
+        if cardId == nil, let i = liste.firstIndex(where: { $0.famille == famille }) { return (i, true, false) }
         return (liste.count, false, true)
     }
 
-    /// La pose (à l'atterrissage) : la rangée se met à jour SOUS la
-    /// bouffée de fumée.
-    func poser(rarete: String, famille: String, art: UIImage?,
-               artPlein: UIImage? = nil, depth: UIImage? = nil) {
+    func poser(rarete: String, famille: String, art: UIImage?, artPlein: UIImage? = nil,
+               depth: UIImage? = nil, cardId: String? = nil, acquisitionId: String? = nil) {
+        if let acquisitionId, acquisitions.contains(acquisitionId) { return }
+        // Une cérémonie de démonstration n'entre jamais dans une collection connectée.
+        guard cardId != nil || !EconomieWoop.possible else { return }
+        lecture += 1
+        if let acquisitionId { acquisitions.insert(acquisitionId) }
         var liste = registres[rarete] ?? []
-        if let i = liste.firstIndex(where: { $0.famille == famille }) {
-            liste[i].count += 1
-        } else {
-            liste.append(Obtenue(famille: famille, count: 1, art: art,
-                                 artPlein: artPlein, depth: depth))
+        let d = destination(rarete: rarete, famille: famille, cardId: cardId)
+        if d.doublon { liste[d.slot].count += 1 }
+        else {
+            liste.append(Obtenue(id: cardId.flatMap(UUID.init(uuidString:)) ?? UUID(),
+                famille: famille, count: 1, art: art, artPlein: artPlein, depth: depth))
         }
         registres[rarete] = liste
     }
 
     func collectees(_ rarete: String) -> [Obtenue] { registres[rarete] ?? [] }
 
-    // MARK: Le serveur (15-09) — la collection ne repart plus de zéro
+    func oublier() {
+        generation = UUID(); lecture += 1
+        registres = [:]; acquisitions = []; totaux = [:]; lueAuServeur = false
+    }
 
-    /// Vrai dès que le mur a été posé depuis le serveur au moins une fois :
-    /// une réinstallation ne le vide plus. Faux sans session — le store
-    /// reste alors ce que la mémoire du process en a fait (la v1).
-    @Published private(set) var lueAuServeur = false
-
-    /// LA RELECTURE — `ma_collection()` (SacreServeur), puis l'habillage de
-    /// chaque illustration nue (cadre + lunes + depth) exactement comme
-    /// après une forge. Appelée à l'apparition du profil. Silencieuse en
-    /// panne : sans session ou sans réseau, le mur garde ce qu'il montrait.
-    ///
-    /// ⚠️ LE SERVEUR GAGNE. La forge écrit `user_cards` AVANT de répondre :
-    /// une carte que l'envol vient de poser y est déjà, et un placeholder
-    /// parti avant la réponse (carte neuve, 60-90 s) est remplacé par la
-    /// vraie. Les PNG nus sont gardés sur disque (Caches/cartes-lune/) pour
-    /// ne pas retélécharger vingt-cinq cartes à chaque passage au profil.
-    /// Tout le travail (réseau, habillage) se fait HORS du fil principal ;
-    /// une seule publication à la fin — pas un rendu par carte.
     func relire() async {
-        let jwt: String
-        do { jwt = try await SupabaseSession.shared.token() } catch { return }
+        let g = generation
+        lecture += 1
+        let tour = lecture
         do {
+            let jwt = try await SupabaseSession.shared.token()
             let familles = try await SacreServeur.maCollection(jwt: jwt)
+            let compte = try await CartesServeur.objet("totaux_cartes", jwt: jwt) as? [String: Int] ?? [:]
             var nouveaux: [String: [Obtenue]] = [:]
             for f in familles {
-                guard let nue = await Self.illustration(f),
-                      let habit = try? LuneForge.habiller(illustration: nue,
-                                                          rarete: f.rarete)
-                else { continue }
-                nouveaux[f.rarete, default: []].append(
-                    Obtenue(famille: f.famille, count: f.nombre,
-                            art: GabaritCarte.vignette(habit.art),
-                            artPlein: habit.art, depth: habit.depth))
+                let habit = await Task.detached(priority: .utility) {
+                    guard let nue = await Self.illustration(f) else { return nil as (art: UIImage, depth: UIImage)? }
+                    return try? LuneForge.habiller(illustration: nue, rarete: f.rarete)
+                }.value
+                nouveaux[f.rarete, default: []].append(Obtenue(
+                    id: UUID(uuidString: f.cardId) ?? UUID(), famille: f.famille, count: f.nombre,
+                    art: habit.map { GabaritCarte.vignette($0.art) }, artPlein: habit?.art, depth: habit?.depth))
             }
-            let poses = nouveaux
-            let cartes = familles.reduce(0) { $0 + $1.nombre }
-            await MainActor.run {
-                registres = poses
-                lueAuServeur = true
-            }
-            print("[collection] ma_collection() → \(familles.count) famille(s), "
-                  + "\(cartes) carte(s) · habillées \(poses.values.reduce(0) { $0 + $1.count })")
-        } catch {
-            print("[collection] ma_collection() a échoué : \(error.localizedDescription)")
-        }
+            guard g == generation, tour == lecture else { return }
+            registres = nouveaux
+            acquisitions = Set(familles.flatMap { $0.acquisitions })
+            totaux = compte; lueAuServeur = true
+            print("[collection] \(familles.count) références · \(familles.reduce(0) { $0 + $1.nombre }) exemplaires")
+        } catch { print("[collection] relecture en attente : \(error.localizedDescription)") }
     }
 
-    /// L'illustration NUE d'une famille : le cache disque d'abord, le bucket
-    /// public `cards` sinon (puis mise en cache). nil = ni l'un ni l'autre.
-    private static func illustration(_ f: SacreServeur.FamilleCollection) async -> UIImage? {
-        let dossier = FileManager.default
-            .urls(for: .cachesDirectory, in: .userDomainMask)[0]
-            .appending(path: "cartes-lune")
-        try? FileManager.default.createDirectory(at: dossier,
-                                                 withIntermediateDirectories: true)
+    nonisolated private static func illustration(_ f: SacreServeur.FamilleCollection) async -> UIImage? {
+        let dossier = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appending(path: "cartes-lune")
+        try? FileManager.default.createDirectory(at: dossier, withIntermediateDirectories: true)
         let fichier = dossier.appending(path: "\(f.cardId).png")
-        if let data = try? Data(contentsOf: fichier), let img = UIImage(data: data) {
-            return img
-        }
+        if let data = try? Data(contentsOf: fichier), let image = UIImage(data: data) { return image }
         guard let (data, rep) = try? await URLSession.shared.data(from: f.artURL),
-              (rep as? HTTPURLResponse)?.statusCode == 200,
-              let img = UIImage(data: data) else { return nil }
-        try? data.write(to: fichier)
-        return img
+              (rep as? HTTPURLResponse)?.statusCode == 200, let image = UIImage(data: data) else { return nil }
+        try? data.write(to: fichier, options: .atomic)
+        return image
     }
 
-    /// LA RÉPARATION D'UN PLACEHOLDER : une forge qui répond APRÈS
-    /// l'envol (carte neuve, 60-90 s) a laissé partir carte-lune-1 vers
-    /// la collection alors que le serveur a consommé le tirage. On
-    /// retire UNE occurrence du placeholder (la plus récente) et on
-    /// pose la carte réellement tirée — rien n'est jamais perdu.
     func reparerPlaceholder(avec carte: LuneForge.Carte) {
-        for (cle, liste) in registres {
-            var l = liste
-            guard let i = l.lastIndex(where: {
-                $0.famille == ArtDuSacre.famillePlaceholder }) else { continue }
-            if l[i].count > 1 {
-                l[i].count -= 1
-            } else {
-                l.remove(at: i)
-            }
-            registres[cle] = l
-            break
-        }
         poser(rarete: carte.famille.rarete, famille: carte.famille.nom,
-              art: GabaritCarte.vignette(carte.art),
-              artPlein: carte.art, depth: carte.depth)
+              art: GabaritCarte.vignette(carte.art), artPlein: carte.art, depth: carte.depth,
+              cardId: carte.cardId, acquisitionId: carte.acquisitionId)
     }
 }
+
 
 // MARK: L'ordre d'arrivée (du Sacre vers le profil)
 
@@ -195,6 +153,8 @@ struct CarteEnvolee: Equatable {
     /// Le canvas complet + depth pour l'état résultat de la collection.
     var artPlein: UIImage? = nil
     var depth: UIImage? = nil
+    var cardId: String? = nil
+    var acquisitionId: String? = nil
 
     static func == (a: CarteEnvolee, b: CarteEnvolee) -> Bool {
         a.rarete == b.rarete && a.famille == b.famille
@@ -207,6 +167,8 @@ struct ArriveeCarte: Equatable {
     let slot: Int
     let doublon: Bool
     let nouvelle: Bool
+    var cardId: String? = nil
+    var acquisitionId: String? = nil
 
     static func == (a: ArriveeCarte, b: ArriveeCarte) -> Bool {
         a.rarete == b.rarete && a.famille == b.famille && a.slot == b.slot

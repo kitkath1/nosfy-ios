@@ -1,0 +1,387 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project /tmp/nosfy-cartes-runner/NavRuntimeUITests.xcodeproj -scheme NavRuntimeUITests -destination "platform=iOS Simulator,id=ADFE5348-7E75-4E67-9975-E0C409DCAD55" -derivedDataPath /tmp/nosfy-cartes-runner-dd -resultBundlePath /tmp/nosfy-cartes-ui5.xcresult CODE_SIGNING_ALLOWED=NO test
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/tmp/nosfy-cartes-ui5.xcresult
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'NavRuntimeUITests' in project 'NavRuntimeUITests' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk /tmp/nosfy-cartes-runner-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+    cd /tmp/nosfy-cartes-runner/NavRuntimeUITests.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -o /tmp/nosfy-cartes-runner-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+
+SwiftDriver NavRuntimeUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-cartes-runner
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name NavRuntimeUITests -Onone @/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/nosfy-cartes-runner-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/nosfy-cartes-runner-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -parse-as-library -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/nosfy-cartes-runner-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/nosfy-cartes-runner-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/nosfy-cartes-runner-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/nosfy-cartes-runner-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-generated-files.hmap -Xcc -I/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-own-target-headers.hmap -Xcc -I/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-project-headers.hmap -Xcc -I/tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/DerivedSources-normal/arm64 -Xcc -I/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/DerivedSources/arm64 -Xcc -I/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests-Swift.h -working-directory /tmp/nosfy-cartes-runner -experimental-emit-module-separately -disable-cmo
+
+SwiftCompile normal arm64 Compiling\ NavRuntimeUITests.swift /tmp/nosfy-cartes-runner/NavRuntimeUITests.swift (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+
+SwiftCompile normal arm64 /tmp/nosfy-cartes-runner/NavRuntimeUITests.swift (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-cartes-runner
+    
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ NavRuntimeUITests (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+
+SwiftCompile normal arm64 /tmp/nosfy-cartes-runner/NavRuntimeUITests.swift (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-cartes-runner
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling NavRuntimeUITests.swift (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+
+SwiftDriver\ Compilation NavRuntimeUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-cartes-runner
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name NavRuntimeUITests -Onone @/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/nosfy-cartes-runner-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/nosfy-cartes-runner-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -parse-as-library -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/nosfy-cartes-runner-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/nosfy-cartes-runner-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/nosfy-cartes-runner-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/nosfy-cartes-runner-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-generated-files.hmap -Xcc -I/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-own-target-headers.hmap -Xcc -I/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-project-headers.hmap -Xcc -I/tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/DerivedSources-normal/arm64 -Xcc -I/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/DerivedSources/arm64 -Xcc -I/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests-Swift.h -working-directory /tmp/nosfy-cartes-runner -experimental-emit-module-separately -disable-cmo
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for NavRuntimeUITests (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+
+SwiftDriver\ Compilation\ Requirements NavRuntimeUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-cartes-runner
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name NavRuntimeUITests -Onone @/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/nosfy-cartes-runner-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/nosfy-cartes-runner-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -parse-as-library -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/nosfy-cartes-runner-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/nosfy-cartes-runner-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/nosfy-cartes-runner-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/nosfy-cartes-runner-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-generated-files.hmap -Xcc -I/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-own-target-headers.hmap -Xcc -I/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-project-headers.hmap -Xcc -I/tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/DerivedSources-normal/arm64 -Xcc -I/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/DerivedSources/arm64 -Xcc -I/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests-Swift.h -working-directory /tmp/nosfy-cartes-runner -experimental-emit-module-separately -disable-cmo
+
+Copy /tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests.swiftmodule/arm64-apple-ios-simulator.abi.json /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.abi.json (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-cartes-runner
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.abi.json /tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.swiftsourceinfo (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-cartes-runner
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.swiftsourceinfo /tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+Ld /tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest/NavRuntimeUITests normal (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-cartes-runner
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -bundle -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator -L/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -filelist /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.LinkFileList -Xlinker -rpath -Xlinker @loader_path/Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.swiftmodule @/tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests-linker-args.resp -Xlinker -needed_framework -Xlinker XCTest -framework XCTest -Xlinker -needed-lXCTestSwiftSupport -lXCTestSwiftSupport -framework Foundation -o /tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest/NavRuntimeUITests
+
+ExtractAppIntentsMetadata (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-cartes-runner
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --module-name NavRuntimeUITests --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F42 --platform-family iOS --deployment-target 26.0 --bundle-identifier fr.kathryn.woop.NavRuntimeUITests --output /tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest --target-triple arm64-apple-ios26.0-simulator --binary-file /tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest/NavRuntimeUITests --dependency-file /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests_dependency_info.dat --stringsdata-file /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.SwiftFileList --metadata-file-list /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests.DependencyMetadataFileList --static-metadata-file-list /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests.DependencyStaticMetadataFileList --swift-const-vals-list /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-09-18 11:25:32.813 appintentsmetadataprocessor[81980:18927145] Starting appintentsmetadataprocessor export
+2026-09-18 11:25:32.815 appintentsmetadataprocessor[81980:18927145] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+CopySwiftLibs /tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-cartes-runner
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest/NavRuntimeUITests --scan-folder /tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest/Frameworks --scan-folder /tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest/PlugIns --scan-folder /tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest/SystemExtensions --scan-folder /tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest/Extensions --scan-folder /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/System/Library/Frameworks/Foundation.framework --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /tmp/nosfy-cartes-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest/Frameworks --strip-bitcode --scan-executable /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /tmp/nosfy-cartes-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+2026-09-18 11:25:34.421207+0200 NavRuntimeUITests-Runner[81981:18927306] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'All tests' started at 2026-09-18 11:25:35.135.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-18 11:25:35.135.
+Test Suite 'NavRuntimeUITests' started at 2026-09-18 11:25:35.136.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testADeuxPortesEtCollectionVide]' started.
+    t =     0.00s Start Test at 2026-09-18 11:25:35.136
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+    t =     0.02s         Terminate fr.kathryn.woop:81367
+objc[81981]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x1087c4310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x108644398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     1.14s         Setting up automation session
+    t =     1.71s         Wait for fr.kathryn.woop to idle
+    t =     2.93s Waiting 6.0s for Button (First Match) to exist
+    t =     3.95s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     3.95s         Checking existence of `Button (First Match)`
+    t =     4.49s         Capturing element debug description
+    t =     5.00s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     5.01s         Checking existence of `Button (First Match)`
+    t =     6.05s Checking `Expect predicate `exists == 0` for object Button (First Match)`
+    t =     6.05s     Checking existence of `Button (First Match)`
+    t =     6.13s     Capturing element debug description
+    t =     7.06s Checking `Expect predicate `exists == 0` for object Button (First Match)`
+    t =     7.06s     Checking existence of `Button (First Match)`
+    t =     7.17s     Capturing element debug description
+    t =     8.10s Checking `Expect predicate `exists == 0` for object Button (First Match)`
+    t =     8.10s     Checking existence of `Button (First Match)`
+    t =     8.16s Waiting 60.0s for "profil-booster-orange" Button to exist
+    t =     9.20s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =     9.20s         Checking existence of `"profil-booster-orange" Button`
+    t =     9.24s Checking existence of `"profil-booster-noir" Button`
+    t =     9.26s Find the "cartes-qa-collection" StaticText
+    t =     9.28s Find the Application 'fr.kathryn.woop'
+    t =     9.42s Added attachment named 'profil-vide-deux-stocks'
+    t =     9.42s Tap "profil-booster-orange" Button
+    t =     9.42s     Wait for fr.kathryn.woop to idle
+    t =     9.43s     Find the "profil-booster-orange" Button
+    t =     9.46s     Check for interrupting elements affecting "profil-booster-orange" Button
+    t =     9.50s     Synthesize event
+    t =     9.80s     Wait for fr.kathryn.woop to idle
+    t =    10.59s Waiting 8.0s for Button (First Match) to exist
+    t =    11.62s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    11.62s         Checking existence of `Button (First Match)`
+    t =    11.68s         Capturing element debug description
+    t =    12.60s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    12.60s         Checking existence of `Button (First Match)`
+    t =    12.64s         Capturing element debug description
+    t =    13.67s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    13.67s         Checking existence of `Button (First Match)`
+    t =    13.73s         Capturing element debug description
+    t =    14.65s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    14.65s         Checking existence of `Button (First Match)`
+    t =    14.70s         Capturing element debug description
+    t =    15.62s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    15.62s         Checking existence of `Button (First Match)`
+    t =    15.67s         Capturing element debug description
+    t =    16.60s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    16.60s         Checking existence of `Button (First Match)`
+    t =    16.65s         Capturing element debug description
+    t =    17.68s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    17.68s         Checking existence of `Button (First Match)`
+    t =    17.73s         Capturing element debug description
+    t =    18.59s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    18.59s         Checking existence of `Button (First Match)`
+    t =    18.64s         Capturing element debug description
+    t =    18.64s     Checking existence of `Button (First Match)`
+    t =    18.68s Collecting debug information to assist test failure triage
+    t =    18.68s     Requesting snapshot of accessibility hierarchy for app with pid 81988
+/tmp/nosfy-cartes-runner/NavRuntimeUITests.swift:27: error: -[NavRuntimeUITests.NavRuntimeUITests testADeuxPortesEtCollectionVide] : XCTAssertTrue failed
+    t =    18.80s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testADeuxPortesEtCollectionVide]' failed (19.083 seconds).
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testBOrangeJusquaCollection]' started.
+    t =     0.00s Start Test at 2026-09-18 11:25:54.220
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+    t =     0.02s         Terminate fr.kathryn.woop:81988
+    t =     1.11s         Setting up automation session
+    t =     1.66s         Wait for fr.kathryn.woop to idle
+    t =     2.88s Waiting 6.0s for Button (First Match) to exist
+    t =     3.90s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     3.90s         Checking existence of `Button (First Match)`
+    t =     4.03s         Capturing element debug description
+    t =     4.95s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     4.95s         Checking existence of `Button (First Match)`
+    t =     4.99s         Capturing element debug description
+    t =     5.92s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     5.92s         Checking existence of `Button (First Match)`
+    t =     5.96s         Capturing element debug description
+    t =     6.89s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     6.89s         Checking existence of `Button (First Match)`
+    t =     6.95s         Capturing element debug description
+    t =     7.98s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     7.98s         Checking existence of `Button (First Match)`
+    t =     8.07s         Capturing element debug description
+    t =     8.89s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     8.89s         Checking existence of `Button (First Match)`
+    t =     8.99s         Capturing element debug description
+    t =     9.00s     Checking existence of `Button (First Match)`
+    t =     9.08s Collecting debug information to assist test failure triage
+    t =     9.08s     Requesting snapshot of accessibility hierarchy for app with pid 82057
+    t =     9.22s Waiting 35.0s for "profil-booster-orange" Button to exist
+    t =    10.25s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    10.25s         Checking existence of `"profil-booster-orange" Button`
+    t =    10.29s Tap "profil-booster-orange" Button
+    t =    10.29s     Wait for fr.kathryn.woop to idle
+    t =    10.30s     Find the "profil-booster-orange" Button
+    t =    10.35s     Check for interrupting elements affecting "profil-booster-orange" Button
+    t =    10.39s     Synthesize event
+    t =    10.71s     Wait for fr.kathryn.woop to idle
+    t =    11.52s Waiting 8.0s for Button (First Match) to exist
+    t =    12.55s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    12.55s         Checking existence of `Button (First Match)`
+    t =    12.63s         Capturing element debug description
+    t =    13.55s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    13.55s         Checking existence of `Button (First Match)`
+    t =    13.64s         Capturing element debug description
+    t =    14.56s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    14.57s         Checking existence of `Button (First Match)`
+    t =    14.62s         Capturing element debug description
+    t =    15.54s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    15.54s         Checking existence of `Button (First Match)`
+    t =    15.59s         Capturing element debug description
+    t =    16.61s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    16.61s         Checking existence of `Button (First Match)`
+    t =    16.67s         Capturing element debug description
+    t =    17.59s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    17.59s         Checking existence of `Button (First Match)`
+    t =    17.65s         Capturing element debug description
+    t =    18.57s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    18.57s         Checking existence of `Button (First Match)`
+    t =    18.63s         Capturing element debug description
+    t =    19.53s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    19.53s         Checking existence of `Button (First Match)`
+    t =    19.58s         Capturing element debug description
+    t =    19.58s     Checking existence of `Button (First Match)`
+    t =    19.64s Collecting debug information to assist test failure triage
+    t =    19.64s     Requesting snapshot of accessibility hierarchy for app with pid 82057
+/tmp/nosfy-cartes-runner/NavRuntimeUITests.swift:36: error: -[NavRuntimeUITests.NavRuntimeUITests testBOrangeJusquaCollection] : XCTAssertTrue failed
+    t =    19.72s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testBOrangeJusquaCollection]' failed (20.005 seconds).
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testCNoirGratuitEtReconnexion]' started.
+    t =     0.00s Start Test at 2026-09-18 11:26:14.225
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+    t =     0.02s         Terminate fr.kathryn.woop:82057
+    t =     1.17s         Setting up automation session
+    t =     1.87s         Wait for fr.kathryn.woop to idle
+    t =     3.14s Waiting 6.0s for Button (First Match) to exist
+    t =     4.16s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     4.16s         Checking existence of `Button (First Match)`
+    t =     4.30s         Capturing element debug description
+    t =     5.23s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     5.23s         Checking existence of `Button (First Match)`
+    t =     5.31s         Capturing element debug description
+    t =     6.24s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     6.24s         Checking existence of `Button (First Match)`
+    t =     6.33s         Capturing element debug description
+    t =     7.15s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     7.15s         Checking existence of `Button (First Match)`
+    t =     7.22s         Capturing element debug description
+    t =     8.14s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     8.14s         Checking existence of `Button (First Match)`
+    t =     8.20s         Capturing element debug description
+    t =     9.14s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     9.14s         Checking existence of `Button (First Match)`
+    t =     9.20s         Capturing element debug description
+    t =     9.20s     Checking existence of `Button (First Match)`
+    t =     9.26s Collecting debug information to assist test failure triage
+    t =     9.26s     Requesting snapshot of accessibility hierarchy for app with pid 82150
+    t =     9.36s Waiting 35.0s for "profil-booster-noir" Button to exist
+    t =    10.36s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-noir" Button`
+    t =    10.36s         Checking existence of `"profil-booster-noir" Button`
+    t =    10.40s Tap "profil-booster-noir" Button
+    t =    10.40s     Wait for fr.kathryn.woop to idle
+    t =    10.40s     Find the "profil-booster-noir" Button
+    t =    10.44s     Check for interrupting elements affecting "profil-booster-noir" Button
+    t =    10.48s     Synthesize event
+    t =    10.80s     Wait for fr.kathryn.woop to idle
+    t =    11.68s Waiting 8.0s for Button (First Match) to exist
+    t =    12.71s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    12.71s         Checking existence of `Button (First Match)`
+    t =    12.83s         Capturing element debug description
+    t =    13.76s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    13.76s         Checking existence of `Button (First Match)`
+    t =    13.87s         Capturing element debug description
+    t =    14.69s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    14.69s         Checking existence of `Button (First Match)`
+    t =    14.75s         Capturing element debug description
+    t =    15.69s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    15.69s         Checking existence of `Button (First Match)`
+    t =    15.76s         Capturing element debug description
+    t =    16.68s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    16.68s         Checking existence of `Button (First Match)`
+    t =    16.74s         Capturing element debug description
+    t =    17.77s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    17.77s         Checking existence of `Button (First Match)`
+    t =    17.86s         Capturing element debug description
+    t =    18.68s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    18.68s         Checking existence of `Button (First Match)`
+    t =    18.75s         Capturing element debug description
+    t =    19.68s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    19.68s         Checking existence of `Button (First Match)`
+    t =    19.76s         Capturing element debug description
+    t =    19.76s     Checking existence of `Button (First Match)`
+    t =    19.84s Collecting debug information to assist test failure triage
+    t =    19.84s     Requesting snapshot of accessibility hierarchy for app with pid 82150
+/tmp/nosfy-cartes-runner/NavRuntimeUITests.swift:57: error: -[NavRuntimeUITests.NavRuntimeUITests testCNoirGratuitEtReconnexion] : XCTAssertTrue failed
+    t =    19.96s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testCNoirGratuitEtReconnexion]' failed (20.262 seconds).
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testDDeuxManegesEtInterruption]' started.
+    t =     0.00s Start Test at 2026-09-18 11:26:34.487
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+    t =     0.02s         Terminate fr.kathryn.woop:82150
+    t =     1.18s         Setting up automation session
+    t =     1.95s         Wait for fr.kathryn.woop to idle
+    t =     3.26s Waiting 6.0s for Button (First Match) to exist
+    t =     4.28s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     4.28s         Checking existence of `Button (First Match)`
+    t =     4.43s         Capturing element debug description
+    t =     5.26s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     5.26s         Checking existence of `Button (First Match)`
+    t =     5.35s         Capturing element debug description
+    t =     6.28s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     6.28s         Checking existence of `Button (First Match)`
+    t =     6.34s         Capturing element debug description
+    t =     7.27s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     7.27s         Checking existence of `Button (First Match)`
+    t =     7.32s         Capturing element debug description
+    t =     8.35s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     8.35s         Checking existence of `Button (First Match)`
+    t =     8.40s         Capturing element debug description
+    t =     9.26s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     9.26s         Checking existence of `Button (First Match)`
+    t =     9.31s         Capturing element debug description
+    t =     9.31s     Checking existence of `Button (First Match)`
+    t =     9.36s Collecting debug information to assist test failure triage
+    t =     9.36s     Requesting snapshot of accessibility hierarchy for app with pid 82208
+    t =     9.44s Waiting 35.0s for "profil-booster-orange" Button to exist
+    t =    10.45s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    10.45s         Checking existence of `"profil-booster-orange" Button`
+    t =    10.49s Tap "profil-booster-orange" Button
+    t =    10.49s     Wait for fr.kathryn.woop to idle
+    t =    10.49s     Find the "profil-booster-orange" Button
+    t =    10.53s     Check for interrupting elements affecting "profil-booster-orange" Button
+    t =    10.56s     Synthesize event
+    t =    10.88s     Wait for fr.kathryn.woop to idle
+    t =    11.69s Waiting 8.0s for Button (First Match) to exist
+    t =    12.70s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    12.70s         Checking existence of `Button (First Match)`
+    t =    12.76s         Capturing element debug description
+    t =    13.69s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    13.69s         Checking existence of `Button (First Match)`
+    t =    13.77s         Capturing element debug description
+    t =    14.70s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    14.70s         Checking existence of `Button (First Match)`
+    t =    14.78s         Capturing element debug description
+    t =    15.70s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    15.70s         Checking existence of `Button (First Match)`
+    t =    15.74s         Capturing element debug description
+    t =    16.76s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    16.76s         Checking existence of `Button (First Match)`
+    t =    16.83s         Capturing element debug description
+    t =    17.75s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    17.75s         Checking existence of `Button (First Match)`
+    t =    17.86s         Capturing element debug description
+    t =    18.69s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    18.69s         Checking existence of `Button (First Match)`
+    t =    18.77s         Capturing element debug description
+    t =    19.69s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    19.69s         Checking existence of `Button (First Match)`
+    t =    19.75s         Capturing element debug description
+    t =    19.75s     Checking existence of `Button (First Match)`
+    t =    19.81s Collecting debug information to assist test failure triage
+    t =    19.81s     Requesting snapshot of accessibility hierarchy for app with pid 82208
+/tmp/nosfy-cartes-runner/NavRuntimeUITests.swift:76: error: -[NavRuntimeUITests.NavRuntimeUITests testDDeuxManegesEtInterruption] : XCTAssertTrue failed
+    t =    19.97s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testDDeuxManegesEtInterruption]' failed (20.279 seconds).
+Test Suite 'NavRuntimeUITests' failed at 2026-09-18 11:26:54.766.
+	 Executed 4 tests, with 4 failures (0 unexpected) in 79.628 (79.631) seconds
+Test Suite 'NavRuntimeUITests.xctest' failed at 2026-09-18 11:26:54.767.
+	 Executed 4 tests, with 4 failures (0 unexpected) in 79.628 (79.632) seconds
+Test Suite 'All tests' failed at 2026-09-18 11:26:54.768.
+	 Executed 4 tests, with 4 failures (0 unexpected) in 79.628 (79.633) seconds
+2026-09-18 11:27:14.906 xcodebuild[81968:18926986] [MT] IDETestOperationsObserverDebug: 102.042 elapsed -- Testing started completed.
+2026-09-18 11:27:14.906 xcodebuild[81968:18926986] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-18 11:27:14.906 xcodebuild[81968:18926986] [MT] IDETestOperationsObserverDebug: 102.042 sec, +102.042 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/nosfy-cartes-ui5.xcresult
+
+Failing tests:
+	NavRuntimeUITests.testADeuxPortesEtCollectionVide()
+	NavRuntimeUITests.testBOrangeJusquaCollection()
+	NavRuntimeUITests.testCNoirGratuitEtReconnexion()
+	NavRuntimeUITests.testDDeuxManegesEtInterruption()
+
+** TEST FAILED **
+
+Testing started

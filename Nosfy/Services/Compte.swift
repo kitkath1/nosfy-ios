@@ -181,6 +181,8 @@ enum Compte {
         // En mémoire.
         ChambreEtat.shared.oublier()
         EconomieWoop.shared.oublier()
+        CollectionLune.shared.oublier()
+        FileAnnonces.shared.vider()
         ProfilServeur.dernierAccueil = nil
         let depart = DepartEtat.shared
         depart.welcomeOuverte = false

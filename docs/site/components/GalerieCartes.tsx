@@ -9,7 +9,7 @@ export function GalerieCartes() {
   return (
     <section className={styles.galerie} aria-label="Les illustrations retenues des trois familles">
       <h2>Les trois familles retenues</h2>
-      <p>Quatorze illustrations d’atelier. Art retenu ; cadrage iPhone, publication et shiny animé à terminer.</p>
+      <p>Quatorze illustrations publiées, communes à tous les joueurs. Contraste iPhone et shiny animé encore à vérifier.</p>
       {families.map(family => (
         <section key={family.key} data-famille={family.key} className={styles.famille}>
           <h3>{family.name.fr}</h3>

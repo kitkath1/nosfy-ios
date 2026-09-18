@@ -602,7 +602,7 @@ struct BoosterLab: View {
                                  cine: Self.cine,
                                  handle: handle,
                                  forge: appMode || Self.scelle,
-                                 paused: scenePhase != .active,
+                                 paused: scenePhase != .active || handle.attenteReseau,
                                  robe: robeEffective,
                                  cadreDecoupe: true)
                         .ignoresSafeArea()
@@ -875,7 +875,29 @@ struct BoosterLab: View {
             // Pendant la cérémonie il n'est même pas dans l'arbre : rien
             // à interrompre, et pas un chip de verre à échantillonner
             // au-dessus de la scène pendant la découpe.
-            if let onRetourHome, handle.auManege || handle.revealed {
+            #if DEBUG
+            if CommandLine.arguments.contains("-cartesQA") {
+                VStack { Spacer(); Text("revelee=\(handle.revealed);carte=\(handle.cardId ?? "");rarete=\(handle.rarete);attente=\(handle.attenteReseau)")
+                    .font(.system(size: 1)).foregroundStyle(.clear)
+                    .accessibilityIdentifier("cartes-qa-ouverture") }
+            }
+            #endif
+            if handle.attenteReseau || handle.erreurForge != nil {
+                VStack(spacing: 14) {
+                    Spacer()
+                    Text(handle.erreurForge == nil
+                         ? L("Votre carte arrive…", "Your card is on its way…")
+                         : L("Votre carte vous attend.", "Your card is waiting for you."))
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(.white)
+                    if handle.erreurForge != nil {
+                        Button(L("Réessayer", "Try again")) { handle.coordinator?.reprendreForge() }
+                            .foregroundStyle(.white)
+                    }
+                }
+                .padding(.bottom, 70)
+            }
+            if let onRetourHome, handle.auManege || handle.revealed || handle.attenteReseau || handle.erreurForge != nil {
                 VStack(spacing: 0) {
                     RangeeChips(retour: {
                         // Sortir à l'escale RÉSULTAT ne jette pas le
@@ -893,7 +915,9 @@ struct BoosterLab: View {
                                 art: artPlein.map(GabaritCarte.vignette)
                                     ?? ArtDuSacre.art,
                                 artPlein: artPlein,
-                                depth: tardive?.depth ?? handle.carteDepth)
+                                depth: tardive?.depth ?? handle.carteDepth,
+                                cardId: tardive?.cardId ?? handle.cardId,
+                                acquisitionId: tardive?.acquisitionId ?? handle.acquisitionId)
                         }
                         onRetourHome()
                     }) { EmptyView() }
@@ -928,6 +952,18 @@ struct BoosterLab: View {
         // la carte part d'elle-même une fois le registre écrit — de la
         // pop-up à la carte posée dans la collection, sans un doigt.
         .onChange(of: handle.revealed) { _, ouvert in
+            if ouvert, let booster = handle.boosterId, let owner = handle.userId {
+                Task {
+                    do {
+                        guard try await SupabaseSession.shared.currentUserID().lowercased() == owner.lowercased() else { return }
+                        let jwt = try await SupabaseSession.shared.token()
+                        let j = try await CartesServeur.objet("confirmer_revelation", jwt: jwt, corps: ["p_booster": booster])
+                        guard try await SupabaseSession.shared.currentUserID().lowercased() == owner.lowercased() else { return }
+                        CartesServeur.terminer(user: owner, noir: robeEffective == .noire)
+                        if let coffre = j as? [String: Any] { EconomieWoop.shared.appliquer(SacreServeur.decoderCoffre(coffre)) }
+                    } catch { /* Le sachet reste reprenable avec la même carte. */ }
+                }
+            }
             guard ouvert, Self.envolAuto, envolStart == nil else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.4) {
                 guard handle.revealed, !handle.flown,
@@ -945,7 +981,7 @@ struct BoosterLab: View {
             return !handle.flown && !carteEnPlongee
                 && envolStart == nil && envolY <= 0
         }
-        return handle.auManege
+        return handle.auManege || handle.attenteReseau || handle.erreurForge != nil
     }
 
     /// L'ENVOL-AVION : la carte part SEULE (le registre s'est déjà
@@ -973,7 +1009,9 @@ struct BoosterLab: View {
                 famille: tardive?.famille.nom ?? handle.famille,
                 art: artPlein.map(GabaritCarte.vignette) ?? ArtDuSacre.art,
                 artPlein: artPlein,
-                depth: tardive?.depth ?? handle.carteDepth))
+                depth: tardive?.depth ?? handle.carteDepth,
+                cardId: tardive?.cardId ?? handle.cardId,
+                acquisitionId: tardive?.acquisitionId ?? handle.acquisitionId))
         }
     }
 }
@@ -1006,6 +1044,13 @@ final class BoosterHandle: ObservableObject {
     /// cérémonie reste gelé, mais l'envol emporte CETTE carte à la
     /// collection (le serveur a consommé le tirage — on ne jette pas).
     var forgeTardive: LuneForge.Carte?
+    var cardId: String?
+    var acquisitionId: String?
+    var boosterId: String?
+    var userId: String?
+    @Published var cartePrete = false
+    @Published var attenteReseau = false
+    @Published var erreurForge: String?
     weak var coordinator: BoosterStage.Coordinator?
 
     /// Les lunes de la typologie : le registre du sacre les pose une à une.
@@ -1573,6 +1618,7 @@ struct BoosterStage: UIViewRepresentable {
         /// rejouent la cérémonie à volonté — pas un tirage par replay).
         var forgeActive = false
         private var forgeLancee = false
+        private var ouvertureDifferee = false
 
         private enum Mode {
             case idle, spinning, tearing, opening, revealed
@@ -1686,6 +1732,13 @@ struct BoosterStage: UIViewRepresentable {
                 if view.scene?.isPaused == true { view.scene?.isPaused = false }
                 if !view.isPlaying { view.isPlaying = true }
                 if !view.rendersContinuously { view.rendersContinuously = true }
+            }
+            if !paused, ouvertureDifferee, handle?.cartePrete == true {
+                ouvertureDifferee = false
+                DispatchQueue.main.async { [weak self] in
+                    guard let self, !self.demonte, !self.hostPaused else { return }
+                    self.finishTear()
+                }
             }
             guard hostPaused != paused else { return }
             hostPaused = paused
@@ -2504,139 +2557,47 @@ struct BoosterStage: UIViewRepresentable {
         /// prend son art en retard, la collection reçoit le vrai).
         /// Jamais d'échec visible : sans réseau ou sans session, le
         /// repli est carte-lune-1 — la cérémonie ne casse pas.
+        func reprendreForge() {
+            guard !demonte, handle?.cartePrete != true else { return }
+            forgeLancee = false
+            lancerForge()
+        }
+
         private func lancerForge() {
             guard forgeActive, !forgeLancee else { return }
             forgeLancee = true
+            handle?.erreurForge = nil
             let noir = robe == .noire
             Task { @MainActor [weak self] in
                 do {
-                    // La session du compte si elle existe ; sinon le
-                    // user de TEST du banc (dev — les vrais comptes
-                    // arriveront avec « Connexion avec Apple »).
-                    let jwt: String
-                    let session: Bool
-                    if let t = try? await SupabaseSession.shared.token() {
-                        jwt = t
-                        session = true
-                    } else {
-                        jwt = try await ForgeServeur.jwtBanc()
-                        session = false
+                    let jwt = try await SupabaseSession.shared.token()
+                    let owner = try await SupabaseSession.shared.currentUserID()
+                    guard let booster = await EconomieWoop.shared.consommerBooster(legendaire: noir)
+                    else { throw ForgeServeur.Erreur.reponse }
+                    let carte = try await ForgeServeur.tirer(jwt: jwt, boosterId: booster)
+                    guard try await SupabaseSession.shared.currentUserID().lowercased() == owner.lowercased(),
+                          let self, !self.demonte, let handle = self.handle, !handle.flown else { return }
+                    handle.boosterId = booster
+                    handle.userId = owner
+                    handle.cardId = carte.cardId
+                    handle.acquisitionId = carte.acquisitionId
+                    handle.famille = carte.famille.nom
+                    handle.rarete = carte.famille.rarete
+                    handle.nouvelle = CollectionLune.shared.destination(rarete: carte.famille.rarete,
+                        famille: carte.famille.nom, cardId: carte.cardId).nouvelle
+                    handle.carteDepth = carte.depth
+                    handle.carteArt = carte.art
+                    self.stage?.habillerCarte(carte.art)
+                    if ["epic", "legendary"].contains(carte.famille.rarete) {
+                        self.stage?.setTell(discret: self.mode != .idle)
                     }
-                    // ⚠️ LE SACHET D'ABORD, LA FORGE AVEC SON ID (30-08).
-                    // `forge-card` sait sceller (`card_id`), imposer la
-                    // légendaire si le sachet est noir, et rendre la MÊME
-                    // carte sur un rejeu — il ne lui manquait que l'id que
-                    // le manège n'envoyait pas. La consommation vivait à
-                    // l'ENVOL, après le tirage : un quit entre les deux
-                    // laissait une carte en base et un sachet intact, et la
-                    // garantie du noir n'était jamais armée.
-                    // Sans id (réseau) : PAS de forge serveur — le repli
-                    // carte-lune-1 joue, le sachet reste ; jamais une carte
-                    // serveur « gratuite ». Au banc (pas de session) : la
-                    // forge du user de test, sans sachet, comme avant.
-                    // ⚠️ Deux raisons de ne PAS avoir d'id, à ne pas
-                    // confondre (relecture adverse 30-08) : la garde
-                    // `-demoData` (`EconomieWoop.possible == false` — on ne
-                    // touche pas à l'argent, la forge du banc tourne sans
-                    // sachet, comme avant) et le REFUS du serveur (là, pas
-                    // de forge du tout). La preuve du scellement se joue
-                    // donc SANS `-demoData`, ou avec `-syncNow`.
-                    var boosterId: String? = nil
-                    if session && EconomieWoop.possible {
-                        boosterId = await EconomieWoop.shared
-                            .consommerBooster(legendaire: noir)
-                        guard boosterId != nil else {
-                            print("[sacre] sachet refusé par le serveur : "
-                                  + "pas de forge serveur, repli")
-                            return
-                        }
-                    } else if !session,
-                              CommandLine.arguments.contains("-boosterScelle") {
-                        // LE BANC DU SCELLEMENT : sans session (le sim n'a
-                        // pas de `woop.phone`), la seule façon de PROUVER
-                        // « le sachet consommé porte sa carte » est de
-                        // consommer sur le compte de test avec son jwt —
-                        // sur demande explicite, jamais par défaut (le banc
-                        // ordinaire ne touche pas à ses 46 sachets).
-                        boosterId = noir
-                            ? try await SacreServeur.claimLegendaire(jwt: jwt)
-                            : try await SacreServeur.ouvrirBooster(
-                                legendaire: false, jwt: jwt)
-                        guard boosterId != nil else {
-                            print("[sacre] banc scellement : aucun sachet, "
-                                  + "pas de forge")
-                            return
-                        }
-                        print("[sacre] banc scellement : sachet "
-                              + (boosterId ?? "?"))
-                    }
-                    let carte = try await ForgeServeur.tirer(jwt: jwt,
-                                                             boosterId: boosterId)
-                    guard let self, let handle = self.handle,
-                          !handle.flown else {
-                        // Le Sacre est déjà démonté (envol accompli,
-                        // coordinateur mort) : le tirage n'est PAS
-                        // jeté — la collection répare son placeholder.
-                        CollectionLune.shared.reparerPlaceholder(avec: carte)
-                        return
-                    }
-                    if !handle.revealed {
-                        // Rien n'est encore montré : TOUT s'habille —
-                        // la poignée, la carte SCÈNE (le swap visible
-                        // venait d'elle : carte-lune-1 montait du
-                        // sachet puis la CarteVivante arrivait avec le
-                        // vrai art), et le tell.
-                        handle.famille = carte.famille.nom
-                        handle.rarete = carte.famille.rarete
-                        handle.nouvelle = CollectionLune.shared
-                            .destination(rarete: carte.famille.rarete,
-                                         famille: carte.famille.nom)
-                            .nouvelle
-                        handle.carteDepth = carte.depth
-                        handle.carteArt = carte.art
-                        self.stage?.habillerCarte(carte.art)
-                        // LE TELL : la rareté SERVIE — jamais
-                        // handle.rarete (contaminé par le défaut de
-                        // banc "rare"). Discret si le doigt est déjà
-                        // au travail.
-                        if ["epic", "legendary"]
-                            .contains(carte.famille.rarete) {
-                            let calme = self.mode == .idle
-                                && self.holdLink == nil
-                                && (self.stage?.tearProgress ?? 1)
-                                    <= self.morsureHeritee
-                            self.stage?.setTell(discret: !calme)
-                            // La respiration ×1,5 du tell ne peut PAS
-                            // s'appliquer à une respiration déjà en
-                            // cycle (l'idempotence l'ignore) : retrait
-                            // en fondu, re-pose amplifiée un souffle
-                            // plus tard — seulement au calme.
-                            if calme, let stage = self.stage,
-                               stage.swayNode.animationKeys
-                                   .contains("bob") {
-                                stage.swayNode.removeAnimation(
-                                    forKey: "bob", blendOutDuration: 0.3)
-                                stage.swayNode.removeAnimation(
-                                    forKey: "sway", blendOutDuration: 0.3)
-                                DispatchQueue.main.asyncAfter(
-                                    deadline: .now() + 0.32) { [weak self] in
-                                    guard let self, self.mode == .idle
-                                    else { return }
-                                    self.stage?.beginIdleBreath()
-                                }
-                            }
-                        }
-                    } else {
-                        // DÉVOILÉ : le visuel est GELÉ (jamais de
-                        // transformation sous les yeux) — mais la carte
-                        // tirée n'est PAS jetée : le serveur a consommé
-                        // le tirage, l'envol l'emportera à la
-                        // collection.
-                        handle.forgeTardive = carte
-                    }
+                    handle.cartePrete = true
+                    handle.attenteReseau = false
+                    handle.erreurForge = nil
                 } catch {
-                    print("forge indisponible, repli placeholder :",
-                          error.localizedDescription)
+                    guard let self, !self.demonte else { return }
+                    self.handle?.erreurForge = "attente"
+                    print("[cartes] même sachet à reprendre : \(error.localizedDescription)")
                 }
             }
         }
@@ -3233,6 +3194,14 @@ struct BoosterStage: UIViewRepresentable {
         /// meurt, la carte monte de la fente puis vient se présenter.
         private func finishTear() {
             guard let stage else { return }
+            if forgeActive, handle?.cartePrete != true {
+                ouvertureDifferee = true
+                mode = .opening
+                handle?.attenteReseau = true
+                haptics.suspend()
+                sfx?.crackleOff()
+                return
+            }
             mode = .opening
             // LE CADRAGE REND LA MAIN : la découpe est finie, la carte va
             // sortir — on revient au cadrage canonique (champ 60°, caméra à

@@ -19,20 +19,23 @@ export function Serveur() {
       <MenuSupabase />
 
       <div className="reveal">
-        <h2>Les douze tables</h2>
+        <h2>Les tables</h2>
         <Tableau genre="table" />
       </div>
       <div className="reveal">
-        <h2>Les quinze fonctions</h2>
+        <h2>Les fonctions</h2>
         <Tableau genre="fonction" />
+
+        <h2>Index</h2>
+        <Tableau genre="index" />
       </div>
       <div className="reveal">
-        <h2>Les vingt-six règles que tu peux changer sans nous</h2>
+        <h2>Les règles du serveur</h2>
         <p>Change une valeur dans <code>reward_rules</code>, l&apos;app la lit au prochain lancement. Aucune version à sortir.</p>
         <Tableau genre="regle" />
       </div>
       <div className="reveal">
-        <h2>Les deux edge functions</h2>
+        <h2>Les edge functions</h2>
         <Tableau genre="edge" />
       </div>
       <div className="reveal">

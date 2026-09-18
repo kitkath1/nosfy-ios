@@ -1,0 +1,38 @@
+PASS compte neuf : aucun gain
+PASS compte neuf : progression vide
+PASS synchroniser_seance interdit sans session
+PASS cloturer_seance interdit sans session
+PASS seances_chemin interdit sans session
+PASS séance absente : aucun gain, refus rejouable
+PASS fixture séance ouverte
+PASS séance ouverte non payée
+PASS fixture sauvegarde partielle
+PASS sauvegarde partielle non payée
+PASS séance étrangère non payée
+PASS REST : rattachement à une séance étrangère refusé
+PASS instantané invalide : aucune écriture partielle
+PASS pull : séance ancienne nouvellement sauvegardée retrouvée
+PASS nombre déclaré gonflé : aucune pièce
+PASS une série reçue :20 pièces et un sachet
+PASS clôture rejouée sans doubler les gains
+PASS six clôtures concurrentes idempotentes
+PASS renvoi du même instantané : un seul galet
+PASS séance vide complète : aucun faux sachet
+PASS séance vide : aucune avance
+PASS récompense du troisième galet verrouillée avant3séances
+PASS cardio seul payé et sachet attribué
+PASS piscine seul payé et sachet attribué
+PASS muscu, cardio et piscine font chacun avancer
+PASS récompense disponible après3séances
+PASS récompense de galet rejouée sans gain doublé
+PASS isolation : aucun gain sur le second compte
+PASS trésor final verrouillé avant35séances
+PASS 35séances sauvegardées : fin du cinquième chapitre
+PASS trésor final réclamable à35séances
+PASS 36e séance conservée sans nouveau trésor final
+PASS cloturer_seance_validee_interne inaccessible au client
+PASS cloturer_seance_brut inaccessible au client
+PASS tirer_noeud_chemin_valide_interne inaccessible au client
+35 contrôles PASS
+Nettoyage compte QA : 200
+Nettoyage compte QA : 200

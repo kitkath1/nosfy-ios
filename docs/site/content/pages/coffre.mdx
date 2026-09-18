@@ -1,12 +1,17 @@
+<Decision titre="Deux stocks et reçus déployés">
+  <p>Ordinaires et noirs possédés, dont ceux des galets, sont distincts. Noir possédé gratuit avant achat contre argent. Une ouverture non révélée reste reprenable. Stock versionné et reçu remplacent les additions optimistes.28 API Cartes et35 régressions gains PASS ; parcours physique à terminer.</p>
+  <p>Preuves : <code>tools/carte-lune/integration-2026-09-18/README.md</code>.</p>
+</Decision>
+
 <Decision titre="Compte, gains et Route : correctif déployé le18-09">
   <p>Compte vide : <b>premier galet, tout en haut</b>. Une séance terminée avec travail fait avancer d’un galet ; deux le même jour comptent deux fois, une pause ne fait pas avancer. Cinq chapitres de sept séances, récompenses à3et7 ; après35, l’historique continue sans réinitialiser le parcours.</p>
   <p>Le serveur reçoit la séance complète avant de payer. Séance absente, partielle ou nombre incohérent : aucun gain, demande conservée pour reprise.35 contrôles API,51 Compte,13 de file de gains,12 de synchronisation et1074 Route PASS. Déploiement autorisé sur le projet partagé ; anciens binaires à mettre à jour pour leurs prochaines clôtures.</p>
   <p>La vraie connexion/révocation Apple, le rapprochement de l’historique du téléphone et le parcours visuel neuf restent ouverts. Forge/chauffe suivies par leurs sessions. Preuves : <code>tools/production/compte-progression-2026-09-18/README.md</code>.</p>
 </Decision>
 
-<Decision titre="Intégrité des gains — blocage production mesuré le 18 septembre">
+<Decision titre="Historique : défaut d’intégrité corrigé le18-09">
   <p>Sur un compte temporaire, <code>cloturer_seance</code> a crédité 20 pièces et un sachet pour une séance inexistante. Les tables restent fermées aux écritures directes ; la fonction autorisée ne valide pas suffisamment ce qu’elle rémunère. Le test <code>verif_compte.py --integrite</code> échoue et ses comptes ont été nettoyés.</p>
-  <p>La RPC est signalée en rouge dans <a href="#serveur" data-saut="serveur">Serveur</a>. Son correctif devra préserver les reprises après coupure réseau ; il n’est pas déployé par ce contrôle. Preuve : <code>tools/production/preuves-2026-09-18/integrite-gains.log</code>.</p>
+  <p>La correction est suivie dans <a href="#serveur" data-saut="serveur">Serveur</a>. Corrigé depuis par83033 ;35 contrôles repassent après84850, reprises conservées. Preuve : <code>tools/production/preuves-2026-09-18/integrite-gains.log</code>.</p>
 </Decision>
 
 <div className="reveal">

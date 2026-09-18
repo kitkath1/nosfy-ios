@@ -1705,6 +1705,12 @@ struct CoffreV2Page: View {
     /// séances : la page reste bête, elle affiche ce qu'on lui donne.
     var gains: [GainCoffre] = []
     var onClose: () -> Void = {}
+    /// LE CRAN D'ARRIVÉE (15-09, verdict : « au clic des 4 pastilles liquid
+    /// glass ça ramène sur la page coffre au bon item ») — l'ordre de
+    /// `variantes` : 0 la pièce d'or · 1 le sachet Lune · 2 l'argent · 3 le
+    /// noir. Posé dans `demarrer()`, exactement comme `-coffrePage` ; 0 par
+    /// défaut, donc aucun appelant existant ne bouge.
+    var pageInitiale: Int = 0
 
     /// ⚠️⚠️ **`eclat` EST MORT, ET C'EST LUI QUI FAISAIT VOIR LE BORD DE
     /// L'IMAGE** (verdict : « il y a toujours la démarcation, car tu as activé
@@ -3776,6 +3782,11 @@ struct CoffreV2Page: View {
         // économie a DEUX pages (sa pièce, son booster), l'argent est au
         // cran 2. `-coffrePage <n>` reste le moyen d'ouvrir n'importe où.
         if Self.argentDabord { page = 2; piedIdx = 2 }
+        // Le cran demandé par l'appelant (les quatre pastilles du profil).
+        if pageInitiale > 0 {
+            let i = min(pageInitiale, Self.manege.count - 1)
+            page = Double(i); piedIdx = i
+        }
         if let f = Self.pageFigee { page = f; piedIdx = Int(f.rounded()) }
         // `-coffreStory noir|lune` : l'histoire d'un booster d'entrée.
         if let robe = Self.storyAuto {

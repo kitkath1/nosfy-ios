@@ -1,7 +1,7 @@
 {
-  "status": "atelier_artistique_non_publie",
+  "status": "publie_supabase",
   "date": "2026-09-18",
-  "contract": "Même référence, mêmes illustration, noms localisés, rareté et finition pour tous ; les clés éditoriales de ce manifeste ne sont pas encore des identifiants cards déployés.",
+  "contract": "Même référence, mêmes illustration, noms localisés, rareté et finition pour tous. Identifiants et empreintes publiés dans integration-2026-09-18/catalogue-publication.json.",
   "shiny": "Rendu peint uniquement ; animation et distribution à implémenter et mesurer.",
   "families": [
     {
@@ -222,5 +222,6 @@
     }
   ],
   "recurring_characters": "Même visage, proportions et détails distinctifs entre familles ; pose, angle, action et interaction avec le décor différents. Chaque scène officielle reste une référence distincte.",
-  "selection": "Trois familles et quatorze illustrations retenues par Kathryn ; scellement demandé. Cadrage iPhone, publication et shiny animé restent à vérifier."
+  "selection": "Trois familles et quatorze illustrations retenues par Kathryn ; scellement demandé. Cadrage iPhone, publication et shiny animé restent à vérifier.",
+  "publication_manifest": "integration-2026-09-18/catalogue-publication.json"
 }

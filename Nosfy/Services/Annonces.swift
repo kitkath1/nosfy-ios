@@ -50,8 +50,9 @@ enum Annonce: Equatable {
 /// Une annonce POSÉE : son identité est celle de son passage, pas de son
 /// contenu — deux « +20 » d'affilée sont deux dalles.
 struct AnnonceVisible: Identifiable, Equatable {
-    let id = UUID()
+    var id = UUID()
     let annonce: Annonce
+    var evenement: EvenementGain? = nil
 }
 
 @MainActor
@@ -65,7 +66,7 @@ final class FileAnnonces {
     /// disent L'UN APRÈS L'AUTRE — les pièces, PUIS le sachet).
     private(set) var visible: AnnonceVisible?
     /// Ce qui attend son tour.
-    private var attente: [Annonce] = []
+    private var attente: [AnnonceVisible] = []
     /// Le temps qu'une carte tient avant de céder la place.
     var duree: TimeInterval = 2.8
     /// Le souffle entre deux cartes (l'une sort, l'autre entre).
@@ -75,7 +76,7 @@ final class FileAnnonces {
 
     /// POUSSER UNE ANNONCE — elle prend la place libre, ou attend son tour.
     func pousser(_ a: Annonce) {
-        attente.append(a)
+        attente.append(AnnonceVisible(annonce: a))
         avancer()
     }
 
@@ -83,14 +84,14 @@ final class FileAnnonces {
     /// pièces, puis le sachet). La file séquence toute seule ; l'`espace`
     /// d'antan n'a plus de rôle (gardé pour ne pas casser les appelants).
     func pousser(_ liste: [Annonce], espace: TimeInterval = 0) {
-        attente.append(contentsOf: liste)
+        attente.append(contentsOf: liste.map { AnnonceVisible(annonce: $0) })
         avancer()
     }
 
     /// Montre la suivante SI la place est libre ; sinon elle attend.
     private func avancer() {
         guard visible == nil, !attente.isEmpty else { return }
-        let v = AnnonceVisible(annonce: attente.removeFirst())
+        let v = attente.removeFirst()
         jeton += 1
         let j = jeton
         withAnimation(.spring(response: 0.48, dampingFraction: 0.82)) {
@@ -98,11 +99,38 @@ final class FileAnnonces {
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + duree) { [weak self] in
             guard let self, self.jeton == j else { return }
+            if let e = v.evenement {
+                var vus = Set(UserDefaults.standard.stringArray(forKey: self.cleVus(e.userId)) ?? [])
+                vus.insert(e.id)
+                UserDefaults.standard.set(Array(vus), forKey: self.cleVus(e.userId))
+                Task { await CartesServeur.acquitter(e) }
+            }
             withAnimation(.easeOut(duration: 0.35)) { self.visible = nil }
             DispatchQueue.main.asyncAfter(deadline: .now() + self.entredeux) {
                 self.avancer()
             }
         }
+    }
+
+    private func cleVus(_ user: String) -> String { "woop.annonces.vues.\(user.lowercased())" }
+
+    func pousser(_ events: [EvenementGain]) {
+        for e in events {
+            guard e.userId.lowercased() == EconomieWoop.shared.proprietaireCartes else { continue }
+            let vus = Set(UserDefaults.standard.stringArray(forKey: cleVus(e.userId)) ?? [])
+            if vus.contains(e.id) { Task { await CartesServeur.acquitter(e) }; continue }
+            guard visible?.evenement?.id != e.id, !attente.contains(where: { $0.evenement?.id == e.id }) else { continue }
+            let a: Annonce
+            switch e.genre {
+            case "argent": a = .argent(e.montant)
+            case "retour": a = .retour(e.montant)
+            case "cardio": a = .cardio(e.montant)
+            case "sachet", "noir": a = .sachet(e.montant)
+            default: a = .pieces(e.montant)
+            }
+            attente.append(AnnonceVisible(id: UUID(uuidString: e.id) ?? UUID(), annonce: a, evenement: e))
+        }
+        avancer()
     }
 
     func vider() {

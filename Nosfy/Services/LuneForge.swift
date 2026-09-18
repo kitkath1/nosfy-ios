@@ -200,6 +200,8 @@ enum LuneForge {
         let depth: UIImage    // 543×724, rampe v0
         let famille: Famille
         let scene: String     // la scène inventée par le directeur
+        var cardId: String? = nil
+        var acquisitionId: String? = nil
     }
 
     enum Erreur: LocalizedError {
