@@ -120,11 +120,12 @@ struct WoopApp: App {
                 // card s'est ouverte en même temps que la pop-up de première fois
                 // (compte avec séances → retour_disponible vrai) et l'a cachée ;
                 // tant que `premiere_fois`, c'est la pop-up de Nosfy qui parle.
-                let eco = EconomieWoop.shared
-                if eco.serveur, eco.retourDisponible, !PremiereArrivee.premiereFois,
-                   !SacreEtat.shared.manegeOuvert, !SacreEtat.shared.popupOuverte {
-                    DepartEtat.shared.welcomeOuverte = true
-                }
+                // NI SOUS LA PORTE, LE FILM OU LE SPLASH (14-09, son ordre : « pas de
+                // pop-up Welcome Back dans l'onboarding / la création de compte —
+                // seulement quand le compte est créé, avec notre règle backend ») :
+                // la règle vit dans `Compte.proposerWelcomeBack()`, avec ses deux
+                // verrous (l'app : `CompteEtat.enPorte` ; le serveur : S4).
+                await MainActor.run { Compte.proposerWelcomeBack() }
             }
         }
     }
@@ -346,18 +347,32 @@ struct RootView: View {
     /// Le splash (la lune de sang) n'existe qu'au premier lancement : aux
     /// suivants la porte s'ouvre directement — on économise les 8,4 s
     /// (et les 13,95 s de l'ancien plan-séquence, passé en archive).
-    @State private var showSplash = !RootView.porteDejaVue
-    /// L'authentification suit le splash à CHAQUE lancement ; un toucher sur
-    /// « Se connecter » fait entrer immédiatement. `-skipAuth` la court-circuite
-    /// (captures d'écran automatisées uniquement).
+    @State private var showSplash = !RootView.porteDejaVue && !RootView.filmDemande
+    /// LA PORTE SEULEMENT SANS SESSION (14-09, plan compte C0 — son verdict :
+    /// « si on a un compte créé, on arrive dans l'app, pas plus simple que
+    /// ça »). Une session gardée (identité Apple + refresh au Keychain,
+    /// `SupabaseSession.sessionGardee()`, lu sans réseau) → la home direct, et
+    /// `token()` rafraîchit en silence ; un refresh refusé → `oublier()` →
+    /// `CompteEtat.porteDemandee` → la porte revient. `-skipAuth` la
+    /// court-circuite (captures et bancs), `-porteForcee` la rejoue malgré la
+    /// session (pour la voir).
     @State private var showAuth = !CommandLine.arguments.contains("-skipAuth")
+        && (CommandLine.arguments.contains("-porteForcee") || !SupabaseSession.sessionGardee()
+            || InscriptionCompte.aReprendre || InscriptionCompte.aVerifier)
+    @State private var verificationCompte = !CommandLine.arguments.contains("-skipAuth")
+        && SupabaseSession.sessionGardee() && InscriptionCompte.aVerifier
+    /// L'état du compte (Compte.swift) : la porte demandée, « la porte tient
+    /// l'écran » — publié pour le Welcome Back.
+    private let compte = CompteEtat.shared
     /// LE FILM DE NOSFY par-dessus la porte (13-09) : ouvert quand Apple rend
     /// une NOUVELLE. La porte se dissout sous lui pendant que l'île s'allume.
-    @State private var nosfyOuvert = false
+    @State private var nosfyOuvert = !CommandLine.arguments.contains("-skipAuth")
+        && SupabaseSession.sessionGardee() && InscriptionCompte.aReprendre && !InscriptionCompte.aVerifier
     /// LE REJEU (13-09, sa demande : « un bouton sur la home pour relancer le
     /// parcours après la partie Apple »). Le film seul, par-dessus tout ; à la
     /// fin, la home, sans cérémonie.
     @State private var nosfyRejoue = false
+        && !RootView.filmDemande
     /// LA PORTE ÉTEINTE (13-09) : une fois le film fini, le carrousel ne
     /// revient jamais — la cérémonie d'entrée se joue sur le noir, jusqu'à
     /// ce que `showAuth` tombe et l'emporte.
@@ -367,27 +382,34 @@ struct RootView: View {
     /// 20260913200000 de la session chambres) : langue, prénom, but, objectif — UN
     /// appel, qui relaie l'objectif à `definir_objectif` et pose la date de fin
     /// d'onboarding (c'est elle que `profil()` lit à la porte). En maquette, rien
-    /// ne part au réseau. Une panne s'imprime : la home n'attend pas le serveur.
-    private func ecrireProfil(_ reponses: NosfyOnboarding.Reponses) {
-        Langue.poser(reponses.langue)               // le cache, avant même le serveur (§ 9)
-        PremiereArrivee.poserPremiereFois(true)     // la Home qui suit est la première
-        guard !AppleAuth.Maquette.active else {
+    /// ne part au réseau. La home s'ouvre après confirmation du serveur.
+    @MainActor
+    private func ecrireProfil(_ reponses: NosfyOnboarding.Reponses) async throws {
+        if AppleAuth.Maquette.active {
+            Langue.poser(reponses.langue)
+            PremiereArrivee.poserPremiereFois(true)
             print("[NOSFY] maquette : le profil n'est pas écrit au serveur")
             return
         }
-        Task { @MainActor in
-            do {
-                let p = try await ProfilServeur.definirProfil(langue: reponses.langue,
-                                                              prenom: reponses.prenom,
-                                                              but: reponses.but,
-                                                              objectifHebdo: reponses.objectifHebdo)
-                print("[NOSFY] definir_profil → existe=\(p.existe) onboarding_termine=\(p.onboardingTermine) prenom=\(p.prenom ?? "—") objectif=\(p.objectifHebdo)")
-            } catch {
-                print("[NOSFY] definir_profil en panne · \(error)")
-            }
-        }
+        InscriptionCompte.garder(reponses)
+        let p = try await ProfilServeur.definirProfil(langue: reponses.langue,
+                                                     prenom: reponses.prenom,
+                                                     but: reponses.but,
+                                                     objectifHebdo: reponses.objectifHebdo)
+        Langue.poser(p.langue)
+        ChambreEtat.shared.objectif = p.objectifHebdo
+        PremiereArrivee.poserPremiereFois(p.seances == 0)
+        print("[NOSFY] definir_profil → existe=\(p.existe) onboarding_termine=\(p.onboardingTermine) prenom=\(p.prenom ?? "—") objectif=\(p.objectifHebdo)")
     }
 
+    // MARK: - LE FILM DE NOSFY (06-09)
+
+    /// `-nosfy` : le film seul, sans splash ni porte — et il DÉBOUCHE SUR LA
+    /// HOME. Ce n'est pas un banc à part : c'est une couche au-dessus de la
+    /// vraie app, qui se dissout quand elle tape « Entrer ». La home est donc
+    /// déjà là, derrière, vivante — il n'y a aucune couture à cacher.
+    static let filmDemande = CommandLine.arguments.contains("-nosfy")
+    @State private var filmNosfy = RootView.filmDemande
     @State private var selection: WoopTab = {
         guard let raw = UserDefaults.standard.string(forKey: "openTab") else { return .home }
         // Le calendrier avait fusionné dans Progression ; Progression est
@@ -461,6 +483,30 @@ struct RootView: View {
     @State private var invitePulseAt: Date?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotionRoot
+
+    /// LA PORTE REVIENT (14-09, C2 / C3-app / C0) : après « Se déconnecter »,
+    /// « Supprimer mon compte », ou un refresh refusé. Tout ce qui est à elle
+    /// est DÉJÀ effacé (`Compte.effacerToutCeQuiEstAElle`) ; ici on ferme ce
+    /// qui est ouvert et on rend la porte — sans le film d'entrée (elle l'a vu),
+    /// sur le carrousel. La cérémonie de connexion se rejouera à la prochaine
+    /// entrée, comme la première fois.
+    private func revenirALaPorte() {
+        verificationCompte = false
+        sheetWorkout = nil
+        storyFin = nil
+        homeEclipsee = false
+        selection = .home
+        cineStart = nil
+        homeArriving = false
+        barArriving = false
+        invitePulseAt = nil
+        nosfyOuvert = false
+        nosfyRejoue = false
+        filmNosfy = false
+        porteEteinte = false
+        withAnimation(.easeInOut(duration: 0.6)) { showAuth = true }
+        print("[compte] la porte est rendue (\(compte.raisonPorte ?? "?"))")
+    }
 
     /// CONNEXION touché : la lune se dissout en braises. L'aspiration part
     /// tout de suite (le fond draine, la caméra du shader se penche), le
@@ -1968,14 +2014,12 @@ struct RootView: View {
                     // quatre pages remplace l'écran aurora — qui reste vivant,
                     // en archive, derrière `-loginLab`. Même contrat exact :
                     // `onConnect` + `cineStart` poussé par la racine.
-                    PorteEntree(onConnect: { digits in
+                    if !verificationCompte {
+                    PorteEntree(onConnect: { _ in
                         // ⚠️ Depuis le 06-09, la porte n'appelle PLUS ça sans
-                        // condition : elle l'appelle après le verdict Apple.
-                        // Le numéro est mort, mais on garde la branche tant que
-                        // `woop.phone` sert de clé à `SupabaseSession` (jalon 1).
-                        if digits.count == 10 {
-                            UserDefaults.standard.set(digits, forKey: "woop.phone")
-                        }
+                        // condition : elle l'appelle après le verdict Apple. Le
+                        // numéro est mort pour de bon (14-09, C4) : plus de
+                        // `woop.phone`, la session est celle d'Apple.
                         startConnexionCinematic()
                     }, onVerdict: { verdict in
                         // L'AIGUILLAGE (06-09, branché le 13-09) : aucune ligne
@@ -2006,17 +2050,21 @@ struct RootView: View {
                     .animation(.easeInOut(duration: 1.3), value: nosfyOuvert)
                     .transition(.opacity)
                     .zIndex(9)
+                    }
+
+                    if verificationCompte {
+                        VerificationCompte { profil in
+                            verificationCompte = false
+                            nosfyOuvert = !profil.onboardingTermine
+                            showAuth = !profil.onboardingTermine
+                        }
+                        .zIndex(9)
+                    }
 
                     if nosfyOuvert {
                         NosfyOnboarding { reponses in
-                            // ⚠️ Rien n'est écrit au serveur : `definir_profil()`
-                            // n'existe pas (jalon 2). On note, et on entre.
                             print("[NOSFY] langue=\(reponses.langue) prenom=\(reponses.prenom ?? "—") but=\(reponses.but ?? "—") objectif=\(reponses.objectifHebdo.map(String.init) ?? "—")")
-                            // L'OBJECTIF HEBDO EST LIÉ (13-09, sa consigne relayée par la
-                            // session chambres) : la clé locale que la home lit, puis
-                            // `definir_objectif(n)` au serveur (user_prefs, mesuré).
-                            if let n = reponses.objectifHebdo { ChambreEtat.shared.choisir(n) }
-                            ecrireProfil(reponses)
+                            try await ecrireProfil(reponses)
                             porteEteinte = true
                             withAnimation(.easeOut(duration: 0.5)) { nosfyOuvert = false }
                             startConnexionCinematic()
@@ -2036,6 +2084,19 @@ struct RootView: View {
             if let cineStart {
                 MoonDustOverlay(start: cineStart)
                     .zIndex(20)
+            }
+
+            // LE FILM DE NOSFY — au-dessus de la home, jamais à sa place. Quand
+            // il se dissout, la home est DÉJÀ là : c'est ce qui fait que
+            // l'arrivée n'a pas de couture.
+            if filmNosfy {
+                NosfyOnboarding { reponses in
+                    print("[NOSFY] langue=\(reponses.langue) prenom=\(reponses.prenom ?? "—") but=\(reponses.but ?? "—") objectif=\(reponses.objectifHebdo.map(String.init) ?? "—")")
+                    try await ecrireProfil(reponses)
+                    withAnimation(.easeInOut(duration: 0.9)) { filmNosfy = false }
+                }
+                .transition(.opacity.combined(with: .scale(scale: 1.06)))
+                .zIndex(11)
             }
 
             if showSplash {
@@ -2091,8 +2152,7 @@ struct RootView: View {
         .overlay {
             if nosfyRejoue {
                 NosfyOnboarding { reponses in
-                    if let n = reponses.objectifHebdo { ChambreEtat.shared.choisir(n) }
-                    ecrireProfil(reponses)                 // le rejeu écrit aussi (session réelle)
+                    try await ecrireProfil(reponses)
                     withAnimation(.easeOut(duration: 0.5)) { nosfyRejoue = false }
                 }
                 .transition(.opacity)
@@ -2129,6 +2189,42 @@ struct RootView: View {
                 .zIndex(40)
             }
         }
+        // LE COMPTE (14-09, Compte.swift) — trois choses, à la racine :
+        //  · la porte DEMANDÉE (déconnexion, suppression, session révoquée) :
+        //    tout ce qui est ouvert se ferme, la porte revient sans le film ;
+        //  · « la porte tient l'écran » (porte, film, splash, rejeu) — publié
+        //    pour que le Welcome Back ne s'ouvre jamais dessous ;
+        //  · quand la porte tombe, le Welcome Back est proposé (une connue qui
+        //    rentre) — jamais en première fois, jamais sans le serveur (S4).
+        .onChange(of: compte.porteDemandee) { _, demandee in
+            guard demandee else { return }
+            if compte.raisonPorte == "session_revoquee" {
+                // LA SESSION EST MORTE AU SERVEUR (refresh refusé : révoquée
+                // ailleurs, compte supprimé d'un autre appareil) : `oublier()` n'a
+                // effacé que la session ; le reste de la personne part ici, comme
+                // à la déconnexion — la porte s'ouvre toujours sur un téléphone
+                // vierge, jamais sur les séances de la précédente.
+                Task { @MainActor in
+                    await Compte.effacerToutCeQuiEstAElle(contexte: modelContext)
+                    revenirALaPorte()
+                    compte.porteDemandee = false
+                }
+                return
+            }
+            revenirALaPorte()
+            compte.porteDemandee = false
+        }
+        .onChange(of: showAuth || showSplash || nosfyOuvert || filmNosfy || nosfyRejoue,
+                  initial: true) { _, tient in
+            compte.enPorte = tient
+        }
+        .task(id: compte.enPorte) {
+            guard !compte.enPorte else { return }
+            try? await Task.sleep(for: .seconds(3))
+            guard !compte.enPorte else { return }
+            await EconomieWoop.shared.rafraichir()
+            Compte.proposerWelcomeBack()
+        }
         .onChange(of: showAuth || showSplash || nosfyOuvert || nosfyRejoue,
                   initial: true) { _, ouverte in
             BancCoutHome.shared.porteOuverte = ouverte
@@ -2158,6 +2254,17 @@ struct RootView: View {
                 // booster) — le stop ne se tape pas en ligne de commande.
                 try? await Task.sleep(nanoseconds: 4_000_000_000)
                 terminerSeance()
+            } else if CommandLine.arguments.contains("-deconnexionAuto") {
+                // LE BANC DU COMPTE (14-09, Compte.swift) : « Se déconnecter »
+                // et « Supprimer mon compte » se jouent seuls, 6 s après la
+                // home — le bouton du panneau Réglages ne se tape pas en ligne
+                // de commande. Même chemin exactement (`Compte.deconnecter` /
+                // `Compte.supprimer`), la porte doit revenir.
+                try? await Task.sleep(for: .seconds(6))
+                print("[compte-banc] déconnexion automatique → \(await Compte.deconnecter(contexte: modelContext))")
+            } else if CommandLine.arguments.contains("-suppressionAuto") {
+                try? await Task.sleep(for: .seconds(6))
+                print("[compte-banc] suppression automatique → \(await Compte.supprimer(contexte: modelContext))")
             } else if CommandLine.arguments.contains("-departPanneau") {
                 // Le banc du panneau de départ (le galet ne se tape pas
                 // en ligne de commande).
@@ -2431,6 +2538,10 @@ struct RootView: View {
             }
             let snapshots = workouts.filter { $0.endedAt != nil }.map { $0.snapshot() }
             Task.detached { await SupabaseSync.shared.push(snapshots) }
+            // LE PULL (14-09, tools/sync/PLAN-PULL-SEANCES.md) : ce que le serveur
+            // sait et que ce téléphone n'a pas — un téléphone neuf retrouve ses
+            // séances. N'insère que ce qui manque, dans le contexte principal.
+            await SupabaseSync.relire(dans: modelContext)
             // `-cineTest` : la cinématique de connexion se déclenche seule,
             // 1,5 s après l'arrivée sur la page (captures automatisées — le
             // simulateur ne sait pas taper sur CONNEXION).

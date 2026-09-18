@@ -1,11 +1,9 @@
 flowchart TD
-  A["🌑 splash lune de sang<br/>3,4 s · 1er lancement"] --> B["🚪 LA PORTE<br/>4 pages d'onboarding"]
-  B --> C["🍎 bouton SE CONNECTER<br/>avec le logo Apple"]
-  C --> D["📤 il renvoie une<br/>chaîne VIDE"]
-  D --> E{"digits.count == 10 ?"}
-  E -- non --> F["❌ woop.phone<br/>jamais écrit"]
-  F --> G["🙈 aucune session"]
-  E -. "jamais atteint" .-> H["✅ session"]
-  class A,B loc
-  class C,D,F,G bad
-  class H abs
+  A["Apple : session Supabase au Keychain"] --> B{"Lire le profil"}
+  B -- "terminé" --> H["Home et données du compte"]
+  B -- "incomplet" --> N["Nosfy : réponses conservées"]
+  N -- "profil confirmé au serveur" --> H
+  B -- "panne : réessayer" --> B
+  N -- "refus ou panne : réessayer" --> N
+  class A,B,H ok
+  class N loc

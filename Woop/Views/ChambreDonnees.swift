@@ -157,6 +157,24 @@ struct ChambreFenetre {
     var volumeDeltaPct: Int? {
         volumePrec > 0 ? Int(((volume - volumePrec) / volumePrec * 100).rounded()) : nil
     }
+
+    /// LA LOI DU VIDE, ENTIÈRE (14-09, Kathryn : « en mode empty il y a encore des
+    /// valeurs, genre dans HIIT j'ai déjà le nombre du défi »). Une fenêtre sans
+    /// séance ne montre RIEN qui vienne d'ailleurs : ni le défi du mois, ni les
+    /// quatre semaines du record, ni le record de la semaine, ni la fenêtre
+    /// précédente, ni l'ascension — tout à zéro, tout en gris. L'historique
+    /// revient avec la première séance de la fenêtre.
+    func sansRien() -> ChambreFenetre {
+        guard vide else { return self }
+        var f = self
+        f.precedent = 0; f.suite = 0; f.recordSuite = 0; f.defi = nil
+        f.volumePrec = 0; f.fantome = []; f.recordSemaine = 0
+        f.picPrec = 0; f.effortsPrec = 0; f.tempsPicsPrec = 0
+        f.recupMoyPrec = 0; f.plusLongTrouPrec = 0; f.pics4 = [0, 0, 0, 0]
+        f.peak = nil; f.ascension = []; f.e1rm = 0; f.depuisRecord = nil
+        f.autres = []; f.recordsBattus = 0
+        return f
+    }
 }
 
 // MARK: - Les données

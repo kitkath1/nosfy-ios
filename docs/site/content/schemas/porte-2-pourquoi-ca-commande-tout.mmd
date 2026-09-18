@@ -1,11 +1,6 @@
 flowchart TD
-  A["📱 j'ouvre l'app"] --> B{"session ?"}
-  B -- non --> C["🙈 auth.uid() est nul"]
-  C --> D["☁️ le serveur ne peut<br/>rien rendre"]
-  D --> E["🟡 maquette locale<br/>séries × 20"]
-  E --> F["⚠️ perdu à la<br/>réinstallation"]
-  B -- oui --> G["🟢 le carnet répond"]
-  G --> H["✅ solde, sachets,<br/>historique réels"]
-  class C,D,E loc
-  class F bad
-  class G,H ok
+  A["Même compte Apple / auth.uid"] --> B["Profil, séances, progrès, gains, collection"]
+  B -- "autre téléphone" --> C["Reconnexion et relecture des données"]
+  B -- "déconnexion" --> D["Envoi en attente puis nettoyage local"]
+  B -- "suppression" --> E["Effacement du compte et des données liées"]
+  class A,B,C,D,E ok

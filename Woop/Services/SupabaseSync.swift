@@ -88,6 +88,23 @@ actor SupabaseSync {
         if CommandLine.arguments.contains("-demoData"),
            !CommandLine.arguments.contains("-syncNow") { return }
         guard WoopConfig.isConfigured, !snapshots.isEmpty, !inFlight else { return }
+        do {
+            try await pousser(snapshots)
+        } catch {
+            // La séance est déjà enregistrée localement : on réessaiera au prochain envoi.
+            await SupabaseSession.shared.invalidate()
+            print("Synchronisation Supabase différée : \(error.localizedDescription)")
+        }
+    }
+
+    /// LA POUSSÉE QUI DIT SI ELLE A RÉUSSI (14-09, plan compte C2) : la
+    /// déconnexion pousse ce qui attend et REFUSE d'effacer le téléphone si
+    /// l'envoi échoue — `push` avale ses pannes, elle ne peut pas le savoir.
+    /// Même corps, même ordre (les clés étrangères pointent vers la table
+    /// précédente), sans le garde-fou de la démo : c'est l'appelant qui décide.
+    func pousser(_ snapshots: [Snapshot]) async throws {
+        guard WoopConfig.isConfigured, !snapshots.isEmpty else { return }
+        while inFlight { try await Task.sleep(for: .milliseconds(100)) }
         inFlight = true
         defer { inFlight = false }
 
@@ -138,9 +155,8 @@ actor SupabaseSync {
             try await upsert(phases, into: "cardio_phases", token: token)
             try await upsert(piscines, into: "piscine_longueurs", token: token)
         } catch {
-            // La séance est déjà enregistrée localement : on réessaiera au prochain envoi.
             await SupabaseSession.shared.invalidate()
-            print("Synchronisation Supabase différée : \(error.localizedDescription)")
+            throw error
         }
     }
 
@@ -159,6 +175,136 @@ actor SupabaseSync {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         try SupabaseSession.check(response, data)
+    }
+}
+
+// MARK: - Lecture : le pull (14-09, tools/sync/PLAN-PULL-SEANCES.md)
+
+extension SupabaseSync {
+    /// Ce que la relecture a fait — pour le journal `[pull]` et la mesure.
+    struct Relecture: Sendable {
+        var total = 0, rendues = 0, inserees = 0, ignorees = 0, local = 0
+        var serveurAt: Date?
+    }
+
+    /// `woop.pull.depuis` : le `serveur_at` du dernier pull — l'appel suivant ne
+    /// demande que ce qui a fini après. `-pullTout` l'ignore.
+    static let cleDepuis = "woop.pull.depuis"
+
+    /// LE PULL — cinq règles (plan § 3) : n'insère que ce qui manque (par `remoteID`),
+    /// séances finies seulement, incrémental, valeurs honnêtes pour ce que le serveur
+    /// ne porte pas, silencieux en panne. Tourne sur le MainActor dans le contexte
+    /// principal : les `@Query` de la home se rafraîchissent d'elles-mêmes.
+    @MainActor
+    @discardableResult
+    static func relire(dans contexte: ModelContext) async -> Relecture? {
+        let args = CommandLine.arguments
+        if args.contains("-sansPull") { return nil }
+        if args.contains("-demoData"), !args.contains("-pullNow") { return nil }
+        guard WoopConfig.isConfigured else { return nil }
+
+        let depuis: String? = args.contains("-pullTout") ? nil
+            : UserDefaults.standard.string(forKey: cleDepuis)
+        let o: [String: Any]
+        do {
+            o = try await lireSeances(depuis: depuis)
+        } catch {
+            print("[pull] seances_depuis ✗ \(error.localizedDescription)")
+            return nil
+        }
+        var r = Relecture()
+        r.total = (o["total"] as? NSNumber)?.intValue ?? 0
+        r.rendues = (o["rendues"] as? NSNumber)?.intValue ?? 0
+        r.serveurAt = (o["serveur_at"] as? String).flatMap(instant)
+
+        // Ce que le téléphone a déjà — jamais touché.
+        let existants = Set(((try? contexte.fetch(FetchDescriptor<Workout>())) ?? []).map { $0.remoteID.uuidString.lowercased() })
+        for s in (o["seances"] as? [[String: Any]]) ?? [] {
+            guard let id = s["id"] as? String, let uuid = UUID(uuidString: id),
+                  let debut = instant(s["started_at"]), let fin = instant(s["ended_at"]) else { continue }
+            if existants.contains(id.lowercased()) { r.ignorees += 1; continue }
+            let w = Workout(startedAt: debut, endedAt: fin)
+            w.remoteID = uuid
+            w.notes = s["notes"] as? String ?? ""
+            contexte.insert(w)
+            for e in (s["exercices"] as? [[String: Any]]) ?? [] {
+                guard let eid = e["id"] as? String, let euuid = UUID(uuidString: eid),
+                      let exo = e["exercise_id"] as? String else { continue }
+                let l = LoggedExercise(exerciseID: exo, order: (e["position"] as? NSNumber)?.intValue ?? 0)
+                l.remoteID = euuid
+                l.workout = w
+                // La piscine (20260915170000) : `piscine {longueurs, metres_par_longueur,
+                // metres}` par exercice, null sans longueurs.
+                if let p = e["piscine"] as? [String: Any] {
+                    l.longueurs = (p["longueurs"] as? NSNumber)?.intValue ?? 0
+                    l.metresParLongueur = (p["metres_par_longueur"] as? NSNumber)?.intValue ?? 25
+                }
+                contexte.insert(l)
+                for st in (e["series"] as? [[String: Any]]) ?? [] {
+                    guard let sid = st["id"] as? String, let suuid = UUID(uuidString: sid) else { continue }
+                    // Une séance FINIE : ses séries ont été faites (l'économie ne paie que
+                    // celles-là) ; la durée sous tension, le serveur ne la porte pas.
+                    let set = StrengthSet(reps: (st["reps"] as? NSNumber)?.intValue ?? 0,
+                                          weight: (st["weight"] as? NSNumber)?.doubleValue ?? 0,
+                                          order: (st["position"] as? NSNumber)?.intValue ?? 0,
+                                          isDone: true)
+                    set.remoteID = suuid
+                    set.loggedExercise = l
+                    contexte.insert(set)
+                }
+                for ph in (e["phases"] as? [[String: Any]]) ?? [] {
+                    guard let pid = ph["id"] as? String, let puuid = UUID(uuidString: pid) else { continue }
+                    // Une séance FINIE : ses phases ont été faites (le miroir des
+                    // séries, `isDone: true` — 15-09, session cardio : le graphe
+                    // de la fiche et l'overlay ne lisent que les phases faites).
+                    let phase = CardioPhase(kind: PhaseKind(rawValue: ph["kind"] as? String ?? "") ?? .recuperation,
+                                            seconds: (ph["seconds"] as? NSNumber)?.intValue ?? 0,
+                                            speed: (ph["speed"] as? NSNumber)?.doubleValue ?? 0,
+                                            cycleIndex: (ph["cycle_index"] as? NSNumber)?.intValue ?? 0,
+                                            order: (ph["position"] as? NSNumber)?.intValue ?? 0,
+                                            incline: (ph["incline"] as? NSNumber)?.doubleValue ?? 0,
+                                            isDone: true)
+                    phase.remoteID = puuid
+                    phase.loggedExercise = l
+                    contexte.insert(phase)
+                }
+            }
+            r.inserees += 1
+        }
+        if r.inserees > 0 { try? contexte.save() }
+        r.local = (try? contexte.fetchCount(FetchDescriptor<Workout>())) ?? 0
+        if let at = o["serveur_at"] as? String { UserDefaults.standard.set(at, forKey: cleDepuis) }
+        print("[pull] seances_depuis(\(depuis ?? "tout")) → total \(r.total), rendues \(r.rendues) · insérées \(r.inserees), ignorées \(r.ignorees) · local \(r.local)")
+        return r
+    }
+
+    /// L'appel nu — la forme de `ChambreServeur.rpc`, avec la session courante.
+    private static func lireSeances(depuis: String?) async throws -> [String: Any] {
+        let jwt = try await SupabaseSession.shared.token()
+        var req = URLRequest(url: WoopConfig.supabaseURL.appending(path: "rest/v1/rpc/seances_depuis"))
+        req.httpMethod = "POST"
+        req.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
+        req.setValue(WoopConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        var corps: [String: Any] = ["p_limite": 500]
+        if let depuis { corps["p_depuis"] = depuis }
+        req.httpBody = try JSONSerialization.data(withJSONObject: corps)
+        let (data, rep) = try await URLSession.shared.data(for: req)
+        try SupabaseSession.check(rep, data)
+        guard let o = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw URLError(.cannotParseResponse)
+        }
+        if let e = o["erreur"] as? String { throw NSError(domain: "pull", code: 1, userInfo: [NSLocalizedDescriptionKey: e]) }
+        return o
+    }
+
+    /// « 2026-09-06T17:15:00+00:00 » (un `timestamptz`), avec ou sans fraction.
+    private static func instant(_ v: Any?) -> Date? {
+        guard let s = v as? String else { return nil }
+        let a = ISO8601DateFormatter(); a.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = a.date(from: s) { return d }
+        let b = ISO8601DateFormatter(); b.formatOptions = [.withInternetDateTime]
+        return b.date(from: s)
     }
 }
 

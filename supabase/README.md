@@ -31,27 +31,39 @@ Il y a DEUX comptes Supabase sur cette machine :
   en session VS Code non interactive il reste « auth requise » — passer
   par une session `claude` au terminal, ou par le CLI (préféré).
 
-## Les migrations (piège n° 2 — RÉGLÉ, mesuré le 15-09)
+## Les migrations (vérifiées le 17-09)
 
 `0001_init.sql` et `20260729120000_woop_schema.sql` avaient été appliquées au
 DASHBOARD en juillet, donc inconnues de `schema_migrations` — d'où les deux
-`migration repair --status applied` d'alors. **C'est fait** : le 15-09,
-`supabase migration list --linked` rend 35 locales = 35 distantes, de `0001` à
-`20260915090000`, rien en attente, rien d'orphelin. Le flux normal suffit :
+`migration repair --status applied` d'alors. **C'est fait** : le 17-09,
+`supabase migration list --linked` rend 49 locales = 49 distantes, de `0001` à
+`20260917184811`, rien en attente, rien d'orphelin. Le flux normal suffit :
 nouveau fichier dans `migrations/` → `db push --linked`, et
 `tools/serveur/verif_portes.py` recompare la liste à chaque passage.
 
-⚠️ Deux pièges qui restent : le jeton est celui de `.secrets/supabase-access-token`
-(celui de `~/.zshenv` voit un AUTRE projet et rend « Unauthorized ») ; et `0001`
-n'est pas ce qui a été posé — `syntheses`, qu'il déclare, n'existe pas au serveur
-(404 PGRST205), `workouts.updated_at` non plus.
+Le jeton reste celui de `.secrets/supabase-access-token` (celui de `~/.zshenv`
+voit un AUTRE projet). Lire l’ensemble des migrations : `0001` ne décrit pas
+à elle seule le schéma vivant. `syntheses` a notamment été posée le 15-09.
 
 ## L'app aujourd'hui
 
-Sync REST maison sans SDK (`Woop/Services/SupabaseSync.swift`) : upsert
-workouts / logged_exercises / strength_sets / cardio_phases, RLS par user.
-Comptes par numéro (table `WoopConfig.accounts`, pas de signup libre).
-Edge function `weekly-synthesis` : écrite, PAS déployée.
+Connexion native Apple uniquement dans le parcours public. Session Supabase
+gardée au Keychain, renouvelée avant expiration. Les comptes par numéro et
+le mot de passe dérivé ont été retirés ; le banc e-mail est limité à DEBUG.
+
+`profil()` décide entre Nosfy et la home. `definir_profil` enregistre prénom,
+langue, but, objectif et fin d’inscription ; un objectif hors bornes est refusé
+avant toute écriture (migration `20260917184811`). L’app attend la confirmation,
+garde les réponses en cas de panne et reprend l’inscription après relance.
+
+Sync REST sans SDK (`SupabaseSync.swift`) : push des séances et pull par
+`seances_depuis`, RLS par compte. Déconnexion : push puis révocation et nettoyage
+local. Suppression : `supprimer-compte` efface l’identité et les données liées.
+La clé Apple `.p8` manque encore pour vérifier la révocation chez Apple.
+
+Preuves du parcours et limites :
+[`tools/porte/preuves-2026-09-17/README.md`](../tools/porte/preuves-2026-09-17/README.md).
+L’état détaillé est dans le [site local, Compte](http://localhost:3111/#porte).
 
 ## Le backend des cartes (EN PLACE depuis le 14-08 — voir tools/carte-lune/README.md)
 

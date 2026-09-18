@@ -1,0 +1,31 @@
+PASS nouveau compte : profil incomplet, zéro séance
+PASS avant Nosfy : première arrivée non déclenchée
+PASS profil interdit sans session
+PASS definir_profil interdit sans session
+PASS marquer_visite_home interdit sans session
+PASS prénom vide refusé
+PASS prénom refusé : aucune inscription partielle
+FAIL objectif invalide refusé par definir_profil
+FAIL objectif refusé : aucune inscription partielle
+PASS Nosfy : profil et objectif confirmés
+PASS rejeu idempotent : date, prénom, langue et objectif conservés
+PASS home neuve dans la langue et au prénom du profil
+PASS compte neuf : zéro pièce, aucun Welcome Back
+PASS Welcome Back refusé avant la première séance
+PASS visite mémorisée une seule fois
+PASS isolation : le second compte ne lit pas le premier
+PASS isolation : le second compte ne modifie pas le premier
+PASS déconnexion serveur
+PASS refresh révoqué après déconnexion
+PASS reconnexion du compte existant
+PASS reconnexion : profil et visite retrouvés, Nosfy déjà terminé
+PASS suppression par la fonction utilisée dans l’app
+PASS compte absent après suppression
+PASS cascade : profils vide après suppression
+PASS cascade : user_prefs vide après suppression
+PASS cascade : exercices_choisis vide après suppression
+PASS cascade : workouts vide après suppression
+PASS cascade : apple_jetons vide après suppression
+PASS compte supprimé : impossible de renouveler la session
+Comptes QA nettoyés : 2. Aucun compte existant ni carte modifié.
+Compte : 27 PASS, 2 FAIL

@@ -234,7 +234,7 @@ export function Onboarding() {
     <>
       <div className="flow-titre">
         <h2>L'onboarding, étape par étape</h2>
-        <p>Le film de Nosfy tel qu'il joue au simulateur (`-nosfy -nosfyAuto -rewardAuto`), en noir et blanc — la robe du site ne porte la couleur qu'à quatre endroits, et le halo de Nosfy n'en fait pas partie. Les quatre temps de la visite guidée de la Home restent à capturer : elle n'existe pas encore.</p>
+        <p>Captures du parcours Nosfy et de la visite guidée : langue, prénom, objectif, arrivée sur la home, puis découverte des galets, des progrès, du profil et des pièces. Ces captures documentent le rendu ; les preuves de connexion et d’enregistrement sont indiquées séparément dans les étapes du Test QA.</p>
       </div>
       <div className="flow flow-sourd">
         {ecrans.length ? ecrans.map((f) => (

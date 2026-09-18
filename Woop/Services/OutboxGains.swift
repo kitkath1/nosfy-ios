@@ -184,9 +184,11 @@ actor OutboxGains {
         // Le mode avion du banc : la panne, à la demande.
         if Self.avion { return .aRejouer }
 
+        var jetonUtilise: String?
         do {
             let jwt = Self.banc ? try await ForgeServeur.jwtBanc()
                                 : try await SupabaseSession.shared.token()
+            jetonUtilise = jwt
             switch gain {
             case .finDeSeance(let seance, let series):
                 let r = try await SacreServeur.cloturerSeance(seance,
@@ -229,7 +231,13 @@ actor OutboxGains {
                 // 408 / 429 : trop tôt, pas trop faux.
                 // Les autres 4xx disent que la DEMANDE est mauvaise : la
                 // rejouer telle quelle échouera à l'identique, pour toujours.
-                if code == 401 || code == 408 || code == 429 { return .aRejouer }
+                if code == 401 {
+                    if !Self.banc, let jetonUtilise {
+                        await SupabaseSession.shared.invalidate(jetonUtilise)
+                    }
+                    return .aRejouer
+                }
+                if code == 408 || code == 429 { return .aRejouer }
                 if (400 ..< 500).contains(code) {
                     return .refuse("HTTP \(code) \(détail)")
                 }

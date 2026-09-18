@@ -48,6 +48,25 @@ struct ProfilLuneView: View {
         .map { CGFloat($0) }
     @State private var carteP: CGFloat =
         min(max(ProfilLuneView.carteFreeze ?? 0, 0), 1)
+    /// LE PRÉNOM DU PROFIL (14-09, plan compte C4) — la même clé que la home
+    /// (`woop.prenom`, cache de `profils.prenom`), lue en `@AppStorage` pour
+    /// suivre le serveur ; « Kathryn » n'est plus écrit nulle part.
+    @AppStorage(ProfilServeur.clePrenom) private var prenomProfil: String = ""
+    private var prenomAffiche: String { prenomProfil.isEmpty ? "—" : prenomProfil }
+    /// Les initiales du rond (« KD » n'est plus en dur) et la ligne sous le nom :
+    /// il n'existe AUCUN pseudo dans Woop (le profil, c'est langue / prénom / but) —
+    /// « @kathrynd » était un décor ; la ligne dit le prénom en minuscules, en
+    /// attendant qu'un pseudo existe pour de vrai (ou qu'elle décide de l'ôter).
+    private var initialesProfil: String {
+        let lettres = prenomProfil.split(separator: " ").compactMap(\.first).prefix(2)
+        let s = String(lettres).uppercased()
+        return s.isEmpty ? "·" : s
+    }
+    private var pseudoProfil: String {
+        prenomProfil.isEmpty ? "@—"
+            : "@" + prenomProfil.folding(options: .diacriticInsensitive, locale: .current)
+                .lowercased().replacingOccurrences(of: " ", with: "")
+    }
     /// Le p au début du geste (la carte se tire depuis n'importe où).
     @State private var carteBase: CGFloat = 0
     /// La prise en main : l'haptique une fois, le verrou du scroll.
@@ -571,12 +590,12 @@ struct ProfilLuneView: View {
                     VStack(spacing: 3) {
                         // L'ENCRE SOMBRE : le haut de la carte est un
                         // cœur de lumière — le blanc y est invisible.
-                        Text("Kathryn")
+                        Text(prenomAffiche)
                             .font(.inter(20, .bold))
                             .tracking(-0.2)
                             .foregroundStyle(
                                 Color(red: 0.18, green: 0.10, blue: 0.04))
-                        Text("@kathrynd")
+                        Text(pseudoProfil)
                             .font(.inter(12, .semibold))
                             .tracking(0.3)
                             .foregroundStyle(
@@ -590,7 +609,7 @@ struct ProfilLuneView: View {
                 }
             }
             .overlay(alignment: .topLeading) {
-                RondAvatar(initiales: "KD", taille: taille,
+                RondAvatar(initiales: initialesProfil, taille: taille,
                            flambe: flambe, anneau: anneau)
                     .offset(x: ax, y: ay)
                     .onTapGesture {
@@ -683,7 +702,7 @@ struct ProfilLuneView: View {
     private var nomBloc: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 14) {
-                Text("Kathryn")
+                Text(prenomAffiche)
                     .font(.inter(17, .bold))
                     .tracking(-0.2)
                     .foregroundStyle(Color.inkPrimary)
@@ -713,7 +732,7 @@ struct ProfilLuneView: View {
                 }
                 .buttonStyle(.plain)
             }
-            Text("@kathrynd")
+            Text(pseudoProfil)
                 .font(.inter(12, .semibold))
                 .tracking(0.3)
                 .foregroundStyle(Color.inkMuted)
@@ -1792,16 +1811,32 @@ private struct RondAvatarAnime: View {
 
 /// Le panneau de verre in-tree — il monte du bas sur un voile, se referme
 /// au drag ou au voile. Dedans : le compte, la déconnexion, la
-/// suppression (l'exigence App Store — le câblage réel viendra avec la
-/// connexion Apple) et les conditions générales.
+/// suppression et les conditions générales.
+/// LE COMPTE EST VRAI (14-09, plan compte C2 / C3-app / C4 — `Compte.swift`) :
+/// le prénom du profil (`woop.prenom`, la même clé que la home), « Se
+/// déconnecter » pousse, révoque, efface tout ce qui est à elle et rend la
+/// porte ; « Supprimer mon compte » appelle `supprimer-compte` puis fait de
+/// même. Un refus (hors ligne, serveur) se lit sous les lignes, rien n'est
+/// effacé.
 struct ReglagesOverlay: View {
     var pieces: Int
     var fermer: () -> Void
 
+    @Environment(\.modelContext) private var modelContext
+    private let compte = CompteEtat.shared
+
     @State private var glisse: CGFloat = 0
     @State private var showCGU = false
     @State private var confirmeSuppression = false
-    @State private var noteSuppression = false
+
+    /// Le prénom de la personne, et ses initiales (« KD » n'est plus en dur).
+    private var prenom: String { ProfilServeur.prenomLocal ?? "—" }
+    private var initiales: String {
+        let p = ProfilServeur.prenomLocal ?? ""
+        let lettres = p.split(separator: " ").compactMap(\.first).prefix(2)
+        let s = String(lettres).uppercased()
+        return s.isEmpty ? "·" : s
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -1832,7 +1867,7 @@ struct ReglagesOverlay: View {
                 // Le compte — l'échafaudage d'atelier ; le compte Apple
                 // prendra cette place au chantier connexion.
                 HStack(spacing: 12) {
-                    Text("KD")
+                    Text(initiales)
                         .font(.inter(14, .bold))
                         .tracking(1)
                         .foregroundStyle(Color.profilBraise)
@@ -1841,7 +1876,7 @@ struct ReglagesOverlay: View {
                         .overlay(Circle().strokeBorder(
                             Color.white.opacity(0.14), lineWidth: 0.7))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Kathryn")
+                        Text(prenom)
                             .font(.inter(16, .semibold))
                             .foregroundStyle(Color.inkPrimary)
                         Text("\(pieces) pièces lune · Level 1")
@@ -1855,13 +1890,15 @@ struct ReglagesOverlay: View {
 
                 VStack(spacing: 0) {
                     ligne("rectangle.portrait.and.arrow.right",
-                          "Se déconnecter") {
-                        // La déconnexion d'aujourd'hui : oublier la
-                        // session locale — la vraie (Supabase/Apple)
-                        // arrive avec le chantier connexion.
-                        UserDefaults.standard.removeObject(
-                            forKey: "woop.phone")
-                        fermer()
+                          compte.travail == "Déconnexion…" ? "Déconnexion…" : "Se déconnecter") {
+                        // LA DÉCONNEXION VRAIE (C2) : pousser ce qui attend
+                        // (hors ligne → refus), /auth/v1/logout, effacer tout ce
+                        // qui est à elle, la porte. Le panneau se ferme quand
+                        // c'est fait ; un refus reste lisible dessous.
+                        guard compte.travail == nil else { return }
+                        Task { @MainActor in
+                            if await Compte.deconnecter(contexte: modelContext) == .faite { fermer() }
+                        }
                     }
                     separateur
                     ligne("doc.text", "Conditions générales d'utilisation") {
@@ -1870,14 +1907,18 @@ struct ReglagesOverlay: View {
                         }
                     }
                     separateur
-                    ligne("trash", "Supprimer mon compte",
+                    ligne("trash", compte.travail == "Suppression…" ? "Suppression…" : "Supprimer mon compte",
                           teinte: Color(red: 1.0, green: 0.36, blue: 0.26)) {
+                        guard compte.travail == nil else { return }
                         confirmeSuppression = true
                     }
-                    if noteSuppression {
-                        Text("La suppression réelle sera activée avec la connexion Apple.")
+                    if let panne = compte.panne {
+                        Text(panne)
                             .font(.inter(12, .regular))
                             .foregroundStyle(Color.inkMuted)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 14)
                             .padding(.top, 8)
                     }
                 }
@@ -1931,11 +1972,17 @@ struct ReglagesOverlay: View {
         }
         .alert("Supprimer ton compte ?", isPresented: $confirmeSuppression) {
             Button("Supprimer", role: .destructive) {
-                withAnimation { noteSuppression = true }
+                // LA SUPPRESSION VRAIE (C3-app) : `supprimer-compte` — le serveur
+                // révoque le jeton Apple (si la clé est là) et efface auth.users,
+                // la cascade emporte tout ; puis l'app oublie tout, la porte.
+                // Immédiat et définitif. Un refus (réseau) n'efface rien.
+                Task { @MainActor in
+                    if await Compte.supprimer(contexte: modelContext) == .faite { fermer() }
+                }
             }
             Button("Annuler", role: .cancel) {}
         } message: {
-            Text("Tes cartes et tes pièces seront perdues pour toujours.")
+            Text("Tes séances, tes cartes et tes pièces seront perdues pour toujours.")
         }
     }
 

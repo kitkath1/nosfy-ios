@@ -101,14 +101,30 @@ final class ChambreEtat {
     /// Absente = la chambre garde sa phrase à règles — jamais un spinner.
     private(set) var bilanServeur: [String: String] = [:]
 
-
     /// La fenêtre que la chambre dessine : le téléphone s'il a des séances,
     /// sinon le serveur s'il en a, sinon le vide du téléphone (ses dates).
     func fenetreAffichee(_ kind: WidgetKind) -> ChambreFenetre {
         let tel = donnees.fenetre(fenetre)
         if !tel.vide { return tel }
         if let s = serveur["\(kind)/\(fenetre.rawValue)"], !s.vide { return s }
-        return tel
+        // Vide des deux côtés : RIEN d'ailleurs ne s'affiche (la loi du vide, entière).
+        return tel.sansRien()
+    }
+
+    /// OUBLIER LA PERSONNE (14-09, plan compte C2 — `Compte.effacerToutCeQuiEstAElle`) :
+    /// ce que le serveur avait rendu pour ELLE (les fenêtres) et son objectif —
+    /// la prochaine chambre repart vide, jamais avec les pics de la précédente.
+    /// `objectif = 0` = « pas d'objectif choisi » (`objectifEffectif` retombe sur
+    /// celui des données) ; la clé locale est RETIRÉE, pas écrite à 0 — la home
+    /// lit `@AppStorage(Goal.cleHebdo)` avec son défaut, comme une install neuve.
+    /// Le questionnaire de Nosfy du compte suivant en pose un neuf.
+    func oublier() {
+        serveur = [:]
+        bilanServeur = [:]
+        objectif = 0
+        UserDefaults.standard.removeObject(forKey: Goal.cleHebdo)
+        objectifEnAttente = false
+        donnees = ChambreDonnees()
     }
 
     /// Le jeton du choix : il avance à chaque `choisir` — la chambre y accroche

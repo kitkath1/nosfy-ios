@@ -86,7 +86,7 @@ export const ETAPES_QA: EtapeQA[] = [
     front: '« Déconnexion… » sur la ligne, puis la porte revient (le carrousel, sans le film d\'entrée). Plus rien à elle sur le téléphone.',
     back: '`POST /auth/v1/logout?scope=global` : auth.sessions du compte = 0. Le téléphone : 14 clés effacées (prénom, langue, phrases, première fois, pop-up vue, visite faite, objectif, pull, chemin, outbox…), SwiftData vide, Keychain vide. Journal `[session] logout → le refresh est révoqué au serveur`, `[compte] effacé : 14 clés, les séances, la chambre, l\'économie`, `[compte] la porte est rendue (deconnexion)`.',
     frontVerdict: { etat: 'a_valider' },
-    backVerdict: { etat: 'a_valider', note: 'mesuré au simulateur le 14-09 (`-deconnexionAuto`, capture capC : sessions 0, plist vide)' },
+    backVerdict: {"etat": "a_valider", "le": "17-09", "note": "14-09 : chemin app mesuré au simulateur. 17-09 : logout global réel sur compte temporaire, ancien refresh refusé ; 15 tests Swift du renouvellement et nettoyage du brouillon vérifiés. Le bouton et le nettoyage complet restent à rejouer sur iPhone. tools/porte/preuves-2026-09-17/compte.log"},
   },
   {
     id: 'qa-10-reconnexion', n: 10, titre: 'Se reconnecter : un compte connu',
@@ -94,7 +94,7 @@ export const ETAPES_QA: EtapeQA[] = [
     front: 'La feuille Apple, puis DIRECT la cérémonie de connexion et la home — pas de Nosfy. Sa phrase avec son prénom, la pop-up ne rejoue pas (la visite est faite au serveur).',
     back: '`profil()` → onboarding_termine=true → journal `[PORTE] verdict = CONNUE → app`. Le pull : `[pull] seances_depuis(tout) → total 0`. `home().visite_home=true` → `[welcome-back] retenue : première arrivée` (toujours aucune séance).',
     frontVerdict: { etat: 'a_valider' },
-    backVerdict: { etat: 'a_valider', note: 'l\'aiguillage CONNUE mesuré le 13-09 (b0d4727) ; à relire sur son téléphone après une vraie déconnexion' },
+    backVerdict: {"etat": "a_valider", "le": "17-09", "note": "17-09 : reconnexion du compte temporaire, profil terminé, visite et séance retrouvés ; 32 vérifications backend vertes. La feuille Apple après déconnexion reste à rejouer sur iPhone. tools/porte/preuves-2026-09-17/compte.log"},
   },
   {
     id: 'qa-11-suppression', n: 11, titre: 'Supprimer mon compte',
@@ -102,6 +102,9 @@ export const ETAPES_QA: EtapeQA[] = [
     front: '« Suppression… » sur la ligne, puis la porte revient. Rouvrir l\'app : la porte encore.',
     back: 'Edge `supprimer-compte` → `{ ok: true, revocation: "aucun_jeton" }` (sans clé .p8, aucun refresh Apple n\'a pu être rangé). Serveur : auth.users sans la ligne, profils / workouts / user_prefs emportés par la cascade. Le téléphone : tout effacé, comme à la déconnexion. Journal `[compte] supprimer-compte → ok · révocation Apple : aucun_jeton`, `[compte] la porte est rendue (suppression)`.',
     frontVerdict: { etat: 'a_valider' },
-    backVerdict: { etat: 'a_valider', note: 'mesuré au simulateur le 14-09 (`-suppressionAuto`, capture capF : auth.users et profils sans la ligne)' },
+    backVerdict: {"etat": "a_valider", "le": "17-09", "note": "14-09 : chemin app mesuré au simulateur. 17-09 : supprimer-compte appelé avec la session QA, compte et séance effacés, profils et préférences absents, refresh refusé. La suppression depuis le bouton iPhone et la révocation Apple restent à valider. tools/porte/preuves-2026-09-17/compte.log"},
   },
+  {"id": "qa-12-inscription-panne", "n": 12, "titre": "Inscription interrompue : réponses conservées", "geste": "À la fin de Nosfy, couper le réseau avant Entrer, puis rétablir le réseau et toucher Réessayer.", "front": "La home attend. Le message explique que les réponses sont conservées ; Réessayer termine l’inscription après confirmation du serveur.", "back": "definir_profil doit confirmer ok:true et onboarding_termine:true. Une erreur réseau, un refus HTTP 200 ok:false ou une réponse incomplète conservent le brouillon et le marqueur d’inscription.", "frontVerdict": {"etat": "a_valider"}, "backVerdict": {"etat": "valide", "le": "17-09", "note": "Client Swift réel compilé et testé avec réseau remplacé : 12 PASS. Backend réel : objectif 99 refusé sans inscription partielle, puis profil valide accepté. Rendu du message non mesuré sur iPhone."}},
+  {"id": "qa-13-reprise-nosfy", "n": 13, "titre": "Relance avant la fin de l’inscription", "geste": "Fermer Woop pendant Nosfy ou après un échec d’enregistrement, puis rouvrir.", "front": "Nosfy reprend ; si les réponses avaient été soumises, elles sont récupérées pour terminer. Une connexion interrompue avant lecture du profil affiche une vérification avec Réessayer en cas de panne.", "back": "InscriptionCompte garde woop.onboarding.du, woop.onboarding.verifier et le brouillon. Profil terminé confirmé : marqueurs et brouillon retirés. Déconnexion/suppression : brouillon effacé pour le compte suivant.", "frontVerdict": {"etat": "a_valider"}, "backVerdict": {"etat": "valide", "le": "17-09", "note": "Mémoire d’inscription et client profil testés par verif_inscription.py ; compilation Release réussie. Fermeture puis relance de ce nouveau parcours encore à jouer sur iPhone."}},
+
 ]

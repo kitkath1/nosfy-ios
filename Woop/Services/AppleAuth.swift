@@ -122,9 +122,21 @@ enum AppleAuth {
 
         // La session sert tout de suite : c'est elle qui remplace le jeton dérivé
         // du numéro pour toute la synchro — et c'est elle que `profil()` lit.
+        InscriptionCompte.verifierALaReprise()
         await SupabaseSession.shared.adopter(access: session.access,
                                              refresh: session.refresh,
                                              userID: session.userID)
+
+        // LE CODE D'AUTORISATION → `apple-jeton` (14-09, plan compte C3-app) : le
+        // code qu'Apple rend vit 5 minutes, à usage unique ; le serveur l'échange
+        // contre un refresh Apple et le range pour le jour de la suppression
+        // (révocation exigée par l'App Store). Une panne — 503 « cle_absente »
+        // tant que la clé .p8 n'est pas posée — s'imprime et N'EMPÊCHE PAS d'entrer.
+        if let code = reponse.codeAutorisation {
+            Task { await Compte.rangerJetonApple(code: code) }
+        } else {
+            print("[PORTE] Apple n'a rendu aucun authorizationCode — apple-jeton n'est pas appelé")
+        }
 
         // L'AIGUILLAGE (13-09, sa décision : « ça identifie direct si un compte
         // existe déjà et on arrive à la home direct ») : `profil().onboarding_termine`
@@ -137,10 +149,10 @@ enum AppleAuth {
             connue = profil.onboardingTermine
             print("[PORTE] profil() → existe=\(profil.existe) onboarding_termine=\(profil.onboardingTermine) prenom=\(profil.prenom ?? "—")")
         } catch {
-            // Une lecture qui échoue ne doit PAS inventer un compte connu : dans le
-            // doute, on joue le film. Mieux vaut le rejouer qu'escamoter l'entrée.
-            print("[PORTE] profil() en panne → on joue le film · \(error)")
-            connue = false
+            // Une panne ne dit rien de l'avancement du profil. La porte permet
+            // de réessayer ; une relance vérifiera avant d'ouvrir la home.
+            print("[PORTE] profil() indisponible → connexion à réessayer · \(error)")
+            throw Panne.reseau("Impossible de lire ton profil. Réessaie dans un instant.")
         }
 
         return connue
@@ -229,6 +241,10 @@ private final class Portier: NSObject,
     struct Reponse {
         let jeton: String
         let identifiantApple: String
+        /// L'`authorizationCode` (14-09, C3-app) : 5 minutes, usage unique —
+        /// celui que Supabase n'utilise pas dans le flux `id_token`, et que
+        /// `apple-jeton` échange contre le refresh Apple de la suppression.
+        let codeAutorisation: String?
     }
 
     private var suite: CheckedContinuation<Reponse, Error>?
@@ -266,7 +282,9 @@ private final class Portier: NSObject,
             rendre(.failure(AppleAuth.Panne.apple("aucun jeton d'identité")))
             return
         }
-        rendre(.success(Reponse(jeton: jeton, identifiantApple: identite.user)))
+        let code = identite.authorizationCode.flatMap { String(data: $0, encoding: .utf8) }
+        rendre(.success(Reponse(jeton: jeton, identifiantApple: identite.user,
+                                codeAutorisation: code)))
     }
 
     func authorizationController(controller: ASAuthorizationController,

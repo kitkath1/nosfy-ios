@@ -102,7 +102,7 @@
   "page": "porte",
   "type": "flowchart",
   "titre": "Ce que la porte fait vraiment",
-  "legende": "Il y a bien un onboarding — 4 pages, WELCOME / EXERCISES / PROGRESS / BOOSTERS, en anglais, avec un film d'arrivée de 5,47 s. Ce qui manque, c'est ce qui vient après le bouton."
+  "legende": "Apple ouvre la session ; le profil confirmé décide entre inscription et home. Une panne garde l’étape en cours."
  },
  {
   "id": "porte-2-pourquoi-ca-commande-tout",
@@ -115,8 +115,8 @@
   "id": "porte-3-le-parcours-cible",
   "page": "porte",
   "type": "flowchart",
-  "titre": "Le parcours cible",
-  "legende": "Tout ce qui est en pointillé reste à faire. Le splash existe ; l'onboarding et Apple, non."
+  "titre": "Nouveau compte, compte connu, reprise",
+  "legende": "Le profil confirmé mène à la home ; une inscription inachevée reprend Nosfy, une lecture interrompue est retentée."
  },
  {
   "id": "manege-1-les-instants",

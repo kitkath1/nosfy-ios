@@ -57,7 +57,7 @@ export const PAGES: PageInfo[] = [
   },
   {
     id: 'porte', libelle: 'Compte', glyphe: 'user',
-    phrase: 'Sans compte, tout le back-end rend zéro.',
+    phrase: 'De la première connexion au compte retrouvé.',
     hero: {
       capture: 'Woop/Assets.xcassets/onb-lune-loop-poster.imageset/onb-lune-loop-poster.jpg',
       teinte: { t1: '#9E501B', t2: '#9E7238', source: 'onb-lune-loop-poster.jpg (le 1er écran de la porte est la lune) · #703913 h26 S83 (2e #DA9F4F) · V posé à 62', part: 9.63 },

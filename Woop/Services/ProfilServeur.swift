@@ -210,8 +210,12 @@ enum ProfilServeur {
 
     /// `profil()` — l'aiguillage et tout ce qu'on sait de la personne.
     static func profil() async throws -> Profil {
-        let p = Profil(json: try await objet("profil"))
+        let o = try await objet("profil")
+        guard o["existe"] is Bool, o["onboarding_termine"] is Bool else { throw Erreur.reponse }
+        let p = Profil(json: o)
+        InscriptionCompte.retenir(onboardingTermine: p.onboardingTermine)
         garder(p)
+        Langue.poser(p.langue)
         return p
     }
 
@@ -225,6 +229,9 @@ enum ProfilServeur {
         if let but { corps["p_but"] = but }
         if let objectifHebdo { corps["p_objectif_hebdo"] = objectifHebdo }
         let p = Profil(json: try await objet("definir_profil", corps: corps))
+        guard p.ok else { throw Erreur.refus(p.raison ?? "profil_refuse") }
+        guard p.existe, !onboardingTermine || p.onboardingTermine else { throw Erreur.reponse }
+        InscriptionCompte.retenir(onboardingTermine: p.onboardingTermine)
         garder(p)
         return p
     }
@@ -237,7 +244,7 @@ enum ProfilServeur {
 
     // MARK: - L'appel nu (la forme de ChambreServeur, avec la session courante)
 
-    enum Erreur: Error { case http(Int, String), reponse }
+    enum Erreur: Error { case http(Int, String), reponse, refus(String) }
 
     private static func objet(_ nom: String, corps: [String: Any] = [:]) async throws -> [String: Any] {
         let jwt = try await SupabaseSession.shared.token()
@@ -247,6 +254,7 @@ enum ProfilServeur {
         req.setValue(WoopConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.httpBody = corps.isEmpty ? Data("{}".utf8) : try JSONSerialization.data(withJSONObject: corps)
+        req.timeoutInterval = 20
         let (data, rep) = try await URLSession.shared.data(for: req)
         let code = (rep as? HTTPURLResponse)?.statusCode ?? 0
         guard (200 ..< 300).contains(code) else {

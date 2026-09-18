@@ -87,8 +87,20 @@ enum ForgeServeur {
 
     /// Le user de TEST du banc (dev uniquement — les vrais comptes
     /// seront « Connexion avec Apple », voir supabase/README.md).
-    static func jwtBanc() async throws -> String {
-        try await sessionBanc().access
+    static func jwtBanc(email: String? = nil, mdp: String? = nil) async throws -> String {
+        try await sessionBanc(email: email, mdp: mdp).access
+    }
+
+    /// `-sessionBanc <email> <mdp>` / `-sessionAdoptee <email> <mdp>` (14-09) :
+    /// les deux mots qui SUIVENT le drapeau, s'ils n'en sont pas un — un compte
+    /// jetable à la place du compte de test (la mesure de la première arrivée,
+    /// de la déconnexion, de la suppression). Sans eux : le compte de test.
+    static func identifiantsBanc(apres drapeau: String) -> (email: String, mdp: String)? {
+        let args = CommandLine.arguments
+        guard let i = args.firstIndex(of: drapeau), i + 2 < args.count else { return nil }
+        let email = args[i + 1], mdp = args[i + 2]
+        guard !email.hasPrefix("-"), !mdp.hasPrefix("-"), email.contains("@") else { return nil }
+        return (email, mdp)
     }
 
     /// La session ENTIÈRE du compte de test (13-09) — ce que la porte Apple
@@ -96,7 +108,11 @@ enum ForgeServeur {
     /// `SupabaseSession.adopter(...)` et on mesure le chemin d'un compte créé
     /// par Apple (jeton adopté → `token()` → `push()` → `widget_*`), sans le
     /// bouton Apple, que le simulateur n'a pas.
-    static func sessionBanc() async throws -> (access: String, refresh: String, userID: String) {
+    /// ⚠️ SOUS DEBUG SEULEMENT (14-09, plan compte C4) : en release, le chemin
+    /// `grant_type=password` n'existe pas et AUCUN identifiant ne dort dans le
+    /// binaire — la seule identité est Apple.
+    static func sessionBanc(email: String? = nil, mdp: String? = nil) async throws -> (access: String, refresh: String, userID: String) {
+        #if DEBUG
         var req = URLRequest(url: base.appending(
             path: "auth/v1/token").appending(
             queryItems: [.init(name: "grant_type", value: "password")]))
@@ -104,8 +120,8 @@ enum ForgeServeur {
         req.setValue(publishable, forHTTPHeaderField: "apikey")
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.httpBody = try JSONSerialization.data(withJSONObject: [
-            "email": "kat44426+woop-forge-test@gmail.com",
-            "password": "forge-test-2026",
+            "email": email ?? "kat44426+woop-forge-test@gmail.com",
+            "password": mdp ?? "forge-test-2026",
         ])
         let (data, rep) = try await URLSession.shared.data(for: req)
         guard (rep as? HTTPURLResponse)?.statusCode == 200,
@@ -117,5 +133,8 @@ enum ForgeServeur {
               let id = user["id"] as? String
         else { throw Erreur.reponse }
         return (jwt, refresh, id)
+        #else
+        throw Erreur.reponse
+        #endif
     }
 }

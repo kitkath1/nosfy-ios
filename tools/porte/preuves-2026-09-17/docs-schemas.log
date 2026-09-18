@@ -1,0 +1,8 @@
+
+> woop-chambre-des-machines@2.0.0 schemas
+> node scripts/schemas.mjs --only porte-
+
+  ● porte-1-ce-que-la-porte 27 Ko
+  ● porte-2-pourquoi-ca-commande-tout 25 Ko
+  ● porte-3-le-parcours-cible 25 Ko
+schémas : 3 rendus sur 3

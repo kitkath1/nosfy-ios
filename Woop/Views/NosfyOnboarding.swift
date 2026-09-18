@@ -20,15 +20,12 @@ import SwiftUI
 /// pas quelqu'un dans son app, on l'y invite.
 struct NosfyOnboarding: View {
 
-    struct Reponses {
-        var langue: String = "fr"
-        var prenom: String?
-        var but: String?
-        var jours: Set<Int> = []
-        var objectifHebdo: Int? { jours.isEmpty ? nil : jours.count }
-    }
+    typealias Reponses = InscriptionCompte.Reponses
 
-    var onFini: (Reponses) -> Void = { _ in }
+    var onFini: (Reponses) async throws -> Void = { _ in }
+    @State private var enregistrement = false
+    @State private var echecEnregistrement = false
+    @State private var sortieDemandee = false
 
     @State private var etape: Etape = .intro
     /// L'INTRO (PLAN-INTRO-NUIT.md) : −1 = le noir · 0/1/2 = les trois temps du
@@ -225,6 +222,28 @@ struct NosfyOnboarding: View {
                 .opacity(allume ? 1 : 0)
         }
         .preferredColorScheme(.dark)
+        .overlay {
+            if sortieDemandee {
+                ZStack {
+                    Color.black.ignoresSafeArea()
+                    VStack(spacing: 20) {
+                        if enregistrement {
+                            ProgressView().tint(.white)
+                            Text(L("Enregistrement de ton profil…", "Saving your profile…"))
+                        } else if echecEnregistrement {
+                            Text(L("Tes réponses sont conservées. Vérifie ta connexion pour terminer.",
+                                   "Your answers are saved. Check your connection to finish."))
+                                .multilineTextAlignment(.center)
+                            Button(L("Réessayer", "Try again")) { finir() }
+                                .buttonStyle(.borderedProminent)
+                        }
+                    }
+                    .font(.inter(16))
+                    .foregroundStyle(.white)
+                    .padding(32)
+                }
+            }
+        }
         .contentShape(Rectangle())
         .onTapGesture {
             // LE PRÉNOM EST OBLIGATOIRE (13-09, sa règle) : un tap à côté du champ
@@ -237,6 +256,11 @@ struct NosfyOnboarding: View {
             if etape == .accueil || etape == .fin { avancer(passe: true) }
         }
         .onAppear {
+            if !AppleAuth.Maquette.active, let gardees = InscriptionCompte.brouillon {
+                reponses = gardees
+                prenomSaisi = gardees.prenom ?? ""
+                etape = .bienvenue
+            }
             if etape == .accueil { allumer() }          // (si un jour on entre par là)
             if Self.autoBanc { jouerSeul() }
         }
@@ -544,7 +568,7 @@ struct NosfyOnboarding: View {
                                      ileFlash = false
                                  }
                              },
-                             onEntrer: { onFini(reponses) })
+                             onEntrer: { finir() })
 
         }
     }
@@ -605,6 +629,22 @@ struct NosfyOnboarding: View {
         }
     }
 
+    private func finir() {
+        guard !enregistrement else { return }
+        enregistrement = true
+        sortieDemandee = true
+        echecEnregistrement = false
+        Task { @MainActor in
+            defer { enregistrement = false }
+            do {
+                try await onFini(reponses)
+            } catch {
+                echecEnregistrement = true
+                print("[NOSFY] profil non confirmé, réponses conservées · \(error)")
+            }
+        }
+    }
+
     private func avancer(passe: Bool) {
         minuterieJours?.cancel()
         prenomActif = false
@@ -648,7 +688,7 @@ struct NosfyOnboarding: View {
         case .bien:
             return                                       // il avance tout seul
         case .bienvenue:
-            onFini(reponses)
+            finir()
             return
         }
 

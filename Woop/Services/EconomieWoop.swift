@@ -247,6 +247,27 @@ final class EconomieWoop {
         }
     }
 
+    /// OUBLIER LA PERSONNE (14-09, plan compte C2 — `Compte.effacerToutCeQuiEstAElle`) :
+    /// tout ce que le serveur avait rendu retombe à zéro, `serveur` redevient
+    /// faux — le prochain compte repart de la maquette, jamais des soldes de
+    /// la précédente. Les constantes de la maison (prix, pièces par série)
+    /// restent : elles ne sont à personne.
+    func oublier() {
+        or = 0
+        argent = 0
+        boostersServeur = 0
+        noirsOuverts = 0
+        reste = 0
+        journal = []
+        retourDisponible = false
+        prochainRetour = nil
+        jour = nil
+        flammeJours = 0
+        flammeAujourdhui = false
+        serveur = false
+        derniereErreur = nil
+    }
+
     private func appliquer(_ e: SacreServeur.EtatCoffre) {
         or = e.soldeOr
         argent = e.soldeArgent
