@@ -24,7 +24,8 @@ struct NosfyOnboarding: View {
 
     var onFini: (Reponses) async throws -> Void = { _ in }
     @State private var enregistrement = false
-    @State private var echecEnregistrement = false
+    /// La panne d'enregistrement, dite par `EcranErreur` (18-09) ; nil = rien.
+    @State private var panneEnregistrement: ErreurNosfy.Cas?
     @State private var sortieDemandee = false
 
     @State private var etape: Etape = .intro
@@ -230,17 +231,18 @@ struct NosfyOnboarding: View {
                         if enregistrement {
                             ProgressView().tint(.white)
                             Text(L("Enregistrement de ton profil…", "Saving your profile…"))
-                        } else if echecEnregistrement {
-                            Text(L("Tes réponses sont conservées. Vérifie ta connexion pour terminer.",
-                                   "Your answers are saved. Check your connection to finish."))
-                                .multilineTextAlignment(.center)
-                            Button(L("Réessayer", "Try again")) { finir() }
-                                .buttonStyle(.borderedProminent)
                         }
                     }
                     .font(.inter(16))
                     .foregroundStyle(.white)
                     .padding(32)
+                    // 18-09 : la panne se dit avec l'écran d'erreur de la maison
+                    // (la bête, Réessayer, le mode avion lu). Il bloque : les
+                    // réponses sont gardées, la home attend la confirmation.
+                    if let panne = panneEnregistrement {
+                        EcranErreur(cas: panne, reessayer: { await enregistrer() })
+                            .transition(.opacity)
+                    }
                 }
             }
         }
@@ -631,17 +633,27 @@ struct NosfyOnboarding: View {
 
     private func finir() {
         guard !enregistrement else { return }
-        enregistrement = true
         sortieDemandee = true
-        echecEnregistrement = false
-        Task { @MainActor in
-            defer { enregistrement = false }
-            do {
-                try await onFini(reponses)
-            } catch {
-                echecEnregistrement = true
-                print("[NOSFY] profil non confirmé, réponses conservées · \(error)")
-            }
+        Task { @MainActor in await enregistrer() }
+    }
+
+    /// Enregistrer le profil ; vrai si le serveur a confirmé. En panne, l'écran
+    /// d'erreur prend l'écran et rejoue par ici — les réponses sont gardées.
+    @discardableResult
+    @MainActor
+    private func enregistrer() async -> Bool {
+        guard !enregistrement else { return false }
+        enregistrement = panneEnregistrement == nil
+        defer { enregistrement = false }
+        do {
+            try await onFini(reponses)
+            withAnimation(.easeOut(duration: 0.4)) { panneEnregistrement = nil }
+            return true
+        } catch {
+            print("[NOSFY] profil non confirmé, réponses conservées · \(error)")
+            guard let cas = ErreurNosfy.cas(pour: error) else { return false }
+            withAnimation(.easeOut(duration: 0.4)) { panneEnregistrement = cas }
+            return false
         }
     }
 
@@ -1328,7 +1340,7 @@ private enum IntroPoeme {
 /// et il porte des mécaniques de card (relance, recul, gel) dont l'accueil
 /// n'a que faire. Quarante lignes à nous valent mieux qu'un mot dans un
 /// fichier partagé.
-private struct NosfyReel: UIViewRepresentable {
+struct NosfyReel: UIViewRepresentable {
     let nom: String
     /// L'accueil BOUCLE (la bête immobile) ; l'intro et la fin jouent UNE fois et
     /// finissent dans leur propre noir — le temps les enchaîne, pas le lecteur.
@@ -1646,7 +1658,7 @@ struct MotsFlou: View {
     }
 
     /// Le blanc dégradé de la maison — blanc en haut, gris perle en bas.
-    private static let blancDegrade = LinearGradient(
+    static let blancDegrade = LinearGradient(
         colors: [.white,
                  Color(red: 0.86, green: 0.85, blue: 0.90),
                  Color(red: 0.62, green: 0.60, blue: 0.67)],

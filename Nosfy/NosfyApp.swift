@@ -68,6 +68,7 @@ struct NosfyApp: App {
             Group {
                 #if DEBUG
                 if CommandLine.arguments.contains("-cartesQA") { CartesQABanc() }
+                else if EcranErreurLab.demande { EcranErreurLab() }
                 else { RootView() }
                 #else
                 RootView()
@@ -2221,6 +2222,12 @@ struct RootView: View {
         //  · « la porte tient l'écran » (porte, film, splash, rejeu) — publié
         //    pour que le Welcome Back ne s'ouvre jamais dessous ;
         //  · quand la porte tombe, le Welcome Back est proposé (une connue qui
+        // L'ERREUR DE NOSFY (18-09, ErreurNosfy.swift / EcranErreur.swift) : UN
+        // écran pour toute panne signalée par `ErreurNosfy.shared.signaler`, au-
+        // dessus de tout (le film de départ, la visite, le rejeu) — la bête, le
+        // titre, le sous-titre, Réessayer. Le mode avion s'y lit et s'y règle
+        // seul. Démonté quand le rejeu réussit.
+        .overlay { EcranErreurHote() }
         //    rentre) — jamais en première fois, jamais sans le serveur (S4).
         .onChange(of: compte.porteDemandee) { _, demandee in
             guard demandee else { return }

@@ -47,6 +47,12 @@
 
 <Liste page="porte" etats={['loc', 'srv', 'abs']} mesures />
 
+## L’écran d’erreur — un seul pour tout, le mode avion compris
+
+<p>Depuis le 18-09, une panne se dit toujours de la même façon : le noir, le personnage de Nosfy qui attend (la boucle <code>erreur-loop.mp4</code>, muette, sans raccord visible), un titre en blanc dégradé, un sous-titre léger, « Réessayer ». Un seul message, générique, en français et en anglais — <b>« Ça n’a pas marché. »</b>, vérifie ta connexion, rien n’est perdu — parce qu’il sert pour toute erreur et pour le mode avion. Jamais un code, jamais un mot technique. Au deuxième échec de suite, le sous-titre nomme le mode avion et le Wi‑Fi.</p>
+
+<p>Le mode avion : l’app écoute le réseau (une seule oreille, <code>Reseau</code>). Dès que le réseau revient, l’écran rejoue tout seul — le bouton reste pour la main impatiente. Branché sur la lecture du profil au lancement et sur la fin de Nosfy (le profil qui ne s’enregistre pas) ; la racine reçoit toute panne signalée par <code>ErreurNosfy.shared.signaler</code>. Mesuré au simulateur (<code>tools/erreur/captures-2026-09-18/</code>) ; le retour du réseau sur iPhone et la forge restent ouverts — les trois lignes <code>b-erreur-*</code> ci-dessous.</p>
+
 ## Ce qui tient
 
 <Liste page="porte" etats={['ok']} />

@@ -30,3 +30,5 @@ export const MESURES: Mesure[] = [
   // 15-09 : « policies d'écriture wallet / boosters », « vérifier les 4 migrations » et « réparer
   // schema_migrations » sont MESURÉES — devenues b-rls-argent-ferme et b-migrations-posees (serveur.ts).
 ]
+  // 18-09 — l'écran d'erreur : ce qui reste à mesurer au doigt.
+  { id: "m-erreur-avion-iphone", titre: "Mode avion sur son iPhone : l'écran, puis le retour seul", page: "porte", domaine: "compte", lecture: "loc", cout: "1 h", note: "Avion allumé, relancer l'app avec un profil à relire (ou sortir de Nosfy) → l'écran « Pas de réseau. » ; avion éteint → il doit repartir SEUL, sans toucher Réessayer. Le simulateur ne sait pas le jouer. Et la forge reste à brancher sur le même écran (b-erreur-sites).", preuve: { fichier: "Nosfy/Views/EcranErreur.swift", lignes: "140-146" } },
