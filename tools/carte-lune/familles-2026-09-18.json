@@ -1,0 +1,155 @@
+{
+  "status": "atelier_artistique_non_publie",
+  "date": "2026-09-18",
+  "contract": "Même référence, mêmes illustration, noms localisés, rareté et finition pour tous ; les clés éditoriales de ce manifeste ne sont pas encore des identifiants cards déployés.",
+  "shiny": "Rendu peint uniquement ; animation et distribution à implémenter et mesurer.",
+  "families": [
+    {
+      "key": "foret-des-veilles",
+      "name": {
+        "fr": "La Forêt des Veilles",
+        "en": "The Vigil Woods"
+      },
+      "signature": [
+        "forêt",
+        "brume lunaire",
+        "nacre",
+        "braise discrète"
+      ],
+      "cards": [
+        {
+          "key": "la-veille",
+          "name": {
+            "fr": "La Veille",
+            "en": "The Vigil"
+          },
+          "rarity": "common",
+          "art": "tools/carte-lune/references-2026-09-18/01-commune-la-veille-v2.png",
+          "sha256": "412d8eb54b023d18113bc3302a2c85afcd744eceb9bc9929f6f8adc2e7f6fe74",
+          "published": false
+        },
+        {
+          "key": "les-veilleuses",
+          "name": {
+            "fr": "Les Veilleuses",
+            "en": "The Watchers"
+          },
+          "rarity": "rare",
+          "art": "tools/carte-lune/references-2026-09-18/02-rare-les-veilleuses-v3.png",
+          "sha256": "c2258958332ea1a572652a898b835218cf41bb93576b4933e3c566804000a478",
+          "published": false
+        },
+        {
+          "key": "le-passage",
+          "name": {
+            "fr": "Le Passage",
+            "en": "The Passage"
+          },
+          "rarity": "epic",
+          "art": "tools/carte-lune/references-2026-09-18/03-epique-le-passage-v2.png",
+          "sha256": "c9af3fcdc6adc51ae9cb170612f96e1b306cce069c07d9646b6c5cb489cdf132",
+          "published": false
+        },
+        {
+          "key": "le-souverain",
+          "name": {
+            "fr": "Le Souverain",
+            "en": "The Sovereign"
+          },
+          "rarity": "legendary",
+          "art": "tools/carte-lune/references-2026-09-18/04-legendaire-le-souverain-v3.png",
+          "sha256": "bbbf6ec300fbdda4fba8a5cda782775f81adb10db326289f0de0a0a36e507df0",
+          "published": false
+        }
+      ]
+    },
+    {
+      "key": "cimes-eteintes",
+      "name": {
+        "fr": "Les Cimes Éteintes",
+        "en": "The Darkened Peaks"
+      },
+      "signature": [
+        "ténèbres",
+        "montagnes noires",
+        "orange braise",
+        "suie",
+        "obsidienne"
+      ],
+      "cards": [
+        {
+          "key": "corbeau-de-suie",
+          "name": {
+            "fr": "Corbeau de Suie",
+            "en": "Soot Raven"
+          },
+          "rarity": "common",
+          "kind": "creature",
+          "art": "tools/carte-lune/cimes-eteintes-2026-09-18/01-commune-corbeau-de-suie-v3.png",
+          "sha256": "ae26aad7b3b0c471106adb0803893b4dcac3dba3d0752a00518215e2cc0a6e7c",
+          "published": false
+        },
+        {
+          "key": "aile-d-ambre",
+          "name": {
+            "fr": "Aile d’Ambre",
+            "en": "Amberwing"
+          },
+          "rarity": "rare",
+          "kind": "creature",
+          "art": "tools/carte-lune/cimes-eteintes-2026-09-18/02-rare-aile-d-ambre-v3.png",
+          "sha256": "090e4ae74da55646df1c8f9ca864f41df4298a99b4e2b3040f3e84e9dccfa134",
+          "published": false
+        },
+        {
+          "key": "loup-de-cendre",
+          "name": {
+            "fr": "Loup de Cendre",
+            "en": "Ash Wolf"
+          },
+          "rarity": "epic",
+          "kind": "creature",
+          "art": "tools/carte-lune/cimes-eteintes-2026-09-18/03-epique-loup-de-cendre-v3.png",
+          "sha256": "ddbfd9cc512fa1fb2976d6df38184a998e0664497223bacdf97d2a00632bbcb0",
+          "published": false
+        },
+        {
+          "key": "dragon-d-obsidienne",
+          "name": {
+            "fr": "Dragon d’Obsidienne",
+            "en": "Obsidian Dragon"
+          },
+          "rarity": "legendary",
+          "kind": "creature",
+          "art": "tools/carte-lune/cimes-eteintes-2026-09-18/04-legendaire-dragon-d-obsidienne-v3.png",
+          "sha256": "56f2dd05bcdd38c93eac7b503ffba2f5784f2e1fb2d74ebf7e85dfc992753068",
+          "published": false
+        },
+        {
+          "key": "la-faille-ardente",
+          "name": {
+            "fr": "La Faille Ardente",
+            "en": "Emberrift"
+          },
+          "rarity": "common",
+          "kind": "paysage",
+          "art": "tools/carte-lune/cimes-eteintes-2026-09-18/05-commune-la-faille-ardente-v1.png",
+          "sha256": "8965d31ae8332f8e4d59c0fcc36c58360f60b96cdcd436c8d7a3119701da6950",
+          "published": false
+        },
+        {
+          "key": "le-col-des-cendres",
+          "name": {
+            "fr": "Le Col des Cendres",
+            "en": "Ashen Pass"
+          },
+          "rarity": "common",
+          "kind": "paysage",
+          "art": "tools/carte-lune/cimes-eteintes-2026-09-18/06-commune-le-col-des-cendres-v1.png",
+          "sha256": "6c1b9ee1c17b34d14527caf501af9383bb5eef137840305321337d7e2367fd5e",
+          "published": false
+        }
+      ]
+    }
+  ]
+}

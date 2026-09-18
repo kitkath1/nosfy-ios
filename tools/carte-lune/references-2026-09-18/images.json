@@ -1,0 +1,82 @@
+[
+  {
+    "fichier": "01-commune-la-veille-v1.png",
+    "largeur": 1024,
+    "hauteur": 1536,
+    "mode": "RGB",
+    "octets": 2937737,
+    "sha256": "054a05346e30fb971d99bab7a079d4619f879df2fc4dfca14c69b0290cbf40aa"
+  },
+  {
+    "fichier": "01-commune-la-veille-v2.png",
+    "largeur": 1024,
+    "hauteur": 1536,
+    "mode": "RGB",
+    "octets": 2636970,
+    "sha256": "412d8eb54b023d18113bc3302a2c85afcd744eceb9bc9929f6f8adc2e7f6fe74"
+  },
+  {
+    "fichier": "02-rare-les-veilleuses-v1.png",
+    "largeur": 1024,
+    "hauteur": 1536,
+    "mode": "RGB",
+    "octets": 3024111,
+    "sha256": "46402ccacf1618f73683567cdcae71cb4e026c9941891e913bfe25b1801846f2"
+  },
+  {
+    "fichier": "02-rare-les-veilleuses-v2.png",
+    "largeur": 1024,
+    "hauteur": 1536,
+    "mode": "RGB",
+    "octets": 2854139,
+    "sha256": "1aae3f75a280f158f5db38c4b7523a29572353b01f2941a772a6dec1bcb09972"
+  },
+  {
+    "fichier": "02-rare-les-veilleuses-v3.png",
+    "largeur": 1024,
+    "hauteur": 1536,
+    "mode": "RGB",
+    "octets": 2782348,
+    "sha256": "c2258958332ea1a572652a898b835218cf41bb93576b4933e3c566804000a478"
+  },
+  {
+    "fichier": "03-epique-le-passage-v1.png",
+    "largeur": 1024,
+    "hauteur": 1536,
+    "mode": "RGB",
+    "octets": 2580084,
+    "sha256": "2b37e2a53ababa1625b07740d4972d841c5d337d1d67c93f065caff3a3088d92"
+  },
+  {
+    "fichier": "03-epique-le-passage-v2.png",
+    "largeur": 1024,
+    "hauteur": 1536,
+    "mode": "RGB",
+    "octets": 2448754,
+    "sha256": "c9af3fcdc6adc51ae9cb170612f96e1b306cce069c07d9646b6c5cb489cdf132"
+  },
+  {
+    "fichier": "04-legendaire-le-souverain-v1.png",
+    "largeur": 1024,
+    "hauteur": 1536,
+    "mode": "RGB",
+    "octets": 2856293,
+    "sha256": "61f6daf02053f20efe9dca4f6dedeb3fa8e5ead559a38cab2abcdbc85664cbe8"
+  },
+  {
+    "fichier": "04-legendaire-le-souverain-v2.png",
+    "largeur": 1024,
+    "hauteur": 1536,
+    "mode": "RGB",
+    "octets": 2683579,
+    "sha256": "3ddf3c189b9aef39c8926b09247f2473ed4b914a71d6539b472fc67d057fc7d8"
+  },
+  {
+    "fichier": "04-legendaire-le-souverain-v3.png",
+    "largeur": 1024,
+    "hauteur": 1536,
+    "mode": "RGB",
+    "octets": 2596014,
+    "sha256": "bbbf6ec300fbdda4fba8a5cda782775f81adb10db326289f0de0a0a36e507df0"
+  }
+]

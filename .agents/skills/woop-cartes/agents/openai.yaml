@@ -1,0 +1,4 @@
+interface:
+  display_name: "Nosfy · Cartes"
+  short_description: "Univers nocturnes, cartes partagées et ouverture fiable"
+  default_prompt: "Utilise $woop-cartes pour reprendre les cartes de Nosfy, leur direction artistique et leur branchement dans l’app."

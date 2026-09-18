@@ -1,0 +1,93 @@
+{
+  "statut": "proposition non déployée ; modèle exact, pas une mesure produit",
+  "poids_de_base": {
+    "common": 45,
+    "rare": 35,
+    "epic": 15,
+    "legendary": 5
+  },
+  "regles": [
+    "premier booster ordinaire rare ou mieux",
+    "après deux communes, prochain booster rare ou mieux",
+    "première légendaire au plus tard au sixième booster ordinaire",
+    "ensuite douze boosters ordinaires maximum entre légendaires",
+    "un rejeu ne compte pas ; pas de reset sur absence"
+  ],
+  "premiere": {
+    "limite_ouvertures": 6,
+    "moyenne_ouvertures": 5.095,
+    "distribution_premiere_legendaire": [
+      0.09090909,
+      0.04545455,
+      0.04318182,
+      0.04855372,
+      0.04236054,
+      0.72954029
+    ],
+    "part_effective_sur_cycles_pourcent": {
+      "common": 27.284,
+      "rare": 37.161,
+      "epic": 15.926,
+      "legendary": 19.629
+    }
+  },
+  "suivantes": {
+    "limite_ouvertures": 12,
+    "moyenne_ouvertures": 9.006,
+    "distribution_premiere_legendaire": [
+      0.05,
+      0.0475,
+      0.05340909,
+      0.04659659,
+      0.04405966,
+      0.04234619,
+      0.03966453,
+      0.03747114,
+      0.03545564,
+      0.0334607,
+      0.03160597,
+      0.53843049
+    ],
+    "part_effective_sur_cycles_pourcent": {
+      "common": 37.645,
+      "rare": 35.876,
+      "epic": 15.375,
+      "legendary": 11.104
+    }
+  },
+  "scenarios_a_deux_seances_par_semaine": [
+    {
+      "boosters_ouverts_par_seance": 1,
+      "actuel_chance_aucune_legendaire_apres_6_seances_pct": 83.3,
+      "proposition_premiere_max_seances": 6,
+      "proposition_suivante_max_seances": 12,
+      "proposition_premiere_max_semaines": 3.0,
+      "proposition_suivante_max_semaines": 6.0
+    },
+    {
+      "boosters_ouverts_par_seance": 2,
+      "actuel_chance_aucune_legendaire_apres_6_seances_pct": 69.38,
+      "proposition_premiere_max_seances": 3,
+      "proposition_suivante_max_seances": 6,
+      "proposition_premiere_max_semaines": 1.5,
+      "proposition_suivante_max_semaines": 3.0
+    },
+    {
+      "boosters_ouverts_par_seance": 3,
+      "actuel_chance_aucune_legendaire_apres_6_seances_pct": 57.8,
+      "proposition_premiere_max_seances": 2,
+      "proposition_suivante_max_seances": 4,
+      "proposition_premiere_max_semaines": 1.0,
+      "proposition_suivante_max_semaines": 2.0
+    },
+    {
+      "boosters_ouverts_par_seance": 5,
+      "actuel_chance_aucune_legendaire_apres_6_seances_pct": 40.1,
+      "proposition_premiere_max_seances": 2,
+      "proposition_suivante_max_seances": 3,
+      "proposition_premiere_max_semaines": 1.0,
+      "proposition_suivante_max_semaines": 1.5
+    }
+  ],
+  "limites": "Pas de boosters noirs, de doublons, de quotas de catalogue ni de séances sans ouverture ; les semaines supposent deux séances et le nombre fixe de boosters indiqué."
+}

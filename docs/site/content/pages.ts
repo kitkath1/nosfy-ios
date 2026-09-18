@@ -43,8 +43,8 @@ export const PAGES: PageInfo[] = [
     hero: { capture: null },
   },
   {
-    id: 'forge', libelle: 'Forge', glyphe: 'flame',
-    phrase: 'La forge n\'ouvre plus rien sans sachet, et le mur du profil lit la collection au serveur.',
+    id: 'forge', libelle: 'Cartes', glyphe: 'flame',
+    phrase: 'Deux familles retenues : forêt et brume, ténèbres et braises. Références communes à tous ; publication, shiny animé et QA à terminer.',
     hero: {
       capture: 'Woop/Assets.xcassets/booster-orange.imageset/booster-orange.png',
       teinte: { t1: '#9E3610', t2: '#9E5425', source: 'booster-orange.png (l\'objet du domaine) · #60210A h16 S90 (2e #924E23) · V posé à 62', part: 5.81 },
@@ -79,7 +79,7 @@ export const DOMAINES: DomaineInfo[] = [
   { id: 'widgets', libelle: 'Widgets', badge: 'WI', page: 'widgets' },
   { id: 'eco', libelle: 'Économie', badge: 'ÉC', page: 'coffre' },
   { id: 'annonces', libelle: 'Annonces', badge: 'AN', page: 'annonces' },
-  { id: 'forge', libelle: 'Forge', badge: 'FO', page: 'forge' },
+  { id: 'forge', libelle: 'Cartes', badge: 'CA', page: 'forge' },
   { id: 'chemin', libelle: 'Calendrier · chemin', badge: 'CH', page: 'flow' },
   { id: 'stories', libelle: 'Stories', badge: 'ST', page: 'histoire' },
 ]
