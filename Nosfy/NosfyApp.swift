@@ -2234,6 +2234,13 @@ struct RootView: View {
         }
         .task(id: compte.enPorte) {
             guard !compte.enPorte else { return }
+            let generation = compte.generationDonnees
+            await SupabaseSync.relire(dans: modelContext)
+            guard generation == compte.generationDonnees,
+                  !compte.enPorte, !Task.isCancelled else { return }
+            await depart.rafraichirReclamees()
+            guard generation == compte.generationDonnees,
+                  !compte.enPorte, !Task.isCancelled else { return }
             try? await Task.sleep(for: .seconds(3))
             guard !compte.enPorte else { return }
             await EconomieWoop.shared.rafraichir()

@@ -33,6 +33,8 @@ final class CompteEtat {
 
     /// Vrai le temps que la racine rende la porte ; elle le remet à faux.
     var porteDemandee = false
+    /// Invalide les retours réseau de la personne précédente.
+    var generationDonnees = UUID()
     var raisonPorte: String?
     /// La porte, le film de Nosfy ou le splash tiennent l'écran — le Welcome
     /// Back (et tout ce qui parle à une personne entrée) attend. Vrai au
@@ -145,6 +147,9 @@ enum Compte {
     /// et revoit la pop-up et la visite, parce que `visite_home` vit au serveur.
     @MainActor
     static func effacerToutCeQuiEstAElle(contexte: ModelContext) async {
+        CompteEtat.shared.generationDonnees = UUID()
+        DepartEtat.shared.oublierCompte()
+        RewardCheminEtat.shared.oublierCompte()
         await OutboxGains.shared.effacer()
         await SupabaseSession.shared.oublier()
         InscriptionCompte.oublier()

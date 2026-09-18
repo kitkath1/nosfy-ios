@@ -208,6 +208,7 @@ extension SupabaseSync {
         if args.contains("-demoData"), !args.contains("-pullNow") { return nil }
         guard WoopConfig.isConfigured else { return nil }
 
+        let generation = CompteEtat.shared.generationDonnees
         let depuis: String? = args.contains("-pullTout") ? nil
             : UserDefaults.standard.string(forKey: cleDepuis)
         let o: [String: Any]
@@ -217,6 +218,8 @@ extension SupabaseSync {
             print("[pull] seances_depuis ✗ \(error.localizedDescription)")
             return nil
         }
+        guard generation == CompteEtat.shared.generationDonnees,
+              !Task.isCancelled else { return nil }
         var r = Relecture()
         r.total = (o["total"] as? NSNumber)?.intValue ?? 0
         r.rendues = (o["rendues"] as? NSNumber)?.intValue ?? 0

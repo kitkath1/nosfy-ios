@@ -1,0 +1,34 @@
+{
+  "lu_utc": "2026-09-18T09:02:50.831532+00:00",
+  "version": 76,
+  "compte": [
+    {
+      "compte": "9f5b775d",
+      "apple": true,
+      "jetons_apple": 0,
+      "cartes": 0,
+      "sachets": 2
+    }
+  ],
+  "local_total": 2,
+  "serveur_total": 2,
+  "file_gains": 0,
+  "seances": [
+    {
+      "id": "8504d24d",
+      "finie": true,
+      "series_local": 1,
+      "presente_serveur": true,
+      "series_serveur": 1,
+      "sync_complete": false
+    },
+    {
+      "id": "87147bf8",
+      "finie": true,
+      "series_local": 1,
+      "presente_serveur": true,
+      "series_serveur": 1,
+      "sync_complete": false
+    }
+  ]
+}

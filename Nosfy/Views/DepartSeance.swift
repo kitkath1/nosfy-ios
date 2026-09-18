@@ -115,11 +115,25 @@ final class DepartEtat {
     /// n'est pas une erreur d'application, c'est un état périmé — exactement
     /// la règle d'`EconomieWoop.rafraichir`.
     @MainActor
+    func oublierCompte() {
+        reclamees = []
+        cheminOuvert = false
+        cheminEtape = 0
+        cheminFaits = []
+        cheminDates = [:]
+        galetPorte = false
+        homeDort = false
+    }
+
+    @MainActor
     func rafraichirReclamees() async {
         guard WoopConfig.isConfigured else { return }
+        let generation = CompteEtat.shared.generationDonnees
         do {
             let jwt = try await SupabaseSession.shared.token()
             let serveur = try await SacreServeur.noeudsCheminReclames(jwt: jwt)
+            guard generation == CompteEtat.shared.generationDonnees,
+                  !Task.isCancelled else { return }
             let neufs = serveur.subtracting(reclamees)
             guard !neufs.isEmpty else { return }
             reclamees.formUnion(serveur)

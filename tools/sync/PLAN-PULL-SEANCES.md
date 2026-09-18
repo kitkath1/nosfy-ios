@@ -1,3 +1,13 @@
+## Actualisation du18-09 : reconnexion dans le même processus
+
+La relecture tourne aussi quand la porte disparaît après Apple, suivie des
+claims Route. L’ancien branchement au seul lancement ne restaurait pas les
+séances après une déconnexion/reconnexion sans quitter l’app. Une génération
+Compte empêche une réponse antérieure d’insérer des séances ou un curseur dans
+le compte suivant. `tools/serveur/verif_pull.py` :9PASS ; preuve dans
+`tools/production/compte-iphone-2026-09-18/pull.log`. Les mesures historiques
+ci-dessous restent limitées au banc du14-09.
+
 # LE PULL DES SÉANCES — la lecture qui manquait depuis le 29-08
 
 *14-09-2026, 00:10. Sur son mot « continue le backend qui manque ». Court, parce que la

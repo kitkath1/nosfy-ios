@@ -2714,6 +2714,15 @@ struct HomeNuitPage: View {
         // la clé unique `objectifHebdo` bouge, la card « / N » suit seule
         // (@AppStorage), mais le pied (« 2 sessions left… ») et les fantômes
         // viennent de `stats` : on recalcule, sinon le mini-widget ment.
+        // Le pull après Apple arrive après l'apparition de la Home.
+        // Refléter sa restitution (ou l'effacement du compte) sans relance.
+        .onChange(of: workoutsBruts.count) { _, _ in
+            stats = workoutsBruts.isEmpty ? nil : SemaineStats.calcule(workoutsBruts, prevues: prevus)
+            majLectureChemin()
+        }
+        .onChange(of: DepartEtat.shared.reclamees) { _, _ in
+            majLectureChemin()
+        }
         .onChange(of: prevus) { _, _ in
             if !workoutsBruts.isEmpty {
                 stats = SemaineStats.calcule(workoutsBruts, prevues: prevus)

@@ -16,11 +16,23 @@ Les données existantes sont conservées. Les anciens
 binaires doivent recevoir le nouveau raccord pour payer les prochaines séances.
 
 **Restent avant production** : vraie connexion/révocation Apple et QA iPhone
-Compte neuf, rapprochement de l’historique de test, intégration Forge/chauffe,
+Compte neuf, restitution après reconnexion, intégration Forge/chauffe,
 CGU finales et qualification de la version de sortie. L’analyseur sécurité
 remonte52 avertissements (principalement fonctions definer exposées) : les
 gardes de ce correctif ont été testées, cela ne constitue pas une revue globale.
 Preuves actuelles : `compte-progression-2026-09-18/README.md`.
+
+## Complément Compte, Route et rewards
+
+40 contrôles API supplémentaires PASS : compte neuf vide,7séances, lune,
+ouverture des sachets gagnés et collection/rewards/progression retrouvées par
+une nouvelle session.2554 contrôles Route et9 pull Swift PASS. Corrigés :
+bouton du trésor final, relecture après Apple sans quitter l’app, états Route
+vidés entre comptes et réponses anciennes ignorées. L’iPhone76 possède2séances
+terminées avec mêmes UUID et séries côté serveur, pas38dans cette installation.
+Aucun effacement.77 doit encore être installé/testé avec Apple ; la première
+création Apple et la révocation sur identité dédiée restent à mesurer.
+Preuves : `compte-iphone-2026-09-18/README.md`.
 
 ## Constat initial de08:35 — historique, avant le correctif
 

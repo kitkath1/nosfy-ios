@@ -140,6 +140,12 @@ enum TirageRecompense {
     /// croire à un second tirage.
     var revele = false
 
+    func oublierCompte() {
+        ouverte = nil
+        tirage = nil
+        revele = false
+    }
+
     /// Les tirages persistés, par id de nœud (en attendant le serveur).
     private var journal: [Int: RecompenseTiree] {
         get {
@@ -189,6 +195,7 @@ enum TirageRecompense {
     /// serveur (maquette, `-demoData`) : le tirage local d'hier, dit comme tel.
     @discardableResult
     func reclamer(_ id: Int, pieces: Bool) async -> Bool {
+        let generation = CompteEtat.shared.generationDonnees
         if let deja = journal[id] {
             tirage = deja
             revele = vues.contains(id)
@@ -197,6 +204,8 @@ enum TirageRecompense {
                 UINotificationFeedbackGenerator().notificationOccurred(.warning)
                 return false
             }
+            guard generation == CompteEtat.shared.generationDonnees,
+                  !Task.isCancelled else { return false }
             journal[id] = t
             tirage = t
             revele = false

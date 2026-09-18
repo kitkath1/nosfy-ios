@@ -1,0 +1,42 @@
+PASS nouveau compte : inscription et Route vierges
+PASS nouveau compte : cartes, annonces et claims vides
+PASS nouveau compte : aucune monnaie ni reward
+PASS inscription enregistrée
+PASS séance1 : travail sauvegardé, gain confirmé, progression1
+PASS première séance :20pièces et1sachet réels
+PASS séance2 : travail sauvegardé, gain confirmé, progression2
+PASS séance3 : travail sauvegardé, gain confirmé, progression3
+PASS premier galet reward réclamable au seuil3
+PASS séance4 : travail sauvegardé, gain confirmé, progression4
+PASS séance5 : travail sauvegardé, gain confirmé, progression5
+PASS séance6 : travail sauvegardé, gain confirmé, progression6
+PASS lune encore verrouillée avant la septième séance
+PASS séance7 : travail sauvegardé, gain confirmé, progression7
+PASS septième séance : lune délivre reçu et annonces confirmés
+PASS les deux galets réclamés sont mémorisés au serveur
+PASS double appui lune : aucun gain ni tirage doublé
+PASS récompense de la lune : sachets identifiés disponibles
+PASS ouverture depuis le vrai stock : acquisition atomique et reprise identique
+PASS ouverture depuis le vrai stock : acquisition atomique et reprise identique
+PASS ouverture depuis le vrai stock : acquisition atomique et reprise identique
+PASS ouverture depuis le vrai stock : acquisition atomique et reprise identique
+PASS ouverture depuis le vrai stock : acquisition atomique et reprise identique
+PASS ouverture depuis le vrai stock : acquisition atomique et reprise identique
+PASS ouverture depuis le vrai stock : acquisition atomique et reprise identique
+PASS ouverture depuis le vrai stock : acquisition atomique et reprise identique
+PASS ouverture depuis le vrai stock : acquisition atomique et reprise identique
+PASS ouverture depuis le vrai stock : acquisition atomique et reprise identique
+PASS ouverture depuis le vrai stock : acquisition atomique et reprise identique
+PASS chaque sachet de la lune peut être ouvert depuis son stock
+PASS toutes les cartes ouvertes sont dans la collection
+PASS provenance des cartes : tous les sachets du reçu lunaire retrouvés
+PASS reconnexion : même profil,7séances,galets,pièces,sachets,cartes et annonces
+PASS nouvelle session : les7séances sont restituées au client
+PASS les séries nécessaires à la Route et aux stories sont restituées
+PASS autre utilisateur : aucune progression,carte ou reward héritée
+PASS lune de l’autre compte toujours verrouillée
+PASS autre compte : ouverture du sachet personnel refusée
+PASS annonces vues : acquittement durable
+PASS relecture lune après annonces : aucune annonce rejouée
+40 contrôles parcours API PASS — feuille Apple et rendu iPhone hors banc
+2 identités QA nettoyées ; compte iPhone préservé

@@ -368,6 +368,13 @@ extension EcranSpec {
         ///   · aujourd'hui       → `.actif`, halo blanc + la vraie date du jour ;
         ///   · futur             → `.prochain` / `.verrouille`, la petite flamme ;
         ///   · fin de chapitre   → `.lune(dispo:)`, plus gros, sombre ou illuminé.
+        /// Même autorisation pour le dessin, le bouton et le geste de claim.
+        /// Le dernier trésor suit le35e galet, sans nécessiter un36e galet actif.
+        func peutReclamer(_ e: EtapeSpec) -> Bool {
+            e.special && !reclamees.contains(e.id)
+                && EcranSpec.seances.filter { $0.id < e.id }.allSatisfy { faits.contains($0.id) }
+        }
+
         func etat(_ e: EtapeSpec) -> EtapeEtat {
             // Les nœuds spéciaux : PASSIFS (audit §4, « on ne m'impose rien ») —
             // disponibles dès que le chemin les a dépassés, réclamables une
@@ -375,7 +382,7 @@ extension EcranSpec {
             // que les séances), donc « dépassé » = `etape > id`.
             if e.special {
                 if reclamees.contains(e.id) { return .reclame }
-                let dispo = EcranSpec.seances.filter { $0.id < e.id }.allSatisfy { faits.contains($0.id) }
+                let dispo = peutReclamer(e)
                 return e.piece ? .piece(dispo: dispo) : .lune(dispo: dispo)
             }
             if faits.contains(e.id) { return .accompli }
@@ -1274,7 +1281,7 @@ private struct CheminDuo: View {
                 //   · récompense loin  → Nosfy · PAS de bouton, une promesse
                 //   · récompense prise → Nosfy · PAS de bouton (sans ce cas,
                 //     retaper une lune éteinte n'ouvrirait plus rien)
-                let dispo = etat.etape > e.id
+                let dispo = lecture.peutReclamer(e)
                 let prise = etat.reclamees.contains(e.id)
                 let recompensePrete = e.special && dispo && !prise
                 Circle()
@@ -1349,7 +1356,7 @@ private struct CheminDuo: View {
     /// nœud du milieu). Les deux portent le même logo lune ; ce qu'ils
     /// DONNENT reste distinct.
     private func reclamer(_ e: EcranSpec.EtapeSpec) {
-        guard etat.etape > e.id, !etat.reclamees.contains(e.id) else { return }
+        guard lecture.peutReclamer(e) else { return }
         guard let cible: (Int) async -> Bool = e.moon ? onLune : onPiece else { return }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         fermerPanneau()

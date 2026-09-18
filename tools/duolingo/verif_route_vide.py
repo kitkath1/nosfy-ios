@@ -66,6 +66,12 @@ for nombre in 0...36 {
         let seuil = EcranSpec.seances.filter { $0.id < special.id }.count
         let attendu: EtapeEtat = special.piece ? .piece(dispo: nombre >= seuil) : .lune(dispo: nombre >= seuil)
         verifier(lecture.etat(special) == attendu, "\(nombre) séances : récompense\(special.id) au bon seuil")
+        verifier(lecture.peutReclamer(special) == (nombre >= seuil),
+                 "\(nombre) séances : bouton et geste récompense\(special.id) autorisés au seuil")
+        let prise = EcranSpec.Lecture(etape: resultat.etape, faits: resultat.faits,
+            datesFaites: resultat.dates, reclamees: [special.id], maintenant: maintenant)
+        verifier(!prise.peutReclamer(special) && prise.etat(special) == .reclame,
+                 "\(nombre) séances : récompense\(special.id) prise non réclamable")
     }
 }
 let future = EcranSpec.etapeEtFaits(seancesFinies: [maintenant.addingTimeInterval(3600)], aujourdhui: maintenant)
