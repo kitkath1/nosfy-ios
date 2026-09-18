@@ -1,0 +1,41 @@
+{
+ "user": "9f5b775d-6e40-4af6-b3a2-ac81386f7641",
+ "boosters": [
+  {
+   "id": "c6d4d23c-46db-499d-a5b0-3a2103b6693e",
+   "robe": null,
+   "origine": "seance",
+   "obtained_at": "2026-09-18T06:40:59.528028+00:00",
+   "opened_at": "2026-09-18T14:38:50.270127+00:00",
+   "revealed_at": "2026-09-18T14:38:58.685735+00:00",
+   "card_id": "6ab3e4be-78f7-527f-b8f2-bee33e9cb6c1"
+  },
+  {
+   "id": "f347cb69-42cc-4728-8275-7f639a9a7d70",
+   "robe": null,
+   "origine": "seance",
+   "obtained_at": "2026-09-18T07:48:53.150069+00:00",
+   "opened_at": "2026-09-18T14:39:53.326328+00:00",
+   "revealed_at": "2026-09-18T14:40:00.587691+00:00",
+   "card_id": "1ff5a6c5-cc82-550a-83d3-b1d22210e063"
+  }
+ ],
+ "cards": [
+  {
+   "id": "3748a70d-fd69-43c7-acd4-24fea1ca0fe8",
+   "user_id": "9f5b775d-6e40-4af6-b3a2-ac81386f7641",
+   "card_id": "6ab3e4be-78f7-527f-b8f2-bee33e9cb6c1",
+   "obtained_at": "2026-09-18T14:38:50.676297+00:00",
+   "workout_id": "8504d24d-d0f5-41e1-a503-cfe844b42a34",
+   "booster_id": "c6d4d23c-46db-499d-a5b0-3a2103b6693e"
+  },
+  {
+   "id": "1b0a2828-6722-4507-84bc-9526f06dd3e7",
+   "user_id": "9f5b775d-6e40-4af6-b3a2-ac81386f7641",
+   "card_id": "1ff5a6c5-cc82-550a-83d3-b1d22210e063",
+   "obtained_at": "2026-09-18T14:39:53.663182+00:00",
+   "workout_id": "87147bf8-6223-4fe8-b743-279475dfdcca",
+   "booster_id": "f347cb69-42cc-4728-8275-7f639a9a7d70"
+  }
+ ]
+}

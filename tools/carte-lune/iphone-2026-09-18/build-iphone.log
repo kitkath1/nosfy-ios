@@ -1,0 +1,11 @@
+[tronqué :     2731 lignes ; invocation, erreurs, fin]
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project Nosfy.xcodeproj -scheme Nosfy -configuration Debug -destination id=022244AD-484B-5489-A884-6B781A82E372 -derivedDataPath /tmp/nosfy-cartes-ios-dd -allowProvisioningUpdates build
+
+...
+Touch /tmp/nosfy-cartes-ios-dd/Build/Products/Debug-iphoneos/Nosfy.app (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    /usr/bin/touch -c /tmp/nosfy-cartes-ios-dd/Build/Products/Debug-iphoneos/Nosfy.app
+
+** BUILD SUCCEEDED **
+

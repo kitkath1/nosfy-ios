@@ -1,5 +1,18 @@
 # Règle multi-session (Nosfy)
 
+## Cartes — iPhone RÉSERVÉ par la session Ouvrir (18-09 15:15, « vas-y » de Kathryn)
+
+Contrôle iPhone du parcours Cartes : build Debug de l'arbre partagé (correctif
+`PiedCoffre.allume`) installé sur « iPhone de Frédéric », lancé avec la sonde
+(`-sondeVol -ecranEveille -navProbe`), SON compte, aucune remise à zéro, aucune
+suppression. Elle fait les gestes (Ouvrir après le film, envol, noir, chevron),
+je lis la sonde et le serveur. → **iPhone LIBÉRÉ à 16:50**, relancé `-sansSondeVol`.
+Résultat : 2 sachets orange ouverts au doigt après le film, 2 cartes révélées et
+envolées vers la collection, serveur cohérent ; thermique 0 sur 3 min, 60 img/s
+médian, CPU 30 % médian pendant le manège. Preuves tools/carte-lune/iphone-2026-09-18/.
+Non fait : manège noir (0 sachet sur son compte), sortie par le chevron, coupure réseau.
+
+
 ## Cartes — blocage « Ouvrir » LEVÉ au simulateur, commité (session Ouvrir, 18-09 15:00)
 
 12:15-12:45 : les 4 scénarios UI Cartes passent (0 échec) sur `nosfy-cartes-20260918`,

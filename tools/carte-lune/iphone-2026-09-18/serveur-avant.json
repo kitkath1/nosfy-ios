@@ -1,0 +1,24 @@
+{
+ "user": "9f5b775d-6e40-4af6-b3a2-ac81386f7641",
+ "boosters": [
+  {
+   "id": "c6d4d23c-46db-499d-a5b0-3a2103b6693e",
+   "robe": null,
+   "origine": "seance",
+   "obtained_at": "2026-09-18T06:40:59.528028+00:00",
+   "opened_at": null,
+   "revealed_at": null,
+   "card_id": null
+  },
+  {
+   "id": "f347cb69-42cc-4728-8275-7f639a9a7d70",
+   "robe": null,
+   "origine": "seance",
+   "obtained_at": "2026-09-18T07:48:53.150069+00:00",
+   "opened_at": null,
+   "revealed_at": null,
+   "card_id": null
+  }
+ ],
+ "cards": []
+}
