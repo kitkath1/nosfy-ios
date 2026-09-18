@@ -4557,7 +4557,11 @@ struct HomeNuitPage: View {
     /// avec panneau) — c'est LE banc qui manquait pour juger les états
     /// ensemble (audit §0) ; les jours d'avant suivent le motif démo.
     private var cheminEtat: (etape: Int, faits: Set<Int>, dates: [Int: Date]) {
-        let finies = workoutsBruts.compactMap(\.endedAt)
+        let finies = workoutsBruts.filter { workout in
+            workout.seriesPayantes > 0 || workout.orderedExercises.contains { exo in
+                exo.longueurs > 0 || exo.phasesFaites.contains { $0.isEffort && $0.seconds > 0 }
+            }
+        }.compactMap(\.endedAt)
         var r = EcranSpec.etapeEtFaits(seancesFinies: finies)
         let a = CommandLine.arguments
         if let i = a.firstIndex(of: "-duoEtape"), i + 1 < a.count,

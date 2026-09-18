@@ -277,91 +277,20 @@ struct EcranSpec: Equatable, Identifiable {
         seances[min(max(k, 0), seances.count - 1)].id
     }
 
-    /// D2 — LE CHEMIN LIT LES SÉANCES (27-08, jalon 0 de l'audit). Le
-    /// jour 0 du chemin est le jour de la PREMIÈRE séance terminée ;
-    /// aujourd'hui est `etape` ; chaque jour où une séance s'est terminée
-    /// est FAIT. Tant qu'aucune séance n'existe, le chemin commence
-    /// aujourd'hui. Le chemin est borné à sa dernière séance (30 jours pour
-    /// cinq écrans) — le jour où le backend dérivera les chapitres, cette
-    /// fonction changera de source, rien d'autre.
-    static func etapeEtFaits(seancesFinies: [Date],
-                             aujourdhui: Date = Date())
+    /// Un galet par séance terminée avec du travail (filtre de la Home).
+    /// Les pauses calendaires ne font pas avancer le chemin ; deux séances le
+    /// même jour restent deux séances. Après35, le dernier chapitre est accompli.
+    static func etapeEtFaits(seancesFinies: [Date], aujourdhui: Date = Date())
         -> (etape: Int, faits: Set<Int>, dates: [Int: Date]) {
-        // Compte vide (18-09) : priorité sur toute dérivation de démo.
-        // La Home et la Route partagent ce résultat : premier galet en haut,
-        // aucun jour accompli ni date inventée. Une séance seulement ouverte
-        // ne fournit pas de endedAt et ne fait donc pas avancer le chemin.
-        guard !seancesFinies.isEmpty else {
-            return (id(pourJour: 0), [], [:])
-        }
-        // L'état historique NON VIDE reste provisoire (décision du 27-08 :
-        // « ça devrait être chapitre 1 avec deux jours déjà faits, un en
-        // cours, et après tous les prochains jours en mode empty avec le logo
-        // flamme, et la pièce non accomplie »).
-        //
-        // Pourquoi ce n'est PAS un simple repli : la base contient des
-        // séances de démo datées d'il y a des SEMAINES, et compter les jours
-        // depuis la première envoyait le chemin au bout — elle est tombée sur
-        // le chapitre 5, tout allumé. Tant que le backend ne dit pas où
-        // commence un chapitre, la démo montre le DÉBUT : deux séances
-        // faites, la troisième en cours, le reste vide (la flamme), les deux
-        // récompenses éteintes.
-        //
-        // `-cheminReel` rend la dérivation par les vraies dates (elle vit
-        // juste en dessous, intacte) : c'est elle qui reprendra la main le
-        // jour du backend.
-        // ⚠️ **LA DATE EST UN ESTAMPILLAGE, PAS UNE POSITION** (28-08, sa
-        // règle : « quand c'est à venir on ne voit pas les jours, c'est une
-        // flamme — car les jours APPARAISSENT le jour où le user a terminé sa
-        // séance »). Un galet FAIT porte donc la date de SA complétion,
-        // remontée ici avec lui. Le calcul qui la déduisait du rang
-        // (`aujourd'hui + (rang − rang_actif)` jours) supposait une séance par
-        // jour et AUCUN trou : deux séances faites les 22 et 26 s'affichaient
-        // « avant-hier » et « hier ». Le chemin mentait sur l'historique.
-        let cal = Calendar.current
-        // La démo montre le DÉBUT (voir plus haut) mais avec de VRAIES dates
-        // dès que la base en a deux : les deux jours les plus récents.
-        func demo() -> (etape: Int, faits: Set<Int>, dates: [Int: Date]) {
-            // ⚠️ **UN JOUR FAIT NE PEUT PAS ÊTRE AUJOURD'HUI** (29-08, vu sur
-            // la card ROUTE de la home : deux pierres voisines affichaient
-            // toutes les deux « 29 »). La démo prenait les DEUX jours de
-            // séance les plus récents — or si le user s'est entraîné
-            // aujourd'hui, l'un des deux EST aujourd'hui, qui est déjà le nœud
-            // ACTIF. Le chemin montrait donc le même jour deux fois, à deux
-            // états différents.
-            //
-            // La dérivation réelle, elle, ne pouvait pas avoir ce défaut : son
-            // `guard i < etape` écarte par construction la séance du jour. La
-            // démo n'avait pas cette garde ; elle l'a maintenant.
-            let veille = cal.startOfDay(for: aujourdhui)
-            let recents = Set(seancesFinies.map { cal.startOfDay(for: $0) })
-                .filter { $0 < veille }
-                .sorted(by: >).prefix(2).reversed().map { $0 }
-            var dates: [Int: Date] = [:]
-            for k in 0..<2 {
-                dates[id(pourJour: k)] = recents.count == 2 ? recents[k]
-                    : cal.date(byAdding: .day, value: k - 2, to: aujourdhui)
-            }
-            return (id(pourJour: 2),
-                    Set([id(pourJour: 0), id(pourJour: 1)]), dates)
-        }
-        guard CommandLine.arguments.contains("-cheminReel") else { return demo() }
-        let paires = seancesFinies.map { (cal.startOfDay(for: $0), $0) }
-        let today = cal.startOfDay(for: aujourdhui)
-        guard let j0 = paires.map(\.0).min(), j0 <= today else { return demo() }
-        func rang(_ d: Date) -> Int {
-            cal.dateComponents([.day], from: j0, to: d).day ?? 0
-        }
-        let etape = id(pourJour: rang(today))
+        let finies = seancesFinies.filter { $0 <= aujourdhui }.sorted().prefix(seances.count)
         var faits: Set<Int> = []
         var dates: [Int: Date] = [:]
-        for (jour, brut) in paires {
-            let i = id(pourJour: rang(jour))
-            guard i < etape else { continue }
-            faits.insert(i)
-            dates[i] = brut
+        for (rang, date) in finies.enumerated() {
+            let id = id(pourJour: rang)
+            faits.insert(id)
+            dates[id] = date
         }
-        return (etape, faits, dates)
+        return (id(pourJour: finies.count), faits, dates)
     }
 
     /// LES FRONTIÈRES (2e salve : « ça doit être le même élément ») — une
@@ -446,12 +375,11 @@ extension EcranSpec {
             // que les séances), donc « dépassé » = `etape > id`.
             if e.special {
                 if reclamees.contains(e.id) { return .reclame }
-                let dispo = etape > e.id
+                let dispo = EcranSpec.seances.filter { $0.id < e.id }.allSatisfy { faits.contains($0.id) }
                 return e.piece ? .piece(dispo: dispo) : .lune(dispo: dispo)
             }
-            if e.id < etape {
-                return faits.contains(e.id) ? .accompli : .rate
-            }
+            if faits.contains(e.id) { return .accompli }
+            if e.id < etape { return .rate }
             if e.id == etape { return .actif }
             // le prochain = la séance suivante (pas le nœud suivant : un
             // spécial peut s'intercaler).
@@ -474,25 +402,14 @@ extension EcranSpec {
             // AUJOURD'HUI — le galet au halo marque le jour où le user est
             // connecté : sa date se calcule à l'affichage, et ne se FIGE qu'à la
             // complétion (c'est à ce moment-là qu'elle entre dans `datesFaites`).
-            if e.id == etape { return maintenant }
-            // À VENIR — aucune date : « les jours apparaissent le jour où le user
-            // a terminé sa séance ». Le galet ne montre que la flamme.
-            guard e.id < etape else { return nil }
-            // FAIT — SON estampille, remontée avec lui par l'hôte.
-            if let d = datesFaites[e.id] { return d }
-            // RATÉ — jamais terminé, donc pas d'estampille ; mais c'est un jour
-            // PASSÉ, et il doit dire lequel (sinon il ne se distingue plus d'un
-            // jour à venir). Sa date reste exacte par construction de l'axe des
-            // rangs : rang k = jour de la première séance + k jours.
-            guard let jE = EcranSpec.jour(deId: e.id),
-                  let jA = EcranSpec.jour(deId: etape) else { return nil }
-            return Calendar.current.date(byAdding: .day, value: jE - jA,
-                                         to: maintenant)
+            if e.id == etape && !faits.contains(e.id) { return maintenant }
+            // Une réalisation porte sa date, y compris le dernier galet après35séances.
+            // Aucun jour manqué ou futur n'est inventé entre deux séances.
+            return datesFaites[e.id]
         }
 
-        /// LA DATE D'UN GALET — le chemin est un CALENDRIER : l'étape courante
-        /// est aujourd'hui, chaque rang vaut un jour. Les galets passés portent
-        /// donc leur vraie date, et l'actif la date du jour.
+        /// LA DATE D'UN GALET — chaque rang vaut une séance terminée.
+        /// Les galets faits portent leur date ; le prochain actif, celle du jour.
         ///
         /// ⚠️ Seuls le PASSÉ et AUJOURD'HUI en portent une. Un jour futur qui
         /// afficherait sa date promettrait un contenu qu'on n'a pas : le verdict

@@ -1,0 +1,11 @@
+Release arm64 simulateur, base70503973 + modifications Compte seules.
+<copie-isolee>/Nosfy/Services/Annonces.swift:208:13: error: cannot find 'ToasterGain' in scope
+<copie-isolee>/Nosfy/Services/Annonces.swift:210:13: error: cannot find 'ToasterGain' in scope
+<copie-isolee>/Nosfy/Services/Annonces.swift:212:13: error: cannot find 'ToasterGain' in scope
+<copie-isolee>/Nosfy/Services/Annonces.swift:216:13: error: cannot find 'ToasterGain' in scope
+<copie-isolee>/Nosfy/Services/Annonces.swift:218:13: error: cannot find 'ToasterGain' in scope
+<copie-isolee>/Nosfy/Views/HomeAuroraView.swift:196:25: error: cannot find 'VolDePieces' in scope
+<copie-isolee>/Nosfy/Views/RecentWorkoutCard.swift:40:9: error: switch must be exhaustive
+<copie-isolee>/Nosfy/NosfyApp.swift:1013:48: error: extra argument 'onStopViaPause' in call
+<copie-isolee>/Nosfy/NosfyApp.swift:2519:28: error: the compiler is unable to type-check this expression in reasonable time; try breaking up the expression into distinct sub-expressions
+** BUILD FAILED **

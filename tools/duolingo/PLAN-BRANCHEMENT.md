@@ -1,11 +1,13 @@
 # §23 — LE BRANCHEMENT : la Duolinguo_page entre dans l'app
 
-> Actualisation18-09 — compte vide : **premier galet, en haut du chapitre1**,
-> faits et dates vides, récompenses à venir. La démo au troisième galet est
-> exclue quand aucune séance n'est terminée, même avec `-cheminReel`.
-> 34 contrôles Swift PASS ; iPhone à vérifier. La progression non vide reste
-> provisoire. Contrat app/backend et preuves :
-> `tools/duolingo/preuves-compte-vide-2026-09-18/README.md`.
+> Actualisation18-09 — progression réelle déployée : compte vide au premier
+> galet, tout en haut ; puis un galet par séance terminée avec travail.
+> Pas d’avance calendaire ni de démo automatique. Récompenses serveur à3/7
+> séances par chapitre ; cinq chapitres, trésor final à35. Au-delà, séances
+> conservées sans remise à zéro.1074 contrôles Swift,35API PASS ; iPhone à
+> qualifier. Référence actuelle (les sections datées suivantes sont historiques) :
+> `tools/production/compte-progression-2026-09-18/README.md`.
+
 
 
 Demande de Kathryn (25-08) : connecter la page Duolingo à la **Home V2

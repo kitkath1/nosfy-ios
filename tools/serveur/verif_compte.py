@@ -134,10 +134,16 @@ try:
             "id": exercice, "workout_id": workout, "user_id": uid,
             "exercise_id": "hip-thrust", "position": 0}, jwt)
         check(status == 201, "première séance : exercice écrit")
+        serie = str(uuid.uuid4())
         status, _ = appel("/rest/v1/strength_sets", {
-            "id": str(uuid.uuid4()), "logged_exercise_id": exercice, "user_id": uid,
+            "id": serie, "logged_exercise_id": exercice, "user_id": uid,
             "reps": 10, "weight": 5, "position": 0}, jwt)
         check(status == 201, "première séance : série écrite")
+        rpc("synchroniser_seance", jwt, {
+            "p_workout": {"id": workout, "started_at": (fin-timedelta(minutes=10)).isoformat(), "ended_at": fin.isoformat()},
+            "p_exercices": [{"id": exercice, "workout_id": workout, "exercise_id": "hip-thrust", "position": 0}],
+            "p_series": [{"id": serie, "logged_exercise_id": exercice, "reps": 10, "weight": 5, "position": 0}],
+            "p_phases": [], "p_piscines": []})
         cloture = rpc("cloturer_seance", jwt, {"p_workout": workout, "p_series": 1})
         check(cloture.get("pieces_creditees") is True and cloture.get("pieces", 0) > 0,
               "première clôture : pièces créditées")

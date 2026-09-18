@@ -145,6 +145,7 @@ enum Compte {
     /// et revoit la pop-up et la visite, parce que `visite_home` vit au serveur.
     @MainActor
     static func effacerToutCeQuiEstAElle(contexte: ModelContext) async {
+        await OutboxGains.shared.effacer()
         await SupabaseSession.shared.oublier()
         InscriptionCompte.oublier()
 

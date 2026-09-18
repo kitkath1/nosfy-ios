@@ -17,7 +17,10 @@ sont que des liens de transition pour les sessions ouvertes, hors du projet.
 Sans séance terminée, commencer tout en haut du chapitre1, au premier galet.
 Aucun fait, date ou gain inventé pour remplir l'écran. Garder ce contrat dans
 Compte, Flow, Serveur et QA. Banc : `tools/duolingo/verif_route_vide.py`.
-La progression non vide reste un chantier distinct, pas un verdict vert.
+Progression implémentée le18-09 : un galet par séance terminée avec travail,
+sept séances par chapitre, récompenses à3/7, cinq chapitres ; après35,
+historique conservé sans nouveau cycle.1074 contrôles Swift et35 API PASS.
+Contrôle iPhone distinct ; preuves : tools/production/compte-progression-2026-09-18/.
 
 ## Production et documentation — rappel explicite de Kathryn, 18-09-2026
 

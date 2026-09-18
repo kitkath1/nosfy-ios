@@ -1,10 +1,12 @@
-<Decision titre="Compte vide : commencer au premier galet">
-  <p>Sans séance terminée, la Home et Route commencent <b>tout en haut du chapitre1, au premier galet</b>. Aucun galet accompli, aucune date fictive, récompenses à venir. Correction du18-09 :34 contrôles Swift PASS ; contrôle iPhone encore ouvert. La progression après une première séance reste provisoire.</p>
+<Decision titre="Compte, gains et Route : correctif déployé le18-09">
+  <p>Compte vide : <b>premier galet, tout en haut</b>. Une séance terminée avec travail fait avancer d’un galet ; deux le même jour comptent deux fois, une pause ne fait pas avancer. Cinq chapitres de sept séances, récompenses à3et7 ; après35, l’historique continue sans réinitialiser le parcours.</p>
+  <p>Le serveur reçoit la séance complète avant de payer. Séance absente, partielle ou nombre incohérent : aucun gain, demande conservée pour reprise.35 contrôles API,51 Compte,13 de file de gains,12 de synchronisation et1074 Route PASS. Déploiement autorisé sur le projet partagé ; anciens binaires à mettre à jour pour leurs prochaines clôtures.</p>
+  <p>La vraie connexion/révocation Apple, le rapprochement de l’historique du téléphone et le parcours visuel neuf restent ouverts. Forge/chauffe suivies par leurs sessions. Preuves : <code>tools/production/compte-progression-2026-09-18/README.md</code>.</p>
 </Decision>
 
 <Decision titre="Nosfy — compte branché, validation production encore ouverte">
   <p>Le compte neuf vide, l’isolation, la reconnexion et la suppression Supabase passent le banc API. La clé Apple a été fournie et configurée le 18-09 à 08:58 Paris ; la sonde joint Apple, qui refuse le code factice avec <code>invalid_grant</code>. Le rangement d’un vrai jeton et sa révocation restent à mesurer. Le cycle complet depuis l’iPhone et le rapprochement de l’historique existant restent à mesurer.</p>
-  <p>Un défaut de rémunération a aussi été reproduit hors Forge : une séance inexistante reçoit des gains. Le parcours nominal vert ne couvre pas cet invariant. Le verdict global et les étapes restantes sont dans <a href="#qa" data-saut="qa">Test QA</a> et <code>tools/production/ETAT-PRODUCTION-2026-09-18.md</code>.</p>
+  <p>Le défaut de rémunération reproduit le18-09 est corrigé et déployé : une séance inexistante ne reçoit plus de gain. Les35 contrôles adverses et de progression passent. Le verdict global et les étapes restantes sont dans <a href="#qa" data-saut="qa">Test QA</a> et <code>tools/production/ETAT-PRODUCTION-2026-09-18.md</code>.</p>
 </Decision>
 
 <div className="reveal">

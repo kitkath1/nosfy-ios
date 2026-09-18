@@ -102,6 +102,16 @@ struct NosfyApp: App {
             NavDiagnostic.noter("scene-\(nouvelle)")
             guard nouvelle == .active else { return }
             Task {
+                // Un gain hors ligne attend d'abord la sauvegarde complète de sa séance.
+                let ids = await OutboxGains.shared.seancesARejouer
+                if !ids.isEmpty {
+                    let snapshots = await MainActor.run {
+                        ((try? container.mainContext.fetch(FetchDescriptor<Workout>())) ?? [])
+                            .filter { $0.endedAt != nil && ids.contains($0.remoteID) }
+                            .map { $0.snapshot() }
+                    }
+                    await SupabaseSync.shared.push(snapshots)
+                }
                 await OutboxGains.semer()          // banc `-outboxSemer`
                 // ⚠️ LE +10 NE PART PLUS D'ICI (30-08 soir) : il part AU TAP
                 // du bouton Claim de la card Welcome Back, qui s'ouvre plus

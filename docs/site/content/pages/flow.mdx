@@ -1,5 +1,7 @@
-<Decision titre="Compte vide : commencer au premier galet">
-  <p>Sans séance terminée, la Home et Route commencent <b>tout en haut du chapitre1, au premier galet</b>. Aucun galet accompli, aucune date fictive, récompenses à venir. Correction du18-09 :34 contrôles Swift PASS ; contrôle iPhone encore ouvert. La progression après une première séance reste provisoire.</p>
+<Decision titre="Compte, gains et Route : correctif déployé le18-09">
+  <p>Compte vide : <b>premier galet, tout en haut</b>. Une séance terminée avec travail fait avancer d’un galet ; deux le même jour comptent deux fois, une pause ne fait pas avancer. Cinq chapitres de sept séances, récompenses à3et7 ; après35, l’historique continue sans réinitialiser le parcours.</p>
+  <p>Le serveur reçoit la séance complète avant de payer. Séance absente, partielle ou nombre incohérent : aucun gain, demande conservée pour reprise.35 contrôles API,51 Compte,13 de file de gains,12 de synchronisation et1074 Route PASS. Déploiement autorisé sur le projet partagé ; anciens binaires à mettre à jour pour leurs prochaines clôtures.</p>
+  <p>La vraie connexion/révocation Apple, le rapprochement de l’historique du téléphone et le parcours visuel neuf restent ouverts. Forge/chauffe suivies par leurs sessions. Preuves : <code>tools/production/compte-progression-2026-09-18/README.md</code>.</p>
 </Decision>
 
 <div className="reveal">
@@ -40,7 +42,7 @@
 <Savoir>
   <p>Dès le départ, l’app envoie <code>workouts</code> avec le même UUID que la séance locale. La lecture QA confirme une ligne ouverte et <code>home().en_seance = true</code>. Une panne réseau laisse le film et le parcours continuer ; le retour dans l’app retente sans doublon. Un départ tardif ne rouvre jamais une séance terminée.</p>
   <p>À la fin viennent le push des exercices et séries, <code>cloturer_seance</code>, puis le rafraîchissement du coffre. Le décompte ne valide aucune série et n’accorde aucune récompense.</p>
-  <p>La card ROUTE de la home est un morceau du chemin (chapitre, étape, les neuf nœuds) et la seule porte de la route. Ce qu'elle affiche vient presque entièrement de l'appareil : un compte vide démarre au premier galet ; avec un historique et sans <code>-cheminReel</code>, la démo reste active. Le blocage : personne ne dit où commence un chapitre.</p>
+  <p>La card ROUTE de la home est un morceau du chemin (chapitre, étape, les neuf nœuds) et la seule porte de la route. Son état vient des réalisations du compte, locales puis restaurées par le pull. Le même calcul sert à la Home et à Route ; aucun drapeau de démo n’impose désormais deux galets faits.</p>
   <Schema id="flow-2-entree-b-hors-seance" titre="Entrée B — hors séance" plie />
   <Schema id="flow-3-le-meme-parcours-vu" titre="Le même parcours, vu du serveur" plie />
   <Schema id="flow-4-ce-qui-a-ete" titre="Ce qui a été réparé le 29-08 — une série finie n'était écrite nulle part" plie />

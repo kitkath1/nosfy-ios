@@ -16,6 +16,10 @@ code = source.read_text()
 start = code.index('    struct EtapeSpec:')
 end = code.index('    /// LES FRONTIÈRES', start)
 extrait = 'import Foundation\nenum EcranSpec {\n' + code[start:end] + '\n}\n'
+# La lecture réelle des états et dates, sans les vues SwiftUI.
+a = code.index('    struct Lecture {')
+b = code.index("        /// LA DATE D'UN GALET", a)
+extrait += 'enum EtapeEtat: Equatable { case actif, accompli, rate, prochain, verrouille, reclame; case piece(dispo: Bool), lune(dispo: Bool) }\nextension EcranSpec {\n' + code[a:b] + '\n}\n}\n'
 tests = r'''
 var controles = 0
 func verifier(_ condition: @autoclosure () -> Bool, _ message: String) {
@@ -44,6 +48,30 @@ verifier(existant.etape > 0 && existant.faits.count == 2, "historique non vide c
 let autreCompte = EcranSpec.etapeEtFaits(seancesFinies: [], aujourdhui: maintenant)
 verifier(autreCompte.etape == 0 && autreCompte.faits.isEmpty && autreCompte.dates.isEmpty,
          "un calcul après celui d’un historique ne reprend pas ses galets")
+for nombre in 0...36 {
+    // Deux séances le même jour restent deux réalisations.
+    let dates = Array(repeating: maintenant.addingTimeInterval(-60), count: nombre)
+    let resultat = EcranSpec.etapeEtFaits(seancesFinies: dates, aujourdhui: maintenant)
+    let lecture = EcranSpec.Lecture(etape: resultat.etape, faits: resultat.faits,
+        datesFaites: resultat.dates, maintenant: maintenant)
+    verifier(resultat.faits.count == min(nombre,35), "\(nombre) séances : bon nombre de galets")
+    verifier(EcranSpec.seances.filter { lecture.etat($0) == .actif }.count == (nombre < 35 ? 1 : 0),
+             "\(nombre) séances : actif uniquement avant la fin")
+    verifier(EcranSpec.seances.filter { lecture.etat($0) == .accompli }.count == min(nombre,35),
+             "\(nombre) séances : réalisés visibles même au dernier galet")
+    verifier(EcranSpec.seances.filter { resultat.faits.contains($0.id) }.allSatisfy {
+        lecture.dateReelle($0) == dates.first
+    }, "\(nombre) séances : dates réelles conservées")
+    for special in EcranSpec.etapes.filter(\.special) {
+        let seuil = EcranSpec.seances.filter { $0.id < special.id }.count
+        let attendu: EtapeEtat = special.piece ? .piece(dispo: nombre >= seuil) : .lune(dispo: nombre >= seuil)
+        verifier(lecture.etat(special) == attendu, "\(nombre) séances : récompense\(special.id) au bon seuil")
+    }
+}
+let future = EcranSpec.etapeEtFaits(seancesFinies: [maintenant.addingTimeInterval(3600)], aujourdhui: maintenant)
+verifier(future.faits.isEmpty && future.etape == 0, "une date future ne fait pas avancer")
+let pause = EcranSpec.etapeEtFaits(seancesFinies: datesAnciennes, aujourdhui: maintenant.addingTimeInterval(86400*60))
+verifier(pause.faits == existant.faits && pause.etape == existant.etape, "une pause de60jours ne fait pas avancer")
 print("\(controles) contrôles PASS — \(CommandLine.arguments.contains("-cheminReel") ? "dates réelles" : "lancement normal")")
 '''
 with tempfile.TemporaryDirectory(prefix='nosfy-route-vide-') as tmp:

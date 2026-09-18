@@ -5,6 +5,25 @@ Le commit Compte `507018ca` livre son périmètre ; il ne qualifie pas toute
 l'application. Ce contrôle complète les preuves du 17-09 et remplace toute
 lecture de « serveur prêt » comme une autorisation globale de publication.
 
+## Actualisation après correctif Compte / Gains / Route
+
+Migration20260918083033 **déployée avec accord explicite**. Le défaut de
+rémunération sans séance et la démo Route décrits plus bas sont corrigés.
+35 contrôles API,51 Compte,13 Outbox,12 sync et1074 Route PASS ; compilation
+Debug simulateur partagée réussie. Release isolée en échec sur dépendances
+front antérieures non committées ; voir compte-progression-2026-09-18/build-isole.log.
+Les données existantes sont conservées. Les anciens
+binaires doivent recevoir le nouveau raccord pour payer les prochaines séances.
+
+**Restent avant production** : vraie connexion/révocation Apple et QA iPhone
+Compte neuf, rapprochement de l’historique de test, intégration Forge/chauffe,
+CGU finales et qualification de la version de sortie. L’analyseur sécurité
+remonte52 avertissements (principalement fonctions definer exposées) : les
+gardes de ce correctif ont été testées, cela ne constitue pas une revue globale.
+Preuves actuelles : `compte-progression-2026-09-18/README.md`.
+
+## Constat initial de08:35 — historique, avant le correctif
+
 ## Ce qui est démontré
 
 - Compte neuf au banc : profil incomplet, zéro pièce, zéro sachet, collection

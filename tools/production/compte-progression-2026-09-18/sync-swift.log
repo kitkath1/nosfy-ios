@@ -1,0 +1,14 @@
+PASS séries prévues exclues
+PASS phases sans durée exclues
+PASS piscine conservée
+PASS une transaction pour tout l'arbre
+PASS RPC atomique appelée
+PASS session courante transmise
+PASS UUID de séance conservé
+PASS réalisations groupées dans le même corps
+PASS échec remonte pour préserver le compte local
+Synchronisation Supabase différée : The operation couldn’t be completed. (NSURLErrorDomain error -1011.)
+PASS échec ne déclenche pas les gains
+PASS accusé incomplet refusé
+PASS sauvegarde confirmée relance les gains
+12 contrôles PASS

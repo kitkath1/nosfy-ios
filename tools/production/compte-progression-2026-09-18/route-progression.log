@@ -1,0 +1,1076 @@
+PASS : compte vide J+0 : premier galet
+PASS : compte vide J+0 : aucun accompli ni date fictive
+PASS : compte vide J+0 : séance en haut du chapitre 1
+PASS : compte vide J+0 : aucun galet avant/au-dessus
+PASS : compte vide J+0 : toutes les récompenses restent à venir
+PASS : compte vide J+1 : premier galet
+PASS : compte vide J+1 : aucun accompli ni date fictive
+PASS : compte vide J+1 : séance en haut du chapitre 1
+PASS : compte vide J+1 : aucun galet avant/au-dessus
+PASS : compte vide J+1 : toutes les récompenses restent à venir
+PASS : compte vide J+40 : premier galet
+PASS : compte vide J+40 : aucun accompli ni date fictive
+PASS : compte vide J+40 : séance en haut du chapitre 1
+PASS : compte vide J+40 : aucun galet avant/au-dessus
+PASS : compte vide J+40 : toutes les récompenses restent à venir
+PASS : historique non vide conservé, pas de remise à zéro
+PASS : un calcul après celui d’un historique ne reprend pas ses galets
+PASS : 0 séances : bon nombre de galets
+PASS : 0 séances : actif uniquement avant la fin
+PASS : 0 séances : réalisés visibles même au dernier galet
+PASS : 0 séances : dates réelles conservées
+PASS : 0 séances : récompense3 au bon seuil
+PASS : 0 séances : récompense8 au bon seuil
+PASS : 0 séances : récompense12 au bon seuil
+PASS : 0 séances : récompense17 au bon seuil
+PASS : 0 séances : récompense21 au bon seuil
+PASS : 0 séances : récompense26 au bon seuil
+PASS : 0 séances : récompense30 au bon seuil
+PASS : 0 séances : récompense35 au bon seuil
+PASS : 0 séances : récompense39 au bon seuil
+PASS : 0 séances : récompense44 au bon seuil
+PASS : 1 séances : bon nombre de galets
+PASS : 1 séances : actif uniquement avant la fin
+PASS : 1 séances : réalisés visibles même au dernier galet
+PASS : 1 séances : dates réelles conservées
+PASS : 1 séances : récompense3 au bon seuil
+PASS : 1 séances : récompense8 au bon seuil
+PASS : 1 séances : récompense12 au bon seuil
+PASS : 1 séances : récompense17 au bon seuil
+PASS : 1 séances : récompense21 au bon seuil
+PASS : 1 séances : récompense26 au bon seuil
+PASS : 1 séances : récompense30 au bon seuil
+PASS : 1 séances : récompense35 au bon seuil
+PASS : 1 séances : récompense39 au bon seuil
+PASS : 1 séances : récompense44 au bon seuil
+PASS : 2 séances : bon nombre de galets
+PASS : 2 séances : actif uniquement avant la fin
+PASS : 2 séances : réalisés visibles même au dernier galet
+PASS : 2 séances : dates réelles conservées
+PASS : 2 séances : récompense3 au bon seuil
+PASS : 2 séances : récompense8 au bon seuil
+PASS : 2 séances : récompense12 au bon seuil
+PASS : 2 séances : récompense17 au bon seuil
+PASS : 2 séances : récompense21 au bon seuil
+PASS : 2 séances : récompense26 au bon seuil
+PASS : 2 séances : récompense30 au bon seuil
+PASS : 2 séances : récompense35 au bon seuil
+PASS : 2 séances : récompense39 au bon seuil
+PASS : 2 séances : récompense44 au bon seuil
+PASS : 3 séances : bon nombre de galets
+PASS : 3 séances : actif uniquement avant la fin
+PASS : 3 séances : réalisés visibles même au dernier galet
+PASS : 3 séances : dates réelles conservées
+PASS : 3 séances : récompense3 au bon seuil
+PASS : 3 séances : récompense8 au bon seuil
+PASS : 3 séances : récompense12 au bon seuil
+PASS : 3 séances : récompense17 au bon seuil
+PASS : 3 séances : récompense21 au bon seuil
+PASS : 3 séances : récompense26 au bon seuil
+PASS : 3 séances : récompense30 au bon seuil
+PASS : 3 séances : récompense35 au bon seuil
+PASS : 3 séances : récompense39 au bon seuil
+PASS : 3 séances : récompense44 au bon seuil
+PASS : 4 séances : bon nombre de galets
+PASS : 4 séances : actif uniquement avant la fin
+PASS : 4 séances : réalisés visibles même au dernier galet
+PASS : 4 séances : dates réelles conservées
+PASS : 4 séances : récompense3 au bon seuil
+PASS : 4 séances : récompense8 au bon seuil
+PASS : 4 séances : récompense12 au bon seuil
+PASS : 4 séances : récompense17 au bon seuil
+PASS : 4 séances : récompense21 au bon seuil
+PASS : 4 séances : récompense26 au bon seuil
+PASS : 4 séances : récompense30 au bon seuil
+PASS : 4 séances : récompense35 au bon seuil
+PASS : 4 séances : récompense39 au bon seuil
+PASS : 4 séances : récompense44 au bon seuil
+PASS : 5 séances : bon nombre de galets
+PASS : 5 séances : actif uniquement avant la fin
+PASS : 5 séances : réalisés visibles même au dernier galet
+PASS : 5 séances : dates réelles conservées
+PASS : 5 séances : récompense3 au bon seuil
+PASS : 5 séances : récompense8 au bon seuil
+PASS : 5 séances : récompense12 au bon seuil
+PASS : 5 séances : récompense17 au bon seuil
+PASS : 5 séances : récompense21 au bon seuil
+PASS : 5 séances : récompense26 au bon seuil
+PASS : 5 séances : récompense30 au bon seuil
+PASS : 5 séances : récompense35 au bon seuil
+PASS : 5 séances : récompense39 au bon seuil
+PASS : 5 séances : récompense44 au bon seuil
+PASS : 6 séances : bon nombre de galets
+PASS : 6 séances : actif uniquement avant la fin
+PASS : 6 séances : réalisés visibles même au dernier galet
+PASS : 6 séances : dates réelles conservées
+PASS : 6 séances : récompense3 au bon seuil
+PASS : 6 séances : récompense8 au bon seuil
+PASS : 6 séances : récompense12 au bon seuil
+PASS : 6 séances : récompense17 au bon seuil
+PASS : 6 séances : récompense21 au bon seuil
+PASS : 6 séances : récompense26 au bon seuil
+PASS : 6 séances : récompense30 au bon seuil
+PASS : 6 séances : récompense35 au bon seuil
+PASS : 6 séances : récompense39 au bon seuil
+PASS : 6 séances : récompense44 au bon seuil
+PASS : 7 séances : bon nombre de galets
+PASS : 7 séances : actif uniquement avant la fin
+PASS : 7 séances : réalisés visibles même au dernier galet
+PASS : 7 séances : dates réelles conservées
+PASS : 7 séances : récompense3 au bon seuil
+PASS : 7 séances : récompense8 au bon seuil
+PASS : 7 séances : récompense12 au bon seuil
+PASS : 7 séances : récompense17 au bon seuil
+PASS : 7 séances : récompense21 au bon seuil
+PASS : 7 séances : récompense26 au bon seuil
+PASS : 7 séances : récompense30 au bon seuil
+PASS : 7 séances : récompense35 au bon seuil
+PASS : 7 séances : récompense39 au bon seuil
+PASS : 7 séances : récompense44 au bon seuil
+PASS : 8 séances : bon nombre de galets
+PASS : 8 séances : actif uniquement avant la fin
+PASS : 8 séances : réalisés visibles même au dernier galet
+PASS : 8 séances : dates réelles conservées
+PASS : 8 séances : récompense3 au bon seuil
+PASS : 8 séances : récompense8 au bon seuil
+PASS : 8 séances : récompense12 au bon seuil
+PASS : 8 séances : récompense17 au bon seuil
+PASS : 8 séances : récompense21 au bon seuil
+PASS : 8 séances : récompense26 au bon seuil
+PASS : 8 séances : récompense30 au bon seuil
+PASS : 8 séances : récompense35 au bon seuil
+PASS : 8 séances : récompense39 au bon seuil
+PASS : 8 séances : récompense44 au bon seuil
+PASS : 9 séances : bon nombre de galets
+PASS : 9 séances : actif uniquement avant la fin
+PASS : 9 séances : réalisés visibles même au dernier galet
+PASS : 9 séances : dates réelles conservées
+PASS : 9 séances : récompense3 au bon seuil
+PASS : 9 séances : récompense8 au bon seuil
+PASS : 9 séances : récompense12 au bon seuil
+PASS : 9 séances : récompense17 au bon seuil
+PASS : 9 séances : récompense21 au bon seuil
+PASS : 9 séances : récompense26 au bon seuil
+PASS : 9 séances : récompense30 au bon seuil
+PASS : 9 séances : récompense35 au bon seuil
+PASS : 9 séances : récompense39 au bon seuil
+PASS : 9 séances : récompense44 au bon seuil
+PASS : 10 séances : bon nombre de galets
+PASS : 10 séances : actif uniquement avant la fin
+PASS : 10 séances : réalisés visibles même au dernier galet
+PASS : 10 séances : dates réelles conservées
+PASS : 10 séances : récompense3 au bon seuil
+PASS : 10 séances : récompense8 au bon seuil
+PASS : 10 séances : récompense12 au bon seuil
+PASS : 10 séances : récompense17 au bon seuil
+PASS : 10 séances : récompense21 au bon seuil
+PASS : 10 séances : récompense26 au bon seuil
+PASS : 10 séances : récompense30 au bon seuil
+PASS : 10 séances : récompense35 au bon seuil
+PASS : 10 séances : récompense39 au bon seuil
+PASS : 10 séances : récompense44 au bon seuil
+PASS : 11 séances : bon nombre de galets
+PASS : 11 séances : actif uniquement avant la fin
+PASS : 11 séances : réalisés visibles même au dernier galet
+PASS : 11 séances : dates réelles conservées
+PASS : 11 séances : récompense3 au bon seuil
+PASS : 11 séances : récompense8 au bon seuil
+PASS : 11 séances : récompense12 au bon seuil
+PASS : 11 séances : récompense17 au bon seuil
+PASS : 11 séances : récompense21 au bon seuil
+PASS : 11 séances : récompense26 au bon seuil
+PASS : 11 séances : récompense30 au bon seuil
+PASS : 11 séances : récompense35 au bon seuil
+PASS : 11 séances : récompense39 au bon seuil
+PASS : 11 séances : récompense44 au bon seuil
+PASS : 12 séances : bon nombre de galets
+PASS : 12 séances : actif uniquement avant la fin
+PASS : 12 séances : réalisés visibles même au dernier galet
+PASS : 12 séances : dates réelles conservées
+PASS : 12 séances : récompense3 au bon seuil
+PASS : 12 séances : récompense8 au bon seuil
+PASS : 12 séances : récompense12 au bon seuil
+PASS : 12 séances : récompense17 au bon seuil
+PASS : 12 séances : récompense21 au bon seuil
+PASS : 12 séances : récompense26 au bon seuil
+PASS : 12 séances : récompense30 au bon seuil
+PASS : 12 séances : récompense35 au bon seuil
+PASS : 12 séances : récompense39 au bon seuil
+PASS : 12 séances : récompense44 au bon seuil
+PASS : 13 séances : bon nombre de galets
+PASS : 13 séances : actif uniquement avant la fin
+PASS : 13 séances : réalisés visibles même au dernier galet
+PASS : 13 séances : dates réelles conservées
+PASS : 13 séances : récompense3 au bon seuil
+PASS : 13 séances : récompense8 au bon seuil
+PASS : 13 séances : récompense12 au bon seuil
+PASS : 13 séances : récompense17 au bon seuil
+PASS : 13 séances : récompense21 au bon seuil
+PASS : 13 séances : récompense26 au bon seuil
+PASS : 13 séances : récompense30 au bon seuil
+PASS : 13 séances : récompense35 au bon seuil
+PASS : 13 séances : récompense39 au bon seuil
+PASS : 13 séances : récompense44 au bon seuil
+PASS : 14 séances : bon nombre de galets
+PASS : 14 séances : actif uniquement avant la fin
+PASS : 14 séances : réalisés visibles même au dernier galet
+PASS : 14 séances : dates réelles conservées
+PASS : 14 séances : récompense3 au bon seuil
+PASS : 14 séances : récompense8 au bon seuil
+PASS : 14 séances : récompense12 au bon seuil
+PASS : 14 séances : récompense17 au bon seuil
+PASS : 14 séances : récompense21 au bon seuil
+PASS : 14 séances : récompense26 au bon seuil
+PASS : 14 séances : récompense30 au bon seuil
+PASS : 14 séances : récompense35 au bon seuil
+PASS : 14 séances : récompense39 au bon seuil
+PASS : 14 séances : récompense44 au bon seuil
+PASS : 15 séances : bon nombre de galets
+PASS : 15 séances : actif uniquement avant la fin
+PASS : 15 séances : réalisés visibles même au dernier galet
+PASS : 15 séances : dates réelles conservées
+PASS : 15 séances : récompense3 au bon seuil
+PASS : 15 séances : récompense8 au bon seuil
+PASS : 15 séances : récompense12 au bon seuil
+PASS : 15 séances : récompense17 au bon seuil
+PASS : 15 séances : récompense21 au bon seuil
+PASS : 15 séances : récompense26 au bon seuil
+PASS : 15 séances : récompense30 au bon seuil
+PASS : 15 séances : récompense35 au bon seuil
+PASS : 15 séances : récompense39 au bon seuil
+PASS : 15 séances : récompense44 au bon seuil
+PASS : 16 séances : bon nombre de galets
+PASS : 16 séances : actif uniquement avant la fin
+PASS : 16 séances : réalisés visibles même au dernier galet
+PASS : 16 séances : dates réelles conservées
+PASS : 16 séances : récompense3 au bon seuil
+PASS : 16 séances : récompense8 au bon seuil
+PASS : 16 séances : récompense12 au bon seuil
+PASS : 16 séances : récompense17 au bon seuil
+PASS : 16 séances : récompense21 au bon seuil
+PASS : 16 séances : récompense26 au bon seuil
+PASS : 16 séances : récompense30 au bon seuil
+PASS : 16 séances : récompense35 au bon seuil
+PASS : 16 séances : récompense39 au bon seuil
+PASS : 16 séances : récompense44 au bon seuil
+PASS : 17 séances : bon nombre de galets
+PASS : 17 séances : actif uniquement avant la fin
+PASS : 17 séances : réalisés visibles même au dernier galet
+PASS : 17 séances : dates réelles conservées
+PASS : 17 séances : récompense3 au bon seuil
+PASS : 17 séances : récompense8 au bon seuil
+PASS : 17 séances : récompense12 au bon seuil
+PASS : 17 séances : récompense17 au bon seuil
+PASS : 17 séances : récompense21 au bon seuil
+PASS : 17 séances : récompense26 au bon seuil
+PASS : 17 séances : récompense30 au bon seuil
+PASS : 17 séances : récompense35 au bon seuil
+PASS : 17 séances : récompense39 au bon seuil
+PASS : 17 séances : récompense44 au bon seuil
+PASS : 18 séances : bon nombre de galets
+PASS : 18 séances : actif uniquement avant la fin
+PASS : 18 séances : réalisés visibles même au dernier galet
+PASS : 18 séances : dates réelles conservées
+PASS : 18 séances : récompense3 au bon seuil
+PASS : 18 séances : récompense8 au bon seuil
+PASS : 18 séances : récompense12 au bon seuil
+PASS : 18 séances : récompense17 au bon seuil
+PASS : 18 séances : récompense21 au bon seuil
+PASS : 18 séances : récompense26 au bon seuil
+PASS : 18 séances : récompense30 au bon seuil
+PASS : 18 séances : récompense35 au bon seuil
+PASS : 18 séances : récompense39 au bon seuil
+PASS : 18 séances : récompense44 au bon seuil
+PASS : 19 séances : bon nombre de galets
+PASS : 19 séances : actif uniquement avant la fin
+PASS : 19 séances : réalisés visibles même au dernier galet
+PASS : 19 séances : dates réelles conservées
+PASS : 19 séances : récompense3 au bon seuil
+PASS : 19 séances : récompense8 au bon seuil
+PASS : 19 séances : récompense12 au bon seuil
+PASS : 19 séances : récompense17 au bon seuil
+PASS : 19 séances : récompense21 au bon seuil
+PASS : 19 séances : récompense26 au bon seuil
+PASS : 19 séances : récompense30 au bon seuil
+PASS : 19 séances : récompense35 au bon seuil
+PASS : 19 séances : récompense39 au bon seuil
+PASS : 19 séances : récompense44 au bon seuil
+PASS : 20 séances : bon nombre de galets
+PASS : 20 séances : actif uniquement avant la fin
+PASS : 20 séances : réalisés visibles même au dernier galet
+PASS : 20 séances : dates réelles conservées
+PASS : 20 séances : récompense3 au bon seuil
+PASS : 20 séances : récompense8 au bon seuil
+PASS : 20 séances : récompense12 au bon seuil
+PASS : 20 séances : récompense17 au bon seuil
+PASS : 20 séances : récompense21 au bon seuil
+PASS : 20 séances : récompense26 au bon seuil
+PASS : 20 séances : récompense30 au bon seuil
+PASS : 20 séances : récompense35 au bon seuil
+PASS : 20 séances : récompense39 au bon seuil
+PASS : 20 séances : récompense44 au bon seuil
+PASS : 21 séances : bon nombre de galets
+PASS : 21 séances : actif uniquement avant la fin
+PASS : 21 séances : réalisés visibles même au dernier galet
+PASS : 21 séances : dates réelles conservées
+PASS : 21 séances : récompense3 au bon seuil
+PASS : 21 séances : récompense8 au bon seuil
+PASS : 21 séances : récompense12 au bon seuil
+PASS : 21 séances : récompense17 au bon seuil
+PASS : 21 séances : récompense21 au bon seuil
+PASS : 21 séances : récompense26 au bon seuil
+PASS : 21 séances : récompense30 au bon seuil
+PASS : 21 séances : récompense35 au bon seuil
+PASS : 21 séances : récompense39 au bon seuil
+PASS : 21 séances : récompense44 au bon seuil
+PASS : 22 séances : bon nombre de galets
+PASS : 22 séances : actif uniquement avant la fin
+PASS : 22 séances : réalisés visibles même au dernier galet
+PASS : 22 séances : dates réelles conservées
+PASS : 22 séances : récompense3 au bon seuil
+PASS : 22 séances : récompense8 au bon seuil
+PASS : 22 séances : récompense12 au bon seuil
+PASS : 22 séances : récompense17 au bon seuil
+PASS : 22 séances : récompense21 au bon seuil
+PASS : 22 séances : récompense26 au bon seuil
+PASS : 22 séances : récompense30 au bon seuil
+PASS : 22 séances : récompense35 au bon seuil
+PASS : 22 séances : récompense39 au bon seuil
+PASS : 22 séances : récompense44 au bon seuil
+PASS : 23 séances : bon nombre de galets
+PASS : 23 séances : actif uniquement avant la fin
+PASS : 23 séances : réalisés visibles même au dernier galet
+PASS : 23 séances : dates réelles conservées
+PASS : 23 séances : récompense3 au bon seuil
+PASS : 23 séances : récompense8 au bon seuil
+PASS : 23 séances : récompense12 au bon seuil
+PASS : 23 séances : récompense17 au bon seuil
+PASS : 23 séances : récompense21 au bon seuil
+PASS : 23 séances : récompense26 au bon seuil
+PASS : 23 séances : récompense30 au bon seuil
+PASS : 23 séances : récompense35 au bon seuil
+PASS : 23 séances : récompense39 au bon seuil
+PASS : 23 séances : récompense44 au bon seuil
+PASS : 24 séances : bon nombre de galets
+PASS : 24 séances : actif uniquement avant la fin
+PASS : 24 séances : réalisés visibles même au dernier galet
+PASS : 24 séances : dates réelles conservées
+PASS : 24 séances : récompense3 au bon seuil
+PASS : 24 séances : récompense8 au bon seuil
+PASS : 24 séances : récompense12 au bon seuil
+PASS : 24 séances : récompense17 au bon seuil
+PASS : 24 séances : récompense21 au bon seuil
+PASS : 24 séances : récompense26 au bon seuil
+PASS : 24 séances : récompense30 au bon seuil
+PASS : 24 séances : récompense35 au bon seuil
+PASS : 24 séances : récompense39 au bon seuil
+PASS : 24 séances : récompense44 au bon seuil
+PASS : 25 séances : bon nombre de galets
+PASS : 25 séances : actif uniquement avant la fin
+PASS : 25 séances : réalisés visibles même au dernier galet
+PASS : 25 séances : dates réelles conservées
+PASS : 25 séances : récompense3 au bon seuil
+PASS : 25 séances : récompense8 au bon seuil
+PASS : 25 séances : récompense12 au bon seuil
+PASS : 25 séances : récompense17 au bon seuil
+PASS : 25 séances : récompense21 au bon seuil
+PASS : 25 séances : récompense26 au bon seuil
+PASS : 25 séances : récompense30 au bon seuil
+PASS : 25 séances : récompense35 au bon seuil
+PASS : 25 séances : récompense39 au bon seuil
+PASS : 25 séances : récompense44 au bon seuil
+PASS : 26 séances : bon nombre de galets
+PASS : 26 séances : actif uniquement avant la fin
+PASS : 26 séances : réalisés visibles même au dernier galet
+PASS : 26 séances : dates réelles conservées
+PASS : 26 séances : récompense3 au bon seuil
+PASS : 26 séances : récompense8 au bon seuil
+PASS : 26 séances : récompense12 au bon seuil
+PASS : 26 séances : récompense17 au bon seuil
+PASS : 26 séances : récompense21 au bon seuil
+PASS : 26 séances : récompense26 au bon seuil
+PASS : 26 séances : récompense30 au bon seuil
+PASS : 26 séances : récompense35 au bon seuil
+PASS : 26 séances : récompense39 au bon seuil
+PASS : 26 séances : récompense44 au bon seuil
+PASS : 27 séances : bon nombre de galets
+PASS : 27 séances : actif uniquement avant la fin
+PASS : 27 séances : réalisés visibles même au dernier galet
+PASS : 27 séances : dates réelles conservées
+PASS : 27 séances : récompense3 au bon seuil
+PASS : 27 séances : récompense8 au bon seuil
+PASS : 27 séances : récompense12 au bon seuil
+PASS : 27 séances : récompense17 au bon seuil
+PASS : 27 séances : récompense21 au bon seuil
+PASS : 27 séances : récompense26 au bon seuil
+PASS : 27 séances : récompense30 au bon seuil
+PASS : 27 séances : récompense35 au bon seuil
+PASS : 27 séances : récompense39 au bon seuil
+PASS : 27 séances : récompense44 au bon seuil
+PASS : 28 séances : bon nombre de galets
+PASS : 28 séances : actif uniquement avant la fin
+PASS : 28 séances : réalisés visibles même au dernier galet
+PASS : 28 séances : dates réelles conservées
+PASS : 28 séances : récompense3 au bon seuil
+PASS : 28 séances : récompense8 au bon seuil
+PASS : 28 séances : récompense12 au bon seuil
+PASS : 28 séances : récompense17 au bon seuil
+PASS : 28 séances : récompense21 au bon seuil
+PASS : 28 séances : récompense26 au bon seuil
+PASS : 28 séances : récompense30 au bon seuil
+PASS : 28 séances : récompense35 au bon seuil
+PASS : 28 séances : récompense39 au bon seuil
+PASS : 28 séances : récompense44 au bon seuil
+PASS : 29 séances : bon nombre de galets
+PASS : 29 séances : actif uniquement avant la fin
+PASS : 29 séances : réalisés visibles même au dernier galet
+PASS : 29 séances : dates réelles conservées
+PASS : 29 séances : récompense3 au bon seuil
+PASS : 29 séances : récompense8 au bon seuil
+PASS : 29 séances : récompense12 au bon seuil
+PASS : 29 séances : récompense17 au bon seuil
+PASS : 29 séances : récompense21 au bon seuil
+PASS : 29 séances : récompense26 au bon seuil
+PASS : 29 séances : récompense30 au bon seuil
+PASS : 29 séances : récompense35 au bon seuil
+PASS : 29 séances : récompense39 au bon seuil
+PASS : 29 séances : récompense44 au bon seuil
+PASS : 30 séances : bon nombre de galets
+PASS : 30 séances : actif uniquement avant la fin
+PASS : 30 séances : réalisés visibles même au dernier galet
+PASS : 30 séances : dates réelles conservées
+PASS : 30 séances : récompense3 au bon seuil
+PASS : 30 séances : récompense8 au bon seuil
+PASS : 30 séances : récompense12 au bon seuil
+PASS : 30 séances : récompense17 au bon seuil
+PASS : 30 séances : récompense21 au bon seuil
+PASS : 30 séances : récompense26 au bon seuil
+PASS : 30 séances : récompense30 au bon seuil
+PASS : 30 séances : récompense35 au bon seuil
+PASS : 30 séances : récompense39 au bon seuil
+PASS : 30 séances : récompense44 au bon seuil
+PASS : 31 séances : bon nombre de galets
+PASS : 31 séances : actif uniquement avant la fin
+PASS : 31 séances : réalisés visibles même au dernier galet
+PASS : 31 séances : dates réelles conservées
+PASS : 31 séances : récompense3 au bon seuil
+PASS : 31 séances : récompense8 au bon seuil
+PASS : 31 séances : récompense12 au bon seuil
+PASS : 31 séances : récompense17 au bon seuil
+PASS : 31 séances : récompense21 au bon seuil
+PASS : 31 séances : récompense26 au bon seuil
+PASS : 31 séances : récompense30 au bon seuil
+PASS : 31 séances : récompense35 au bon seuil
+PASS : 31 séances : récompense39 au bon seuil
+PASS : 31 séances : récompense44 au bon seuil
+PASS : 32 séances : bon nombre de galets
+PASS : 32 séances : actif uniquement avant la fin
+PASS : 32 séances : réalisés visibles même au dernier galet
+PASS : 32 séances : dates réelles conservées
+PASS : 32 séances : récompense3 au bon seuil
+PASS : 32 séances : récompense8 au bon seuil
+PASS : 32 séances : récompense12 au bon seuil
+PASS : 32 séances : récompense17 au bon seuil
+PASS : 32 séances : récompense21 au bon seuil
+PASS : 32 séances : récompense26 au bon seuil
+PASS : 32 séances : récompense30 au bon seuil
+PASS : 32 séances : récompense35 au bon seuil
+PASS : 32 séances : récompense39 au bon seuil
+PASS : 32 séances : récompense44 au bon seuil
+PASS : 33 séances : bon nombre de galets
+PASS : 33 séances : actif uniquement avant la fin
+PASS : 33 séances : réalisés visibles même au dernier galet
+PASS : 33 séances : dates réelles conservées
+PASS : 33 séances : récompense3 au bon seuil
+PASS : 33 séances : récompense8 au bon seuil
+PASS : 33 séances : récompense12 au bon seuil
+PASS : 33 séances : récompense17 au bon seuil
+PASS : 33 séances : récompense21 au bon seuil
+PASS : 33 séances : récompense26 au bon seuil
+PASS : 33 séances : récompense30 au bon seuil
+PASS : 33 séances : récompense35 au bon seuil
+PASS : 33 séances : récompense39 au bon seuil
+PASS : 33 séances : récompense44 au bon seuil
+PASS : 34 séances : bon nombre de galets
+PASS : 34 séances : actif uniquement avant la fin
+PASS : 34 séances : réalisés visibles même au dernier galet
+PASS : 34 séances : dates réelles conservées
+PASS : 34 séances : récompense3 au bon seuil
+PASS : 34 séances : récompense8 au bon seuil
+PASS : 34 séances : récompense12 au bon seuil
+PASS : 34 séances : récompense17 au bon seuil
+PASS : 34 séances : récompense21 au bon seuil
+PASS : 34 séances : récompense26 au bon seuil
+PASS : 34 séances : récompense30 au bon seuil
+PASS : 34 séances : récompense35 au bon seuil
+PASS : 34 séances : récompense39 au bon seuil
+PASS : 34 séances : récompense44 au bon seuil
+PASS : 35 séances : bon nombre de galets
+PASS : 35 séances : actif uniquement avant la fin
+PASS : 35 séances : réalisés visibles même au dernier galet
+PASS : 35 séances : dates réelles conservées
+PASS : 35 séances : récompense3 au bon seuil
+PASS : 35 séances : récompense8 au bon seuil
+PASS : 35 séances : récompense12 au bon seuil
+PASS : 35 séances : récompense17 au bon seuil
+PASS : 35 séances : récompense21 au bon seuil
+PASS : 35 séances : récompense26 au bon seuil
+PASS : 35 séances : récompense30 au bon seuil
+PASS : 35 séances : récompense35 au bon seuil
+PASS : 35 séances : récompense39 au bon seuil
+PASS : 35 séances : récompense44 au bon seuil
+PASS : 36 séances : bon nombre de galets
+PASS : 36 séances : actif uniquement avant la fin
+PASS : 36 séances : réalisés visibles même au dernier galet
+PASS : 36 séances : dates réelles conservées
+PASS : 36 séances : récompense3 au bon seuil
+PASS : 36 séances : récompense8 au bon seuil
+PASS : 36 séances : récompense12 au bon seuil
+PASS : 36 séances : récompense17 au bon seuil
+PASS : 36 séances : récompense21 au bon seuil
+PASS : 36 séances : récompense26 au bon seuil
+PASS : 36 séances : récompense30 au bon seuil
+PASS : 36 séances : récompense35 au bon seuil
+PASS : 36 séances : récompense39 au bon seuil
+PASS : 36 séances : récompense44 au bon seuil
+PASS : une date future ne fait pas avancer
+PASS : une pause de60jours ne fait pas avancer
+537 contrôles PASS — lancement normal
+PASS : compte vide J+0 : premier galet
+PASS : compte vide J+0 : aucun accompli ni date fictive
+PASS : compte vide J+0 : séance en haut du chapitre 1
+PASS : compte vide J+0 : aucun galet avant/au-dessus
+PASS : compte vide J+0 : toutes les récompenses restent à venir
+PASS : compte vide J+1 : premier galet
+PASS : compte vide J+1 : aucun accompli ni date fictive
+PASS : compte vide J+1 : séance en haut du chapitre 1
+PASS : compte vide J+1 : aucun galet avant/au-dessus
+PASS : compte vide J+1 : toutes les récompenses restent à venir
+PASS : compte vide J+40 : premier galet
+PASS : compte vide J+40 : aucun accompli ni date fictive
+PASS : compte vide J+40 : séance en haut du chapitre 1
+PASS : compte vide J+40 : aucun galet avant/au-dessus
+PASS : compte vide J+40 : toutes les récompenses restent à venir
+PASS : historique non vide conservé, pas de remise à zéro
+PASS : un calcul après celui d’un historique ne reprend pas ses galets
+PASS : 0 séances : bon nombre de galets
+PASS : 0 séances : actif uniquement avant la fin
+PASS : 0 séances : réalisés visibles même au dernier galet
+PASS : 0 séances : dates réelles conservées
+PASS : 0 séances : récompense3 au bon seuil
+PASS : 0 séances : récompense8 au bon seuil
+PASS : 0 séances : récompense12 au bon seuil
+PASS : 0 séances : récompense17 au bon seuil
+PASS : 0 séances : récompense21 au bon seuil
+PASS : 0 séances : récompense26 au bon seuil
+PASS : 0 séances : récompense30 au bon seuil
+PASS : 0 séances : récompense35 au bon seuil
+PASS : 0 séances : récompense39 au bon seuil
+PASS : 0 séances : récompense44 au bon seuil
+PASS : 1 séances : bon nombre de galets
+PASS : 1 séances : actif uniquement avant la fin
+PASS : 1 séances : réalisés visibles même au dernier galet
+PASS : 1 séances : dates réelles conservées
+PASS : 1 séances : récompense3 au bon seuil
+PASS : 1 séances : récompense8 au bon seuil
+PASS : 1 séances : récompense12 au bon seuil
+PASS : 1 séances : récompense17 au bon seuil
+PASS : 1 séances : récompense21 au bon seuil
+PASS : 1 séances : récompense26 au bon seuil
+PASS : 1 séances : récompense30 au bon seuil
+PASS : 1 séances : récompense35 au bon seuil
+PASS : 1 séances : récompense39 au bon seuil
+PASS : 1 séances : récompense44 au bon seuil
+PASS : 2 séances : bon nombre de galets
+PASS : 2 séances : actif uniquement avant la fin
+PASS : 2 séances : réalisés visibles même au dernier galet
+PASS : 2 séances : dates réelles conservées
+PASS : 2 séances : récompense3 au bon seuil
+PASS : 2 séances : récompense8 au bon seuil
+PASS : 2 séances : récompense12 au bon seuil
+PASS : 2 séances : récompense17 au bon seuil
+PASS : 2 séances : récompense21 au bon seuil
+PASS : 2 séances : récompense26 au bon seuil
+PASS : 2 séances : récompense30 au bon seuil
+PASS : 2 séances : récompense35 au bon seuil
+PASS : 2 séances : récompense39 au bon seuil
+PASS : 2 séances : récompense44 au bon seuil
+PASS : 3 séances : bon nombre de galets
+PASS : 3 séances : actif uniquement avant la fin
+PASS : 3 séances : réalisés visibles même au dernier galet
+PASS : 3 séances : dates réelles conservées
+PASS : 3 séances : récompense3 au bon seuil
+PASS : 3 séances : récompense8 au bon seuil
+PASS : 3 séances : récompense12 au bon seuil
+PASS : 3 séances : récompense17 au bon seuil
+PASS : 3 séances : récompense21 au bon seuil
+PASS : 3 séances : récompense26 au bon seuil
+PASS : 3 séances : récompense30 au bon seuil
+PASS : 3 séances : récompense35 au bon seuil
+PASS : 3 séances : récompense39 au bon seuil
+PASS : 3 séances : récompense44 au bon seuil
+PASS : 4 séances : bon nombre de galets
+PASS : 4 séances : actif uniquement avant la fin
+PASS : 4 séances : réalisés visibles même au dernier galet
+PASS : 4 séances : dates réelles conservées
+PASS : 4 séances : récompense3 au bon seuil
+PASS : 4 séances : récompense8 au bon seuil
+PASS : 4 séances : récompense12 au bon seuil
+PASS : 4 séances : récompense17 au bon seuil
+PASS : 4 séances : récompense21 au bon seuil
+PASS : 4 séances : récompense26 au bon seuil
+PASS : 4 séances : récompense30 au bon seuil
+PASS : 4 séances : récompense35 au bon seuil
+PASS : 4 séances : récompense39 au bon seuil
+PASS : 4 séances : récompense44 au bon seuil
+PASS : 5 séances : bon nombre de galets
+PASS : 5 séances : actif uniquement avant la fin
+PASS : 5 séances : réalisés visibles même au dernier galet
+PASS : 5 séances : dates réelles conservées
+PASS : 5 séances : récompense3 au bon seuil
+PASS : 5 séances : récompense8 au bon seuil
+PASS : 5 séances : récompense12 au bon seuil
+PASS : 5 séances : récompense17 au bon seuil
+PASS : 5 séances : récompense21 au bon seuil
+PASS : 5 séances : récompense26 au bon seuil
+PASS : 5 séances : récompense30 au bon seuil
+PASS : 5 séances : récompense35 au bon seuil
+PASS : 5 séances : récompense39 au bon seuil
+PASS : 5 séances : récompense44 au bon seuil
+PASS : 6 séances : bon nombre de galets
+PASS : 6 séances : actif uniquement avant la fin
+PASS : 6 séances : réalisés visibles même au dernier galet
+PASS : 6 séances : dates réelles conservées
+PASS : 6 séances : récompense3 au bon seuil
+PASS : 6 séances : récompense8 au bon seuil
+PASS : 6 séances : récompense12 au bon seuil
+PASS : 6 séances : récompense17 au bon seuil
+PASS : 6 séances : récompense21 au bon seuil
+PASS : 6 séances : récompense26 au bon seuil
+PASS : 6 séances : récompense30 au bon seuil
+PASS : 6 séances : récompense35 au bon seuil
+PASS : 6 séances : récompense39 au bon seuil
+PASS : 6 séances : récompense44 au bon seuil
+PASS : 7 séances : bon nombre de galets
+PASS : 7 séances : actif uniquement avant la fin
+PASS : 7 séances : réalisés visibles même au dernier galet
+PASS : 7 séances : dates réelles conservées
+PASS : 7 séances : récompense3 au bon seuil
+PASS : 7 séances : récompense8 au bon seuil
+PASS : 7 séances : récompense12 au bon seuil
+PASS : 7 séances : récompense17 au bon seuil
+PASS : 7 séances : récompense21 au bon seuil
+PASS : 7 séances : récompense26 au bon seuil
+PASS : 7 séances : récompense30 au bon seuil
+PASS : 7 séances : récompense35 au bon seuil
+PASS : 7 séances : récompense39 au bon seuil
+PASS : 7 séances : récompense44 au bon seuil
+PASS : 8 séances : bon nombre de galets
+PASS : 8 séances : actif uniquement avant la fin
+PASS : 8 séances : réalisés visibles même au dernier galet
+PASS : 8 séances : dates réelles conservées
+PASS : 8 séances : récompense3 au bon seuil
+PASS : 8 séances : récompense8 au bon seuil
+PASS : 8 séances : récompense12 au bon seuil
+PASS : 8 séances : récompense17 au bon seuil
+PASS : 8 séances : récompense21 au bon seuil
+PASS : 8 séances : récompense26 au bon seuil
+PASS : 8 séances : récompense30 au bon seuil
+PASS : 8 séances : récompense35 au bon seuil
+PASS : 8 séances : récompense39 au bon seuil
+PASS : 8 séances : récompense44 au bon seuil
+PASS : 9 séances : bon nombre de galets
+PASS : 9 séances : actif uniquement avant la fin
+PASS : 9 séances : réalisés visibles même au dernier galet
+PASS : 9 séances : dates réelles conservées
+PASS : 9 séances : récompense3 au bon seuil
+PASS : 9 séances : récompense8 au bon seuil
+PASS : 9 séances : récompense12 au bon seuil
+PASS : 9 séances : récompense17 au bon seuil
+PASS : 9 séances : récompense21 au bon seuil
+PASS : 9 séances : récompense26 au bon seuil
+PASS : 9 séances : récompense30 au bon seuil
+PASS : 9 séances : récompense35 au bon seuil
+PASS : 9 séances : récompense39 au bon seuil
+PASS : 9 séances : récompense44 au bon seuil
+PASS : 10 séances : bon nombre de galets
+PASS : 10 séances : actif uniquement avant la fin
+PASS : 10 séances : réalisés visibles même au dernier galet
+PASS : 10 séances : dates réelles conservées
+PASS : 10 séances : récompense3 au bon seuil
+PASS : 10 séances : récompense8 au bon seuil
+PASS : 10 séances : récompense12 au bon seuil
+PASS : 10 séances : récompense17 au bon seuil
+PASS : 10 séances : récompense21 au bon seuil
+PASS : 10 séances : récompense26 au bon seuil
+PASS : 10 séances : récompense30 au bon seuil
+PASS : 10 séances : récompense35 au bon seuil
+PASS : 10 séances : récompense39 au bon seuil
+PASS : 10 séances : récompense44 au bon seuil
+PASS : 11 séances : bon nombre de galets
+PASS : 11 séances : actif uniquement avant la fin
+PASS : 11 séances : réalisés visibles même au dernier galet
+PASS : 11 séances : dates réelles conservées
+PASS : 11 séances : récompense3 au bon seuil
+PASS : 11 séances : récompense8 au bon seuil
+PASS : 11 séances : récompense12 au bon seuil
+PASS : 11 séances : récompense17 au bon seuil
+PASS : 11 séances : récompense21 au bon seuil
+PASS : 11 séances : récompense26 au bon seuil
+PASS : 11 séances : récompense30 au bon seuil
+PASS : 11 séances : récompense35 au bon seuil
+PASS : 11 séances : récompense39 au bon seuil
+PASS : 11 séances : récompense44 au bon seuil
+PASS : 12 séances : bon nombre de galets
+PASS : 12 séances : actif uniquement avant la fin
+PASS : 12 séances : réalisés visibles même au dernier galet
+PASS : 12 séances : dates réelles conservées
+PASS : 12 séances : récompense3 au bon seuil
+PASS : 12 séances : récompense8 au bon seuil
+PASS : 12 séances : récompense12 au bon seuil
+PASS : 12 séances : récompense17 au bon seuil
+PASS : 12 séances : récompense21 au bon seuil
+PASS : 12 séances : récompense26 au bon seuil
+PASS : 12 séances : récompense30 au bon seuil
+PASS : 12 séances : récompense35 au bon seuil
+PASS : 12 séances : récompense39 au bon seuil
+PASS : 12 séances : récompense44 au bon seuil
+PASS : 13 séances : bon nombre de galets
+PASS : 13 séances : actif uniquement avant la fin
+PASS : 13 séances : réalisés visibles même au dernier galet
+PASS : 13 séances : dates réelles conservées
+PASS : 13 séances : récompense3 au bon seuil
+PASS : 13 séances : récompense8 au bon seuil
+PASS : 13 séances : récompense12 au bon seuil
+PASS : 13 séances : récompense17 au bon seuil
+PASS : 13 séances : récompense21 au bon seuil
+PASS : 13 séances : récompense26 au bon seuil
+PASS : 13 séances : récompense30 au bon seuil
+PASS : 13 séances : récompense35 au bon seuil
+PASS : 13 séances : récompense39 au bon seuil
+PASS : 13 séances : récompense44 au bon seuil
+PASS : 14 séances : bon nombre de galets
+PASS : 14 séances : actif uniquement avant la fin
+PASS : 14 séances : réalisés visibles même au dernier galet
+PASS : 14 séances : dates réelles conservées
+PASS : 14 séances : récompense3 au bon seuil
+PASS : 14 séances : récompense8 au bon seuil
+PASS : 14 séances : récompense12 au bon seuil
+PASS : 14 séances : récompense17 au bon seuil
+PASS : 14 séances : récompense21 au bon seuil
+PASS : 14 séances : récompense26 au bon seuil
+PASS : 14 séances : récompense30 au bon seuil
+PASS : 14 séances : récompense35 au bon seuil
+PASS : 14 séances : récompense39 au bon seuil
+PASS : 14 séances : récompense44 au bon seuil
+PASS : 15 séances : bon nombre de galets
+PASS : 15 séances : actif uniquement avant la fin
+PASS : 15 séances : réalisés visibles même au dernier galet
+PASS : 15 séances : dates réelles conservées
+PASS : 15 séances : récompense3 au bon seuil
+PASS : 15 séances : récompense8 au bon seuil
+PASS : 15 séances : récompense12 au bon seuil
+PASS : 15 séances : récompense17 au bon seuil
+PASS : 15 séances : récompense21 au bon seuil
+PASS : 15 séances : récompense26 au bon seuil
+PASS : 15 séances : récompense30 au bon seuil
+PASS : 15 séances : récompense35 au bon seuil
+PASS : 15 séances : récompense39 au bon seuil
+PASS : 15 séances : récompense44 au bon seuil
+PASS : 16 séances : bon nombre de galets
+PASS : 16 séances : actif uniquement avant la fin
+PASS : 16 séances : réalisés visibles même au dernier galet
+PASS : 16 séances : dates réelles conservées
+PASS : 16 séances : récompense3 au bon seuil
+PASS : 16 séances : récompense8 au bon seuil
+PASS : 16 séances : récompense12 au bon seuil
+PASS : 16 séances : récompense17 au bon seuil
+PASS : 16 séances : récompense21 au bon seuil
+PASS : 16 séances : récompense26 au bon seuil
+PASS : 16 séances : récompense30 au bon seuil
+PASS : 16 séances : récompense35 au bon seuil
+PASS : 16 séances : récompense39 au bon seuil
+PASS : 16 séances : récompense44 au bon seuil
+PASS : 17 séances : bon nombre de galets
+PASS : 17 séances : actif uniquement avant la fin
+PASS : 17 séances : réalisés visibles même au dernier galet
+PASS : 17 séances : dates réelles conservées
+PASS : 17 séances : récompense3 au bon seuil
+PASS : 17 séances : récompense8 au bon seuil
+PASS : 17 séances : récompense12 au bon seuil
+PASS : 17 séances : récompense17 au bon seuil
+PASS : 17 séances : récompense21 au bon seuil
+PASS : 17 séances : récompense26 au bon seuil
+PASS : 17 séances : récompense30 au bon seuil
+PASS : 17 séances : récompense35 au bon seuil
+PASS : 17 séances : récompense39 au bon seuil
+PASS : 17 séances : récompense44 au bon seuil
+PASS : 18 séances : bon nombre de galets
+PASS : 18 séances : actif uniquement avant la fin
+PASS : 18 séances : réalisés visibles même au dernier galet
+PASS : 18 séances : dates réelles conservées
+PASS : 18 séances : récompense3 au bon seuil
+PASS : 18 séances : récompense8 au bon seuil
+PASS : 18 séances : récompense12 au bon seuil
+PASS : 18 séances : récompense17 au bon seuil
+PASS : 18 séances : récompense21 au bon seuil
+PASS : 18 séances : récompense26 au bon seuil
+PASS : 18 séances : récompense30 au bon seuil
+PASS : 18 séances : récompense35 au bon seuil
+PASS : 18 séances : récompense39 au bon seuil
+PASS : 18 séances : récompense44 au bon seuil
+PASS : 19 séances : bon nombre de galets
+PASS : 19 séances : actif uniquement avant la fin
+PASS : 19 séances : réalisés visibles même au dernier galet
+PASS : 19 séances : dates réelles conservées
+PASS : 19 séances : récompense3 au bon seuil
+PASS : 19 séances : récompense8 au bon seuil
+PASS : 19 séances : récompense12 au bon seuil
+PASS : 19 séances : récompense17 au bon seuil
+PASS : 19 séances : récompense21 au bon seuil
+PASS : 19 séances : récompense26 au bon seuil
+PASS : 19 séances : récompense30 au bon seuil
+PASS : 19 séances : récompense35 au bon seuil
+PASS : 19 séances : récompense39 au bon seuil
+PASS : 19 séances : récompense44 au bon seuil
+PASS : 20 séances : bon nombre de galets
+PASS : 20 séances : actif uniquement avant la fin
+PASS : 20 séances : réalisés visibles même au dernier galet
+PASS : 20 séances : dates réelles conservées
+PASS : 20 séances : récompense3 au bon seuil
+PASS : 20 séances : récompense8 au bon seuil
+PASS : 20 séances : récompense12 au bon seuil
+PASS : 20 séances : récompense17 au bon seuil
+PASS : 20 séances : récompense21 au bon seuil
+PASS : 20 séances : récompense26 au bon seuil
+PASS : 20 séances : récompense30 au bon seuil
+PASS : 20 séances : récompense35 au bon seuil
+PASS : 20 séances : récompense39 au bon seuil
+PASS : 20 séances : récompense44 au bon seuil
+PASS : 21 séances : bon nombre de galets
+PASS : 21 séances : actif uniquement avant la fin
+PASS : 21 séances : réalisés visibles même au dernier galet
+PASS : 21 séances : dates réelles conservées
+PASS : 21 séances : récompense3 au bon seuil
+PASS : 21 séances : récompense8 au bon seuil
+PASS : 21 séances : récompense12 au bon seuil
+PASS : 21 séances : récompense17 au bon seuil
+PASS : 21 séances : récompense21 au bon seuil
+PASS : 21 séances : récompense26 au bon seuil
+PASS : 21 séances : récompense30 au bon seuil
+PASS : 21 séances : récompense35 au bon seuil
+PASS : 21 séances : récompense39 au bon seuil
+PASS : 21 séances : récompense44 au bon seuil
+PASS : 22 séances : bon nombre de galets
+PASS : 22 séances : actif uniquement avant la fin
+PASS : 22 séances : réalisés visibles même au dernier galet
+PASS : 22 séances : dates réelles conservées
+PASS : 22 séances : récompense3 au bon seuil
+PASS : 22 séances : récompense8 au bon seuil
+PASS : 22 séances : récompense12 au bon seuil
+PASS : 22 séances : récompense17 au bon seuil
+PASS : 22 séances : récompense21 au bon seuil
+PASS : 22 séances : récompense26 au bon seuil
+PASS : 22 séances : récompense30 au bon seuil
+PASS : 22 séances : récompense35 au bon seuil
+PASS : 22 séances : récompense39 au bon seuil
+PASS : 22 séances : récompense44 au bon seuil
+PASS : 23 séances : bon nombre de galets
+PASS : 23 séances : actif uniquement avant la fin
+PASS : 23 séances : réalisés visibles même au dernier galet
+PASS : 23 séances : dates réelles conservées
+PASS : 23 séances : récompense3 au bon seuil
+PASS : 23 séances : récompense8 au bon seuil
+PASS : 23 séances : récompense12 au bon seuil
+PASS : 23 séances : récompense17 au bon seuil
+PASS : 23 séances : récompense21 au bon seuil
+PASS : 23 séances : récompense26 au bon seuil
+PASS : 23 séances : récompense30 au bon seuil
+PASS : 23 séances : récompense35 au bon seuil
+PASS : 23 séances : récompense39 au bon seuil
+PASS : 23 séances : récompense44 au bon seuil
+PASS : 24 séances : bon nombre de galets
+PASS : 24 séances : actif uniquement avant la fin
+PASS : 24 séances : réalisés visibles même au dernier galet
+PASS : 24 séances : dates réelles conservées
+PASS : 24 séances : récompense3 au bon seuil
+PASS : 24 séances : récompense8 au bon seuil
+PASS : 24 séances : récompense12 au bon seuil
+PASS : 24 séances : récompense17 au bon seuil
+PASS : 24 séances : récompense21 au bon seuil
+PASS : 24 séances : récompense26 au bon seuil
+PASS : 24 séances : récompense30 au bon seuil
+PASS : 24 séances : récompense35 au bon seuil
+PASS : 24 séances : récompense39 au bon seuil
+PASS : 24 séances : récompense44 au bon seuil
+PASS : 25 séances : bon nombre de galets
+PASS : 25 séances : actif uniquement avant la fin
+PASS : 25 séances : réalisés visibles même au dernier galet
+PASS : 25 séances : dates réelles conservées
+PASS : 25 séances : récompense3 au bon seuil
+PASS : 25 séances : récompense8 au bon seuil
+PASS : 25 séances : récompense12 au bon seuil
+PASS : 25 séances : récompense17 au bon seuil
+PASS : 25 séances : récompense21 au bon seuil
+PASS : 25 séances : récompense26 au bon seuil
+PASS : 25 séances : récompense30 au bon seuil
+PASS : 25 séances : récompense35 au bon seuil
+PASS : 25 séances : récompense39 au bon seuil
+PASS : 25 séances : récompense44 au bon seuil
+PASS : 26 séances : bon nombre de galets
+PASS : 26 séances : actif uniquement avant la fin
+PASS : 26 séances : réalisés visibles même au dernier galet
+PASS : 26 séances : dates réelles conservées
+PASS : 26 séances : récompense3 au bon seuil
+PASS : 26 séances : récompense8 au bon seuil
+PASS : 26 séances : récompense12 au bon seuil
+PASS : 26 séances : récompense17 au bon seuil
+PASS : 26 séances : récompense21 au bon seuil
+PASS : 26 séances : récompense26 au bon seuil
+PASS : 26 séances : récompense30 au bon seuil
+PASS : 26 séances : récompense35 au bon seuil
+PASS : 26 séances : récompense39 au bon seuil
+PASS : 26 séances : récompense44 au bon seuil
+PASS : 27 séances : bon nombre de galets
+PASS : 27 séances : actif uniquement avant la fin
+PASS : 27 séances : réalisés visibles même au dernier galet
+PASS : 27 séances : dates réelles conservées
+PASS : 27 séances : récompense3 au bon seuil
+PASS : 27 séances : récompense8 au bon seuil
+PASS : 27 séances : récompense12 au bon seuil
+PASS : 27 séances : récompense17 au bon seuil
+PASS : 27 séances : récompense21 au bon seuil
+PASS : 27 séances : récompense26 au bon seuil
+PASS : 27 séances : récompense30 au bon seuil
+PASS : 27 séances : récompense35 au bon seuil
+PASS : 27 séances : récompense39 au bon seuil
+PASS : 27 séances : récompense44 au bon seuil
+PASS : 28 séances : bon nombre de galets
+PASS : 28 séances : actif uniquement avant la fin
+PASS : 28 séances : réalisés visibles même au dernier galet
+PASS : 28 séances : dates réelles conservées
+PASS : 28 séances : récompense3 au bon seuil
+PASS : 28 séances : récompense8 au bon seuil
+PASS : 28 séances : récompense12 au bon seuil
+PASS : 28 séances : récompense17 au bon seuil
+PASS : 28 séances : récompense21 au bon seuil
+PASS : 28 séances : récompense26 au bon seuil
+PASS : 28 séances : récompense30 au bon seuil
+PASS : 28 séances : récompense35 au bon seuil
+PASS : 28 séances : récompense39 au bon seuil
+PASS : 28 séances : récompense44 au bon seuil
+PASS : 29 séances : bon nombre de galets
+PASS : 29 séances : actif uniquement avant la fin
+PASS : 29 séances : réalisés visibles même au dernier galet
+PASS : 29 séances : dates réelles conservées
+PASS : 29 séances : récompense3 au bon seuil
+PASS : 29 séances : récompense8 au bon seuil
+PASS : 29 séances : récompense12 au bon seuil
+PASS : 29 séances : récompense17 au bon seuil
+PASS : 29 séances : récompense21 au bon seuil
+PASS : 29 séances : récompense26 au bon seuil
+PASS : 29 séances : récompense30 au bon seuil
+PASS : 29 séances : récompense35 au bon seuil
+PASS : 29 séances : récompense39 au bon seuil
+PASS : 29 séances : récompense44 au bon seuil
+PASS : 30 séances : bon nombre de galets
+PASS : 30 séances : actif uniquement avant la fin
+PASS : 30 séances : réalisés visibles même au dernier galet
+PASS : 30 séances : dates réelles conservées
+PASS : 30 séances : récompense3 au bon seuil
+PASS : 30 séances : récompense8 au bon seuil
+PASS : 30 séances : récompense12 au bon seuil
+PASS : 30 séances : récompense17 au bon seuil
+PASS : 30 séances : récompense21 au bon seuil
+PASS : 30 séances : récompense26 au bon seuil
+PASS : 30 séances : récompense30 au bon seuil
+PASS : 30 séances : récompense35 au bon seuil
+PASS : 30 séances : récompense39 au bon seuil
+PASS : 30 séances : récompense44 au bon seuil
+PASS : 31 séances : bon nombre de galets
+PASS : 31 séances : actif uniquement avant la fin
+PASS : 31 séances : réalisés visibles même au dernier galet
+PASS : 31 séances : dates réelles conservées
+PASS : 31 séances : récompense3 au bon seuil
+PASS : 31 séances : récompense8 au bon seuil
+PASS : 31 séances : récompense12 au bon seuil
+PASS : 31 séances : récompense17 au bon seuil
+PASS : 31 séances : récompense21 au bon seuil
+PASS : 31 séances : récompense26 au bon seuil
+PASS : 31 séances : récompense30 au bon seuil
+PASS : 31 séances : récompense35 au bon seuil
+PASS : 31 séances : récompense39 au bon seuil
+PASS : 31 séances : récompense44 au bon seuil
+PASS : 32 séances : bon nombre de galets
+PASS : 32 séances : actif uniquement avant la fin
+PASS : 32 séances : réalisés visibles même au dernier galet
+PASS : 32 séances : dates réelles conservées
+PASS : 32 séances : récompense3 au bon seuil
+PASS : 32 séances : récompense8 au bon seuil
+PASS : 32 séances : récompense12 au bon seuil
+PASS : 32 séances : récompense17 au bon seuil
+PASS : 32 séances : récompense21 au bon seuil
+PASS : 32 séances : récompense26 au bon seuil
+PASS : 32 séances : récompense30 au bon seuil
+PASS : 32 séances : récompense35 au bon seuil
+PASS : 32 séances : récompense39 au bon seuil
+PASS : 32 séances : récompense44 au bon seuil
+PASS : 33 séances : bon nombre de galets
+PASS : 33 séances : actif uniquement avant la fin
+PASS : 33 séances : réalisés visibles même au dernier galet
+PASS : 33 séances : dates réelles conservées
+PASS : 33 séances : récompense3 au bon seuil
+PASS : 33 séances : récompense8 au bon seuil
+PASS : 33 séances : récompense12 au bon seuil
+PASS : 33 séances : récompense17 au bon seuil
+PASS : 33 séances : récompense21 au bon seuil
+PASS : 33 séances : récompense26 au bon seuil
+PASS : 33 séances : récompense30 au bon seuil
+PASS : 33 séances : récompense35 au bon seuil
+PASS : 33 séances : récompense39 au bon seuil
+PASS : 33 séances : récompense44 au bon seuil
+PASS : 34 séances : bon nombre de galets
+PASS : 34 séances : actif uniquement avant la fin
+PASS : 34 séances : réalisés visibles même au dernier galet
+PASS : 34 séances : dates réelles conservées
+PASS : 34 séances : récompense3 au bon seuil
+PASS : 34 séances : récompense8 au bon seuil
+PASS : 34 séances : récompense12 au bon seuil
+PASS : 34 séances : récompense17 au bon seuil
+PASS : 34 séances : récompense21 au bon seuil
+PASS : 34 séances : récompense26 au bon seuil
+PASS : 34 séances : récompense30 au bon seuil
+PASS : 34 séances : récompense35 au bon seuil
+PASS : 34 séances : récompense39 au bon seuil
+PASS : 34 séances : récompense44 au bon seuil
+PASS : 35 séances : bon nombre de galets
+PASS : 35 séances : actif uniquement avant la fin
+PASS : 35 séances : réalisés visibles même au dernier galet
+PASS : 35 séances : dates réelles conservées
+PASS : 35 séances : récompense3 au bon seuil
+PASS : 35 séances : récompense8 au bon seuil
+PASS : 35 séances : récompense12 au bon seuil
+PASS : 35 séances : récompense17 au bon seuil
+PASS : 35 séances : récompense21 au bon seuil
+PASS : 35 séances : récompense26 au bon seuil
+PASS : 35 séances : récompense30 au bon seuil
+PASS : 35 séances : récompense35 au bon seuil
+PASS : 35 séances : récompense39 au bon seuil
+PASS : 35 séances : récompense44 au bon seuil
+PASS : 36 séances : bon nombre de galets
+PASS : 36 séances : actif uniquement avant la fin
+PASS : 36 séances : réalisés visibles même au dernier galet
+PASS : 36 séances : dates réelles conservées
+PASS : 36 séances : récompense3 au bon seuil
+PASS : 36 séances : récompense8 au bon seuil
+PASS : 36 séances : récompense12 au bon seuil
+PASS : 36 séances : récompense17 au bon seuil
+PASS : 36 séances : récompense21 au bon seuil
+PASS : 36 séances : récompense26 au bon seuil
+PASS : 36 séances : récompense30 au bon seuil
+PASS : 36 séances : récompense35 au bon seuil
+PASS : 36 séances : récompense39 au bon seuil
+PASS : 36 séances : récompense44 au bon seuil
+PASS : une date future ne fait pas avancer
+PASS : une pause de60jours ne fait pas avancer
+537 contrôles PASS — dates réelles

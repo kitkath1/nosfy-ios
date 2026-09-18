@@ -61,19 +61,21 @@ enum GainEnAttente: Codable, Equatable {
 actor OutboxGains {
     static let shared = OutboxGains()
 
-    /// ⚠️ **BORNÉE.** Hors ligne pendant trois semaines, une file non bornée
-    /// grandit sans fin et finit par ne plus tenir dans les préférences. Au
-    /// delà, on jette les PLUS ANCIENNES : un gain vieux de trois semaines
-    /// vaut moins que celui d'hier, et une file pleine qui refuse les
-    /// nouvelles entrées est le pire des deux mondes.
-    private static let plafond = 200
-
     /// ⚠️ `UserDefaults` et pas SwiftData : la file doit survivre à un kill
     /// de l'app, pas à une réinstallation — et elle doit être lisible sans
     /// contexte de modèle, depuis n'importe quel fil. Elle reste petite (une
     /// poignée d'entrées, quelques centaines d'octets).
     private let cle = "woop.outbox.gains"
     private var vidageEnCours = false
+    // Le retour sur MainActor peut attendre après la réponse réseau. Ce témoin
+    // annulable empêche alors l’ancien compte de repeindre le nouveau coffre.
+    private final class GenerationCompte: @unchecked Sendable {
+        private let verrou = NSLock()
+        private var valide = true
+        var estValide: Bool { verrou.withLock { valide } }
+        func annuler() { verrou.withLock { valide = false } }
+    }
+    private var generation = GenerationCompte()
 
     private var file: [GainEnAttente] {
         get {
@@ -84,13 +86,22 @@ actor OutboxGains {
             return f
         }
         set {
-            let borne = newValue.suffix(Self.plafond)
-            UserDefaults.standard.set(try? JSONEncoder().encode(Array(borne)),
+            UserDefaults.standard.set(try? JSONEncoder().encode(newValue),
                                       forKey: cle)
         }
     }
 
     var enAttente: Int { file.count }
+    var seancesARejouer: Set<UUID> {
+        Set(file.compactMap { if case .finDeSeance(let id, _) = $0 { return id }; return nil })
+    }
+
+    /// Rend caducs les retours réseau de l'ancien compte, même s'ils arrivent tard.
+    func effacer() {
+        generation.annuler()
+        generation = GenerationCompte()
+        file = []
+    }
 
     // MARK: Le banc
     //
@@ -113,53 +124,37 @@ actor OutboxGains {
         await shared.poster(.finDeSeance(seance: UUID(), series: 3))
     }
 
-    /// POSTER — on tente tout de suite, et on met en attente si ça rate.
-    ///
-    /// ⚠️ L'ordre compte : **tenter d'abord**. Passer systématiquement par la
-    /// file ajouterait un aller-retour de préférences et un délai à un
-    /// chemin qui marche neuf fois sur dix.
+    /// Persister AVANT le réseau : un kill ou une panne laisse le gain rejouable.
     func poster(_ gain: GainEnAttente) async {
-        switch await envoyer(gain) {
-        case .reussi:
-            return
-        case .refuse(let pourquoi):
-            // Refusé d'emblée et pour de bon : la file n'y changerait rien.
-            print("[outbox] ⚠️ REFUSÉ D'EMBLÉE : \(gain) — \(pourquoi)")
-            return
-        case .aRejouer:
-            break
-        }
         var f = file
-        // ⚠️ Pas de doublon dans la file : rejouer deux fois la même fin de
-        // séance ne casse rien (le serveur le refuse), mais ça allonge la
-        // file pour rien et brouille le journal de bord.
         if !f.contains(gain) { f.append(gain) }
         file = f
-        print("[outbox] mis en attente (\(f.count) au total) : \(gain)")
+        await vider()
     }
 
-    /// VIDER — à rappeler au retour au premier plan, et après toute réussite.
     func vider() async {
         guard !vidageEnCours else { return }
         vidageEnCours = true
         defer { vidageEnCours = false }
-
-        var restants: [GainEnAttente] = []
-        for gain in file {
-            switch await envoyer(gain) {
-            case .reussi:
-                print("[outbox] rejoué avec succès : \(gain)")
-            case .refuse(let pourquoi):
-                // ⚠️ ON LE JETTE, ET ON CRIE. Le garder boucherait la file
-                // pour toujours. Le perdre en silence serait pire.
-                print("[outbox] ⚠️ REFUSÉ DÉFINITIVEMENT, jeté : \(gain) — \(pourquoi)")
+        let tour = generation
+        var tentatives: [GainEnAttente] = []
+        while let gain = file.first(where: { !tentatives.contains($0) }) {
+            tentatives.append(gain)
+            guard tour === generation else { return }
+            let resultat = await envoyer(gain, tour: tour)
+            guard tour === generation else { return }
+            switch resultat {
+            case .reussi, .refuse:
+                // Lire la file actuelle : un poster concurrent a pu y ajouter un gain.
+                var actuelle = file
+                if let i = actuelle.firstIndex(of: gain) { actuelle.remove(at: i) }
+                file = actuelle
+                if case .refuse(let raison) = resultat {
+                    print("[outbox] refus définitif : \(raison)")
+                }
             case .aRejouer:
-                restants.append(gain)
+                break
             }
-        }
-        file = restants
-        if !restants.isEmpty {
-            print("[outbox] \(restants.count) en attente du prochain réseau")
         }
     }
 
@@ -173,7 +168,7 @@ actor OutboxGains {
         case aRejouer
     }
 
-    private func envoyer(_ gain: GainEnAttente) async -> Sort {
+    private func envoyer(_ gain: GainEnAttente, tour: GenerationCompte) async -> Sort {
         // Les mêmes gardes que partout : les données de démonstration ne
         // touchent jamais un vrai compte, et sans configuration on ne tente
         // rien. ⚠️ `aRejouer` et pas `refuse` : le jour où l'app tourne sans
@@ -188,6 +183,7 @@ actor OutboxGains {
         do {
             let jwt = Self.banc ? try await ForgeServeur.jwtBanc()
                                 : try await SupabaseSession.shared.token()
+            guard tour === generation else { return .aRejouer }
             jetonUtilise = jwt
             switch gain {
             case .finDeSeance(let seance, let series):
@@ -204,13 +200,15 @@ actor OutboxGains {
                 // `etat_coffre()` juste après, ce serait payer un
                 // aller-retour pour ce qu'on tient déjà — et recréer le
                 // défaut que cette réponse a été élargie pour supprimer.
-                await MainActor.run { EconomieWoop.shared.appliquer(r) }
+                guard tour === generation else { return .aRejouer }
+                await MainActor.run { if tour.estValide { EconomieWoop.shared.appliquer(r) } }
             case .retourQuotidien:
                 let r = try await SacreServeur.claimRetourQuotidien(jwt: jwt)
                 print("[coffre] retour quotidien : "
                       + (r.credite ? "+\(r.montant)" : "déjà pris aujourd'hui")
                       + " · solde \(r.solde)")
-                await MainActor.run { EconomieWoop.shared.appliquer(r) }
+                guard tour === generation else { return .aRejouer }
+                await MainActor.run { if tour.estValide { EconomieWoop.shared.appliquer(r) } }
             case .noeudChemin(let n, let p, let m, let b):
                 let neuf = try await SacreServeur.reclamerNoeudChemin(
                     n, pieces: p, monnaie: m, boosters: b, jwt: jwt)

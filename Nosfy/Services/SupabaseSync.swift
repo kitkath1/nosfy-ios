@@ -79,6 +79,14 @@ actor SupabaseSync {
         let metres_par_longueur: Int
     }
 
+    private struct Instantane: Encodable {
+        let p_workout: WorkoutRow
+        let p_exercices: [LoggedExerciseRow]
+        let p_series: [StrengthSetRow]
+        let p_phases: [CardioPhaseRow]
+        let p_piscines: [PiscineRow]
+    }
+
     // MARK: Envoi
 
     func push(_ snapshots: [Snapshot]) async {
@@ -90,6 +98,7 @@ actor SupabaseSync {
         guard WoopConfig.isConfigured, !snapshots.isEmpty, !inFlight else { return }
         do {
             try await pousser(snapshots)
+            await OutboxGains.shared.vider()
         } catch {
             // La séance est déjà enregistrée localement : on réessaiera au prochain envoi.
             await SupabaseSession.shared.invalidate()
@@ -113,69 +122,65 @@ actor SupabaseSync {
             let userID = try await SupabaseSession.shared.currentUserID()
             let iso = ISO8601DateFormatter()
 
-            let workouts = snapshots.map {
-                WorkoutRow(id: $0.id, user_id: userID,
-                           started_at: iso.string(from: $0.startedAt),
-                           ended_at: $0.endedAt.map(iso.string(from:)),
-                           notes: $0.notes)
-            }
-            let exercises = snapshots.flatMap { snapshot in
-                snapshot.exercises.map {
-                    LoggedExerciseRow(id: $0.id, workout_id: snapshot.id, user_id: userID,
-                                      exercise_id: $0.exerciseID, position: $0.position)
+            // Une séance et son arbre dans UNE transaction, avant toute clôture.
+            for snapshot in snapshots {
+                let lot = [snapshot]
+                let workouts = lot.map {
+                    WorkoutRow(id: $0.id, user_id: userID,
+                               started_at: iso.string(from: $0.startedAt),
+                               ended_at: $0.endedAt.map(iso.string(from:)),
+                               notes: $0.notes)
                 }
-            }
-            let sets = snapshots.flatMap(\.exercises).flatMap { exercise in
-                exercise.sets.map {
-                    StrengthSetRow(id: $0.id, logged_exercise_id: exercise.id, user_id: userID,
-                                   reps: $0.reps, weight: $0.weight, position: $0.position)
+                let exercises = lot.flatMap { snapshot in
+                    snapshot.exercises.map {
+                        LoggedExerciseRow(id: $0.id, workout_id: snapshot.id, user_id: userID,
+                                          exercise_id: $0.exerciseID, position: $0.position)
+                    }
                 }
-            }
-            let phases = snapshots.flatMap(\.exercises).flatMap { exercise in
-                exercise.phases.map {
-                    CardioPhaseRow(id: $0.id, logged_exercise_id: exercise.id, user_id: userID,
-                                   kind: $0.kind, seconds: $0.seconds, speed: $0.speed,
-                                   incline: $0.incline, cycle_index: $0.cycleIndex,
-                                   position: $0.position)
+                let sets = lot.flatMap(\.exercises).flatMap { exercise in
+                    exercise.sets.map {
+                        StrengthSetRow(id: $0.id, logged_exercise_id: exercise.id, user_id: userID,
+                                       reps: $0.reps, weight: $0.weight, position: $0.position)
+                    }
                 }
-            }
-
-            let piscines = snapshots.flatMap(\.exercises)
-                .filter { $0.longueurs > 0 }
-                .map {
-                    PiscineRow(logged_exercise_id: $0.id, user_id: userID,
-                               longueurs: $0.longueurs,
-                               metres_par_longueur: $0.metresParLongueur)
+                let phases = lot.flatMap(\.exercises).flatMap { exercise in
+                    exercise.phases.map {
+                        CardioPhaseRow(id: $0.id, logged_exercise_id: exercise.id, user_id: userID,
+                                       kind: $0.kind, seconds: $0.seconds, speed: $0.speed,
+                                       incline: $0.incline, cycle_index: $0.cycleIndex,
+                                       position: $0.position)
+                    }
                 }
 
-            // L'ordre compte : les clés étrangères pointent vers la table précédente.
-            try await upsert(workouts, into: "workouts", token: token)
-            try await upsert(exercises, into: "logged_exercises", token: token)
-            try await upsert(sets, into: "strength_sets", token: token)
-            try await upsert(phases, into: "cardio_phases", token: token)
-            try await upsert(piscines, into: "piscine_longueurs", token: token)
+                let piscines = lot.flatMap(\.exercises)
+                    .filter { $0.longueurs > 0 }
+                    .map {
+                        PiscineRow(logged_exercise_id: $0.id, user_id: userID,
+                                   longueurs: $0.longueurs,
+                                   metres_par_longueur: $0.metresParLongueur)
+                    }
+
+                let corps = Instantane(p_workout: workouts[0], p_exercices: exercises,
+                                       p_series: sets, p_phases: phases, p_piscines: piscines)
+                var request = URLRequest(url: WoopConfig.supabaseURL.appending(path: "rest/v1/rpc/synchroniser_seance"))
+                request.httpMethod = "POST"
+                request.setValue(WoopConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
+                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                request.httpBody = try JSONEncoder().encode(corps)
+                let (data, response) = try await URLSession.shared.data(for: request)
+                try SupabaseSession.check(response, data)
+                guard let objet = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      objet["ok"] as? Bool == true else { throw URLError(.cannotParseResponse) }
+            }
+
         } catch {
             await SupabaseSession.shared.invalidate()
             throw error
         }
     }
 
-    private func upsert<T: Encodable>(_ rows: [T], into table: String, token: String) async throws {
-        guard !rows.isEmpty else { return }
 
-        var request = URLRequest(url: WoopConfig.supabaseURL.appending(path: "rest/v1/\(table)"))
-        request.httpMethod = "POST"
-        request.setValue(WoopConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        // Réenvoyer une séance déjà poussée doit la mettre à jour, pas échouer.
-        request.setValue("resolution=merge-duplicates,return=minimal",
-                         forHTTPHeaderField: "Prefer")
-        request.httpBody = try JSONEncoder().encode(rows)
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try SupabaseSession.check(response, data)
-    }
 }
 
 // MARK: - Lecture : le pull (14-09, tools/sync/PLAN-PULL-SEANCES.md)
@@ -325,11 +330,11 @@ extension Workout {
                     id: logged.remoteID.uuidString,
                     exerciseID: logged.exerciseID,
                     position: logged.order,
-                    sets: logged.orderedSets.map {
+                    sets: logged.orderedSets.filter(\.isDone).map {
                         (id: $0.remoteID.uuidString, reps: $0.reps,
                          weight: $0.weight, position: $0.order)
                     },
-                    phases: logged.orderedPhases.map {
+                    phases: logged.phasesFaites.filter { $0.seconds > 0 }.map {
                         (id: $0.remoteID.uuidString, kind: $0.kindRaw, seconds: $0.seconds,
                          speed: $0.speed, incline: $0.incline,
                          cycleIndex: $0.cycleIndex, position: $0.order)

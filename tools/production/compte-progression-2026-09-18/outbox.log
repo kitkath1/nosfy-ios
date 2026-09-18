@@ -1,0 +1,42 @@
+/Users/kathryn/Desktop/Nosfy/tools/serveur/tests/outbox_regression.swift:79:15: warning: no 'async' operations occur within 'await' expression
+ 77 |         await o.vider()
+ 78 |         check(await o.enAttente == 0,"succès retire le gain")
+ 79 |         check(await EconomieWoop.shared.applications == 1,"réponse appliquée une fois")
+    |               `- warning: no 'async' operations occur within 'await' expression
+ 80 |         await Reseau.shared.configurer(200,bloque:true)
+ 81 |         let cible = await Reseau.shared.appels + 1
+
+/Users/kathryn/Desktop/Nosfy/tools/serveur/tests/outbox_regression.swift:88:15: warning: no 'async' operations occur within 'await' expression
+ 86 |         await Reseau.shared.liberer();await premier.value
+ 87 |         check(await o.enAttente == 0,"ajout concurrent envoyé dans le même vidage")
+ 88 |         check(await EconomieWoop.shared.applications == 3,"deux réponses concurrentes appliquées")
+    |               `- warning: no 'async' operations occur within 'await' expression
+ 89 |         await Reseau.shared.configurer(200,bloque:true)
+ 90 |         let cible2 = await Reseau.shared.appels + 1
+
+/Users/kathryn/Desktop/Nosfy/tools/serveur/tests/outbox_regression.swift:96:15: warning: no 'async' operations occur within 'await' expression
+ 94 |         await Reseau.shared.liberer();await ancien.value
+ 95 |         check(await o.enAttente == 0,"changement de compte ne recrée pas la file")
+ 96 |         check(await EconomieWoop.shared.applications == 3,"retour tardif de l'ancien compte ignoré")
+    |               `- warning: no 'async' operations occur within 'await' expression
+ 97 |         await Reseau.shared.configurer(403);await o.poster(gain)
+ 98 |         check(await o.enAttente == 0,"refus définitif ne bouche pas la file")
+PASS gain persiste avant le réseau
+PASS 503 conserve le gain
+PASS rattrapage identifie la séance à synchroniser
+PASS doublon en attente évité
+[coffre] séance réglée : +20 pièces (créditées true) · sachet NEUF · solde 20 · reste 20
+PASS succès retire le gain
+PASS réponse appliquée une fois
+PASS ajout concurrent conservé
+[coffre] séance réglée : +20 pièces (créditées true) · sachet NEUF · solde 20 · reste 20
+[coffre] séance réglée : +20 pièces (créditées true) · sachet NEUF · solde 20 · reste 20
+PASS ajout concurrent envoyé dans le même vidage
+PASS deux réponses concurrentes appliquées
+[coffre] séance réglée : +20 pièces (créditées true) · sachet NEUF · solde 20 · reste 20
+PASS changement de compte ne recrée pas la file
+PASS retour tardif de l'ancien compte ignoré
+[outbox] refus définitif : HTTP 403 banc
+PASS refus définitif ne bouche pas la file
+PASS session à renouveler conserve le gain
+13 contrôles PASS
