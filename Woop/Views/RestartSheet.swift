@@ -94,256 +94,149 @@ enum PanneauMesures {
     }
 }
 
-// MARK: - Le panneau « Recommencer ? »
+// MARK: - La pop-up de relance
 
-/// AU RETOUR DE BRAVO, LA QUESTION. La fiche se réinstalle et un panneau de
-/// verre monte du bas — l'école SetEntrySheet, à la lettre : NOTRE panneau
-/// dans l'arbre de la fiche, jamais un sheet système (la présentation
-/// d'iOS 26 recule toute la fenêtre et révèle un fond gris — payé deux
-/// fois), le vrai Liquid Glass qui réfracte la carte Série et le galet.
-///
-/// En tête : la flamme (`flamme_overlay`, boucle ping-pong muette) sous une
-/// petite caméra qui se pose — la présence, pas un plan. Puis la question,
-/// le primaire de la maison, et l'échappée d'encre. Tirer le panneau vers
-/// le bas, c'est dire non — et pendant qu'il descend, la carte Série
-/// s'anime derrière : les pièces volent, le compte s'allume.
-struct RestartSheet: View {
+/// La question de fin de série reprend la carte centrée des récompenses.
+/// Les deux choix rendent la main au parcours existant après le fondu de sortie.
+struct RestartPopup: View {
     var onLaunch: () -> Void = {}
     var onDismiss: () -> Void = {}
 
-    /// Le drag de rangement — sur TOUTE la surface : pas de molettes ici,
-    /// les deux boutons gardent leurs taps (le drag exige 12 pt).
-    @State private var pull: CGFloat = 0
-    /// L'instant de naissance : la petite caméra du header et la poussière
-    /// de diamants s'écrivent dessus — fonction pure du temps.
-    @State private var born: Date = .now
+    @State private var visible = false
+    @State private var enSortie = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var phase
 
-    /// La forme de la FAMILLE — lue, jamais recopiée.
-    private static var shape: UnevenRoundedRectangle { PanneauMesures.shape }
+    private static let forme = RoundedRectangle(cornerRadius: 36, style: .continuous)
 
     var body: some View {
         GeometryReader { g in
-            VStack(spacing: 0) {
-                flameHeader(W: g.size.width, slotH: g.size.height * 0.30)
-                Text("Do you want to repeat\nthis exercise?")
-                    .font(.inter(20, .semibold))
-                    .foregroundStyle(Color.inkPrimary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 18)
-                    .padding(.horizontal, 30)
-                Text("The next set starts on a 3, 2, 1.")
-                    .font(.inter(12.5))
-                    .foregroundStyle(Color.inkMuted)
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 7)
-                    .padding(.horizontal, 30)
-                Spacer(minLength: 0)
-                DiamondPrimaryButton(title: "Start exercise") { onLaunch() }
-                    .padding(.horizontal, 26)
-                // L'échappée : de l'encre seule — sur la nuit, un cadre
-                // clair se lit comme un bug (l'école du footer de BRAVO).
-                Button { onDismiss() } label: {
-                    Text("No, I'm done")
-                        .font(.inter(15, .medium))
-                        .foregroundStyle(Color.white.opacity(0.55))
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .padding(.top, 6)
-                .padding(.bottom, 24)
+            let largeur = min(g.size.width * 0.80, 332)
+            let hauteur = max(400, largeur * 1.32)
+            ZStack {
+                Color.black.opacity(visible ? 0.68 : 0)
+                    .ignoresSafeArea()
+                    .contentShape(Rectangle())
+                    .onTapGesture { fermer(relancer: false) }
+                    .accessibilityHidden(true)
+
+                carte(largeur: largeur, hauteur: hauteur)
+                    .scaleEffect(reduceMotion ? 1 : (visible ? 1 : 0.94))
+                    .opacity(visible ? 1 : 0)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityAddTraits(.isModal)
+        .accessibilityIdentifier("restart-popup")
+        .accessibilityAction(.escape) { fermer(relancer: false) }
+        .onAppear {
+            withAnimation(reduceMotion ? .easeOut(duration: 0.15)
+                          : .spring(response: 0.40, dampingFraction: 0.88)) {
+                visible = true
             }
         }
-        // LE VERRE EST LE VRAI — il échantillonne la fiche vivante. Et
-        // par-dessus, LA NUIT QUI FOND : quasi opaque en haut (elle épouse
-        // le noir de la vidéo — la couture verre/vidéo jurait, verdict
-        // Kathryn), transparente en pied — le bas du panneau redevient du
-        // verre aéré, la fiche respire à travers, le diamant vit sur l'air.
+    }
+
+    private func carte(largeur: CGFloat, hauteur: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            RestartFlameVideo(lecture: visible && !enSortie && phase == .active
+                              && !reduceMotion && !ProtectionThermique.shared.ambianceAuRepos)
+                .frame(width: largeur * 0.78, height: hauteur * 0.38)
+                .blendMode(.plusLighter)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+                .padding(.top, 12)
+
+            Text(L("Encore une série ?", "One more set?"))
+                .font(.inter(23, .semibold))
+                .foregroundStyle(Color.inkPrimary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 24)
+                .accessibilityAddTraits(.isHeader)
+            Text(L("À ton rythme.", "At your pace."))
+                .font(.inter(14))
+                .foregroundStyle(Color.inkMuted)
+                .padding(.top, 8)
+
+            Spacer(minLength: 20)
+
+            Button { fermer(relancer: true) } label: {
+                Text(L("Recommencer", "Start again"))
+                    .font(.inter(16, .semibold))
+                    .foregroundStyle(Color.white.opacity(0.95))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background {
+                        Color.clear.glassEffect(.clear.interactive(), in: Capsule())
+                            .environment(\.colorScheme, .dark)
+                    }
+                    .overlay {
+                        Capsule().strokeBorder(Color.white.opacity(0.22), lineWidth: 1)
+                    }
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("restart-launch")
+            .padding(.horizontal, 28)
+
+            Button { fermer(relancer: false) } label: {
+                Text(L("Terminé", "Done"))
+                    .font(.inter(15, .medium))
+                    .foregroundStyle(Color.white.opacity(0.60))
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("restart-dismiss")
+            .padding(.top, 6)
+            .padding(.bottom, 18)
+        }
+        .frame(width: largeur, height: hauteur)
         .background {
             ZStack {
-                Color.clear.glassEffect(
-                    .regular.tint(Color.black.opacity(0.30)),
-                    in: Self.shape)
-                Self.shape
-                    .fill(LinearGradient(
-                        stops: [
-                            .init(color: Color.black.opacity(0.95),
-                                  location: 0),
-                            .init(color: Color.black.opacity(0.88),
-                                  location: 0.38),
-                            .init(color: Color.black.opacity(0.25),
-                                  location: 1)
-                        ],
-                        startPoint: .top, endPoint: .bottom))
-                    .allowsHitTesting(false)
+                Self.forme.fill(.black)
+                Color.clear.glassEffect(.regular.tint(.black.opacity(0.40)), in: Self.forme)
+                    .environment(\.colorScheme, .dark)
+                Self.forme.fill(Color.black.opacity(0.94))
+                Self.forme.fill(RadialGradient(
+                    colors: [Color(red: 0.34, green: 0.07, blue: 0.025).opacity(0.38), .clear],
+                    center: .bottom, startRadius: 0, endRadius: largeur * 0.85))
             }
         }
-        // La vidéo file bord à bord : c'est le panneau qui porte les coins.
-        .clipShape(Self.shape)
-        // Le fil du bord — seulement là où la feuille se détache de la page.
+        .clipShape(Self.forme)
         .overlay {
-            Self.shape
-                .strokeBorder(LinearGradient(
-                    stops: [
-                        .init(color: Color.white.opacity(0.16), location: 0),
-                        .init(color: Color.white.opacity(0.03), location: 0.18),
-                        .init(color: .clear, location: 0.45)
-                    ],
-                    startPoint: .top, endPoint: .bottom), lineWidth: 1)
+            Self.forme.strokeBorder(
+                LinearGradient(colors: [.white.opacity(0.20), .white.opacity(0.04)],
+                               startPoint: .topLeading, endPoint: .bottomTrailing),
+                lineWidth: 1)
                 .allowsHitTesting(false)
         }
-        .overlay(alignment: .top) {
-            Capsule()
-                .fill(Color.white.opacity(0.28))
-                .frame(width: 40, height: 5)
-                .padding(.top, 12)
-                .allowsHitTesting(false)
+        .overlay(alignment: .topTrailing) {
+            Button { fermer(relancer: false) } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.white.opacity(0.55))
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(L("Fermer", "Close"))
+            .accessibilityIdentifier("restart-close")
+            .padding(8)
         }
-        .offset(y: pull)
-        // TOUTE la surface attrape le drag — la zone de la flamme était
-        // devenue transparente au toucher quand son fond noir est parti
-        // (payé : « j'arrive pas à drag »). La contentShape rend chaque
-        // pixel du panneau saisissable, et le geste SIMULTANÉ laisse les
-        // deux boutons garder leurs taps (12 pt de course avant que le
-        // drag n'existe).
-        .contentShape(Self.shape)
-        .simultaneousGesture(dismissDrag)
+        .disabled(enSortie)
     }
 
-    // MARK: La flamme et sa petite caméra
-
-    /// ⚠️ **LA CAMÉRA EST UN TRANSFORM, PLUS UNE FRAME** (26-08). Ce header
-    /// re-cadrait son `AVPlayerLayer` **soixante fois par seconde**
-    /// (`.frame(width: … * z)` piloté par la TimelineView) — exactement la
-    /// faute que ses DEUX voisins documentent comme payée et corrigée :
-    /// « la caméra vivante par transformation (jamais la frame — un
-    /// AVPlayerLayer redimensionné 60×/s relayoute et re-rend chaque image) »
-    /// (DepartSeance:245), et la même chez StopSessionSheet. Le fichier disait
-    /// l'inverse (« le lecteur redécode aux nouvelles bornes ») : deux lois
-    /// contraires dans le même dépôt, c'est celle qui est MESURÉE qui gagne.
-    /// C'est ça, « leur animation doit être plus fluide ».
-    ///
-    /// Et l'horloge tombe à 30 Hz : la caméra se pose en 1,8 s sur une pente
-    /// qui meurt, la poussière boucle sur 2,6-4,8 s — rien là-dedans n'a
-    /// besoin de soixante images par seconde (la loi du Design System : jamais
-    /// de TimelineView nue, 30 fps bridés).
-    private func flameHeader(W: CGFloat, slotH: CGFloat) -> some View {
-        // L'horloge ne se met plus en pause : la poussière de diamants
-        // rouges vit en continu (la caméra, elle, est posée depuis
-        // longtemps — son terme est mort à ~2 s).
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
-                                paused: reduceMotion)) { tl in
-            let e = tl.date.timeIntervalSince(born)
-            // Posée en ~1,8 s, pente qui meurt : une présence, pas un plan.
-            let z: CGFloat = reduceMotion ? 1 : 1 + 0.12 * exp(-e * 1.9)
-            let fadeIn = min(1, max(e, 0) / 0.45)
-            ZStack {
-                // CENTRÉE ET SANS RECTANGLE : la source est une flamme sur
-                // du noir pur (point noir écrasé à l'encodage) — en ADDITIF
-                // le noir disparaît sans détourage (la leçon des cartes
-                // démon), il ne reste que la flamme sur la nuit du panneau.
-                // 1,28 : « je la voyais un peu plus grosse » (verdict
-                // Kathryn, round 3).
-                RestartFlameVideo()
-                    // Cadre CONSTANT — la couche vidéo ne bouge plus d'un
-                    // pixel ; c'est le `scaleEffect` qui fait la caméra.
-                    .frame(width: slotH * (4.0 / 3.0) * 1.28,
-                           height: slotH * 1.28)
-                    .scaleEffect(z)
-                    .blendMode(.plusLighter)
-                // LA POUSSIÈRE DE DIAMANTS ROUGES — très très fine :
-                // des croix taillées de 0,8 à 2 pt qui montent en dérivant
-                // autour de la flamme, chacune son scintillement. Fonction
-                // pure du temps : chaque pierre boucle sur son cycle
-                // propre, aucun état, rien à semer.
-                redDust(t: e, W: W, slotH: slotH)
-            }
-            // 8 pt sous la poignée : la pointe de la flamme ne monte plus
-            // jusqu'à la barre grise (verdict Kathryn).
-            .offset(y: 8)
-            .frame(width: W, height: slotH)
-            .clipped()
-            .opacity(fadeIn)
+    private func fermer(relancer: Bool) {
+        guard !enSortie else { return }
+        enSortie = true
+        withAnimation(.easeOut(duration: reduceMotion ? 0.12 : 0.24)) {
+            visible = false
+        } completion: {
+            if relancer { onLaunch() } else { onDismiss() }
         }
-        .frame(height: slotH)
-    }
-
-    private func redDust(t: Double, W: CGFloat, slotH: CGFloat) -> some View {
-        Canvas { ctx, _ in
-            for i in 0..<26 {
-                let life = 2.6 + 2.2 * Self.hash(i, 2)
-                let cyc = (t / life + Self.hash(i, 5))
-                    .truncatingRemainder(dividingBy: 1)
-                // Naît autour de la flamme, monte d'un souffle en dérivant.
-                let cx = W / 2 + (Self.hash(i, 1) - 0.5) * slotH * 1.9
-                let cy = slotH * (0.30 + 0.62 * Self.hash(i, 3))
-                let x = cx + sin(t * (0.5 + Self.hash(i, 8))
-                                 + Self.hash(i, 9) * 6.28) * 7
-                let y = cy - CGFloat(cyc) * slotH * 0.34
-                // Le voile de vie : entre en douceur, meurt en montant —
-                // et scintille TRANCHÉ (le cube), comme les pierres du
-                // slider.
-                let s = sin(.pi * cyc)
-                let tw0 = 0.5 + 0.5 * sin(t * (9 + 14 * Self.hash(i, 4))
-                                          + Self.hash(i, 6) * 6.28)
-                let a = s * s * (0.25 + 0.75 * tw0 * tw0 * tw0)
-                guard a > 0.02 else { continue }
-                let r = CGFloat(0.8 + 1.2 * Self.hash(i, 7))
-                // Rouge braise — deux tempéraments : rubis profond et
-                // rouge-orangé vif, jamais de rose.
-                let deep = Self.hash(i, 10) < 0.4
-                let c = deep
-                    ? Color(red: 0.88, green: 0.16, blue: 0.12)
-                    : Color(red: 1.00, green: 0.34, blue: 0.16)
-                var star = Path()
-                star.move(to: CGPoint(x: -r, y: 0))
-                star.addLine(to: CGPoint(x: 0, y: -r * 0.22))
-                star.addLine(to: CGPoint(x: r, y: 0))
-                star.addLine(to: CGPoint(x: 0, y: r * 0.22))
-                star.closeSubpath()
-                star.move(to: CGPoint(x: 0, y: -r))
-                star.addLine(to: CGPoint(x: r * 0.22, y: 0))
-                star.addLine(to: CGPoint(x: 0, y: r))
-                star.addLine(to: CGPoint(x: -r * 0.22, y: 0))
-                star.closeSubpath()
-                let placed = star.applying(
-                    CGAffineTransform(translationX: x, y: y)
-                        .rotated(by: (Self.hash(i, 11) - 0.5) * 0.9))
-                ctx.fill(placed, with: .color(c.opacity(a * 0.9)))
-                // Le cœur vif — c'est lui la facette.
-                ctx.fill(
-                    Path(ellipseIn: CGRect(x: x - 0.5, y: y - 0.5,
-                                           width: 1.0, height: 1.0)),
-                    with: .color(Color(red: 1.0, green: 0.62, blue: 0.45)
-                        .opacity(a)))
-            }
-        }
-        .blendMode(.plusLighter)
-        .allowsHitTesting(false)
-        .frame(width: W, height: slotH)
-    }
-
-    private static func hash(_ i: Int, _ k: Int) -> Double {
-        let s = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
-        return s - floor(s)
-    }
-
-    private var dismissDrag: some Gesture {
-        DragGesture(minimumDistance: PanneauMesures.dragMin,
-                    coordinateSpace: .local)
-            .onChanged { v in
-                pull = max(0, v.translation.height)
-            }
-            .onEnded { _ in
-                if pull > PanneauMesures.seuilRangement {
-                    onDismiss()
-                } else {
-                    withAnimation(.spring(response: 0.34,
-                                          dampingFraction: 0.82)) { pull = 0 }
-                }
-            }
     }
 }
 
@@ -361,6 +254,8 @@ private final class FlameLayerView: UIView {
 }
 
 private struct RestartFlameVideo: UIViewRepresentable {
+    var lecture: Bool
+
     final class Coordinator {
         var player: AVQueuePlayer?
         var looper: AVPlayerLooper?
@@ -390,17 +285,27 @@ private struct RestartFlameVideo: UIViewRepresentable {
                                                     templateItem: item)
         context.coordinator.player = p
         v.playerLayer.player = p
-        p.play()
+        if lecture { p.play() }
         return v
     }
 
-    func updateUIView(_ v: FlameLayerView, context: Context) {}
+    func updateUIView(_ v: FlameLayerView, context: Context) {
+        guard let player = context.coordinator.player else { return }
+        if lecture {
+            if player.rate == 0 { player.play() }
+        } else if player.rate != 0 {
+            player.pause()
+        }
+    }
 
     static func dismantleUIView(_ v: FlameLayerView,
                                 coordinator: Coordinator) {
         coordinator.player?.pause()
         coordinator.looper?.disableLooping()
+        coordinator.player?.removeAllItems()
         v.playerLayer.player = nil
+        coordinator.looper = nil
+        coordinator.player = nil
     }
 }
 

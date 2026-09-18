@@ -415,10 +415,8 @@ struct ExerciseDetailView: View {
         let seconds: Int
     }
 
-    /// LA QUESTION DU RETOUR. Après BRAVO, le panneau « Recommencer ? »
-    /// porte la série vécue tant qu'il est à l'écran — l'écriture dans la
-    /// carte attend sa SORTIE : c'est elle qu'on regarde (les pièces, le
-    /// compte), et le panneau qui descend la découvre.
+    /// La pop-up de relance porte la série vécue jusqu'au choix de l'utilisateur.
+    /// Sa fermeture déclenche l'écriture et, sans relance, le retour des pièces.
     @State private var restartAsk: FinishedSeries?
     /// La volée de pièces vers la carte Série : l'instant du départ.
     @State private var coinsAt: Date?
@@ -1206,74 +1204,12 @@ struct ExerciseDetailView: View {
                 // ⚠️ LE FICHIER `BravoLab.swift` RESTE : `BravoPillView` y
                 // vit et `CoffreFortView` la consomme. Archiver n'est pas
                 // supprimer — et son banc `-bravoLab` la rejoue intacte.
-                // LE PANNEAU DU RETOUR — « Recommencer ? ». Le conteneur
-                // reste monté (transparent, sourd au doigt quand vide) :
-                // c'est lui qui joue l'entrée et la sortie du panneau.
-                GeometryReader { g in
-                    // ⚠️ **LA HAUTEUR EST ANCRÉE, PLUS PROPORTIONNELLE**
-                    // (26-08). Verdict : « cet overlay est trop petit, le
-                    // composant Training derrière dépasse encore, il doit
-                    // recouvrir ENTIÈREMENT cette zone ». Une fraction ne peut
-                    // pas recouvrir un objet posé à un offset FIXE : le bord
-                    // haut de la carte est à `expandedHeader + 4` quel que soit
-                    // l'écran, le panneau était proportionnel — il dépassait ou
-                    // pas selon le modèle. Il monte maintenant JUSQU'À la carte,
-                    // plus la marge du halo qui déborde son clip.
-                    let plein = g.size.height
-                        + g.safeAreaInsets.top + g.safeAreaInsets.bottom
-                    // ⚠️ L'ANCRE EST MESURÉE, PAS DÉDUITE : la carte publie
-                    // déjà son cadre en coordonnées globales (`seriesCardFrame`,
-                    // posé pour la volée de pièces). On la lit — la couverture
-                    // devient exacte quel que soit l'écran ET le contenu de la
-                    // carte. Le repli ne sert qu'au tout premier layout.
-                    let h = PanneauMesures.hauteurAncree(
-                        hauteurPleine: plein,
-                        ancre: seriesCardFrame.minY > 1
-                            ? seriesCardFrame.minY
-                            : PanneauMesures.ancreParDefaut(
-                                insetHaut: g.safeAreaInsets.top))
-                    ZStack(alignment: .bottom) {
-                        Color.clear
-                        if let ask = restartAsk {
-                            // LE VOILE — il éteint ce qui dépasse encore. La
-                            // lumière de la carte est peinte HORS de son clip
-                            // (28 pt) : même un panneau qui affleure pile son
-                            // bord laisse fuir ce halo. Un dégradé, jamais une
-                            // arête : le voile ne doit pas se lire comme un
-                            // second bord.
-                            LinearGradient(
-                                stops: [
-                                    .init(color: .black.opacity(0), location: 0),
-                                    .init(color: .black.opacity(0.86),
-                                          location: 0.62),
-                                    .init(color: .black.opacity(0.96),
-                                          location: 1)
-                                ],
-                                startPoint: .top, endPoint: .bottom)
-                                .frame(height: h + 96)
-                                .allowsHitTesting(false)
-                                .transition(.opacity)
-                            RestartSheet(
-                                onLaunch: {
-                                    exitRestart(ask, thenLaunch: true)
-                                },
-                                onDismiss: {
-                                    exitRestart(ask, thenLaunch: false)
-                                })
-                                .frame(height: h)
-                                .transition(.move(edge: .bottom))
-                        }
-                    }
-                    // ⚠️ SUR LE CONTENU, JAMAIS SUR LE `GeometryReader` —
-                    // l'école du calendrier. Posé sur le lecteur lui-même, il
-                    // rend des insets NULS et la hauteur ancrée perdrait
-                    // l'encart du bas.
-                    .ignoresSafeArea()
-                    .animation(.spring(response: 0.45,
-                                       dampingFraction: 0.86),
-                               value: restartAsk == nil)
+                // La relance apparaît dans une carte centrée, comme les rewards.
+                if let ask = restartAsk {
+                    RestartPopup(
+                        onLaunch: { exitRestart(ask, thenLaunch: true) },
+                        onDismiss: { exitRestart(ask, thenLaunch: false) })
                 }
-                .allowsHitTesting(restartAsk != nil)
                 // LES PIÈCES DE LA SÉRIE — au-dessus de tout : la carte
                 // s'écrit en lumière pendant que le panneau descend.
                 // LA PILL DE GAIN — au-dessus de tout, sourde au doigt : elle
@@ -3138,7 +3074,7 @@ struct ExerciseDetailView: View {
         }
     }
 
-    /// La question de la fin de série — le panneau à la flamme.
+    /// La question de la fin de série — la pop-up à la flamme.
     private func poserLaQuestion() {
         guard let f = serieAPoser else { return }
         serieAPoser = nil
@@ -3149,8 +3085,7 @@ struct ExerciseDetailView: View {
         restartAsk = f
     }
 
-    /// La sortie du panneau — les trois chemins (drag, « Non », « Lancer »)
-    /// passent ici.
+    /// Tous les choix de la pop-up passent ici, après son fondu de sortie.
     private func exitRestart(_ f: FinishedSeries, thenLaunch: Bool) {
         restartAsk = nil
         if thenLaunch {

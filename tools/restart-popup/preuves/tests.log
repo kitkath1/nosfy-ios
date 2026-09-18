@@ -1,0 +1,157 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project /tmp/woop-restart-popup-20260918/runner/Woop.xcodeproj -scheme WoopUITests -destination "platform=iOS Simulator,id=FC51F39B-CB70-4BA6-9F4C-8B04E0B0908E" -derivedDataPath /tmp/woop-restart-popup-20260918/runner-dd -resultBundlePath /tmp/woop-restart-popup-20260918/tests.xcresult -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO test-without-building
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/tmp/woop-restart-popup-20260918/tests.xcresult
+
+2026-09-18 09:09:36.591639+0200 WoopUITests-Runner[28433:18487562] [Default] Running tests...
+2026-09-18 09:09:36.671932+0200 WoopUITests-Runner[28433:18487688] [General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric
+2026-09-18 09:09:36.714142+0200 WoopUITests-Runner[28433:18487691] [General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics
+objc[28433]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x108904310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10884c398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'All tests' started at 2026-09-18 09:09:45.156.
+Test Suite 'WoopUITests.xctest' started at 2026-09-18 09:09:45.157.
+Test Suite 'RestartPopupUITests' started at 2026-09-18 09:09:45.157.
+Test Case '-[WoopUITests.RestartPopupUITests testAnglaisRelancer]' started.
+    t =     0.00s Start Test at 2026-09-18 09:09:45.159
+    t =     0.42s Set Up
+    t =     0.43s Open fr.kathryn.woop
+    t =     0.43s     Launch fr.kathryn.woop
+    t =     0.43s         Terminate fr.kathryn.woop:28193
+    t =     1.68s         Setting up automation session
+    t =     3.21s         Wait for fr.kathryn.woop to idle
+    t =     8.00s Waiting 25.0s for "restart-launch" Button to exist
+    t =     9.04s     Checking `Expect predicate `existsNoRetry == 1` for object "restart-launch" Button`
+    t =     9.04s         Checking existence of `"restart-launch" Button`
+    t =     9.29s Checking existence of `"One more set?" StaticText`
+    t =     9.32s Find the "restart-launch" Button
+    t =     9.36s Find the Application 'fr.kathryn.woop'
+    t =     9.65s Added attachment named 'relance-en'
+    t =     9.66s Tap "restart-launch" Button
+    t =     9.66s     Wait for fr.kathryn.woop to idle
+    t =     9.67s     Find the "restart-launch" Button
+    t =     9.70s     Check for interrupting elements affecting "restart-launch" Button
+    t =     9.77s     Synthesize event
+    t =    10.19s     Wait for fr.kathryn.woop to idle
+    t =    10.20s Waiting 5.0s for "restart-launch" Button to not exist
+    t =    11.23s     Checking `Expect predicate `existsNoRetry == 0` for object "restart-launch" Button`
+    t =    11.23s         Checking existence of `"restart-launch" Button`
+    t =    11.40s Waiting 8.0s for "SET 2" StaticText to exist
+    t =    12.43s     Checking `Expect predicate `existsNoRetry == 1` for object "SET 2" StaticText`
+    t =    12.45s         Checking existence of `"SET 2" StaticText`
+    t =    12.50s         Capturing element debug description
+    t =    14.19s     Checking `Expect predicate `existsNoRetry == 1` for object "SET 2" StaticText`
+    t =    14.35s         Checking existence of `"SET 2" StaticText`
+    t =    14.75s         Capturing element debug description
+    t =    15.43s     Checking `Expect predicate `existsNoRetry == 1` for object "SET 2" StaticText`
+    t =    15.43s         Checking existence of `"SET 2" StaticText`
+    t =    15.95s Find the Application 'fr.kathryn.woop'
+    t =    18.49s Added attachment named 'serie-relancee'
+    t =    19.32s Tear Down
+    t =    20.03s     Terminate fr.kathryn.woop:28458
+Test Case '-[WoopUITests.RestartPopupUITests testAnglaisRelancer]' passed (21.561 seconds).
+Test Case '-[WoopUITests.RestartPopupUITests testCroixFermeSansRelancer]' started.
+    t =     0.00s Start Test at 2026-09-18 09:10:06.721
+    t =     0.04s Set Up
+    t =     0.04s Open fr.kathryn.woop
+    t =     0.05s     Launch fr.kathryn.woop
+    t =     0.65s         Setting up automation session
+    t =     1.61s         Wait for fr.kathryn.woop to idle
+    t =     4.98s Waiting 25.0s for "restart-launch" Button to exist
+    t =     6.01s     Checking `Expect predicate `existsNoRetry == 1` for object "restart-launch" Button`
+    t =     6.01s         Checking existence of `"restart-launch" Button`
+    t =     6.24s Tap "restart-close" Button
+    t =     6.24s     Wait for fr.kathryn.woop to idle
+    t =     6.25s     Find the "restart-close" Button
+    t =     6.30s     Check for interrupting elements affecting "restart-close" Button
+    t =     6.39s     Synthesize event
+    t =     6.71s     Wait for fr.kathryn.woop to idle
+    t =     6.72s Waiting 5.0s for "restart-launch" Button to not exist
+    t =     7.75s     Checking `Expect predicate `existsNoRetry == 0` for object "restart-launch" Button`
+    t =     7.75s         Checking existence of `"restart-launch" Button`
+    t =     8.03s Checking existence of `"SET 2" StaticText`
+    t =     8.24s Tear Down
+    t =     8.24s     Terminate fr.kathryn.woop:28521
+Test Case '-[WoopUITests.RestartPopupUITests testCroixFermeSansRelancer]' passed (9.315 seconds).
+Test Case '-[WoopUITests.RestartPopupUITests testFondEtRetourArrierePlan]' started.
+    t =     0.00s Start Test at 2026-09-18 09:10:16.038
+    t =     0.04s Set Up
+    t =     0.04s Open fr.kathryn.woop
+    t =     0.05s     Launch fr.kathryn.woop
+    t =     0.30s         Setting up automation session
+    t =     2.05s         Wait for fr.kathryn.woop to idle
+    t =     5.61s Waiting 25.0s for "restart-launch" Button to exist
+    t =     6.65s     Checking `Expect predicate `existsNoRetry == 1` for object "restart-launch" Button`
+    t =     6.65s         Checking existence of `"restart-launch" Button`
+    t =     6.91s Pressing Home button
+    t =     7.38s Open fr.kathryn.woop
+    t =     7.38s     Activate fr.kathryn.woop
+    t =     8.88s         Wait for fr.kathryn.woop to idle
+    t =     9.36s Waiting 5.0s for "restart-launch" Button to exist
+    t =    10.37s     Checking `Expect predicate `existsNoRetry == 1` for object "restart-launch" Button`
+    t =    10.38s         Checking existence of `"restart-launch" Button`
+    t =    10.43s Tap Application 'fr.kathryn.woop'[0.50, 0.12]
+    t =    10.43s     Wait for fr.kathryn.woop to idle
+    t =    10.44s     Find the Application 'fr.kathryn.woop'
+    t =    10.48s     Check for interrupting elements affecting "Nosfy" Application
+    t =    10.56s     Synthesize event
+    t =    10.57s         Find the Application 'fr.kathryn.woop'
+    t =    10.60s         Find the Application 'fr.kathryn.woop'
+    t =    10.66s         Find the Application 'fr.kathryn.woop'
+    t =    10.99s     Wait for fr.kathryn.woop to idle
+    t =    10.99s Waiting 5.0s for "restart-launch" Button to not exist
+    t =    12.02s     Checking `Expect predicate `existsNoRetry == 0` for object "restart-launch" Button`
+    t =    12.02s         Checking existence of `"restart-launch" Button`
+    t =    12.61s Checking existence of `"SET 2" StaticText`
+    t =    12.73s Tear Down
+    t =    12.73s     Terminate fr.kathryn.woop:28556
+Test Case '-[WoopUITests.RestartPopupUITests testFondEtRetourArrierePlan]' passed (13.862 seconds).
+Test Case '-[WoopUITests.RestartPopupUITests testFrancaisTerminer]' started.
+    t =     0.00s Start Test at 2026-09-18 09:10:29.900
+    t =     0.04s Set Up
+    t =     0.04s Open fr.kathryn.woop
+    t =     0.04s     Launch fr.kathryn.woop
+    t =     0.33s         Setting up automation session
+    t =     2.13s         Wait for fr.kathryn.woop to idle
+    t =     5.89s Waiting 25.0s for "restart-launch" Button to exist
+    t =     6.92s     Checking `Expect predicate `existsNoRetry == 1` for object "restart-launch" Button`
+    t =     6.92s         Checking existence of `"restart-launch" Button`
+    t =     7.16s Checking existence of `"Encore une série ?" StaticText`
+    t =     7.20s Find the "restart-launch" Button
+    t =     7.23s Find the "restart-dismiss" Button
+    t =     7.26s Find the Application 'fr.kathryn.woop'
+    t =     7.56s Added attachment named 'relance-fr'
+    t =     7.56s Tap "restart-dismiss" Button
+    t =     7.56s     Wait for fr.kathryn.woop to idle
+    t =     7.56s     Find the "restart-dismiss" Button
+    t =     7.60s     Check for interrupting elements affecting "restart-dismiss" Button
+    t =     7.66s     Synthesize event
+    t =     7.98s     Wait for fr.kathryn.woop to idle
+    t =     7.99s Waiting 5.0s for "restart-launch" Button to not exist
+    t =     9.02s     Checking `Expect predicate `existsNoRetry == 0` for object "restart-launch" Button`
+    t =     9.02s         Checking existence of `"restart-launch" Button`
+    t =     9.19s Checking existence of `"SET 2" StaticText`
+    t =     9.24s Find the Application 'fr.kathryn.woop'
+    t =     9.61s Added attachment named 'retour-fiche'
+    t =     9.62s Tear Down
+    t =     9.63s     Terminate fr.kathryn.woop:28619
+Test Case '-[WoopUITests.RestartPopupUITests testFrancaisTerminer]' passed (10.701 seconds).
+Test Suite 'RestartPopupUITests' passed at 2026-09-18 09:10:40.602.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 55.439 (55.445) seconds
+Test Suite 'WoopUITests.xctest' passed at 2026-09-18 09:10:40.613.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 55.439 (55.456) seconds
+Test Suite 'All tests' passed at 2026-09-18 09:10:40.615.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 55.439 (55.459) seconds
+2026-09-18 09:10:41.194 xcodebuild[28410:18487040] [MT] IDETestOperationsObserverDebug: 69.614 elapsed -- Testing started completed.
+2026-09-18 09:10:41.194 xcodebuild[28410:18487040] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-18 09:10:41.194 xcodebuild[28410:18487040] [MT] IDETestOperationsObserverDebug: 69.614 sec, +69.614 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-restart-popup-20260918/tests.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started
