@@ -7,7 +7,7 @@ import SwiftUI
 /// La refonte du 14-08 (« on va s'amuser un peu !! ») : l'ancienne page à
 /// trois cartes est morte. À sa place : le halo de la home versé depuis la
 /// DROITE (`bgAuroraProfil`, le champ miroité), le rond aux initiales en
-/// dégradé néon sous son fil blanc animé, le badge de niveau, la pastille
+/// dégradé néon sous son fil blanc animé, la pastille
 /// moonCoin des pièces (tap → elle s'anime, puis le coffre), les réglages
 /// dans leur overlay de verre, et LA COLLECTION : les quatre registres en
 /// lignes, du plus petit au légendaire, avec les dos vides qui attendent.
@@ -82,8 +82,6 @@ struct ProfilLuneView: View {
 
     /// L'embrasement secret de KD (tap sur le rond, lot C).
     @State private var flambe: CGFloat = 0
-    /// L'anneau d'XP éphémère (tap sur le badge Level, lot C).
-    @State private var anneau: CGFloat = 0
 
     // ---- L'ACCUEIL DU SACRE (le raccord de la collection) ----
     /// Le store v1 mémoire — Supabase se branchera AVEC Kathryn.
@@ -610,7 +608,7 @@ struct ProfilLuneView: View {
             }
             .overlay(alignment: .topLeading) {
                 RondAvatar(initiales: initialesProfil, taille: taille,
-                           flambe: flambe, anneau: anneau)
+                           flambe: flambe)
                     .offset(x: ax, y: ay)
                     .onTapGesture {
                         UIImpactFeedbackGenerator(style: .light)
@@ -701,37 +699,10 @@ struct ProfilLuneView: View {
     /// Le nom, réduit, avec l'identifiant dessous — aligné sous KD.
     private var nomBloc: some View {
         VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 14) {
-                Text(prenomAffiche)
-                    .font(.inter(17, .bold))
-                    .tracking(-0.2)
-                    .foregroundStyle(Color.inkPrimary)
-                // (retouche Apple : tout le texte de la page vit sur LA
-                // grille de 20 pt — voir le padding du bloc.)
-                // Le badge — un tap dévoile l'ANNEAU d'XP autour de KD,
-                // deux secondes, puis il s'efface (sobre, jamais permanent).
-                Button {
-                    withAnimation(.spring(response: 0.4,
-                                          dampingFraction: 0.8)) {
-                        anneau = 1
-                    }
-                    withAnimation(.easeOut(duration: 0.7).delay(2.0)) {
-                        anneau = 0
-                    }
-                } label: {
-                    // La capsule REMPLIE du système (le contour seul
-                    // faisait web — retouche Apple).
-                    Text("Level 1")
-                        .font(.inter(11, .semibold))
-                        .tracking(0.5)
-                        .foregroundStyle(Color.inkSecondary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(
-                            Capsule().fill(Color.white.opacity(0.07)))
-                }
-                .buttonStyle(.plain)
-            }
+            Text(prenomAffiche)
+                .font(.inter(17, .bold))
+                .tracking(-0.2)
+                .foregroundStyle(Color.inkPrimary)
             Text(pseudoProfil)
                 .font(.inter(12, .semibold))
                 .tracking(0.3)
@@ -1879,7 +1850,7 @@ struct ReglagesOverlay: View {
                         Text(prenom)
                             .font(.inter(16, .semibold))
                             .foregroundStyle(Color.inkPrimary)
-                        Text("\(pieces) pièces lune · Level 1")
+                        Text("\(pieces) pièces lune")
                             .font(.inter(12, .regular))
                             .foregroundStyle(Color.inkMuted)
                     }

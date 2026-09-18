@@ -1578,12 +1578,6 @@ private struct DalleChapitre: View {
                     }
                 }
                 Spacer(minLength: 12)
-                // LE RAIL DE JEU — la surface, pas la stratégie : chiffres
-                // FACTICES, monochromes, inertes cette session.
-                HStack(spacing: 14) {
-                    rail(glyphe: "moon.fill", valeur: "240")
-                    rail(glyphe: "flame.fill", valeur: "7")
-                }
             }
             .padding(.horizontal, 18)
             .opacity(visible ? 1 : 0)
@@ -1602,18 +1596,6 @@ private struct DalleChapitre: View {
         .allowsHitTesting(onRetour != nil)
     }
 
-    private func rail(glyphe: String, valeur: String) -> some View {
-        HStack(spacing: 5) {
-            Image(systemName: glyphe)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Color(white: 0.60))
-            Text(valeur)
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                .foregroundStyle(LinearGradient(
-                    colors: [Color(white: 0.98), Color(white: 0.78)],
-                    startPoint: .top, endPoint: .bottom))
-        }
-    }
 }
 
 // MARK: - La page
