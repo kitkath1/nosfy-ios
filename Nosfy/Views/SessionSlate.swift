@@ -300,11 +300,11 @@ struct SlateGroupe: Identifiable {
     /// « 3 intervalles · 6:40 », « 20 longueurs · 500 m ».
     var resume: String {
         if let l = rows.first, case .longueurs(let n, let m) = l.genre {
-            return "\(n) longueur\(n > 1 ? "s" : "") · \(n * m) m"
+            return "\(n) \(L("longueur", "length"))\(n > 1 ? "s" : "") · \(n * m) m"
         }
         let n = rows.filter(\.done).count
         let s = rows.filter(\.done).reduce(0) { $0 + $1.seconds }
-        return "\(n) intervalle\(n > 1 ? "s" : "") · \(ChambreFmt.mmss(s))"
+        return "\(n) \(L("intervalle", "interval"))\(n > 1 ? "s" : "") · \(ChambreFmt.mmss(s))"
     }
     /// La clé bon marché de l'équatabilité — id, compte, faites, et le
     /// temps cardio (une longueur de plus change la ligne sans changer
@@ -539,7 +539,7 @@ private struct SlateRang: View {
                 .monospacedDigit()
                 .foregroundStyle(Color.white.opacity(depliee ? 0.92 : 0.34))
 
-            Text(groupe.exercise.name)
+            Text(groupe.exercise.nomLocalise)
                 .font(.inter(15, .semibold))
                 .foregroundStyle(Color.white.opacity(depliee ? 0.94 : 0.52))
                 .lineLimit(1)

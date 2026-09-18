@@ -4760,10 +4760,12 @@ struct DemoSession: Identifiable {
         if let w = workout { return StorySession(workout: w) }
         let g = groupes
         let toutes = g.flatMap(\.rows)
+        let format = DateFormatter()
+        format.locale = Locale(identifier: Langue.en ? "en_US" : "fr_FR")
+        format.dateFormat = Langue.en ? "MMMM d" : "d MMMM"
         var s = StorySession(
-            title: name,
-            dateLabel: name.replacingOccurrences(of: "Session",
-                                                 with: "Séance"),
+            title: L("Séance", "Session"),
+            dateLabel: L("Séance du ", "Session on ") + format.string(from: date),
             minutes: max(1, toutes.count * 4),
             exos: g.count,
             series: toutes.count,

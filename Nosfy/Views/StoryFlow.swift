@@ -31,15 +31,15 @@ enum TopSport {
     /// Les deux lignes géantes (le contrat bigLines : 3-9 signes —
     /// gabarits du banc, l'IA remplira le même moule).
     var bigLines: [String] {
-        self == .cardio ? ["TOP", "RUN"] : ["TOP", "LIFT"]
+        self == .cardio ? ["TOP", L("COURSE", "RUN")] : ["TOP", L("MUSCU", "LIFT")]
     }
     var sousTexte: String {
-        self == .cardio ? "Your best cardio this week."
-                        : "Your best lifting this week."
+        self == .cardio ? L("Votre meilleur cardio de la semaine.", "Your best cardio this week.")
+                        : L("Votre meilleure muscu de la semaine.", "Your best lifting this week.")
     }
     /// Le titre de la card — le registre des autres cards rewards.
     var titre: String {
-        self == .cardio ? "Top Cardio" : "Top Lifting"
+        self == .cardio ? L("Meilleur cardio", "Top Cardio") : L("Meilleure muscu", "Top Lifting")
     }
 }
 
@@ -77,10 +77,10 @@ struct StorySession {
 
     /// Les valeurs de la maquette — partition comprise, pour que le banc
     /// `-storyLab` montre la liste dépliable de la story 2.
-    static let demo: StorySession = {
+    static var demo: StorySession {
         var s = StorySession(
-            title: "Haut du corps",
-            dateLabel: "Séance du 12 janvier",
+            title: L("Haut du corps", "Upper body"),
+            dateLabel: L("Séance du 12 janvier", "Session on January 12"),
             minutes: 42, exos: 7, series: 18, kcal: 310,
             sets: [
                 StorySet(rank: 1, reps: 12, kilos: 20, coins: 20),
@@ -104,16 +104,16 @@ struct StorySession {
                 })
         }
         return s
-    }()
+    }
 
     /// La lecture d'une vraie séance. Les cinq séries montrées sont les cinq
     /// premières de la séance, tous exercices confondus.
     init(workout: Workout) {
-        title = workout.categories.first?.rawValue ?? "Séance"
+        title = workout.categories.first?.nomLocalise ?? L("Séance", "Session")
         let f = DateFormatter()
-        f.locale = Locale(identifier: "fr_FR")
-        f.dateFormat = "d MMMM"
-        dateLabel = "Séance du " + f.string(from: workout.startedAt)
+        f.locale = Locale(identifier: Langue.en ? "en_US" : "fr_FR")
+        f.dateFormat = Langue.en ? "MMMM d" : "d MMMM"
+        dateLabel = L("Séance du ", "Session on ") + f.string(from: workout.startedAt)
         minutes = max(1, Int(workout.duration / 60))
         exos = workout.orderedExercises.count
         let all = workout.orderedExercises.flatMap { $0.sets ?? [] }

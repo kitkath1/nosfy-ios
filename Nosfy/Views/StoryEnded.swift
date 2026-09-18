@@ -169,8 +169,8 @@ struct StoryEnded: View {
     /// JAMAIS le débord d'une couche UIKit, ici il n'a rien à rattraper.
     private var verriere: some View {
         HStack(spacing: EndedCine.corps * 0.24) {
-            mot("Session", nom: "story-ended-verre-a")
-            mot("Ended", nom: "story-ended-verre-b")
+            mot(L("Séance", "Session"), cle: "Session", nom: "story-ended-verre-a")
+            mot(L("Terminée", "Ended"), cle: "Ended", nom: "story-ended-verre-b")
         }
         .coordinateSpace(name: "verriere")
         .onGeometryChange(for: CGSize.self) { $0.size } action: {
@@ -178,7 +178,7 @@ struct StoryEnded: View {
         }
     }
 
-    private func mot(_ texte: String, nom: String) -> some View {
+    private func mot(_ texte: String, cle: String, nom: String) -> some View {
         let glyphe = Text(texte).font(.inter(EndedCine.corps, .bold))
         return glyphe
             .foregroundStyle(.clear)
@@ -198,7 +198,7 @@ struct StoryEnded: View {
             .mask { glyphe }
             .onGeometryChange(for: CGRect.self) {
                 $0.frame(in: .named("verriere"))
-            } action: { motRects[texte] = $0 }
+            } action: { motRects[cle] = $0 }
     }
 
     /// L'échelle visuelle du composite. Plus de « repos petit » : la
@@ -323,7 +323,7 @@ struct StoryEnded: View {
         let gris = Color(white: 0.52)
         let lignes: [(String, Color)] = [
             ("Kathryn,", blanc),
-            ("votre session", gris),
+            (L("votre séance", "your session"), gris),
             (dateCourte, blanc)
         ]
         return VStack(alignment: .leading, spacing: 2) {
@@ -430,7 +430,7 @@ struct StoryEnded: View {
         let blanc = Color(white: 0.97)
         let gris = Color(white: 0.52)
         return VStack(alignment: .leading, spacing: 0) {
-            Text("Séance du jour")
+            Text(L("Séance du jour", "Today’s session"))
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(gris)
                 .opacity(ligne(0))
@@ -439,7 +439,7 @@ struct StoryEnded: View {
                 .frame(width: 26, height: 1.5)
                 .padding(.top, 8)
                 .opacity(ligne(0))
-            Text("Résumé")
+            Text(L("Résumé", "Summary"))
                 .font(.system(size: 44, weight: .bold))
                 .foregroundStyle(blanc)
                 .padding(.top, 18)
@@ -448,8 +448,8 @@ struct StoryEnded: View {
             Spacer(minLength: 0)
 
             rangée(1, session.minutes, "min", blanc, gris)
-            rangée(2, session.series, "séries", blanc, gris)
-            rangée(3, session.exos, "exos", blanc, gris)
+            rangée(2, session.series, L("séries", "sets"), blanc, gris)
+            rangée(3, session.exos, L("exos", "exercises"), blanc, gris)
             rangée(4, session.kcal, "calories", blanc, gris)
         }
         .padding(28)

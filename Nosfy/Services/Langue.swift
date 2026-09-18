@@ -37,3 +37,56 @@ enum Langue {
 
 /// Le texte dans la langue courante — `L("Bienvenue", "Welcome")`.
 func L(_ fr: String, _ en: String) -> String { Langue.en ? en : fr }
+
+extension ExerciseCategory {
+    var nomLocalise: String {
+        switch self {
+        case .haut: return L("Haut du corps", "Upper body")
+        case .abdos: return L("Abdos", "Core")
+        case .bas: return L("Jambes", "Legs")
+        case .fessiers: return L("Fessiers", "Glutes")
+        case .cardio: return "Cardio"
+        }
+    }
+}
+
+extension Exercise {
+    /// Le catalogue conserve ses identifiants et ses noms sources. Seul
+    /// l'affichage change de langue, y compris dans les faits des stories.
+    var nomLocalise: String {
+        guard Langue.en else { return name }
+        return Self.nomsAnglais[id] ?? name
+    }
+
+    private static let nomsAnglais: [String: String] = [
+        "woop-haute": "High cable woodchopper",
+        "woop-basse": "Low cable woodchopper",
+        "flexion-laterale": "Low cable side bend",
+        "rotation-milieu": "Standing cable rotation",
+        "gainage-militaire": "Plank with cable row",
+        "crunch-machine": "Assisted machine crunch",
+        "crunch-poulie": "Kneeling cable crunch",
+        "gainage": "Plank",
+        "crunch-sol": "Floor crunch",
+        "chevilles": "Heel touches",
+        "developpe-couche": "Barbell bench press",
+        "papillon": "Machine chest fly",
+        "tirage-vertical": "Lat pulldown",
+        "tirage-vers-soi": "Seated cable row",
+        "curl-machine": "Machine curl",
+        "elevations-laterales": "Dumbbell lateral raise",
+        "squat-barre": "Barbell squat",
+        "presse-jambes": "Leg press",
+        "souleve-de-terre": "Deadlift",
+        "extension-lombaire": "Back extension",
+        "kickback": "Cable kickback",
+        "pull-through": "Cable pull-through",
+        "abduction": "Cable hip abduction",
+        "squat-poulie": "Cable squat",
+        "hip-thrust": "Machine hip thrust",
+        "hiit-tapis": "Treadmill HIIT",
+        "escalier": "Stair climber",
+        "tapis-lent": "Steady treadmill",
+        "piscine": "Swimming"
+    ]
+}

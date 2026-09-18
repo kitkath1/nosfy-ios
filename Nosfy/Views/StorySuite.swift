@@ -65,7 +65,7 @@ struct StoryDetails: View {
                 .opacity(StoryCine.sstep(0.15, 0.65, t))
 
             VStack(alignment: .leading, spacing: 0) {
-                Text("Détails")
+                Text(L("Détails", "Details"))
                     .font(.system(size: 34, weight: .bold))
                     .foregroundStyle(Color(white: 0.96))
                     .padding(.leading, 24)
@@ -416,9 +416,9 @@ struct StoryCard: View {
     /// du plan backend), jamais un choix libre.
     private var bigWord: String {
         let v = faits.volume
-        if v >= 6000 { return "KING" }
-        if v >= 3000 { return "BOSS" }
-        return "SOLID"
+        if v >= 6000 { return L("ROI", "KING") }
+        if v >= 3000 { return L("CHEF", "BOSS") }
+        return L("SOLIDE", "SOLID")
     }
 
     /// LE MOT EN ARGENT, tout le header — l'école TexteGeant de la robe
@@ -524,13 +524,13 @@ struct StoryCard: View {
     /// total — les faits v1, calculés du `StorySession`. Le fact engine
     /// serveur les remplacera avec ses fenêtres (contrat §4 ter).
     private var faits: (exo: String, kg: Int, volume: Int) {
-        var exo = "the bar"; var kg = 0; var volume = 0
+        var exo = L("la barre", "the bar"); var kg = 0; var volume = 0
         for g in session.groupes {
             for r in g.rows {
                 volume += r.reps * Int(r.kilos)
                 if Int(r.kilos) > kg {
                     kg = Int(r.kilos)
-                    exo = g.exercise.name
+                    exo = g.exercise.nomLocalise
                 }
             }
         }
@@ -570,47 +570,47 @@ struct StoryCard: View {
         let series = session.series
         switch planche.first ?? .bras {
         case .basket:
-            return [[("Cardio came in.", false)],
-                    [("\(minutes) min", false), (" on the clock,", true)],
-                    [("heart up high,", true)],
-                    [("\(series) rounds", false), (" done.", true)],
-                    [("no seat taken.", true)],
-                    [("Breathe. Repeat.", false)]]
+            return [[(L("Cardio accompli.", "Cardio came in."), false)],
+                    [("\(minutes) min", false), (L(" au compteur,", " on the clock,"), true)],
+                    [(L("le cœur s’emballe,", "heart up high,"), true)],
+                    [(L("\(series) intervalles", "\(series) rounds"), false), (L(" terminés.", " done."), true)],
+                    [(L("sans rien lâcher.", "no seat taken."), true)],
+                    [(L("Soufflez. Reprenez.", "Breathe. Repeat."), false)]]
         case .chocolat:
-            return [[("Core day locked.", false)],
-                    [("\(series) sets", false), (" of core,", true)],
+            return [[(L("Abdos travaillés.", "Core day locked."), false)],
+                    [(L("\(series) séries", "\(series) sets"), false), (L(" pour les abdos,", " of core,"), true)],
                     [("\(f.exo),", false)],
-                    [("steel underneath,", true)],
-                    [("in \(minutes) minutes.", true)],
-                    [("Hold the line.", false)]]
+                    [(L("un centre solide,", "steel underneath,"), true)],
+                    [(L("en \(minutes) minutes.", "in \(minutes) minutes."), true)],
+                    [(L("Gardez le cap.", "Hold the line."), false)]]
         case .piscine:
-            return [[("Water day done.", false)],
-                    [("\(minutes) min", false), (" in the lane,", true)],
-                    [("stroke after stroke,", true)],
-                    [("\(series) sets", false), (" logged.", true)],
-                    [("lungs wide open.", true)],
-                    [("Push off again.", false)]]
+            return [[(L("Longueurs bouclées.", "Water day done."), false)],
+                    [("\(minutes) min", false), (L(" dans l’eau,", " in the lane,"), true)],
+                    [(L("longueur après longueur,", "stroke after stroke,"), true)],
+                    [(L("\(series) séries", "\(series) sets"), false), (L(" terminées.", " logged."), true)],
+                    [(L("le souffle libéré.", "lungs wide open."), true)],
+                    [(L("À la prochaine.", "Push off again."), false)]]
         case .jambes:
-            return [[("Leg day loaded.", false)],
-                    [("\(f.kg) kg", false), (" on", true)],
+            return [[(L("Jambes sollicitées.", "Leg day loaded."), false)],
+                    [("\(f.kg) kg", false), (L(" sur", " on"), true)],
                     [("\(f.exo),", false)],
-                    [("deep and low,", true)],
-                    [("\(series) sets, \(minutes) min.", true)],
-                    [("Walk it off.", false)]]
+                    [(L("avec amplitude,", "deep and low,"), true)],
+                    [(L("\(series) séries, \(minutes) min.", "\(series) sets, \(minutes) min."), true)],
+                    [(L("Savourez le retour.", "Walk it off."), false)]]
         case .abricot:
-            return [[("Glutes on fire.", false)],
-                    [("\(f.kg) kg", false), (" on", true)],
+            return [[(L("Fessiers en feu.", "Glutes on fire."), false)],
+                    [("\(f.kg) kg", false), (L(" sur", " on"), true)],
                     [("\(f.exo),", false)],
-                    [("hips driving up,", true)],
-                    [("\(series) sets, \(minutes) min.", true)],
-                    [("Squeeze and hold.", false)]]
+                    [(L("les hanches montent,", "hips driving up,"), true)],
+                    [(L("\(series) séries, \(minutes) min.", "\(series) sets, \(minutes) min."), true)],
+                    [(L("Serrez. Maintenez.", "Squeeze and hold."), false)]]
         default:
-            return [[("Big push day.", false)],
-                    [("\(f.kg) kg", false), (" on", true)],
+            return [[(L("Belle poussée.", "Big push day."), false)],
+                    [("\(f.kg) kg", false), (L(" sur", " on"), true)],
                     [("\(f.exo),", false)],
-                    [("your best set,", true)],
-                    [("\(series) sets in \(minutes) min.", true)],
-                    [("Keep pressing.", false)]]
+                    [(L("votre meilleure série,", "your best set,"), true)],
+                    [(L("\(series) séries en \(minutes) min.", "\(series) sets in \(minutes) min."), true)],
+                    [(L("Continuez ainsi.", "Keep pressing."), false)]]
         }
     }
 
@@ -1173,7 +1173,7 @@ struct StoryTopScene: View {
             : (phase < 0.20 ? ambre.opacity(0.6) : vert)
         let lueur: Color = phase < 0.20 ? ambre : vert
         return VStack(alignment: .leading, spacing: 3) {
-            Text("Best week")
+            Text(L("Record de la semaine", "Best week"))
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(Color(white: 0.52))
             HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -1389,7 +1389,7 @@ struct StoryWin: View {
                 .contentTransition(.identity)
                 .foregroundStyle(Color(white: 0.96))
                 .opacity(compteurU)
-            Text("pièces gagnées")
+            Text(L("pièces gagnées", "coins earned"))
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(Color(white: 0.55))
                 .opacity(compteurU)
@@ -1522,10 +1522,10 @@ struct StoryWin: View {
 
     private var couronne: String {
         switch boosters {
-        case 0: return "Steady grind."
-        case 1...2: return "Nice haul."
-        case 3...4: return "Big win."
-        default: return "Jackpot."
+        case 0: return L("L’effort paie.", "Steady grind.")
+        case 1...2: return L("Beau butin.", "Nice haul.")
+        case 3...4: return L("Grande victoire.", "Big win.")
+        default: return L("Le pactole.", "Jackpot.")
         }
     }
 
@@ -1546,8 +1546,9 @@ struct StoryWin: View {
         // ses entrées ne changent qu'une image sur trois : le rendu
         // ne se refait qu'à ces instants.
         let t = (t * 20).rounded() / 20
-        let glyphe = Text("WIN")
-            .font(.system(size: l * 0.52, weight: .black))
+        let mot = L("GAIN", "WIN")
+        let glyphe = Text(mot)
+            .font(.system(size: l * 0.52 * 3 / CGFloat(mot.count), weight: .black))
             .tracking(-l * 0.018)
             .fixedSize()
         // « PLUS TRAVAILLÉ DANS L'OR » : l'encre est un MÉTAL — six
@@ -2452,12 +2453,12 @@ struct StoryDoubleScene: View {
             projecteur
             pastille
             VStack(spacing: 6) {
-                Text("Double day")
+                Text(L("Double séance", "Double day"))
                     .font(.system(size: 25, weight: .bold))
                     .foregroundStyle(Color(white: 0.97))
                     .opacity(StoryCine.sstep(DoubleCine.sousAt - 0.15,
                                              DoubleCine.sousAt + 0.25, t))
-                Text("Two sessions today.")
+                Text(L("Deux séances aujourd’hui.", "Two sessions today."))
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color(white: 0.62))
                     .opacity(StoryCine.sstep(DoubleCine.sousAt,
@@ -2645,8 +2646,8 @@ struct StoryDoubleScene: View {
     // MARK: Le texte géant — ARGENT
 
     private var texteGeant: some View {
-        let lignes = ["TWICE", "TODAY"]
-        let corps = l * 1.16 / 5
+        let lignes = [L("DEUX", "TWICE"), L("SÉANCES", "TODAY")]
+        let corps = l * 1.16 / CGFloat(lignes.map(\.count).max() ?? 5)
         let mots = VStack(spacing: -corps * 0.35) {
             ForEach(lignes.indices, id: \.self) { i in
                 Text(lignes[i])
@@ -2821,7 +2822,7 @@ struct StoryDoubleScene: View {
         let plein: Double = phase < 0.20 ? 0.3 : 1
         let heures = fait.heures.prefix(2).joined(separator: " · ")
         return VStack(alignment: .leading, spacing: 3) {
-            Text("Twice today")
+            Text(L("Deux fois aujourd’hui", "Twice today"))
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(Color(white: 0.52))
             Text(heures)

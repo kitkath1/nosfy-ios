@@ -1,0 +1,498 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-stories71-runtime-dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun -destination platform=iOS,id=00008120-001E4CDC0A85A01E -parallel-testing-enabled NO -resultBundlePath /tmp/woop-stories73-iphone.xcresult
+
+2026-09-18 09:02:03.207 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-stories73-iphone.xcresult
+
+2026-09-18 09:02:03.215 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 09:02:03.309 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-18 09:02:04.777 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 09:02:05.062 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 09:02:06.888 xcodebuild[25761:18460386] [MT] Run Destination Preflight: The destination is not ready.
+Error Domain=com.apple.dt.deviceprep Code=-3 "Unlock iPhone de Frédéric to Continue" UserInfo={NSRecoveryAttempter=<_DVTErrorRecoveryHandler: 0xc6b9301c0>, NSLocalizedRecoveryOptions=(
+    "Cancel Testing"
+), NSLocalizedRecoverySuggestion=Xcode cannot launch NavRuntimeUITests on iPhone de Frédéric because the device is locked., DVTRecoveryBlockKey=<__NSMallocBlock__: 0xc69b16430>, NSLocalizedDescription=Unlock iPhone de Frédéric to Continue}
+2026-09-18 09:02:06.888 xcodebuild[25761:18460386] [MT] Run Destination Preflight: Waiting for the destination to become ready.
+2026-09-18 09:03:35.797 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 09:03:55.382 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 09:03:56.226 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 09:04:03.794 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 09:04:05.938928+0200 NavRuntimeUITests-Runner[47118:3592724] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'All tests' started at 2026-09-18 09:04:07.598.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-18 09:04:07.598.
+Test Suite 'NavRuntimeUITests' started at 2026-09-18 09:04:07.598.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testAStoriesFrancaisesEtAnglaises]' started.
+    t =     0.00s Start Test at 2026-09-18 09:04:07.599
+    t =     0.01s Set Up
+THERMIQUE IPHONE: 0
+    t =     0.01s Open fr.kathryn.woop
+    t =     0.01s     Launch fr.kathryn.woop
+2026-09-18 09:04:07.901 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     0.85s         Setting up automation session
+    t =     0.93s         Wait for fr.kathryn.woop to idle
+    t =     2.02s Waiting 12.0s for "glisse vers le haut" StaticText to exist
+    t =     3.04s     Checking `Expect predicate `existsNoRetry == 1` for object "glisse vers le haut" StaticText`
+    t =     3.04s         Checking existence of `"glisse vers le haut" StaticText`
+    t =     3.08s Press Application 'fr.kathryn.woop'[0.50, 0.58] for 0.1 seconds, then drag to Application 'fr.kathryn.woop'[0.50, 0.27] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =     3.08s     Wait for fr.kathryn.woop to idle
+    t =     3.08s     Find the Application 'fr.kathryn.woop'
+    t =     3.09s     Check for interrupting elements affecting "Woop" Application
+    t =     3.12s         Wait for com.apple.springboard to idle
+    t =     4.58s             Device orientation changed to Face Up
+    t =     5.10s Ignoring failure to get hierarchy for remote element in process 33833 (Error getting main window kAXErrorServerNotFound)
+    t =     5.11s Ignoring failure to get hierarchy for remote element in process 33833 (Error getting main window kAXErrorServerNotFound)
+    t =     5.11s     Synthesize event
+    t =     5.11s         Find the Application 'fr.kathryn.woop'
+    t =     5.12s         Find the Application 'fr.kathryn.woop'
+    t =     5.13s         Find the Application 'fr.kathryn.woop'
+2026-09-18 09:04:12.615 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     5.14s         Find the Application 'fr.kathryn.woop'
+    t =     5.15s         Find the Application 'fr.kathryn.woop'
+    t =     5.97s     Wait for fr.kathryn.woop to idle
+    t =     6.00s Waiting 5.0s for "story-etat" StaticText to exist
+    t =     7.03s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =     7.03s         Checking existence of `"story-etat" StaticText`
+    t =    13.05s Checking existence of `"Résumé" StaticText`
+    t =    13.07s Checking existence of `"votre séance" StaticText`
+    t =    13.09s Checking existence of `"du 12 janvier" StaticText`
+    t =    13.11s Find the Application 'fr.kathryn.woop'
+    t =    13.25s Added attachment named 'fr-resume'
+    t =    13.25s Tap Application 'fr.kathryn.woop'[0.85, 0.09]
+    t =    13.25s     Wait for fr.kathryn.woop to idle
+    t =    13.26s     Find the Application 'fr.kathryn.woop'
+    t =    13.27s     Check for interrupting elements affecting "Woop" Application
+    t =    13.29s     Synthesize event
+    t =    13.29s         Find the Application 'fr.kathryn.woop'
+    t =    13.31s         Find the Application 'fr.kathryn.woop'
+    t =    13.32s         Find the Application 'fr.kathryn.woop'
+    t =    13.60s     Wait for fr.kathryn.woop to idle
+    t =    13.61s Find the "story-etat" StaticText
+    t =    13.61s Checking existence of `"Détails" StaticText`
+    t =    13.62s Waiting 3.0s for "Woodchopper poulie haute" StaticText to exist
+    t =    14.65s     Checking `Expect predicate `existsNoRetry == 1` for object "Woodchopper poulie haute" StaticText`
+    t =    14.65s         Checking existence of `"Woodchopper poulie haute" StaticText`
+    t =    14.68s Find the Application 'fr.kathryn.woop'
+    t =    14.86s Added attachment named 'fr-details'
+    t =    14.86s Tap Application 'fr.kathryn.woop'[0.85, 0.09]
+    t =    14.86s     Wait for fr.kathryn.woop to idle
+    t =    14.86s     Find the Application 'fr.kathryn.woop'
+    t =    14.88s     Check for interrupting elements affecting "Woop" Application
+    t =    14.90s     Synthesize event
+    t =    14.90s         Find the Application 'fr.kathryn.woop'
+    t =    14.92s         Find the Application 'fr.kathryn.woop'
+    t =    14.93s         Find the Application 'fr.kathryn.woop'
+    t =    15.21s     Wait for fr.kathryn.woop to idle
+    t =    15.21s Find the "story-etat" StaticText
+    t =    17.23s Get all elements bound by index for: Descendants matching type StaticText
+    t =    17.25s Find the StaticText (Element at index 0)
+    t =    17.28s Find the StaticText (Element at index 1)
+    t =    17.29s Find the StaticText (Element at index 2)
+    t =    17.31s Find the StaticText (Element at index 3)
+    t =    17.32s Find the StaticText (Element at index 4)
+    t =    17.34s Find the StaticText (Element at index 5)
+    t =    17.36s Find the StaticText (Element at index 6)
+    t =    17.37s Find the StaticText (Element at index 7)
+ANALYSE fr: CHEF
+Belle poussée.
+32 kg sur
+développé,
+votre meilleure série,
+18 séries en 42 min.
+Continuez ainsi.
+page=2;pause=0
+    t =    17.39s Find the Application 'fr.kathryn.woop'
+    t =    17.58s Added attachment named 'fr-analyse'
+    t =    17.58s Tap Application 'fr.kathryn.woop'[0.85, 0.09]
+    t =    17.58s     Wait for fr.kathryn.woop to idle
+    t =    17.58s     Find the Application 'fr.kathryn.woop'
+    t =    17.60s     Check for interrupting elements affecting "Woop" Application
+    t =    17.62s     Synthesize event
+    t =    17.62s         Find the Application 'fr.kathryn.woop'
+    t =    17.62s         Find the Application 'fr.kathryn.woop'
+    t =    17.63s         Find the Application 'fr.kathryn.woop'
+    t =    17.92s     Wait for fr.kathryn.woop to idle
+    t =    17.92s Find the "story-etat" StaticText
+    t =    17.94s Waiting 3.0s for "pièces gagnées" StaticText to exist
+    t =    18.98s     Checking `Expect predicate `existsNoRetry == 1` for object "pièces gagnées" StaticText`
+    t =    18.98s         Checking existence of `"pièces gagnées" StaticText`
+    t =    19.01s Find the Application 'fr.kathryn.woop'
+    t =    19.18s Added attachment named 'fr-butin'
+    t =    19.18s Terminate fr.kathryn.woop:47127
+THERMIQUE IPHONE: 0
+THERMIQUE IPHONE: 0
+    t =    20.23s Open fr.kathryn.woop
+    t =    20.23s     Launch fr.kathryn.woop
+    t =    20.30s         Setting up automation session
+    t =    20.41s         Wait for fr.kathryn.woop to idle
+    t =    21.44s Waiting 12.0s for "swipe up" StaticText to exist
+    t =    22.47s     Checking `Expect predicate `existsNoRetry == 1` for object "swipe up" StaticText`
+    t =    22.47s         Checking existence of `"swipe up" StaticText`
+    t =    22.51s Press Application 'fr.kathryn.woop'[0.50, 0.58] for 0.1 seconds, then drag to Application 'fr.kathryn.woop'[0.50, 0.27] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    22.51s     Wait for fr.kathryn.woop to idle
+    t =    22.52s     Find the Application 'fr.kathryn.woop'
+    t =    22.53s     Check for interrupting elements affecting "Woop" Application
+    t =    22.55s     Synthesize event
+    t =    22.55s         Find the Application 'fr.kathryn.woop'
+    t =    22.56s         Find the Application 'fr.kathryn.woop'
+    t =    22.57s         Find the Application 'fr.kathryn.woop'
+    t =    22.58s         Find the Application 'fr.kathryn.woop'
+    t =    22.59s         Find the Application 'fr.kathryn.woop'
+    t =    23.41s     Wait for fr.kathryn.woop to idle
+    t =    23.42s Waiting 5.0s for "story-etat" StaticText to exist
+    t =    24.45s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    24.46s         Checking existence of `"story-etat" StaticText`
+    t =    30.48s Checking existence of `"Summary" StaticText`
+    t =    30.50s Checking existence of `"your session" StaticText`
+    t =    30.52s Checking existence of `"on January 12" StaticText`
+    t =    30.54s Find the Application 'fr.kathryn.woop'
+    t =    30.69s Added attachment named 'en-resume'
+    t =    30.69s Tap Application 'fr.kathryn.woop'[0.85, 0.09]
+    t =    30.69s     Wait for fr.kathryn.woop to idle
+    t =    30.69s     Find the Application 'fr.kathryn.woop'
+    t =    30.71s     Check for interrupting elements affecting "Woop" Application
+    t =    30.73s     Synthesize event
+    t =    30.73s         Find the Application 'fr.kathryn.woop'
+    t =    30.74s         Find the Application 'fr.kathryn.woop'
+    t =    30.75s         Find the Application 'fr.kathryn.woop'
+    t =    31.04s     Wait for fr.kathryn.woop to idle
+    t =    31.04s Find the "story-etat" StaticText
+    t =    31.05s Checking existence of `"Details" StaticText`
+    t =    31.06s Waiting 3.0s for "High cable woodchopper" StaticText to exist
+    t =    32.08s     Checking `Expect predicate `existsNoRetry == 1` for object "High cable woodchopper" StaticText`
+    t =    32.08s         Checking existence of `"High cable woodchopper" StaticText`
+    t =    32.10s Find the Application 'fr.kathryn.woop'
+    t =    32.26s Added attachment named 'en-details'
+    t =    32.27s Tap Application 'fr.kathryn.woop'[0.85, 0.09]
+    t =    32.27s     Wait for fr.kathryn.woop to idle
+    t =    32.27s     Find the Application 'fr.kathryn.woop'
+    t =    32.28s     Check for interrupting elements affecting "Woop" Application
+    t =    32.30s     Synthesize event
+    t =    32.30s         Find the Application 'fr.kathryn.woop'
+    t =    32.32s         Find the Application 'fr.kathryn.woop'
+    t =    32.33s         Find the Application 'fr.kathryn.woop'
+    t =    32.61s     Wait for fr.kathryn.woop to idle
+    t =    32.62s Find the "story-etat" StaticText
+    t =    34.63s Get all elements bound by index for: Descendants matching type StaticText
+    t =    34.65s Find the StaticText (Element at index 0)
+    t =    34.67s Find the StaticText (Element at index 1)
+    t =    34.69s Find the StaticText (Element at index 2)
+    t =    34.70s Find the StaticText (Element at index 3)
+    t =    34.72s Find the StaticText (Element at index 4)
+    t =    34.74s Find the StaticText (Element at index 5)
+    t =    34.75s Find the StaticText (Element at index 6)
+    t =    34.77s Find the StaticText (Element at index 7)
+ANALYSE en: BOSS
+Big push day.
+32 kg on
+barbell bench,
+your best set,
+18 sets in 42 min.
+Keep pressing.
+page=2;pause=0
+    t =    34.78s Find the Application 'fr.kathryn.woop'
+    t =    34.94s Added attachment named 'en-analyse'
+    t =    34.95s Tap Application 'fr.kathryn.woop'[0.85, 0.09]
+    t =    34.95s     Wait for fr.kathryn.woop to idle
+    t =    34.95s     Find the Application 'fr.kathryn.woop'
+    t =    34.97s     Check for interrupting elements affecting "Woop" Application
+    t =    34.99s     Synthesize event
+    t =    34.99s         Find the Application 'fr.kathryn.woop'
+    t =    35.00s         Find the Application 'fr.kathryn.woop'
+    t =    35.01s         Find the Application 'fr.kathryn.woop'
+    t =    35.29s     Wait for fr.kathryn.woop to idle
+    t =    35.30s Find the "story-etat" StaticText
+    t =    35.31s Waiting 3.0s for "coins earned" StaticText to exist
+    t =    36.34s     Checking `Expect predicate `existsNoRetry == 1` for object "coins earned" StaticText`
+    t =    36.34s         Checking existence of `"coins earned" StaticText`
+    t =    36.36s Find the Application 'fr.kathryn.woop'
+    t =    36.52s Added attachment named 'en-butin'
+    t =    36.52s Terminate fr.kathryn.woop:47134
+THERMIQUE IPHONE: 0
+    t =    37.53s Terminate fr.kathryn.woop:0
+    t =    37.54s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testAStoriesFrancaisesEtAnglaises]' passed (37.674 seconds).
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testBExceptionsDansLesDeuxLangues]' started.
+    t =     0.00s Start Test at 2026-09-18 09:04:45.276
+    t =     0.03s Set Up
+THERMIQUE IPHONE: 0
+    t =     0.03s Open fr.kathryn.woop
+    t =     0.03s     Launch fr.kathryn.woop
+    t =     0.18s         Setting up automation session
+    t =     0.21s         Wait for fr.kathryn.woop to idle
+    t =     1.25s Waiting 15.0s for "Meilleur cardio" StaticText to exist
+2026-09-18 09:04:46.415 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     2.28s     Checking `Expect predicate `existsNoRetry == 1` for object "Meilleur cardio" StaticText`
+    t =     2.29s         Checking existence of `"Meilleur cardio" StaticText`
+    t =     2.32s         Capturing element debug description
+    t =     3.26s     Checking `Expect predicate `existsNoRetry == 1` for object "Meilleur cardio" StaticText`
+    t =     3.26s         Checking existence of `"Meilleur cardio" StaticText`
+    t =     3.27s         Capturing element debug description
+    t =     4.30s     Checking `Expect predicate `existsNoRetry == 1` for object "Meilleur cardio" StaticText`
+    t =     4.30s         Checking existence of `"Meilleur cardio" StaticText`
+    t =     4.31s         Capturing element debug description
+    t =     5.34s     Checking `Expect predicate `existsNoRetry == 1` for object "Meilleur cardio" StaticText`
+    t =     5.34s         Checking existence of `"Meilleur cardio" StaticText`
+    t =    12.37s Find the Application 'fr.kathryn.woop'
+    t =    12.58s Added attachment named 'fr-storyTop'
+    t =    12.59s Terminate fr.kathryn.woop:47140
+THERMIQUE IPHONE: 0
+    t =    13.67s Open fr.kathryn.woop
+    t =    13.67s     Launch fr.kathryn.woop
+    t =    13.74s         Setting up automation session
+    t =    13.82s         Wait for fr.kathryn.woop to idle
+    t =    14.90s Waiting 15.0s for "Top Lifting" StaticText to exist
+    t =    15.92s     Checking `Expect predicate `existsNoRetry == 1` for object "Top Lifting" StaticText`
+    t =    15.93s         Checking existence of `"Top Lifting" StaticText`
+    t =    15.97s         Capturing element debug description
+    t =    17.00s     Checking `Expect predicate `existsNoRetry == 1` for object "Top Lifting" StaticText`
+    t =    17.00s         Checking existence of `"Top Lifting" StaticText`
+    t =    17.01s         Capturing element debug description
+2026-09-18 09:05:02.513 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =    17.93s     Checking `Expect predicate `existsNoRetry == 1` for object "Top Lifting" StaticText`
+    t =    17.93s         Checking existence of `"Top Lifting" StaticText`
+    t =    17.94s         Capturing element debug description
+    t =    18.98s     Checking `Expect predicate `existsNoRetry == 1` for object "Top Lifting" StaticText`
+    t =    18.98s         Checking existence of `"Top Lifting" StaticText`
+    t =    26.00s Find the Application 'fr.kathryn.woop'
+    t =    26.22s Added attachment named 'en-storyTopMuscu'
+    t =    26.22s Terminate fr.kathryn.woop:47145
+THERMIQUE IPHONE: 0
+    t =    27.31s Open fr.kathryn.woop
+    t =    27.31s     Launch fr.kathryn.woop
+    t =    27.38s         Setting up automation session
+    t =    27.48s         Wait for fr.kathryn.woop to idle
+    t =    28.56s Waiting 15.0s for "Double séance" StaticText to exist
+    t =    29.57s     Checking `Expect predicate `existsNoRetry == 1` for object "Double séance" StaticText`
+    t =    29.58s         Checking existence of `"Double séance" StaticText`
+    t =    29.62s         Capturing element debug description
+    t =    30.64s     Checking `Expect predicate `existsNoRetry == 1` for object "Double séance" StaticText`
+    t =    30.64s         Checking existence of `"Double séance" StaticText`
+    t =    30.65s         Capturing element debug description
+    t =    31.57s     Checking `Expect predicate `existsNoRetry == 1` for object "Double séance" StaticText`
+    t =    31.57s         Checking existence of `"Double séance" StaticText`
+    t =    31.59s         Capturing element debug description
+    t =    32.62s     Checking `Expect predicate `existsNoRetry == 1` for object "Double séance" StaticText`
+    t =    32.62s         Checking existence of `"Double séance" StaticText`
+    t =    39.64s Find the Application 'fr.kathryn.woop'
+    t =    39.87s Added attachment named 'fr-storyDouble'
+    t =    39.87s Terminate fr.kathryn.woop:47149
+THERMIQUE IPHONE: 0
+    t =    40.95s Open fr.kathryn.woop
+    t =    40.96s     Launch fr.kathryn.woop
+    t =    41.16s         Setting up automation session
+    t =    41.16s         Wait for fr.kathryn.woop to idle
+    t =    42.18s Waiting 15.0s for "Double day" StaticText to exist
+    t =    43.19s     Checking `Expect predicate `existsNoRetry == 1` for object "Double day" StaticText`
+    t =    43.19s         Checking existence of `"Double day" StaticText`
+    t =    43.22s         Capturing element debug description
+    t =    44.25s     Checking `Expect predicate `existsNoRetry == 1` for object "Double day" StaticText`
+    t =    44.25s         Checking existence of `"Double day" StaticText`
+    t =    44.26s         Capturing element debug description
+    t =    45.18s     Checking `Expect predicate `existsNoRetry == 1` for object "Double day" StaticText`
+    t =    45.18s         Checking existence of `"Double day" StaticText`
+    t =    45.19s         Capturing element debug description
+    t =    46.21s     Checking `Expect predicate `existsNoRetry == 1` for object "Double day" StaticText`
+    t =    46.21s         Checking existence of `"Double day" StaticText`
+    t =    53.24s Find the Application 'fr.kathryn.woop'
+    t =    53.47s Added attachment named 'en-storyDouble'
+    t =    53.47s Terminate fr.kathryn.woop:47154
+    t =    54.54s Terminate fr.kathryn.woop:0
+    t =    54.54s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testBExceptionsDansLesDeuxLangues]' passed (54.896 seconds).
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testCRetourBoosterEtStories]' started.
+    t =     0.00s Start Test at 2026-09-18 09:05:40.173
+    t =     0.03s Set Up
+THERMIQUE IPHONE: 0
+    t =     0.03s Open fr.kathryn.woop
+    t =     0.04s     Launch fr.kathryn.woop
+    t =     0.16s         Setting up automation session
+    t =     0.20s         Wait for fr.kathryn.woop to idle
+2026-09-18 09:05:41.412 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     1.64s Waiting 30.0s for "story-test-ouvrir" Button to exist
+2026-09-18 09:05:41.880 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     2.67s     Checking `Expect predicate `existsNoRetry == 1` for object "story-test-ouvrir" Button`
+    t =     2.67s         Checking existence of `"story-test-ouvrir" Button`
+THERMIQUE IPHONE: 1
+2026-09-18 09:06:02.122 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+THERMIQUE IPHONE: 1
+2026-09-18 09:06:08.563 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+THERMIQUE IPHONE: 1
+THERMIQUE IPHONE: 1
+THERMIQUE IPHONE: 1
+THERMIQUE IPHONE: 1
+    t =    62.76s Find the Application 'fr.kathryn.woop'
+    t =    63.01s Added attachment named 'home-avant-parcours'
+    t =    63.01s Tap "story-test-ouvrir" Button
+    t =    63.01s     Wait for fr.kathryn.woop to idle
+    t =    63.01s     Find the "story-test-ouvrir" Button
+    t =    63.05s     Check for interrupting elements affecting "story-test-ouvrir" Button
+    t =    63.08s     Synthesize event
+    t =    63.36s     Wait for fr.kathryn.woop to idle
+    t =    63.36s Waiting 5.0s for "story-etat" StaticText to exist
+    t =    64.40s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    64.40s         Checking existence of `"story-etat" StaticText`
+    t =    70.45s Tap Application 'fr.kathryn.woop'[0.85, 0.09]
+    t =    70.46s     Wait for fr.kathryn.woop to idle
+    t =    70.46s     Find the Application 'fr.kathryn.woop'
+    t =    70.51s     Check for interrupting elements affecting "Woop" Application
+    t =    70.56s     Synthesize event
+    t =    70.56s         Find the Application 'fr.kathryn.woop'
+    t =    70.58s         Find the Application 'fr.kathryn.woop'
+    t =    70.61s         Find the Application 'fr.kathryn.woop'
+    t =    70.91s     Wait for fr.kathryn.woop to idle
+    t =    70.91s Find the "story-etat" StaticText
+THERMIQUE IPHONE: 1
+    t =    72.94s Tap Application 'fr.kathryn.woop'[0.85, 0.09]
+    t =    72.94s     Wait for fr.kathryn.woop to idle
+    t =    72.95s     Find the Application 'fr.kathryn.woop'
+    t =    73.00s     Check for interrupting elements affecting "Woop" Application
+    t =    73.04s     Synthesize event
+    t =    73.04s         Find the Application 'fr.kathryn.woop'
+    t =    73.07s         Find the Application 'fr.kathryn.woop'
+    t =    73.09s         Find the Application 'fr.kathryn.woop'
+    t =    73.39s     Wait for fr.kathryn.woop to idle
+    t =    73.39s Find the "story-etat" StaticText
+THERMIQUE IPHONE: 1
+    t =    75.43s Tap Application 'fr.kathryn.woop'[0.85, 0.09]
+    t =    75.43s     Wait for fr.kathryn.woop to idle
+    t =    75.44s     Find the Application 'fr.kathryn.woop'
+    t =    75.48s     Check for interrupting elements affecting "Woop" Application
+    t =    75.52s     Synthesize event
+    t =    75.53s         Find the Application 'fr.kathryn.woop'
+    t =    75.55s         Find the Application 'fr.kathryn.woop'
+    t =    75.58s         Find the Application 'fr.kathryn.woop'
+    t =    75.87s     Wait for fr.kathryn.woop to idle
+    t =    75.88s Find the "story-etat" StaticText
+THERMIQUE IPHONE: 1
+    t =    77.91s Press Application 'fr.kathryn.woop'[0.50, 0.14] for 0.1 seconds, then drag to Application 'fr.kathryn.woop'[0.50, 0.75] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    77.91s     Wait for fr.kathryn.woop to idle
+    t =    77.92s     Find the Application 'fr.kathryn.woop'
+    t =    77.96s     Check for interrupting elements affecting "Woop" Application
+    t =    78.01s     Synthesize event
+    t =    78.01s         Find the Application 'fr.kathryn.woop'
+    t =    78.03s         Find the Application 'fr.kathryn.woop'
+    t =    78.05s         Find the Application 'fr.kathryn.woop'
+    t =    78.07s         Find the Application 'fr.kathryn.woop'
+    t =    78.10s         Find the Application 'fr.kathryn.woop'
+    t =    79.43s     Wait for fr.kathryn.woop to idle
+    t =    79.44s Waiting 5.0s for "story-test-ouvrir" Button to exist
+    t =    80.46s     Checking `Expect predicate `existsNoRetry == 1` for object "story-test-ouvrir" Button`
+    t =    80.46s         Checking existence of `"story-test-ouvrir" Button`
+    t =    80.50s Find the "story-test-retour" StaticText
+THERMIQUE IPHONE: 1
+    t =    80.53s Tap "booster-test-ouvrir" Button
+    t =    80.53s     Wait for fr.kathryn.woop to idle
+    t =    80.53s     Find the "booster-test-ouvrir" Button
+    t =    80.55s     Check for interrupting elements affecting "booster-test-ouvrir" Button
+    t =    80.58s     Synthesize event
+    t =    80.87s     Wait for fr.kathryn.woop to idle
+2026-09-18 09:07:01.475 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+THERMIQUE IPHONE: 1
+THERMIQUE IPHONE: 1
+THERMIQUE IPHONE: 1
+    t =    92.89s Get all elements bound by index for: Elements matching predicate '"Retour" IN identifiers'
+    t =    92.95s Find the "Retour" Button
+    t =    93.00s Find the Application 'fr.kathryn.woop'
+    t =    93.23s Added attachment named 'booster-resultat'
+    t =    93.23s Pressing Home button
+    t =    95.69s Open fr.kathryn.woop
+    t =    95.70s     Activate fr.kathryn.woop
+    t =    95.76s         Wait for fr.kathryn.woop to idle
+    t =    95.84s Waiting 5.0s for "Retour" Button to exist
+    t =    96.87s     Checking `Expect predicate `existsNoRetry == 1` for object "Retour" Button`
+    t =    96.87s         Checking existence of `"Retour" Button`
+    t =    96.91s Tap "Retour" Button
+    t =    96.91s     Wait for fr.kathryn.woop to idle
+    t =    96.91s     Find the "Retour" Button
+    t =    96.95s     Check for interrupting elements affecting "Retour" Button
+    t =    96.99s     Synthesize event
+    t =    97.28s     Wait for fr.kathryn.woop to idle
+    t =    97.28s Waiting 5.0s for "story-test-ouvrir" Button to exist
+    t =    98.32s     Checking `Expect predicate `existsNoRetry == 1` for object "story-test-ouvrir" Button`
+    t =    98.32s         Checking existence of `"story-test-ouvrir" Button`
+    t =    98.36s Find the "story-test-retour" StaticText
+THERMIQUE IPHONE: 1
+THERMIQUE IPHONE: 1
+THERMIQUE IPHONE: 1
+THERMIQUE IPHONE: 1
+2026-09-18 09:08:03.126 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+THERMIQUE IPHONE: 1
+THERMIQUE IPHONE: 1
+THERMIQUE IPHONE: 1
+THERMIQUE IPHONE: 1
+THERMIQUE IPHONE: 1
+THERMIQUE IPHONE: 1
+THERMIQUE IPHONE: 1
+THERMIQUE IPHONE: 1
+    t =   218.43s Find the Application 'fr.kathryn.woop'
+    t =   218.63s Added attachment named 'home-apres-parcours'
+    t =   218.63s Terminate fr.kathryn.woop:47160
+    t =   219.70s Tear Down
+2026-09-18 09:09:20.166 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testCRetourBoosterEtStories]' passed (220.326 seconds).
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testDManègeInterruptionEtFermeture]' started.
+    t =     0.00s Start Test at 2026-09-18 09:09:20.500
+    t =     0.03s Set Up
+THERMIQUE IPHONE: 1
+    t =     0.03s Open fr.kathryn.woop
+    t =     0.03s     Launch fr.kathryn.woop
+    t =     0.13s         Setting up automation session
+    t =     0.19s         Wait for fr.kathryn.woop to idle
+2026-09-18 09:09:21.310 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     1.54s Waiting 20.0s for "booster-test-ouvrir" Button to exist
+    t =     2.57s     Checking `Expect predicate `existsNoRetry == 1` for object "booster-test-ouvrir" Button`
+    t =     2.57s         Checking existence of `"booster-test-ouvrir" Button`
+    t =     2.65s Tap "booster-test-ouvrir" Button
+    t =     2.65s     Wait for fr.kathryn.woop to idle
+    t =     2.66s     Find the "booster-test-ouvrir" Button
+    t =     2.68s     Check for interrupting elements affecting "booster-test-ouvrir" Button
+    t =     2.71s     Synthesize event
+    t =     3.00s     Wait for fr.kathryn.woop to idle
+THERMIQUE IPHONE: 1
+    t =     6.05s Find the Application 'fr.kathryn.woop'
+    t =     6.26s Added attachment named 'manege-avant-interruption'
+    t =     6.26s Pressing Home button
+    t =     8.72s Open fr.kathryn.woop
+    t =     8.73s     Activate fr.kathryn.woop
+    t =     8.79s         Wait for fr.kathryn.woop to idle
+    t =     9.80s Get all elements bound by index for: Elements matching predicate '"Retour" IN identifiers'
+    t =     9.87s Find the "Retour" Button
+    t =     9.92s Find the Application 'fr.kathryn.woop'
+    t =    10.09s Added attachment named 'manege-apres-interruption'
+    t =    10.09s Tap "Retour" Button
+    t =    10.09s     Wait for fr.kathryn.woop to idle
+    t =    10.10s     Find the "Retour" Button
+    t =    10.14s     Check for interrupting elements affecting "Retour" Button
+    t =    10.17s     Synthesize event
+    t =    10.45s     Wait for fr.kathryn.woop to idle
+    t =    10.45s Waiting 5.0s for "story-test-ouvrir" Button to exist
+    t =    11.48s     Checking `Expect predicate `existsNoRetry == 1` for object "story-test-ouvrir" Button`
+    t =    11.48s         Checking existence of `"story-test-ouvrir" Button`
+THERMIQUE IPHONE: 1
+    t =    16.53s Find the Application 'fr.kathryn.woop'
+    t =    16.73s Added attachment named 'home-apres-manege'
+    t =    16.73s Terminate fr.kathryn.woop:47185
+    t =    17.74s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testDManègeInterruptionEtFermeture]' passed (17.868 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-18 09:09:38.367.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 330.764 (330.769) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-18 09:09:38.369.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 330.764 (330.771) seconds
+Test Suite 'All tests' passed at 2026-09-18 09:09:38.370.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 330.764 (330.773) seconds
+2026-09-18 09:09:39.053 xcodebuild[25761:18460386] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 09:09:39.109 xcodebuild[25761:18460386] [MT] IDETestOperationsObserverDebug: 454.325 elapsed -- Testing started completed.
+2026-09-18 09:09:39.109 xcodebuild[25761:18460386] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-18 09:09:39.109 xcodebuild[25761:18460386] [MT] IDETestOperationsObserverDebug: 454.325 sec, +454.325 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-stories73-iphone.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started
