@@ -1,5 +1,28 @@
 # Chauffe Home — registre des échecs et des mesures invalides
 
+### Live Activity lune — 18-09 : exports du banc invalides, aucune mesure thermique
+
+Le banc partagé SwiftUI a d’abord été exporté avec ImageRenderer : jauge native
+non rendue et glyphes manquants. Le premier film réalisé pendant ces exports est
+invalide ; il est archivé et exclu des preuves. Reprise sur le seul simulateur
+créé pour cette session : captures d’écran complètes lisibles, puis film HEVC
+d’une carte unique sans export concurrent, textes et reflet de lune visibles.
+Les compilations/tests initialement refusés par l’accès Xcode/Metal et les macros
+sous bac à sable passent dans la même copie avec les outils accessibles.
+Ce banc ne prouve ni le rendu ActivityKit système, ni la chauffe sur iPhone.
+Aucun accès au téléphone ni arrêt des processus des autres sessions.
+Préparation du commit : trois appels dépendaient du helper `nomLocalise` non
+committé par la session langue. Reprise sur son commit `ed85661f`, sans prendre
+ses lignes dans notre diff ; échec initial archivé dans le rapport de commit.
+La copie du commit rencontre aussi `VolDePieces` absent dans HomeAuroraView,
+fichier identique à la base ; cette dépendance reste à son chantier. Le premier
+aperçu du portrait sans Assets.car était vide : reprise avec le catalogue du
+widget compilé, puis lecture visuelle. Aucun verdict système/iPhone déduit.
+[Rapport et preuves](../live-activity/ETAT-2026-09-18.md).
+
+Complément documentaire18-09 : le rebasage sur535d3d5e porte le livrable isolé à2000940octets, refusé par la limite2000000. Nos seules notes Live Activity sont raccourcies ; aucune capture ni limite supprimée. Journal conservé dans `tools/live-activity/proofs/commit/docs-size-refused.log`.
+
+
 ### E75 — Profil75, charge Bluetooth hors app et validation76 encore ouverte
 
 18-09 : forte chauffe après manège, carte, Profil et stories. La trace nommée

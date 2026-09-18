@@ -10,6 +10,34 @@ enum WorkoutActivityController {
     private static let log = Logger(subsystem: "fr.kathryn.woop", category: "LiveActivity")
     /// Activity.activities peut se rafraîchir après le retour de request.
     private static var courante: Activity<WorkoutActivityAttributes>?
+    private static var focused: (session: Date, value: WorkoutLiveFocus)?
+    private static var requestedSession: Date?
+    private static var stoppedSessions: Set<Date> = []
+    private static var updates: Task<Void, Never>?
+
+    /// Seuls les gestes du player choisissent l'exercice, jamais une fiche consultée.
+    static func show(_ focus: WorkoutLiveFocus, for workout: Workout) {
+        guard workout.isActive, !stoppedSessions.contains(workout.startedAt) else { return }
+        let previous = focused?.session == workout.startedAt ? focused?.value : nil
+        focused = (workout.startedAt, focus.following(previous))
+        ensure(workout)
+    }
+
+    /// Une ancienne vue ne peut pas effacer l'exercice lancé après elle.
+    static func clearFocus(source: UUID, for workout: Workout?) {
+        guard focused?.value.source == source else { return }
+        focused = nil
+        if let workout, workout.isActive { sync(workout) }
+    }
+
+    private static func enqueue(_ action: @escaping @MainActor () async -> Void) {
+        let previous = updates
+        updates = Task { @MainActor in
+            await previous?.value
+            guard !Task.isCancelled else { return }
+            await action()
+        }
+    }
 
     private static var connues: [Activity<WorkoutActivityAttributes>] {
         var result = Activity<WorkoutActivityAttributes>.activities
@@ -27,44 +55,64 @@ enum WorkoutActivityController {
             end()
             return
         }
+        guard workout.isActive else {
+            end(session: workout.startedAt)
+            return
+        }
+        guard !stoppedSessions.contains(workout.startedAt) else { return }
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
 
         let activities = connues
-        let content = ActivityContent(state: state(for: workout), staleDate: nil)
+        let state = state(for: workout)
+        let content = ActivityContent(state: state, staleDate: state.focus?.phase.endsAt)
         if let activity = activities.first(where: {
             $0.attributes.startedAt == workout.startedAt
         }) {
             courante = activity
             // Restaurer aussi la présentation / son lien après une mise à
             // jour de l'app, même si les chiffres de séance n'ont pas bougé.
-            Task { await activity.update(content) }
+            requestedSession = workout.startedAt
+            enqueue {
+                guard !stoppedSessions.contains(activity.attributes.startedAt) else { return }
+                guard activity.activityState == .active || activity.activityState == .stale else { return }
+                if activity.content.state != content.state { await activity.update(content) }
+            }
         } else {
+            // Un geste ultérieur ne ressuscite pas une carte balayée par l'utilisatrice.
+            guard requestedSession != workout.startedAt else { return }
             courante = nil
             let attributes = WorkoutActivityAttributes(startedAt: workout.startedAt)
             do {
                 courante = try Activity.request(attributes: attributes, content: content)
+                requestedSession = workout.startedAt
             } catch {
                 log.error("Démarrage de l'île refusé : \(error.localizedDescription, privacy: .public)")
             }
         }
         // Une séance restaurée ne doit pas reprendre le chrono d'une ancienne.
         let anciennes = activities.filter { $0.id != courante?.id }
-        Task {
+        enqueue {
             for activity in anciennes {
                 await activity.end(nil, dismissalPolicy: .immediate)
             }
         }
     }
 
-    /// Pousse l'état courant — c'est cette update qui fait « vivre » l'orbe
-    /// (le système anime la transition entre deux instantanés).
+    /// Pousse les faits acquis en conservant le contexte du player en cours.
     static func sync(_ workout: Workout) {
+        guard workout.isActive, !stoppedSessions.contains(workout.startedAt) else {
+            end(session: workout.startedAt)
+            return
+        }
         // Une activité fermée par l'utilisatrice ne renaît pas à chaque série.
         // La création appartient au démarrage / à la restauration de séance.
         let activities = connues.filter { $0.attributes.startedAt == workout.startedAt }
-        let content = ActivityContent(state: state(for: workout), staleDate: nil)
-        Task {
-            for activity in activities where activity.content.state != content.state {
+        let state = state(for: workout)
+        let content = ActivityContent(state: state, staleDate: state.focus?.phase.endsAt)
+        enqueue {
+            guard !stoppedSessions.contains(workout.startedAt) else { return }
+            for activity in activities where activity.content.state != content.state
+                && (activity.activityState == .active || activity.activityState == .stale) {
                 await activity.update(content)
             }
         }
@@ -72,11 +120,24 @@ enum WorkoutActivityController {
 
     /// Termine toutes les activities (séance finie ou annulée).
     static func end() {
+        end(session: nil)
+    }
+
+    private static func end(session: Date?) {
         // Capturer AVANT le Task : une fin différée ne doit jamais terminer
         // une nouvelle séance démarrée entre-temps.
-        let activities = connues
-        courante = nil
-        Task {
+        let activities = connues.filter { session == nil || $0.attributes.startedAt == session }
+        stoppedSessions.formUnion(activities.map { $0.attributes.startedAt })
+        if let session { stoppedSessions.insert(session) }
+        if session == nil {
+            if let requestedSession { stoppedSessions.insert(requestedSession) }
+            updates?.cancel()
+            updates = nil
+        }
+        if session == nil || courante?.attributes.startedAt == session { courante = nil }
+        if session == nil || focused?.session == session { focused = nil }
+        // Stop ne doit pas attendre une file d'updates ou une réponse serveur.
+        Task { @MainActor in
             for activity in activities {
                 await activity.end(nil, dismissalPolicy: .immediate)
             }
@@ -86,6 +147,8 @@ enum WorkoutActivityController {
     private static func state(for workout: Workout) -> WorkoutActivityAttributes.ContentState {
         .init(exerciseCount: workout.exerciseCount,
               setCount: workout.setCount,
-              volume: Int(workout.totalVolume))
+              volume: Int(workout.totalVolume),
+              focus: focused?.session == workout.startedAt ? focused?.value : nil,
+              language: Langue.courante)
     }
 }

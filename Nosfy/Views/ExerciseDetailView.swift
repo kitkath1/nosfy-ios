@@ -35,6 +35,8 @@ struct ExerciseDetailView: View {
     /// deux passages sur le même exercice sont deux blocs, et une recherche
     /// par `exerciseID` les fusionnerait sans rien dire.
     @State private var bloc: LoggedExercise?
+    @State private var liveSource = UUID()
+    @State private var liveWorkout: Workout?
 
     /// LA CARD REWARD au banc vivant : le « … » du header la déclenche
     /// (FAKE, pour l'entraîner à l'œil sur la vraie page) — les vraies
@@ -806,6 +808,9 @@ struct ExerciseDetailView: View {
             // séance neuve pour un segment que la clôture, déjà payée, ne
             // verra jamais. Elle se ferme sans quittance ; ce qui était
             // pointé (tranches de 5 min, sets, segments scellés) est écrit.
+            .onDisappear {
+                WorkoutActivityController.clearFocus(source: liveSource, for: liveWorkout ?? active)
+            }
             .onChange(of: active == nil) { _, fermee in
                 guard fermee, let st = seanceTapis, !st.terminee else { return }
                 st.abandonner()
@@ -1170,7 +1175,8 @@ struct ExerciseDetailView: View {
                         },
                         handoff: lensHandoff,
                         onSummit: { summited = true },
-                        posedStart: posedLaunch
+                        posedStart: posedLaunch,
+                        onLivePhase: { phase in suivreMuscu(phase, serie: series.id + 1) }
                     )
                     .opacity(lensShown
                              ? 1
@@ -2390,6 +2396,10 @@ struct ExerciseDetailView: View {
         }
         let st = SeanceTapis(mode: mode, setsFaits: dejaSets, avance: max(avance, 0),
                              dejaSecondes: dejaSecondes, dejaAuSeuil: dejaAuSeuil)
+        st.onLiveChange = { [weak st] in
+            guard let st else { return }
+            suivreCardio(st)
+        }
         st.onSetFini = { bilan in
             ecrirePhase(kind: mode.kindEffort(bilan.vitesse),
                         secondes: bilan.secondes, vitesse: bilan.vitesse,
@@ -2413,6 +2423,7 @@ struct ExerciseDetailView: View {
         // On court : l'écran ne s'éteint pas sous le chrono.
         UIApplication.shared.isIdleTimerDisabled = true
         withAnimation(.easeOut(duration: 0.35)) { seanceTapis = st }
+        suivreCardio(st)
         launchBeat += 1
         print("[flow] double galet : exo=\(exercise.id) mode=\(mode.libelle) départ=\(mode.depart) "
               + "grammaire=\(mode.auLong ? "au long" : "sets") avance=\(Int(avance))")
@@ -2820,8 +2831,49 @@ struct ExerciseDetailView: View {
         try? context.save()
         print("[flow] piscine : longueurs=\(logged.longueurs) × \(logged.metresParLongueur) m "
               + "= \(logged.metresNages) m · cardioFait=\(seance.cardioFait)")
-        WorkoutActivityController.ensure(seance)
-        WorkoutActivityController.sync(seance)
+        WorkoutActivityController.show(.init(
+            source: liveSource, exerciseID: exercise.id, name: exercise.nomLocalise,
+            sport: .swimming, phase: .init(kind: .effort),
+            laps: logged.longueurs, poolLength: logged.metresParLongueur), for: seance)
+    }
+
+    // MARK: Le suivi système de l'exercice réellement lancé
+
+    private func seancePourLive() -> Workout {
+        if let active { liveWorkout = active; return active }
+        if let liveWorkout, liveWorkout.isActive { return liveWorkout }
+        let seance = Workout()
+        context.insert(seance)
+        try? context.save()
+        liveWorkout = seance
+        return seance
+    }
+
+    private func suivreMuscu(_ phase: WorkoutLivePhase?, serie: Int) {
+        guard let phase else {
+            WorkoutActivityController.clearFocus(source: liveSource, for: liveWorkout ?? active)
+            return
+        }
+        // Une série déjà montée ne rouvre pas une séance fermée depuis la pilule.
+        if let liveWorkout, !liveWorkout.isActive { return }
+        let seance = seancePourLive()
+        WorkoutActivityController.show(.init(
+            source: liveSource, exerciseID: exercise.id, name: exercise.nomLocalise,
+            sport: .strength, phase: phase, set: serie), for: seance)
+    }
+
+    private func suivreCardio(_ st: SeanceTapis) {
+        guard !st.terminee else {
+            WorkoutActivityController.clearFocus(source: liveSource, for: liveWorkout ?? active)
+            return
+        }
+        if let liveWorkout, !liveWorkout.isActive { return }
+        let seance = seancePourLive()
+        let sport: WorkoutLiveFocus.Sport = st.mode.estNiveau ? .stairs
+            : (st.mode.auLong ? .treadmill : .hiit)
+        WorkoutActivityController.show(.init(
+            source: liveSource, exerciseID: exercise.id, name: exercise.nomLocalise,
+            sport: sport, phase: st.livePhase, set: st.setIndex, value: st.vitesse), for: seance)
     }
 
     // MARK: Le geste unique

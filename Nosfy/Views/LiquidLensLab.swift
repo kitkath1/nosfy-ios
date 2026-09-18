@@ -97,6 +97,27 @@ struct LiquidLensLab: View {
     /// et le parcours d'hier identiques au pixel.
     var groundLift: CGFloat = 0
 
+    /// Le suivi système reçoit uniquement les changements de phase, jamais les frames.
+    var onLivePhase: ((WorkoutLivePhase?) -> Void)? = nil
+
+    private var livePhase: WorkoutLivePhase? {
+        guard let summitAt else { return nil }
+        if envolAt != nil {
+            return .init(kind: .ready, elapsed: Double(effortSeconds),
+                         reps: draftReps, kilos: draftKilos)
+        }
+        if let restStart {
+            let start = restStart.addingTimeInterval(Self.igniteSpan)
+            return .init(kind: .rest, startedAt: start,
+                         endsAt: start.addingTimeInterval(Double(restDuration)),
+                         reps: draftReps, kilos: draftKilos)
+        }
+        if entering { return .init(kind: .logging, elapsed: Double(effortSeconds)) }
+        let start = effortIgnite.map { $0.addingTimeInterval(Self.igniteSpan) }
+            ?? summitAt.addingTimeInterval(SummitCine.cutAt + SummitCine.enter + SummitCine.descend + 5.6)
+        return .init(kind: .effort, startedAt: start)
+    }
+
     /// Dans le parcours, le chip REJOUER du banc n'a rien à faire.
     private var isJourney: Bool { onFinish != nil }
 
@@ -367,7 +388,9 @@ struct LiquidLensLab: View {
         }
         // Le banc vivait seul et pour toujours ; dans le parcours la vue
         // s'en va, et le thème ne doit pas lui survivre.
+        .onChange(of: livePhase, initial: true) { _, phase in onLivePhase?(phase) }
         .onDisappear {
+            onLivePhase?(nil)
             LensTheme.shared.stop()
             RocketHaptics.shared.dragEnd()
             Paillettes.shared.cancelAnnounce()

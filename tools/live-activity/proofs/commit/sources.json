@@ -1,0 +1,16 @@
+{
+  "base": "2c2c72648b46ecde9838473225cbe33b5dcf3044",
+  "sources": {
+    "Nosfy/NosfyApp.swift": "c1b43751843fd793569df41b366e8efc05a313deaf528f7b33f16d646f04b742",
+    "Nosfy/Services/WorkoutActivityController.swift": "5a20193d31dccad6de4ed0843564284afa234f2ba9b9c56e6eb48309d5a92a6f",
+    "Nosfy/Views/ExerciseDetailView.swift": "d833d497187f73ea5fced850f8cc2589428b811ed1b0d89e2539d25507046ce4",
+    "Nosfy/Views/LiquidLensLab.swift": "c7dcc1846066303ed6a9aff651140165abbd6ac6d29bcbfb40b5612ce4e163d1",
+    "Nosfy/Views/TapisScene.swift": "a0b13a5ace9b84ae4f9a035526ac2b3f311522e6b27d425404dbb9898b262104",
+    "NosfyShared/WorkoutActivity.swift": "3cd6646c5a4f4fcde465136917bcbccf4a2f0d3e6d6044d8638f1ced46831f11",
+    "NosfyShared/WorkoutLiveCard.swift": "ecb8cdcbae566d5210d7a6d0bd8285af8c7f315fa67e0943926b6c441adaa920",
+    "NosfyShared/WorkoutLiveFocus.swift": "24c2b1588e17dbb15485ae06a1fe6be2d36abdc43ecdf7ab07d2e93ed2ed011b",
+    "NosfyWidgets/WorkoutLiveActivity.swift": "5639462cf73330abd7d45451a554429630e4fed2279b73e3899c968b511d620b"
+  },
+  "docs_site_sha256": "7d6556a8a9674a2f75ea8f91b1c82e358ff93004e3ceef4ff4093959d553ffe0",
+  "portrait_sha256": "186e5aed41ef891cf51b4f76e1b3187269620763b7b5f27df663f3a8107bdcc5"
+}

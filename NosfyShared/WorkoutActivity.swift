@@ -11,6 +11,9 @@ struct WorkoutActivityAttributes: ActivityAttributes {
         var setCount: Int
         /// Volume total en kilogrammes, arrondi.
         var volume: Int
+        /// Optionnels pour décoder aussi les activités des anciennes versions.
+        var focus: WorkoutLiveFocus? = nil
+        var language: String? = nil
     }
 
     /// Le début de la séance, figé pour toute la vie de l'activity.

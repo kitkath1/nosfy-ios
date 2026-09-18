@@ -1,0 +1,1115 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project Nosfy.xcodeproj -scheme Nosfy -configuration Debug -sdk iphonesimulator -destination "generic/platform=iOS Simulator" -derivedDataPath /private/tmp/nosfy-live-commit-20260918/derived CODE_SIGNING_ALLOWED=NO ARCHS=arm64 build
+
+Build settings from command line:
+    ARCHS = arm64
+    CODE_SIGNING_ALLOWED = NO
+    SDKROOT = iphonesimulator26.5
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (2 targets)
+    Target 'Nosfy' in project 'Nosfy'
+        ➜ Explicit dependency on target 'NosfyWidgets' in project 'Nosfy'
+    Target 'NosfyWidgets' in project 'Nosfy' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/AppIcon.icon /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+Build description signature: 649148f0cb9d7a64372308fa4cd710a1
+Build description path: /tmp/nosfy-live-commit-20260918/derived/Build/Intermediates.noindex/XCBuildData/649148f0cb9d7a64372308fa4cd710a1.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk /tmp/nosfy-live-commit-20260918/derived/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+    cd /tmp/nosfy-live-commit-20260918/snapshot/Nosfy.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -o /tmp/nosfy-live-commit-20260918/derived/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+
+ProcessInfoPlistFile /tmp/nosfy-live-commit-20260918/derived/Build/Products/Debug-iphonesimulator/NosfyWidgets.appex/Info.plist /tmp/nosfy-live-commit-20260918/snapshot/NosfyWidgets/Info.plist (in target 'NosfyWidgets' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    builtin-infoPlistUtility /tmp/nosfy-live-commit-20260918/snapshot/NosfyWidgets/Info.plist -producttype com.apple.product-type.app-extension -expandbuildsettings -format binary -platform iphonesimulator -o /tmp/nosfy-live-commit-20260918/derived/Build/Products/Debug-iphonesimulator/NosfyWidgets.appex/Info.plist
+
+SwiftDriver Nosfy normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/nosfy-live-commit-20260918/derived/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/nosfy-live-commit-20260918/derived/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/nosfy-live-commit-20260918/derived/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/nosfy-live-commit-20260918/derived/Build/Products/Debug-iphonesimulator -F /tmp/nosfy-live-commit-20260918/derived/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/nosfy-live-commit-20260918/derived/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/nosfy-live-commit-20260918/derived/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/nosfy-live-commit-20260918/derived/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/nosfy-live-commit-20260918/derived/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/nosfy-live-commit-20260918/derived/ModuleCache.noindex -sdk-module-cache-path /tmp/nosfy-live-commit-20260918/derived/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/nosfy-live-commit-20260918/derived/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/nosfy-live-commit-20260918/derived/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/nosfy-live-commit-20260918/derived/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/nosfy-live-commit-20260918/derived/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/nosfy-live-commit-20260918/derived/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-generated-files.hmap -Xcc -I/tmp/nosfy-live-commit-20260918/derived/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-own-target-headers.hmap -Xcc -I/tmp/nosfy-live-commit-20260918/derived/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/nosfy-live-commit-20260918/derived/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-project-headers.hmap -Xcc -I/tmp/nosfy-live-commit-20260918/derived/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/nosfy-live-commit-20260918/derived/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources-normal/arm64 -Xcc -I/tmp/nosfy-live-commit-20260918/derived/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/arm64 -Xcc -I/tmp/nosfy-live-commit-20260918/derived/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/nosfy-live-commit-20260918/derived/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop-Swift.h -working-directory /tmp/nosfy-live-commit-20260918/snapshot -experimental-emit-module-separately -disable-cmo
+
+SwiftCompile normal arm64 Compiling\ BottleSplash.swift,\ CoinChime.swift,\ DiamondGlints.swift,\ Ink.swift,\ LightDial.swift,\ LuneDust.swift,\ MonolithChime.swift,\ NightBirds.swift,\ RocketHaptics.swift,\ SparkleBurst.swift,\ SplashBackground.swift,\ SplashWisp.swift,\ Annonces.swift,\ AppleAuth.swift,\ ChambreServeur.swift,\ CoachServeur.swift,\ Compte.swift,\ EconomieNosfy.swift,\ ForgeServeur.swift,\ HomeTextes.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/BottleSplash.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/CoinChime.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/DiamondGlints.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/Ink.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/LightDial.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/LuneDust.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/MonolithChime.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/NightBirds.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/RocketHaptics.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/SparkleBurst.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/SplashBackground.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/SplashWisp.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/Annonces.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/AppleAuth.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/ChambreServeur.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/CoachServeur.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/Compte.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/EconomieNosfy.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/ForgeServeur.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/HomeTextes.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/BottleSplash.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+In flight operation:   <DVTOperationGroup: 0xa4ab99800; state = AREfc>
+     <IDEBuildOperationGroup: 0xa4ab98c00; state = AREfc>
+         <DVTOperationGroup: 0xa4ab99200; state = AREfc>
+             <IDEXCBuildSupportCore.IDEXCBuildServiceBuildOperation:0xa49e8aa00:AREfc>
+         <__DVTSwiftAsyncOperation: 0xa4ab99680; state = AReFc>
+         <DVTOperation: 0xa4bf26d00; state = arefc>
+         <DVTOperation: 0xa4bf26bc0; state = aReFc>
+         <__DVTSwiftAsyncOperation: 0xa4ab99500; state = AReFc>
+         <DVTOperation: 0xa4bf26e40; state = arefc>
+         <__DVTSwiftAsyncOperation: 0xa4ab99e00; state = AReFc>
+         <DVTOperation: 0xa4bf26a80; state = aReFc>
+         <__DVTSwiftAsyncOperation: 0xa4ab99380; state = AReFc>
+<DVTOperationGroup: 0xa4ab99800; state = AREfc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   -[DVTOperationGroup init] (in DVTFoundation)
+  2   +[DVTOperationGroup operationGroupWithSuboperations:] (in DVTFoundation)
+  3   -[IDEScheme _groupAndImposeDependenciesForOrderedOperations:] (in IDEFoundation)
+  4   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  5   -[IDEScheme buildOnlyTaskForSchemeOperationParameters:buildLog:dontActuallyRunCommands:buildParameters:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  6   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  7   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  8   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+  9   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 10   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 12   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 13   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 14   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 15   main (in xcodebuild)
+ 16   start (in dyld)
+
+<IDEBuildOperationGroup: 0xa4ab98c00; state = AREfc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   -[DVTOperationGroup init] (in DVTFoundation)
+  2   -[IDEBuildOperationGroup initWithBuildOperations:otherOperations:buildLog:] (in IDEFoundation)
+  3   -[IDEBuildOperationGroup initWithBuildOperations:buildLog:] (in IDEFoundation)
+  4   -[IDEScheme _buildOperationGroupForSchemeOperationParameters:primaryBuildParameters:variantSpecifiers:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:schemeActionRecord:error:] (in IDEFoundation)
+  5   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  6   -[IDEScheme buildOnlyTaskForSchemeOperationParameters:buildLog:dontActuallyRunCommands:buildParameters:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  7   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  8   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  9   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 10   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 12   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 13   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 14   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 15   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 16   main (in xcodebuild)
+ 17   start (in dyld)
+
+<DVTOperationGroup: 0xa4ab99200; state = AREfc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   -[DVTOperationGroup init] (in DVTFoundation)
+  2   +[DVTOperationGroup operationGroupWithSuboperations:] (in DVTFoundation)
+  3   -[IDEBuildOperationGroup initWithBuildOperations:otherOperations:buildLog:] (in IDEFoundation)
+  4   -[IDEBuildOperationGroup initWithBuildOperations:buildLog:] (in IDEFoundation)
+  5   -[IDEScheme _buildOperationGroupForSchemeOperationParameters:primaryBuildParameters:variantSpecifiers:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:schemeActionRecord:error:] (in IDEFoundation)
+  6   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  7   -[IDEScheme buildOnlyTaskForSchemeOperationParameters:buildLog:dontActuallyRunCommands:buildParameters:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  8   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  9   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 10   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 12   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 14   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 15   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 16   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 17   main (in xcodebuild)
+ 18   start (in dyld)
+
+<IDEXCBuildSupportCore.IDEXCBuildServiceBuildOperation:0xa49e8aa00:AREfc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   -[IDEBuildOperation initWithConfiguration:] (in IDEFoundation)
+  2   specialized IDEXCBuildServiceBuildOperation.init(configuration:) (in IDEXCBuildSupportCore)
+  3   @objc IDEXCBuildServiceBuildOperation.init(configuration:) (in IDEXCBuildSupportCore)
+  4   -[IDEScheme _buildOperationGroupForSchemeOperationParameters:primaryBuildParameters:variantSpecifiers:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:schemeActionRecord:error:] (in IDEFoundation)
+  5   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  6   -[IDEScheme buildOnlyTaskForSchemeOperationParameters:buildLog:dontActuallyRunCommands:buildParameters:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  7   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  8   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  9   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 10   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 12   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 13   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 14   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 15   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 16   main (in xcodebuild)
+ 17   start (in dyld)
+
+<__DVTSwiftAsyncOperation: 0xa4ab99680; state = AReFc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   @objc DVTAsyncOperation.init() (in DVTFoundation)
+  2   static DVTOperation.awaiting(_:) (in DVTFoundation)
+  3   @objc static IDESchemeAction.operationToWaitForFinishedLoadingOperation(of:) (in IDEFoundation)
+  4   -[IDESchemeAction _setUpOperationsForPackageLoadingInWorkspace:handlePreActionsActivityLogSection:isCleanOperation:] (in IDEFoundation)
+  5   -[IDESchemeAction setUpActionDependenciesForCorePhaseOperation:shouldRunPostActionsBlock:prePhaseEnvironmentPopulationBlock:postPhaseEnvironmentPopulationBlock:handlePreActionsActivityLogSection:handlePostActionsActivityLogSection:buildParameters:schemeActionResultOperation:error:] (in IDEFoundation)
+  6   -[IDEScheme _buildOperationGroupForSchemeOperationParameters:primaryBuildParameters:variantSpecifiers:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:schemeActionRecord:error:] (in IDEFoundation)
+  7   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  8   -[IDEScheme buildOnlyTaskForSchemeOperationParameters:buildLog:dontActuallyRunCommands:buildParameters:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  9   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+ 10   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 11   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 12   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 14   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 15   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 16   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 17   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 18   main (in xcodebuild)
+ 19   start (in dyld)
+
+<DVTOperation: 0xa4bf26d00; state = arefc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   +[DVTOperation(DVTConveniences) operationWithBlock:] (in DVTFoundation)
+  2   -[IDESchemeAction setUpActionDependenciesForCorePhaseOperation:shouldRunPostActionsBlock:prePhaseEnvironmentPopulationBlock:postPhaseEnvironmentPopulationBlock:handlePreActionsActivityLogSection:handlePostActionsActivityLogSection:buildParameters:schemeActionResultOperation:error:] (in IDEFoundation)
+  3   -[IDEScheme _buildOperationGroupForSchemeOperationParameters:primaryBuildParameters:variantSpecifiers:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:schemeActionRecord:error:] (in IDEFoundation)
+  4   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  5   -[IDEScheme buildOnlyTaskForSchemeOperationParameters:buildLog:dontActuallyRunCommands:buildParameters:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  6   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  7   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  8   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+  9   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 10   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 12   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 13   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 14   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 15   main (in xcodebuild)
+ 16   start (in dyld)
+
+<DVTOperation: 0xa4bf26bc0; state = aReFc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   +[DVTOperation(DVTConveniences) operationWithBlock:] (in DVTFoundation)
+  2   -[IDESchemeAction setUpActionDependenciesForCorePhaseOperation:shouldRunPostActionsBlock:prePhaseEnvironmentPopulationBlock:postPhaseEnvironmentPopulationBlock:handlePreActionsActivityLogSection:handlePostActionsActivityLogSection:buildParameters:schemeActionResultOperation:error:] (in IDEFoundation)
+  3   -[IDEScheme _buildOperationGroupForSchemeOperationParameters:primaryBuildParameters:variantSpecifiers:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:schemeActionRecord:error:] (in IDEFoundation)
+  4   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  5   -[IDEScheme buildOnlyTaskForSchemeOperationParameters:buildLog:dontActuallyRunCommands:buildParameters:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  6   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  7   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  8   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+  9   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 10   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 12   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 13   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 14   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 15   main (in xcodebuild)
+ 16   start (in dyld)
+
+<__DVTSwiftAsyncOperation: 0xa4ab99500; state = AReFc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   @objc DVTAsyncOperation.init() (in DVTFoundation)
+  2   @objc static DVTOperation.operationWithMainThreadBlock(_:) (in DVTFoundation)
+  3   -[IDESchemeAction _setUpOperationsForPackageLoadingInWorkspace:handlePreActionsActivityLogSection:isCleanOperation:] (in IDEFoundation)
+  4   -[IDESchemeAction setUpActionDependenciesForCorePhaseOperation:shouldRunPostActionsBlock:prePhaseEnvironmentPopulationBlock:postPhaseEnvironmentPopulationBlock:handlePreActionsActivityLogSection:handlePostActionsActivityLogSection:buildParameters:schemeActionResultOperation:error:] (in IDEFoundation)
+  5   -[IDEScheme _buildOperationGroupForSchemeOperationParameters:primaryBuildParameters:variantSpecifiers:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:schemeActionRecord:error:] (in IDEFoundation)
+  6   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  7   -[IDEScheme buildOnlyTaskForSchemeOperationParameters:buildLog:dontActuallyRunCommands:buildParameters:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  8   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  9   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 10   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 12   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 14   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 15   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 16   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 17   main (in xcodebuild)
+ 18   start (in dyld)
+
+<DVTOperation: 0xa4bf26e40; state = arefc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   +[DVTOperation(DVTConveniences) operationWithBlock:] (in DVTFoundation)
+  2   -[IDESchemeAction setUpActionDependenciesForCorePhaseOperation:shouldRunPostActionsBlock:prePhaseEnvironmentPopulationBlock:postPhaseEnvironmentPopulationBlock:handlePreActionsActivityLogSection:handlePostActionsActivityLogSection:buildParameters:schemeActionResultOperation:error:] (in IDEFoundation)
+  3   -[IDEScheme _buildOperationGroupForSchemeOperationParameters:primaryBuildParameters:variantSpecifiers:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:schemeActionRecord:error:] (in IDEFoundation)
+  4   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  5   -[IDEScheme buildOnlyTaskForSchemeOperationParameters:buildLog:dontActuallyRunCommands:buildParameters:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  6   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  7   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  8   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+  9   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 10   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 12   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 13   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 14   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 15   main (in xcodebuild)
+ 16   start (in dyld)
+
+<__DVTSwiftAsyncOperation: 0xa4ab99e00; state = AReFc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   @objc DVTAsyncOperation.init() (in DVTFoundation)
+  2   @objc static DVTOperation.operationWithMainThreadBlock(_:) (in DVTFoundation)
+  3   -[IDESchemeAction _setUpOperationsForPackageLoadingInWorkspace:handlePreActionsActivityLogSection:isCleanOperation:] (in IDEFoundation)
+  4   -[IDESchemeAction setUpActionDependenciesForCorePhaseOperation:shouldRunPostActionsBlock:prePhaseEnvironmentPopulationBlock:postPhaseEnvironmentPopulationBlock:handlePreActionsActivityLogSection:handlePostActionsActivityLogSection:buildParameters:schemeActionResultOperation:error:] (in IDEFoundation)
+  5   -[IDEScheme _buildOperationGroupForSchemeOperationParameters:primaryBuildParameters:variantSpecifiers:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:schemeActionRecord:error:] (in IDEFoundation)
+  6   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  7   -[IDEScheme buildOnlyTaskForSchemeOperationParameters:buildLog:dontActuallyRunCommands:buildParameters:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  8   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  9   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 10   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 12   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 14   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 15   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 16   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 17   main (in xcodebuild)
+ 18   start (in dyld)
+
+<DVTOperation: 0xa4bf26a80; state = aReFc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   +[DVTOperation(DVTConveniences) operationWithBlock:] (in DVTFoundation)
+  2   -[IDESchemeAction setUpActionDependenciesForCorePhaseOperation:shouldRunPostActionsBlock:prePhaseEnvironmentPopulationBlock:postPhaseEnvironmentPopulationBlock:handlePreActionsActivityLogSection:handlePostActionsActivityLogSection:buildParameters:schemeActionResultOperation:error:] (in IDEFoundation)
+  3   -[IDEScheme _buildOperationGroupForSchemeOperationParameters:primaryBuildParameters:variantSpecifiers:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:schemeActionRecord:error:] (in IDEFoundation)
+  4   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:actionCallbackBlock:] (in IDEFoundation)
+  5   -[IDEScheme buildOnlyTaskForSchemeOperationParameters:buildLog:dontActuallyRunCommands:buildParameters:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  6   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  7   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+  8   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+  9   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 10   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 12   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 13   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 14   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 15   main (in xcodebuild)
+ 16   start (in dyld)
+
+<__DVTSwiftAsyncOperation: 0xa4ab99380; state = AReFc> created at:
+  0   -[DVTOperation init] (in DVTFoundation)
+  1   @objc DVTAsyncOperation.init() (in DVTFoundation)
+  2   static DVTOperation.awaiting(_:) (in DVTFoundation)
+  3   @objc static IDESchemeAction.operationToWaitForFinishedLoadingOperation(of:) (in IDEFoundation)
+  4   -[IDESchemeAction setUpActionDependenciesForCorePhaseOperation:shouldRunPostActionsBlock:prePhaseEnvironmentPopulationBlock:postPhaseEnvironmentPopulationBlock:handlePreActionsActivityLogSection:handlePostActionsActivityLogSection:buildParameters:schemeActionResultOperation:error:] (in IDEFoundation)
+  5   -[IDEScheme _buildOperationGroupForSchemeOperationParameters:primaryBuildParameters:variantSpecifiers:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:schemeActionRecord:error:] (in IDEFoundation)
+  6   -[IDEScheme _executionOperationForSchemeOperationParameters:build:onlyBuild:buildParameters:title:buildLog:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:act
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/CoinChime.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/DiamondGlints.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/Ink.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/LightDial.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/LuneDust.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/MonolithChime.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/NightBirds.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/RocketHaptics.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/SparkleBurst.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/SplashBackground.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Figures/SplashWisp.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/Annonces.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/AppleAuth.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/ChambreServeur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/CoachServeur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/Compte.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/EconomieNosfy.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/ForgeServeur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/HomeTextes.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 Compiling\ InscriptionCompte.swift,\ Langue.swift,\ LuneForge.swift,\ OutboxGains.swift,\ OuvertureSeanceServeur.swift,\ ProfilServeur.swift,\ SacreServeur.swift,\ Supabase.swift,\ SupabaseSync.swift,\ SynthesisService.swift,\ WorkoutActivityController.swift,\ ActiveWorkoutView.swift,\ AppelChapitre.swift,\ AppelProfilVisite.swift,\ AuroraBgLab.swift,\ AuthView.swift,\ BancCoutHome.swift,\ BoosterCard.swift,\ BoosterLab.swift,\ BoosterPack.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/InscriptionCompte.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/Langue.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/LuneForge.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/OutboxGains.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/OuvertureSeanceServeur.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/ProfilServeur.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/SacreServeur.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/Supabase.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/SupabaseSync.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/SynthesisService.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/WorkoutActivityController.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ActiveWorkoutView.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/AppelChapitre.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/AppelProfilVisite.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/AuroraBgLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/AuthView.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/BancCoutHome.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/BoosterCard.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/BoosterLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/BoosterPack.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/InscriptionCompte.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/Langue.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/LuneForge.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/OutboxGains.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/OuvertureSeanceServeur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/ProfilServeur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/SacreServeur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/Supabase.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/SupabaseSync.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/SynthesisService.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Services/WorkoutActivityController.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ActiveWorkoutView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/AppelChapitre.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/AppelProfilVisite.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/AuroraBgLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/AuthView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/BancCoutHome.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/BoosterCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/BoosterLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/BoosterPack.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ Woop (in target 'Nosfy' from project 'Nosfy')
+
+EmitSwiftModule normal arm64 (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 Compiling\ WorkoutPill.swift,\ WorkoutsListView.swift,\ Atmosphere.swift,\ DemonSky.swift,\ ImpGlyph.swift,\ MoonGlyph.swift,\ ProgressComet.swift,\ WorkoutActivity.swift,\ WorkoutLiveCard.swift,\ WorkoutLiveFocus.swift,\ Models.swift,\ MoonPath.swift,\ MoonSDF.swift,\ NebulaConfiguration.swift,\ NebulaNoise.swift,\ NebulaStrip.swift,\ NosfyApp.swift,\ Theme.swift,\ GeneratedAssetSymbols.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/WorkoutPill.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/WorkoutsListView.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Atmosphere.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/DemonSky.swift /tmp/nosfy-live-commit-20260918/snapshot/NosfyShared/ImpGlyph.swift /tmp/nosfy-live-commit-20260918/snapshot/NosfyShared/MoonGlyph.swift /tmp/nosfy-live-commit-20260918/snapshot/NosfyShared/ProgressComet.swift /tmp/nosfy-live-commit-20260918/snapshot/NosfyShared/WorkoutActivity.swift /tmp/nosfy-live-commit-20260918/snapshot/NosfyShared/WorkoutLiveCard.swift /tmp/nosfy-live-commit-20260918/snapshot/NosfyShared/WorkoutLiveFocus.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Models.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/MoonPath.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/MoonSDF.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/NebulaConfiguration.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/NebulaNoise.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/NebulaStrip.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/NosfyApp.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Theme.swift /tmp/nosfy-live-commit-20260918/derived/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/WorkoutPill.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/WorkoutsListView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Atmosphere.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/DemonSky.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/NosfyShared/ImpGlyph.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/NosfyShared/MoonGlyph.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/NosfyShared/ProgressComet.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/NosfyShared/WorkoutActivity.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/NosfyShared/WorkoutLiveCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/NosfyShared/WorkoutLiveFocus.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Models.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/MoonPath.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/MoonSDF.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/NebulaConfiguration.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/NebulaNoise.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/NebulaStrip.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/NosfyApp.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Theme.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/derived/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 Compiling\ ProgressionView.swift,\ ProgressPage.swift,\ RecentWorkoutCard.swift,\ RestartSheet.swift,\ RewardCard.swift,\ RewardChemin.swift,\ RewardCheminCard.swift,\ RewardCheminVariants.swift,\ RewardLab.swift,\ RythmeEcran.swift,\ SacreAccueil.swift,\ SessionSlate.swift,\ SetEntrySheet.swift,\ SetHistoryRow.swift,\ SliderLab.swift,\ SliderObsidienne.swift,\ SondeCadence.swift,\ SondeVol.swift,\ StopCard.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ProgressionView.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ProgressPage.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/RecentWorkoutCard.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/RestartSheet.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/RewardCard.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/RewardChemin.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/RewardCheminCard.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/RewardCheminVariants.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/RewardLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/RythmeEcran.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SacreAccueil.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SessionSlate.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SetEntrySheet.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SetHistoryRow.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SliderLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SliderObsidienne.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SondeCadence.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SondeVol.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/StopCard.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ProgressionView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ProgressPage.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/RecentWorkoutCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/RestartSheet.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/RewardCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/RewardChemin.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/RewardCheminCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/RewardCheminVariants.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/RewardLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/RythmeEcran.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SacreAccueil.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SessionSlate.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SetEntrySheet.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SetHistoryRow.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SliderLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SliderObsidienne.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SondeCadence.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SondeVol.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/StopCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 Compiling\ ExerciseSetupCard.swift,\ ExercisesView.swift,\ ExosFond.swift,\ FilmDepartSeance.swift,\ FlameLab.swift,\ FlammeJauge.swift,\ FlammeJaugeLab.swift,\ FondVideoMetal.swift,\ Foyer.swift,\ FumeeInviteMetal.swift,\ GaletEtape.swift,\ GaletLab.swift,\ GaletSlide.swift,\ HaloDawnLab.swift,\ HarmonieLab.swift,\ HomeAuroraView.swift,\ HomeNuit.swift,\ HomeView.swift,\ JewelTabBar.swift,\ LaunchPebble.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ExerciseSetupCard.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ExercisesView.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ExosFond.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/FilmDepartSeance.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/FlameLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/FlammeJauge.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/FlammeJaugeLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/FondVideoMetal.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/Foyer.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/FumeeInviteMetal.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/GaletEtape.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/GaletLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/GaletSlide.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/HaloDawnLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/HarmonieLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/HomeAuroraView.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/HomeNuit.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/HomeView.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/JewelTabBar.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LaunchPebble.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ExerciseSetupCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ExercisesView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ExosFond.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/FilmDepartSeance.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/FlameLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/FlammeJauge.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/FlammeJaugeLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/FondVideoMetal.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/Foyer.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/FumeeInviteMetal.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/GaletEtape.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/GaletLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/GaletSlide.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/HaloDawnLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/HarmonieLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/HomeAuroraView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/HomeNuit.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/HomeView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/JewelTabBar.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LaunchPebble.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 Compiling\ StopLab.swift,\ StopSessionSheet.swift,\ StoryEnded.swift,\ StoryFlow.swift,\ StorySuite.swift,\ StoryVideo.swift,\ SuccessLab.swift,\ SwapCardSurface.swift,\ SwapEmptyCard.swift,\ SynthesisCard.swift,\ TapisLab.swift,\ TapisScene.swift,\ VerificationCompte.swift,\ VerreCoulant.swift,\ VisiteExercice.swift,\ VisiteHome.swift,\ WahouReveal.swift,\ WidgetEdition.swift,\ WidgetsCards.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/StopLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/StopSessionSheet.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/StoryEnded.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/StoryFlow.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/StorySuite.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/StoryVideo.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SuccessLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SwapCardSurface.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SwapEmptyCard.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SynthesisCard.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/TapisLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/TapisScene.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/VerificationCompte.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/VerreCoulant.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/VisiteExercice.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/VisiteHome.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/WahouReveal.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/WidgetEdition.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/WidgetsCards.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/StopLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/StopSessionSheet.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/StoryEnded.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/StoryFlow.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/StorySuite.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/StoryVideo.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SuccessLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SwapCardSurface.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SwapEmptyCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/SynthesisCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/TapisLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/TapisScene.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/VerificationCompte.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/VerreCoulant.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/VisiteExercice.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/VisiteHome.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/WahouReveal.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/WidgetEdition.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/WidgetsCards.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 Compiling\ NosfyOnboarding.swift,\ NotchedCard.swift,\ NotifCard.swift,\ NotifChasse.swift,\ NotifLab.swift,\ ObjectiveCard.swift,\ ObjectiveCardLab.swift,\ ObsidianCard.swift,\ ObsidianCardLab.swift,\ PageCard.swift,\ PanBande.swift,\ ParoleLigne.swift,\ PerleSemaineNative.swift,\ PiluleVagabonde.swift,\ PlayerMonde.swift,\ PorteApple.swift,\ PorteEntree.swift,\ PremiereArrivee.swift,\ ProfilLune.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/NosfyOnboarding.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/NotchedCard.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/NotifCard.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/NotifChasse.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/NotifLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ObjectiveCard.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ObjectiveCardLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ObsidianCard.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ObsidianCardLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/PageCard.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/PanBande.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ParoleLigne.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/PerleSemaineNative.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/PiluleVagabonde.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/PlayerMonde.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/PorteApple.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/PorteEntree.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/PremiereArrivee.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ProfilLune.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/NosfyOnboarding.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/NotchedCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/NotifCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/NotifChasse.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/NotifLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ObjectiveCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ObjectiveCardLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ObsidianCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ObsidianCardLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/PageCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/PanBande.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ParoleLigne.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/PerleSemaineNative.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/PiluleVagabonde.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/PlayerMonde.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/PorteApple.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/PorteEntree.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/PremiereArrivee.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ProfilLune.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 Compiling\ CinematicPlayer.swift,\ ClavierBraise.swift,\ CoffreFlipLab.swift,\ CoffreFortCoin.swift,\ CoffreFortPurse.swift,\ CoffreFortView.swift,\ CoffreV2.swift,\ ConnexionButtonLab.swift,\ ConnexionCinematic.swift,\ CorpsNacre.swift,\ CounterLab.swift,\ DemonVideo.swift,\ DepartCine.swift,\ DepartSeance.swift,\ DevilAuraOverlay.swift,\ DuolinguoPage.swift,\ EmberFlameLab.swift,\ ExerciseDetailView.swift,\ ExerciseEditor.swift,\ ExercisePhoto.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CinematicPlayer.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ClavierBraise.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CoffreFlipLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CoffreFortCoin.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CoffreFortPurse.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CoffreFortView.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CoffreV2.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ConnexionButtonLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ConnexionCinematic.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CorpsNacre.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CounterLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/DemonVideo.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/DepartCine.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/DepartSeance.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/DevilAuraOverlay.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/DuolinguoPage.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/EmberFlameLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ExerciseDetailView.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ExerciseEditor.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ExercisePhoto.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CinematicPlayer.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ClavierBraise.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CoffreFlipLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CoffreFortCoin.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CoffreFortPurse.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CoffreFortView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CoffreV2.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ConnexionButtonLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ConnexionCinematic.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CorpsNacre.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CounterLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/DemonVideo.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/DepartCine.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/DepartSeance.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/DevilAuraOverlay.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/DuolinguoPage.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/EmberFlameLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ExerciseDetailView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ExerciseEditor.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ExercisePhoto.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 Compiling\ BoosterPopup.swift,\ BordSeance.swift,\ BoutonPrimaire.swift,\ BravoLab.swift,\ CalendarView.swift,\ CalLab.swift,\ CardioFiche.swift,\ CardRoute.swift,\ CarnetLab.swift,\ CarnetScene.swift,\ CarteLuneLab.swift,\ ChambreDonnees.swift,\ ChambreHiit.swift,\ ChambreLongue.swift,\ ChambrePeak.swift,\ ChambreRegularite.swift,\ ChambreVolume.swift,\ ChargeFiche.swift,\ ChevronAppelNatif.swift,\ ChipVerre.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/BoosterPopup.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/BordSeance.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/BoutonPrimaire.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/BravoLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CalendarView.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CalLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CardioFiche.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CardRoute.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CarnetLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CarnetScene.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CarteLuneLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ChambreDonnees.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ChambreHiit.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ChambreLongue.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ChambrePeak.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ChambreRegularite.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ChambreVolume.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ChargeFiche.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ChevronAppelNatif.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ChipVerre.swift (in target 'Nosfy' from project 'Nosfy')
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/BoosterPopup.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/BordSeance.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/BoutonPrimaire.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/BravoLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CalendarView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CalLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CardioFiche.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CardRoute.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CarnetLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CarnetScene.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/CarteLuneLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ChambreDonnees.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ChambreHiit.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ChambreLongue.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ChambrePeak.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ChambreRegularite.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ChambreVolume.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ChargeFiche.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ChevronAppelNatif.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/ChipVerre.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 Compiling\ LensParticles.swift,\ LiquidLensLab.swift,\ LisereCoreAnimation.swift,\ LisereImages.swift,\ LisereRespirant.swift,\ LiveExerciseView.swift,\ LivingNebulaBackground.swift,\ LoginLab.swift,\ LogoLab.swift,\ LuneDeSang.swift,\ MenuCouronne.swift,\ MenuNappe.swift,\ MoonCoinLab.swift,\ MoonSplash.swift,\ NavDiagnostic.swift,\ NavEncre.swift,\ NavLab.swift,\ NeonPrimaryButton.swift,\ NeonPrimaryLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LensParticles.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LiquidLensLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LisereCoreAnimation.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LisereImages.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LisereRespirant.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LiveExerciseView.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LivingNebulaBackground.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LoginLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LogoLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LuneDeSang.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/MenuCouronne.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/MenuNappe.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/MoonCoinLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/MoonSplash.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/NavDiagnostic.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/NavEncre.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/NavLab.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/NeonPrimaryButton.swift /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/NeonPrimaryLab.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LensParticles.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LiquidLensLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LisereCoreAnimation.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LisereImages.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LisereRespirant.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LiveExerciseView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LivingNebulaBackground.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LoginLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LogoLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/LuneDeSang.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/MenuCouronne.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/MenuNappe.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/MoonCoinLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/MoonSplash.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/NavDiagnostic.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/NavEncre.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/NavLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/NeonPrimaryButton.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-live-commit-20260918/snapshot/Nosfy/Views/NeonPrimaryLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-live-commit-20260918/snapshot
+    
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for Woop (in target 'Nosfy' from project 'Nosfy')
+
+** BUILD INTERRUPTED **
+
+ionCallbackBlock:] (in IDEFoundation)
+  7   -[IDEScheme buildOnlyTaskForSchemeOperationParameters:buildLog:dontActuallyRunCommands:buildParameters:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  8   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:deviceAvailableChecker:error:completionBlock:] (in IDEFoundation)
+  9   -[IDEScheme schemeOperationForSchemeOperationParameters:buildLog:overridingProperties:overridingBuildConfiguration:dontActuallyRunCommands:restorePersistedBuildResults:error:completionBlock:] (in IDEFoundation)
+ 10   -[Xcode3CommandLineBuildTool doSchemeBuildWithRunDestinations:runDestinationIdx:wantsSkip:buildActionTimingSection:timingSection:buildAction:isMoreDesinationsPending:actionResultBlock:title:buildLog:executionEnvironment:restorePersistedBuildResults:operationToEnqueue:error:] (in Xcode3Core)
+ 11   -[Xcode3CommandLineBuildTool doBuildForBuildAction:timingSection:colorize:colorizeFailure:error:] (in Xcode3Core)
+ 12   -[Xcode3CommandLineBuildTool _buildWithTimingSection:] (in Xcode3Core)
+ 13   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)
+ 14   XcodeBuildMain (in libxcodebuildLoader.dylib)
+ 15   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)
+ 16   -[XcodebuildPreIDEHandler runWithArguments:] (in xcodebuild)
+ 17   main (in xcodebuild)
+ 18   start (in dyld)
+

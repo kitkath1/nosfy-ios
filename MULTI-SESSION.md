@@ -1,5 +1,20 @@
 # Règle multi-session (Nosfy)
 
+## Live Activity — portrait, lune et Stop,18-09
+
+Commit limité à cette session, demandé par Kathryn. Grande carte et île déployée :
+portrait original Nosfy aux yeux rouges ; formats compacts : lune. Exercice lancé,
+phases muscu/cardio/piscine, chronos système et frise d’allures. Stop demande la
+suppression immédiate sans attendre une mise à jour et ignore les callbacks tardifs.
+Aucun changement backend. Flow et index d’état documentés ; contrôles physiques dans le contrat détaillé.
+Copie isolée et simulateur dédié ; aucun accès iPhone. 53 contrôles modèles/player
+et16 contrôles pilote/Stop PASS ; widget compilé. Build global isolé bloqué par
+VolDePieces absent du Home antérieur, dépendance laissée à sa session.
+Documentation :23 tests PASS, captures390/1440 relues. Preuves et limites :
+`tools/live-activity/COMMIT-2026-09-18.md`. ActivityKit réel et chauffe iPhone ouverts.
+Index privé, fichiers partagés fusionnés par hunks ; les travaux des autres
+sessions restent dans l’arbre et leurs entrées d’index sont préservées.
+
 ## Session Nosfy / Apple / contrôle production — 18 septembre 2026
 
 Commit limité à cette session, demandé par Kathryn. Dossier principal

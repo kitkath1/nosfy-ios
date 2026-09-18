@@ -584,6 +584,7 @@ struct RootView: View {
     /// sachet gagné.
     private func terminerSeance() {
         guard let a = active else {
+            WorkoutActivityController.end()
             // Jamais muet : la séance a disparu sous nos pieds (purge,
             // relance) — on referme ET on rend la home, plutôt qu'un
             // bouton qui ne fait rien.

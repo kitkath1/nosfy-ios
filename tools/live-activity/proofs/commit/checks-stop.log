@@ -1,0 +1,2 @@
+PASS 53 checks; payload 732 bytes; actual cardio player exercised
+PASS 16 controller checks; blocked update, Stop, late callbacks and new session exercised

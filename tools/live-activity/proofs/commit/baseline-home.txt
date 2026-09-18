@@ -1,0 +1,5 @@
+Base : 2c2c72648b46ecde9838473225cbe33b5dcf3044
+HomeAuroraView.swift : identique octet pour octet à la base.
+2c2c72648b46ecde9838473225cbe33b5dcf3044:Nosfy/Views/HomeAuroraView.swift:196:                        VolDePieces(
+
+Définition présente uniquement dans le PlayerSeance.swift non committé de l’autre session. Aucun ajout de cette dépendance au commit Live.

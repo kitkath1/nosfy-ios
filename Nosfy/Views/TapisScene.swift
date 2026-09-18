@@ -214,6 +214,18 @@ final class SeanceTapis {
     var onSetFini: ((BilanSet) -> Void)?
     var onRecupFinie: ((_ secondes: Int, _ vitesse: Double) -> Void)?
     var onSegmentFini: ((_ rang: Int, _ secondes: Int, _ vitesse: Double) -> Void)?
+    /// Événements du player et sceau de la molette seulement, sans tick supplémentaire.
+    var onLiveChange: (() -> Void)?
+
+    var livePhase: WorkoutLivePhase {
+        switch etat {
+        case .court:
+            return .init(kind: .effort, startedAt: setDebut,
+                         elapsed: mode.auLong ? couruAvant : 0)
+        case .repos: return .init(kind: .recovery, startedAt: reposDebut)
+        case .pause: return .init(kind: .pause, elapsed: couruAvant)
+        }
+    }
 
     struct BilanSet: Equatable {
         let rang: Int
@@ -315,6 +327,7 @@ final class SeanceTapis {
         // rien à fêter, rien à compter (`ecrirePhase` refuse 0 s — la scène
         // ne doit pas dire « Saved » pour ce qu'il refuse).
         guard secondes > 0 else { return }
+        defer { onLiveChange?() }
         let bilan = BilanSet(rang: setIndex, secondes: secondes, vitesse: vitesse, mode: mode)
         dernierBilan = bilan
         dalle = TexteDalle(titre: "SET \(bilan.rang) END", recap: bilan.recap, pied: "Saved")
@@ -359,6 +372,7 @@ final class SeanceTapis {
     /// fige, rien de la pause ne s'écrit. Aucune fête : on n'a rien fini.
     func pauser(_ now: Date = .now) {
         guard etat == .court, mode.auLong else { return }
+        defer { onLiveChange?() }
         fermerSegment(now)
         if let d0 = setDebut { couruAvant += max(0, now.timeIntervalSince(d0)) }
         etat = .pause
@@ -371,6 +385,7 @@ final class SeanceTapis {
     /// LA REPRISE : la foulée repart, un segment neuf à l'allure courante.
     func reprendre(_ now: Date = .now) {
         guard etat == .pause, !terminee else { return }
+        defer { onLiveChange?() }
         etat = .court
         setDebut = now
         segmentDebut = now
@@ -385,7 +400,9 @@ final class SeanceTapis {
     /// Sous 5 s de segment, on ne découpe pas : les secondes vont à la
     /// nouvelle allure (un segment de 2 s n'est qu'un tremblement).
     func sceller(_ v: Double, _ now: Date = .now) {
-        guard mode.auLong, !terminee else { return }
+        guard !terminee else { return }
+        defer { onLiveChange?() }
+        guard mode.auLong else { return }
         guard v != segmentVitesse else { return }
         guard etat == .court, let d0 = segmentDebut else {
             segmentVitesse = v          // en pause : le prochain segment part à cette allure
@@ -424,6 +441,7 @@ final class SeanceTapis {
     /// pilule). Plus rien ne s'écrit, plus rien ne se tape, pas de quittance
     /// — la clôture est déjà partie, un segment de plus n'irait nulle part.
     func abandonner(_ now: Date = .now) {
+        defer { onLiveChange?() }
         terminee = true
         popupVisible = false
         pointageJeton += 1
@@ -441,6 +459,7 @@ final class SeanceTapis {
     @discardableResult
     func finir(_ now: Date = .now) -> Quittance? {
         guard !terminee else { return nil }
+        defer { onLiveChange?() }
         terminee = true
         popupVisible = false
         if mode.auLong {
@@ -533,6 +552,7 @@ final class SeanceTapis {
     /// commande revient à la vitesse d'effort.
     func relancer(_ now: Date = .now) {
         guard etat == .repos, !terminee else { return }
+        defer { onLiveChange?() }
         popupVisible = false
         let secondes = reposDebut.map { max(0, Int(now.timeIntervalSince($0))) } ?? 0
         let vRecup = vitesse

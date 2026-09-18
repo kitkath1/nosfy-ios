@@ -1,0 +1,21 @@
+Validation Live Activity lune — 18 septembre 2026
+
+Sources de production comparées par SHA256 : identiques à la copie compilée.
+Compilation : xcodebuild -project /private/tmp/nosfy-live-20260918/build/Nosfy.xcodeproj -scheme Nosfy -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath /private/tmp/nosfy-live-20260918/derived CODE_SIGNING_ALLOWED=NO ARCHS=arm64 build
+Verdict final : BUILD SUCCEEDED (build-final.log).
+
+Tests : python3 tools/live-activity/verify.py
+PASS 53 checks; payload 732 bytes; actual cardio player exercised
+
+Documentation : npm run artefact puis npm run verif, copie isolée.
+23 tests PASS ; dix pages sans débordement à 390 px ; quatre captures relues.
+Artefact publié : 1847303 octets.
+SHA256 artefact : d3d496b900108e7e0ae130cd100e6c47fd08669fd211a9cc33a9d7ee02d76840
+Sources documentaires revérifiées immédiatement avant publication : aucun écart.
+
+Visuel : sept états du vrai composant partagé en banc dédié.
+Film transitions.mov : reflet visible, pas d'export ImageRenderer concurrent.
+Premiers exports et film invalides exclus de la preuve.
+Aucun contrôle physique ActivityKit, aucune mesure thermique iPhone.
+Aucune installation sur iPhone, aucun changement Supabase, aucun commit.
+Simulateur créé pour cette session arrêté après les captures.
