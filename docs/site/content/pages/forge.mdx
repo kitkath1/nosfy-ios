@@ -1,8 +1,12 @@
-<Decision titre="Cartes — deux familles retenues, branchement à terminer">
+import { GalerieCartes } from '@/components/GalerieCartes'
+
+<Decision titre="Cartes — trois familles retenues, branchement à terminer">
   <p><b>Une collection commune, avec des illustrations créées par IA.</b> Une même référence doit donner la même image, le même nom et la même rareté chez tous ses propriétaires. Une nouvelle carte enrichit le catalogue ; chaque joueur obtient ensuite ses exemplaires par les règles du jeu.</p>
-  <p>Le 18 septembre, Kathryn demande de sceller <b>La Forêt des Veilles</b>, forêt et brume lunaire, avec <b>Les Cimes Éteintes</b>, montagnes noires et braises orange. Dix références sont conservées : quatre pour la forêt, quatre créatures et deux paysages communs pour les Cimes. Le shiny doit aussi être animé ; le rendu final et son coût sur iPhone restent à valider.</p>
+  <p>Trois familles retenues le 18 septembre : <b>La Forêt des Veilles</b>, <b>Les Cimes Éteintes</b> et <b>Les Bois Sans Lune</b>. Les quatorze illustrations sont visibles ci-dessous, avec leurs noms FR/EN et leur rareté. Les personnages récurrents changent de pose et de scène entre les mondes.</p>
   <p>Cette étape produit des images d’atelier et leur documentation. Aucun de ces nouveaux visuels n’est encore publié dans Supabase ou installé dans l’app. Le chapitre reste en chantier. Compte est suivi séparément dans son chapitre.</p>
 </Decision>
+
+<GalerieCartes />
 
 <div className="reveal">
 
@@ -12,7 +16,7 @@ Une première collection raconte le même monde. D’autres collections pourront
 en explorer des lieux et des histoires, avec les quatre raretés dans chaque
 ensemble. Leur nombre et leurs noms ne sont pas encore fixés.
 
-Deux familles artistiques prédéfinies sont retenues. Elles doivent se reconnaître
+Trois familles artistiques prédéfinies sont retenues. Elles doivent se reconnaître
 par leurs silhouettes, leur palette et leurs matières, avant même de lire leur nom.
 
 - **La Forêt des Veilles / The Vigil Woods** : forêt, brume lunaire, nacre et
@@ -37,6 +41,12 @@ montent avec la rareté, particulièrement sur la chauve-souris et le dragon.
 La sélection, ses noms et ses fichiers sont fixés dans
 `tools/carte-lune/familles-2026-09-18.json`. Ce manifeste est un contrat d’atelier,
 pas encore une source lue par l’app ni un catalogue publié.
+
+**Les Bois Sans Lune / The Moonless Woods** complète la sélection : clairière
+commune v2, chauve-souris rare v3, loup épique v3 et corbeau légendaire v3.
+Nuit profonde sous les pins, noir et nacre blanche. Les personnages des Cimes
+reviennent dans de nouvelles actions : suspendue, en bond et à l’atterrissage.
+La sélection artistique est retenue ; cadrage et contraste iPhone restent à vérifier.
 
 Le catalogue reste caché au joueur : découverte au fil des séances, **emplacements
 vides conservés comme dans le profil**, sans image ni nom dévoilé avant acquisition.
@@ -85,16 +95,17 @@ Les poids actuels du code sont 60/27/10/3. À 3 % de légendaires, six séances 
 trois boosters ordinaires laissent encore 57,80 % de chances de n’en avoir aucune,
 hors sachets noirs. Le rythme doit donc être jugé en séances et en ouvertures.
 
-**Proposition non déployée :** rare ou mieux au premier booster, au plus deux
-communes consécutives, première légendaire au plus tard au sixième booster puis
-douze ouvertures maximum entre légendaires. Ajouter une protection pour les
-petits gains : six séances éligibles sans légendaire rendent la prochaine
-ouverture ordinaire garantie. Aucune perte de progression pendant une absence.
+**Nouveau candidat, non déployé :** première légendaire au plus tard à
+l’ouverture qui suit la deuxième séance éligible, ou au sixième booster ordinaire ;
+puis après trois séances sans légendaire, ou huit boosters ordinaires.
+La première borne atteinte déclenche la garantie. Le joueur ouvre ses sachets
+quand il le souhaite ; une absence ne remet rien à zéro. Premier booster rare
+ou mieux, au plus deux communes consécutives. Sachet noir toujours légendaire.
 
-Le candidat à 45/35/15/5 donne environ 11,10 % de légendaires avec les seules
-protections par ouvertures, pas 5 %. L’effet de la garantie par séances, des
-boosters noirs, des doublons et de la taille de collection reste à calibrer.
-Le calcul local n’est pas une mesure de comportement des joueurs.
+Poids proposés : 45/35/15/5, à simuler avec les garanties, les vrais gains et les
+doublons. Le résultat historique de 11,10 % concerne seulement l’ancien modèle
+6/12 ouvertures ; il ne valide pas ce nouveau candidat. Aucun taux effectif ni
+effet sur la rétention n’est mesuré pour ces nouvelles règles.
 
 ## L’appel IA et le manège
 
@@ -112,8 +123,7 @@ il n’est pas chargé automatiquement dans les requêtes OpenAI de l’app.
 Plan détaillé, propositions des mondes et calcul de rythme :
 `tools/carte-lune/PLAN-CARTES-MONDES-2026-09-18.md`.
 Skill créé et validé : `.agents/skills/woop-cartes/SKILL.md`, découvrable par
-`$woop-cartes`. Proposition de départ : douze cartes dans le premier monde,
-à confirmer après la revue des quatre références.
+`$woop-cartes`. La sélection actuelle porte sur quatorze références dans trois mondes.
 
 ## Le catalogue existant, lu le 17 septembre
 
@@ -162,20 +172,21 @@ belles ; les épiques et légendaires gagnent en présence et en mise en scène.
 
 ## Plan pour terminer Cartes
 
-1. Fixer la liste du premier monde, les références officielles, leur rareté et
-   leur finition. Les autres mondes viennent ensuite. Préserver les cartes possédées.
-2. Valider les quatre illustrations produites, une par rareté, dans le vrai cadre
-   sur téléphone ; produire ensuite le premier ensemble retenu. Le croissant
-   peint doit encore être harmonisé : les retouches n’ont pas reproduit sa
-   silhouette à l’identique sur chaque image. Prototyper et mesurer un shiny.
-3. Calibrer les garanties avec les séances et les vrais gains, puis publier
-   les références retenues et leurs règles depuis une seule source serveur.
-4. Attribuer la carte et sceller le sachet dans une transaction ; garder la
-   garantie légendaire, la provenance de la séance et la reprise après coupure.
-5. Conserver l’identité et la finition jusqu’au profil, compter les vrais doublons
-   et tirer les totaux du catalogue publié, sans dévoiler les cartes manquantes.
-6. Tester deux comptes avec la même carte, les reprises, les doubles appels,
-   la réinstallation et le coût des effets sur iPhone ; poser les preuves ici.
+1. Vérifier les quatorze arts dans le cadre réel, en vignette et sur iPhone.
+2. Publier un catalogue commun : identifiant stable, famille, personnage, noms
+   FR/EN, rareté, finition et image immuable. Préserver toutes les anciennes cartes.
+3. Attribuer, sceller et avancer les garanties dans une seule transaction,
+   avec verrouillage par joueur, provenance serveur et rejeu sans nouveau gain.
+4. Conserver `card_id` jusqu’au profil : vrais doublons, cache existant,
+   collection restaurée après connexion et emplacements manquants vides.
+5. Calibrer le nouveau rythme pour une, deux ou trois séances par semaine,
+   avec les gains réels, les sachets noirs et les doublons des 14 références.
+6. Tester deux comptes, panne/reprise, double appel, réinstallation et rendu
+   iPhone. Mesurer le shiny animé séparément avant de le déclarer prêt.
+
+Plan détaillé et critères de sortie :
+`tools/carte-lune/PLAN-BRANCHEMENT-CARTES-2026-09-18.md`.
+**Cette étape reste un plan : aucun branchement app/backend réalisé ici.**
 
 Le risque d’attribution a été identifié dans le code : le sachet est scellé,
 puis la collection est écrite séparément. Une panne entre ces deux écritures

@@ -44,7 +44,7 @@ export const PAGES: PageInfo[] = [
   },
   {
     id: 'forge', libelle: 'Cartes', glyphe: 'flame',
-    phrase: 'Deux familles retenues : forêt et brume, ténèbres et braises. Références communes à tous ; publication, shiny animé et QA à terminer.',
+    phrase: 'Trois familles retenues : brume lunaire, cimes de braise et forêt sans lune. Références communes à tous ; publication, shiny animé et QA à terminer.',
     hero: {
       capture: 'Nosfy/Assets.xcassets/booster-orange.imageset/booster-orange.png',
       teinte: { t1: '#9E3610', t2: '#9E5425', source: 'booster-orange.png (l\'objet du domaine) · #60210A h16 S90 (2e #924E23) · V posé à 62', part: 5.81 },

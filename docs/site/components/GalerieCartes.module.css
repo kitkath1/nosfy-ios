@@ -1,0 +1,12 @@
+.galerie{margin:40px 0 56px}
+.galerie>p,.signature{color:var(--encre-2);line-height:1.6}
+.famille{margin-top:32px}
+.famille h3{margin-bottom:8px}
+.signature{font-size:12px;margin:0 0 18px}
+.grille{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 14px}
+.grille figure{min-width:0;margin:0}
+.grille img{display:block;width:100%;height:auto;aspect-ratio:2/3;object-fit:contain;border-radius:12px;background:#050505}
+.grille figcaption{display:flex;flex-direction:column;gap:5px;margin-top:12px;font-size:12px;line-height:1.4;color:var(--encre-2);overflow-wrap:anywhere}
+.grille figcaption b{font-size:14px;font-weight:500;color:var(--encre-1)}
+.rarete{font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+@media(min-width:900px){.grille{grid-template-columns:repeat(4,minmax(0,1fr));gap:24px 18px}}

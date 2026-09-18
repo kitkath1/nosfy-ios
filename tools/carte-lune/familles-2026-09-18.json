@@ -87,7 +87,8 @@
           "kind": "creature",
           "art": "tools/carte-lune/cimes-eteintes-2026-09-18/01-commune-corbeau-de-suie-v3.png",
           "sha256": "ae26aad7b3b0c471106adb0803893b4dcac3dba3d0752a00518215e2cc0a6e7c",
-          "published": false
+          "published": false,
+          "character": "corbeau-au-petit-cimier"
         },
         {
           "key": "aile-d-ambre",
@@ -99,7 +100,8 @@
           "kind": "creature",
           "art": "tools/carte-lune/cimes-eteintes-2026-09-18/02-rare-aile-d-ambre-v3.png",
           "sha256": "090e4ae74da55646df1c8f9ca864f41df4298a99b4e2b3040f3e84e9dccfa134",
-          "published": false
+          "published": false,
+          "character": "chauve-souris-aux-membranes-ovales"
         },
         {
           "key": "loup-de-cendre",
@@ -111,7 +113,8 @@
           "kind": "creature",
           "art": "tools/carte-lune/cimes-eteintes-2026-09-18/03-epique-loup-de-cendre-v3.png",
           "sha256": "ddbfd9cc512fa1fb2976d6df38184a998e0664497223bacdf97d2a00632bbcb0",
-          "published": false
+          "published": false,
+          "character": "loup-a-criniere-d-obsidienne"
         },
         {
           "key": "dragon-d-obsidienne",
@@ -150,6 +153,74 @@
           "published": false
         }
       ]
+    },
+    {
+      "key": "bois-sans-lune",
+      "name": {
+        "fr": "Les Bois Sans Lune",
+        "en": "The Moonless Woods"
+      },
+      "signature": [
+        "nuit profonde",
+        "pins denses",
+        "racines",
+        "noir et nacre blanche"
+      ],
+      "cards": [
+        {
+          "key": "la-clairiere-muette",
+          "name": {
+            "fr": "La Clairière Muette",
+            "en": "The Silent Clearing"
+          },
+          "rarity": "common",
+          "kind": "paysage",
+          "art": "tools/carte-lune/bois-sans-lune-2026-09-18/01-commune-la-clairiere-muette-v2.png",
+          "sha256": "668e567ed87e0290050732eb7a59b3ddf907db46dd252de0ab6d2261003fad04",
+          "published": false
+        },
+        {
+          "key": "aile-de-brume",
+          "name": {
+            "fr": "Aile de Brume",
+            "en": "Mistwing"
+          },
+          "rarity": "rare",
+          "kind": "creature",
+          "art": "tools/carte-lune/bois-sans-lune-2026-09-18/02-rare-aile-de-brume-v3.png",
+          "sha256": "33b315a14c13ce3b2f1f1c72344f8e9f11afd913f888638344c4d7e1b42bb31c",
+          "published": false,
+          "character": "chauve-souris-aux-membranes-ovales"
+        },
+        {
+          "key": "loup-des-racines",
+          "name": {
+            "fr": "Loup des Racines",
+            "en": "Rootbound Wolf"
+          },
+          "rarity": "epic",
+          "kind": "creature",
+          "art": "tools/carte-lune/bois-sans-lune-2026-09-18/03-epique-loup-des-racines-v3.png",
+          "sha256": "8acfbfeb798de1379fe7716631aedc4f7d1c07aa380e036a693378a1a55039d9",
+          "published": false,
+          "character": "loup-a-criniere-d-obsidienne"
+        },
+        {
+          "key": "le-grand-silence",
+          "name": {
+            "fr": "Le Grand Silence",
+            "en": "The Great Stillness"
+          },
+          "rarity": "legendary",
+          "kind": "creature",
+          "art": "tools/carte-lune/bois-sans-lune-2026-09-18/04-legendaire-le-grand-silence-v3.png",
+          "sha256": "05733bd8c0a98cd9a01f163465048299b62745984a46be7fc17b00a43c1cfaa2",
+          "published": false,
+          "character": "corbeau-au-petit-cimier"
+        }
+      ]
     }
-  ]
+  ],
+  "recurring_characters": "Même visage, proportions et détails distinctifs entre familles ; pose, angle, action et interaction avec le décor différents. Chaque scène officielle reste une référence distincte.",
+  "selection": "Trois familles et quatorze illustrations retenues par Kathryn ; scellement demandé. Cadrage iPhone, publication et shiny animé restent à vérifier."
 }

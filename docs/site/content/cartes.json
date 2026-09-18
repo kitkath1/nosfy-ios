@@ -1,0 +1,186 @@
+[
+  {
+    "key": "foret-des-veilles",
+    "name": {
+      "fr": "La Forêt des Veilles",
+      "en": "The Vigil Woods"
+    },
+    "signature": "forêt · brume lunaire · nacre · braise discrète",
+    "cards": [
+      {
+        "key": "la-veille",
+        "name": {
+          "fr": "La Veille",
+          "en": "The Vigil"
+        },
+        "rarity": "common",
+        "src": "/cartes/foret-des-veilles-la-veille.avif",
+        "width": 224,
+        "height": 336
+      },
+      {
+        "key": "les-veilleuses",
+        "name": {
+          "fr": "Les Veilleuses",
+          "en": "The Watchers"
+        },
+        "rarity": "rare",
+        "src": "/cartes/foret-des-veilles-les-veilleuses.avif",
+        "width": 224,
+        "height": 336
+      },
+      {
+        "key": "le-passage",
+        "name": {
+          "fr": "Le Passage",
+          "en": "The Passage"
+        },
+        "rarity": "epic",
+        "src": "/cartes/foret-des-veilles-le-passage.avif",
+        "width": 224,
+        "height": 336
+      },
+      {
+        "key": "le-souverain",
+        "name": {
+          "fr": "Le Souverain",
+          "en": "The Sovereign"
+        },
+        "rarity": "legendary",
+        "src": "/cartes/foret-des-veilles-le-souverain.avif",
+        "width": 224,
+        "height": 336
+      }
+    ]
+  },
+  {
+    "key": "cimes-eteintes",
+    "name": {
+      "fr": "Les Cimes Éteintes",
+      "en": "The Darkened Peaks"
+    },
+    "signature": "ténèbres · montagnes noires · orange braise · suie · obsidienne",
+    "cards": [
+      {
+        "key": "corbeau-de-suie",
+        "name": {
+          "fr": "Corbeau de Suie",
+          "en": "Soot Raven"
+        },
+        "rarity": "common",
+        "src": "/cartes/cimes-eteintes-corbeau-de-suie.avif",
+        "width": 224,
+        "height": 336
+      },
+      {
+        "key": "aile-d-ambre",
+        "name": {
+          "fr": "Aile d’Ambre",
+          "en": "Amberwing"
+        },
+        "rarity": "rare",
+        "src": "/cartes/cimes-eteintes-aile-d-ambre.avif",
+        "width": 224,
+        "height": 336
+      },
+      {
+        "key": "loup-de-cendre",
+        "name": {
+          "fr": "Loup de Cendre",
+          "en": "Ash Wolf"
+        },
+        "rarity": "epic",
+        "src": "/cartes/cimes-eteintes-loup-de-cendre.avif",
+        "width": 224,
+        "height": 336
+      },
+      {
+        "key": "dragon-d-obsidienne",
+        "name": {
+          "fr": "Dragon d’Obsidienne",
+          "en": "Obsidian Dragon"
+        },
+        "rarity": "legendary",
+        "src": "/cartes/cimes-eteintes-dragon-d-obsidienne.avif",
+        "width": 224,
+        "height": 336
+      },
+      {
+        "key": "la-faille-ardente",
+        "name": {
+          "fr": "La Faille Ardente",
+          "en": "Emberrift"
+        },
+        "rarity": "common",
+        "src": "/cartes/cimes-eteintes-la-faille-ardente.avif",
+        "width": 224,
+        "height": 336
+      },
+      {
+        "key": "le-col-des-cendres",
+        "name": {
+          "fr": "Le Col des Cendres",
+          "en": "Ashen Pass"
+        },
+        "rarity": "common",
+        "src": "/cartes/cimes-eteintes-le-col-des-cendres.avif",
+        "width": 224,
+        "height": 336
+      }
+    ]
+  },
+  {
+    "key": "bois-sans-lune",
+    "name": {
+      "fr": "Les Bois Sans Lune",
+      "en": "The Moonless Woods"
+    },
+    "signature": "nuit profonde · pins denses · racines · noir et nacre blanche",
+    "cards": [
+      {
+        "key": "la-clairiere-muette",
+        "name": {
+          "fr": "La Clairière Muette",
+          "en": "The Silent Clearing"
+        },
+        "rarity": "common",
+        "src": "/cartes/bois-sans-lune-la-clairiere-muette.avif",
+        "width": 224,
+        "height": 336
+      },
+      {
+        "key": "aile-de-brume",
+        "name": {
+          "fr": "Aile de Brume",
+          "en": "Mistwing"
+        },
+        "rarity": "rare",
+        "src": "/cartes/bois-sans-lune-aile-de-brume.avif",
+        "width": 224,
+        "height": 336
+      },
+      {
+        "key": "loup-des-racines",
+        "name": {
+          "fr": "Loup des Racines",
+          "en": "Rootbound Wolf"
+        },
+        "rarity": "epic",
+        "src": "/cartes/bois-sans-lune-loup-des-racines.avif",
+        "width": 224,
+        "height": 336
+      },
+      {
+        "key": "le-grand-silence",
+        "name": {
+          "fr": "Le Grand Silence",
+          "en": "The Great Stillness"
+        },
+        "rarity": "legendary",
+        "src": "/cartes/bois-sans-lune-le-grand-silence.avif",
+        "width": 224,
+        "height": 336
+      }
+    ]
+  }
+]

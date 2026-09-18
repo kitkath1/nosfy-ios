@@ -5,7 +5,7 @@ description: Concevoir et réaliser les Cartes de Nosfy, leurs mondes nocturnes,
 
 # Nosfy — Cartes
 
-Travailler dans le dépôt contenant `Woop/Services/LuneForge.swift` et
+Travailler dans le dépôt contenant `Nosfy/Services/LuneForge.swift` et
 `tools/carte-lune/`. Les chemins de ce document sont relatifs à cette racine.
 « Cartes » est le nom produit ; les identifiants techniques `forge-card`,
 `ForgeServeur` et l’ancre documentaire `#forge` peuvent subsister.
@@ -24,14 +24,18 @@ Lire selon la tâche :
 - Art existant : `tools/carte-lune/references-2026-09-18/README.md`, ses PNG,
   `prompts.json` et `retouches.json` ; regarder les images avant de les modifier.
 - Identité/attribution : `tools/carte-lune/ANALYSE-CARTES-2026-09-17.md`.
-- Rythme : `tools/carte-lune/rythme-propose-2026-09-18.py` et son résultat JSON.
+- Plan de branchement actuel : `tools/carte-lune/PLAN-BRANCHEMENT-CARTES-2026-09-18.md`.
+  Les garanties proposées par séances priment sur le candidat historique. Aucun
+  branchement n’est autorisé par la seule demande de ce plan.
+- Rythme historique : `tools/carte-lune/rythme-propose-2026-09-18.py` et son résultat JSON.
   C’est un modèle de proposition, sans réseau, pas un test de l’app déployée.
 
 ## Direction approuvée
 
 Créer plusieurs mondes de la nuit, cohérents mais distincts, avec des créatures
-reconnaissables. Deux familles sont retenues : La Forêt des Veilles (forêt/vallée/brume) et
-Les Cimes Éteintes (montagnes noires, ténèbres et braises orange). Nuit, lune et
+reconnaissables. Trois familles sont retenues : La Forêt des Veilles (forêt/vallée/brume),
+Les Cimes Éteintes (montagnes noires et braises orange) et Les Bois Sans Lune
+(forêt fermée, pins très denses, nuit noire et nacre blanche). Nuit, lune et
 braise relient l’univers : noir profond lisible, matières précieuses, présence
 poétique, détails visibles à taille de carte. Éviter dragon féérique, palette
 arc-en-ciel, néons et surcharge d’ornements.
@@ -40,7 +44,7 @@ Dernières décisions artistiques du18-09 :
 
 - Catalogue de familles prédéfinies et identifiables, pas de nouvelle espèce au
   hasard par propriétaire. `tools/carte-lune/familles-2026-09-18.json` conserve
-  dix références d’atelier, noms FR/EN et empreintes ; aucune n’est publiée.
+  quatorze références d’atelier, noms FR/EN et empreintes ; aucune n’est publiée.
 - Cimes Éteintes : noir profond, orange braise, suie, cendre, obsidienne.
   Corbeau commun, chauve-souris rare, loup épique, dragon légendaire ; quatre
   créatures validées. Les communes peuvent aussi être de beaux paysages :
@@ -50,12 +54,17 @@ Dernières décisions artistiques du18-09 :
 - Marées et créatures marines rejetées. Premières Cimes sous la lune rejetées :
   trop proches du premier monde. Un dragon sombre d’obsidienne est explicitement
   demandé ; l’exclusion porte sur les dragons féériques/colorés.
-- Le scellement Git demandé pour les deux premières familles ne vaut pas
-  publication Supabase ni validation du cadrage et du shiny animé sur iPhone.
+- Les Bois Sans Lune : sélection retenue = clairière v2, chauve-souris/loup/corbeau
+  v3, dans `tools/carte-lune/bois-sans-lune-2026-09-18/`. Même personnages que les
+  Cimes, poses différentes : suspendue, en bond, à l’atterrissage. Vraie nuit
+  profonde, shiny blanc nettement perceptible sur matière noire.
+- Le scellement des trois familles ne vaut pas publication Supabase ni validation
+  du cadrage et du shiny animé sur iPhone. La galerie de la documentation montre
+  les 14 références retenues ; l’app conserve ses emplacements vides.
 
 Une créature se reconnaît par sa silhouette, son regard et un détail de matière,
-pas seulement son nom ou une couleur. Les autres mondes du plan restent des propositions,
-pas un catalogue déjà approuvé ou publié.
+pas seulement son nom ou une couleur. Les autres mondes restent des propositions. Les trois familles retenues
+ne sont pas encore un catalogue publié.
 
 Conserver le full art et le cadre existant. L’illustration IA ne porte ni cadre,
 ni texte, ni numéros de rareté. `LuneForge` ajoute déjà1/2/3/4lunes ; le cadre
@@ -135,8 +144,8 @@ permet de garder des références stables et de ne pas faire dépendre le manèg
 d’une génération. Ne pas présenter cette cible comme déjà branchée.
 
 Pour le backend, appliquer le skill Supabase et relire les migrations actives.
-Sources d’appel : `Woop/Views/BoosterLab.swift`, `Woop/Services/ForgeServeur.swift`,
-`Woop/Views/SacreAccueil.swift`, `supabase/functions/forge-card/index.ts`.
+Sources d’appel : `Nosfy/Views/BoosterLab.swift`, `Nosfy/Services/ForgeServeur.swift`,
+`Nosfy/Views/SacreAccueil.swift`, `supabase/functions/forge-card/index.ts`.
 Pièges établis le17-09, à vérifier avant chaque reprise :
 
 - `ma_collection()` et le client regroupent par famille et perdent l’identité

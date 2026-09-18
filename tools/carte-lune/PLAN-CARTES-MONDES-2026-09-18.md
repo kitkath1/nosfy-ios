@@ -1,11 +1,15 @@
 # Cartes — mondes nocturnes, rythme et branchement
 
-18 septembre 2026. Plan et atelier artistique, sans modification de l’app ni du
-serveur pendant cette passe. Kathryn demande de sceller les deux familles :
-La Forêt des Veilles et Les Cimes Éteintes. Dix références sont conservées :
-quatre pour la première, quatre créatures et deux paysages pour la seconde.
-Les noms FR/EN sont éditoriaux ; le catalogue de lancement et les taux restent
-à arrêter avant publication.
+18 septembre 2026. Les trois familles sont retenues, avec 14 illustrations :
+La Forêt des Veilles (4), Les Cimes Éteintes (6) et Les Bois Sans Lune (4).
+Le manifeste conserve les noms FR/EN, les originaux et leurs empreintes.
+La galerie est visible dans la documentation Cartes. Aucun art n’est publié.
+
+**Suite actuelle : [plan de branchement](PLAN-BRANCHEMENT-CARTES-2026-09-18.md).**
+Ce document conserve le contexte artistique et le premier modèle de rythme.
+Les anciens seuils 6/12 ouvertures et 6 séances ci-dessous sont historiques ;
+le nouveau candidat 2/3 séances et 6/8 ouvertures les remplace dans le plan.
+Aucune règle nouvelle n’est active et aucun backend n’est codé dans cette passe.
 
 ## Décisions de Kathryn
 
@@ -29,14 +33,15 @@ Les noms FR/EN sont éditoriaux ; le catalogue de lancement et les taux restent
 
 ## Une famille de mondes, des signatures distinctes
 
-Noms FR/EN de travail. Les deux premières familles ont des références produites.
+Noms FR/EN de travail. Les trois familles ont des références produites.
 Leur présence en atelier ne les rend pas disponibles dans les boosters.
 
 | Monde | Matière et lumière | Créatures proposées |
 | --- | --- | --- |
 | La Forêt des Veilles / The Vigil Woods — retenue | Écorce mouillée, velours noir, brume lunaire et braise discrète | La Veille ; Les Veilleuses ; Le Passage ; Le Souverain |
 | Les Cimes Éteintes / The Darkened Peaks — retenue | Noir profond, orange braise, suie, cendre, obsidienne et failles montagneuses | Corbeau de Suie ; Aile d’Ambre ; Loup de Cendre ; Dragon d’Obsidienne ; paysages communs La Faille Ardente et Le Col des Cendres |
-| Le Désert de Verre | Dunes de cendre, verre volcanique, lignes chaudes dans le sable froid | Un renard aux longues oreilles sombres bordées d’argent ; un papillon aux ailes fumées ; un serpent noir au dessin minéral singulier |
+| Les Bois Sans Lune / The Moonless Woods — retenue | Pins denses, nuit noire, racines, reflets nacrés blancs | La Clairière Muette ; Aile de Brume ; Loup des Racines ; Le Grand Silence |
+| Le Désert de Verre — réserve non validée | Dunes de cendre, verre volcanique, lignes chaudes dans le sable froid | Un renard aux longues oreilles sombres bordées d’argent ; un papillon aux ailes fumées ; un serpent noir au dessin minéral singulier |
 
 Les Marées Muettes sont rejetées par Kathryn. Les premières Cimes sous la lune
 (lynx, gypaète, bouquetin) sont également écartées : pas assez dark, trop proches
@@ -51,12 +56,22 @@ Références, noms FR/EN, prompts et SHA-256 :
 et `familles-2026-09-18.json`. Ce manifeste décrit l’atelier, pas une migration
 ni un catalogue déjà déployé.
 
+### Troisième famille retenue : Les Bois Sans Lune
+
+La sélection finale est La Clairière Muette v2 (commune), Aile de Brume v3
+(rare), Loup des Racines v3 (épique), Le Grand Silence v3 (corbeau légendaire).
+Images, prompts et versions antérieures : `bois-sans-lune-2026-09-18/`.
+Les personnages des Cimes reviennent avec des poses et des actions différentes,
+sous des pins denses dans une vraie nuit. Le shiny blanc ressort sur matière noire.
+Kathryn demande ensuite de sceller les images validées des trois familles.
+La revue artistique ne vaut pas publication ni validation sur téléphone.
+
 Chaque créature a une silhouette, un regard, un détail de matière et une courte
 idée narrative récurrents. Changer un décor ou une couleur ne suffit pas à créer
 un nouveau monde. Ne pas ajouter dragons féériques, armures, runes ou néons.
 La signature lune / nuit / braise relie l’ensemble sans imposer le même paysage.
 
-**Proposition de première collection : 12 cartes** — 4 communes, 4 rares,
+**Ancienne proposition, remplacée par les 14 références des trois familles : 12 cartes** — 4 communes, 4 rares,
 2 épiques, 2 légendaires. Les quatre essais fixent la direction de chaque rareté ;
 ils ne limitent pas le produit à quatre cartes. Ne pas lancer la production des
 12 images avant d’avoir arrêté la liste et vérifié les références dans le cadre.
@@ -104,7 +119,7 @@ CPU ou une capture ne prouve pas à elle seule l’absence de chauffe.
 n’avoir aucune légendaire est encore57,80% (`0,97^18`), hors sachets noirs.
 Une moyenne ne protège donc pas les joueurs les moins chanceux.
 
-### Proposition de départ à calibrer, non déployée
+### Candidat historique, remplacé et non déployé
 
 - Poids de base :45%communes,35%rares,15%épiques,5%légendaires.
 - Premier booster ordinaire : rare ou mieux.
@@ -177,38 +192,20 @@ rallonger artificiellement la cérémonie pour remplir un délai de génération
 
 OpenAI confirme que l’API d’images sert à générer ou modifier des illustrations :
 <https://developers.openai.com/api/docs/guides/image-generation> (lu le18-09).
-Le choix atelier/distribution est une décision d’architecture Woop.
+Le choix atelier/distribution est une décision d’architecture Nosfy.
 
 ## Ordre de réalisation et preuves attendues
 
-1. **Fixer le premier ensemble.** Noms de travail, silhouettes, liste des12cartes
-   proposée et références shiny. Les autres mondes restent une réserve artistique.
-2. **Valider quatre références dans le cadre.** Lisibilité en vignette, croissant
-   homogène, ailes et bois non masqués. Premier prototype shiny à mesurer au
-   téléphone avant d’étendre l’effet. Produire ensuite les images manquantes.
-3. **Calibrer la progression.** Simulation avec les vraies règles de gains,
-   cadence1/2/3séances, doublons, bornes et effet des boosters noirs. Fixer la
-   garantie du petit pratiquant ; placer les valeurs côté serveur.
-4. **Catalogue commun.** Identité précise, monde/collection, créature, nom,
-   rareté, finition, chemins immuables, statut de publication. Le catalogue
-   administratif peut être complet ; l’API du profil ne dévoile pas l’art des
-   manquantes. Traiter une réserve vide avant débit, sans inventer une rareté.
-5. **Attribution fiable.** Verrouiller et sceller le sachet, attribuer la carte
-   et avancer les garanties dans une transaction. Préserver les reprises et
-   les anciennes cartes. Déduire la provenance d’une séance du serveur ; les
-   sachets de conversion n’ont actuellement pas tous de séance associée.
-6. **App.** Conserver `card_id` et la finition jusqu’au rendu, collection avec
-   vrais doublons et emplacements vides, totaux venant du serveur, cache existant.
-   Éviter tout repli de compte atelier ou de carte décorative présenté comme réel.
-7. **QA puis documentation.** Deux vrais comptes obtiennent la même référence,
-   mêmes pixels et même effet ; tests coupure/double appel/réinstallation,
-   garantie noire et cadence ; QA visuelle et coût sur iPhone. La ligne concernée
-   passe au vert sur sa preuve, jamais sur la création de ce plan ou du skill.
+La sélection des trois familles est faite. Le plan opérationnel actuel est dans
+[PLAN-BRANCHEMENT-CARTES-2026-09-18.md](PLAN-BRANCHEMENT-CARTES-2026-09-18.md) :
+cadrage réel, catalogue publié, attribution atomique, identité jusqu’au profil,
+rythme par séances, QA sur deux comptes et sur iPhone. La comparaison sociale
+et le chapitre Compte restent séparés. Aucune pastille verte sans sa preuve.
 
 ## Sources locales relues
 
-- `Woop/Views/BoosterLab.swift` : `lancerForge`, `engager`, réponse tardive et repli.
-- `Woop/Services/ForgeServeur.swift` : `tirer`, délai, téléchargement, habillage.
+- `Nosfy/Views/BoosterLab.swift` : `lancerForge`, `engager`, réponse tardive et repli.
+- `Nosfy/Services/ForgeServeur.swift` : `tirer`, délai, téléchargement, habillage.
 - `supabase/functions/forge-card/index.ts` : poids, pool/neuf, modèles, scellement.
 - `supabase/migrations/20260830210000_conversion_jour_flamme.sql` : forfait/conversion.
 - `supabase/migrations/20260915160000_economie_cardio.sql` : clôture cardio.
