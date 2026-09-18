@@ -1,0 +1,146 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project /tmp/nosfy-cartes-runner/NavRuntimeUITests.xcodeproj -scheme NavRuntimeUITests -destination "platform=iOS Simulator,id=ADFE5348-7E75-4E67-9975-E0C409DCAD55" -derivedDataPath /tmp/nosfy-cartes-runner-dd -resultBundlePath /tmp/cartes-ui-B2.xcresult CODE_SIGNING_ALLOWED=NO "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testBOrangeJusquaCollection" test
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/tmp/cartes-ui-B2.xcresult
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'NavRuntimeUITests' in project 'NavRuntimeUITests' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk /tmp/nosfy-cartes-runner-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+    cd /tmp/nosfy-cartes-runner/NavRuntimeUITests.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -o /tmp/nosfy-cartes-runner-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+
+2026-09-18 12:23:51.422048+0200 NavRuntimeUITests-Runner[98958:19100276] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-18 12:23:51.814.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-18 12:23:51.814.
+Test Suite 'NavRuntimeUITests' started at 2026-09-18 12:23:51.814.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testBOrangeJusquaCollection]' started.
+    t =     0.00s Start Test at 2026-09-18 12:23:51.815
+    t =     0.02s Set Up
+    t =     0.03s Open fr.kathryn.woop
+    t =     0.03s     Launch fr.kathryn.woop
+    t =     0.10s         Setting up automation session
+    t =     0.49s         Wait for fr.kathryn.woop to idle
+objc[98958]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10a84c310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10a130398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     1.64s Waiting 6.0s for Button (First Match) to exist
+    t =     2.68s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     2.68s         Checking existence of `Button (First Match)`
+    t =     2.75s         Capturing element debug description
+    t =     3.69s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     3.69s         Checking existence of `Button (First Match)`
+    t =     3.72s         Capturing element debug description
+    t =     4.65s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     4.65s         Checking existence of `Button (First Match)`
+    t =     4.69s         Capturing element debug description
+    t =     5.72s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     5.72s         Checking existence of `Button (First Match)`
+    t =     5.76s         Capturing element debug description
+    t =     6.69s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     6.69s         Checking existence of `Button (First Match)`
+    t =     6.72s         Capturing element debug description
+    t =     7.64s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     7.64s         Checking existence of `Button (First Match)`
+    t =     7.68s         Capturing element debug description
+    t =     7.68s     Checking existence of `Button (First Match)`
+    t =     7.71s Collecting debug information to assist test failure triage
+    t =     7.72s     Requesting snapshot of accessibility hierarchy for app with pid 98962
+    t =     7.77s Waiting 35.0s for "profil-booster-orange" Button to exist
+    t =     8.80s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =     8.80s         Checking existence of `"profil-booster-orange" Button`
+    t =     8.84s Tap "profil-booster-orange" Button
+    t =     8.84s     Wait for fr.kathryn.woop to idle
+    t =     8.84s     Find the "profil-booster-orange" Button
+    t =     8.87s     Check for interrupting elements affecting "profil-booster-orange" Button
+    t =     8.89s     Synthesize event
+    t =     9.18s     Wait for fr.kathryn.woop to idle
+    t =     9.97s Waiting 8.0s for Button (First Match) to exist
+    t =    11.01s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    11.01s         Checking existence of `Button (First Match)`
+    t =    11.02s Tap Button (First Match)[0.50, 0.50]
+    t =    11.02s     Wait for fr.kathryn.woop to idle
+    t =    11.03s     Find the Button (First Match)
+    t =    11.04s     Check for interrupting elements affecting "OUVRIR" Button
+    t =    11.07s     Synthesize event
+    t =    11.07s         Find the "OUVRIR" Button
+    t =    11.09s         Find the "OUVRIR" Button
+    t =    11.10s         Find the "OUVRIR" Button
+    t =    11.39s     Wait for fr.kathryn.woop to idle
+    t =    11.39s Find the Application 'fr.kathryn.woop'
+    t =    11.48s Added attachment named 'apres-ouvrir'
+    t =    11.49s Waiting 10.0s for "cartes-qa-ouverture" StaticText to exist
+    t =    12.52s     Checking `Expect predicate `existsNoRetry == 1` for object "cartes-qa-ouverture" StaticText`
+    t =    12.52s         Checking existence of `"cartes-qa-ouverture" StaticText`
+    t =    12.54s         Capturing element debug description
+    t =    13.58s     Checking `Expect predicate `existsNoRetry == 1` for object "cartes-qa-ouverture" StaticText`
+    t =    13.58s         Checking existence of `"cartes-qa-ouverture" StaticText`
+    t =    13.62s         Capturing element debug description
+    t =    14.54s     Checking `Expect predicate `existsNoRetry == 1` for object "cartes-qa-ouverture" StaticText`
+    t =    14.54s         Checking existence of `"cartes-qa-ouverture" StaticText`
+    t =    14.58s         Capturing element debug description
+    t =    15.51s     Checking `Expect predicate `existsNoRetry == 1` for object "cartes-qa-ouverture" StaticText`
+    t =    15.51s         Checking existence of `"cartes-qa-ouverture" StaticText`
+    t =    15.57s         Capturing element debug description
+    t =    16.49s     Checking `Expect predicate `existsNoRetry == 1` for object "cartes-qa-ouverture" StaticText`
+    t =    16.49s         Checking existence of `"cartes-qa-ouverture" StaticText`
+    t =    16.52s         Capturing element debug description
+    t =    17.55s     Checking `Expect predicate `existsNoRetry == 1` for object "cartes-qa-ouverture" StaticText`
+    t =    17.55s         Checking existence of `"cartes-qa-ouverture" StaticText`
+    t =    17.60s         Capturing element debug description
+    t =    18.52s     Checking `Expect predicate `existsNoRetry == 1` for object "cartes-qa-ouverture" StaticText`
+    t =    18.52s         Checking existence of `"cartes-qa-ouverture" StaticText`
+    t =    18.58s         Capturing element debug description
+    t =    19.50s     Checking `Expect predicate `existsNoRetry == 1` for object "cartes-qa-ouverture" StaticText`
+    t =    19.50s         Checking existence of `"cartes-qa-ouverture" StaticText`
+    t =    19.53s         Capturing element debug description
+    t =    20.57s     Checking `Expect predicate `existsNoRetry == 1` for object "cartes-qa-ouverture" StaticText`
+    t =    20.57s         Checking existence of `"cartes-qa-ouverture" StaticText`
+    t =    20.60s         Capturing element debug description
+    t =    21.49s     Checking `Expect predicate `existsNoRetry == 1` for object "cartes-qa-ouverture" StaticText`
+    t =    21.49s         Checking existence of `"cartes-qa-ouverture" StaticText`
+    t =    21.55s         Capturing element debug description
+    t =    21.55s     Checking existence of `"cartes-qa-ouverture" StaticText`
+    t =    21.58s Collecting debug information to assist test failure triage
+    t =    21.58s     Requesting snapshot of accessibility hierarchy for app with pid 98962
+/tmp/nosfy-cartes-runner/NavRuntimeUITests.swift:38: error: -[NavRuntimeUITests.NavRuntimeUITests testBOrangeJusquaCollection] : XCTAssertTrue failed
+    t =    21.68s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testBOrangeJusquaCollection]' failed (21.977 seconds).
+Test Suite 'NavRuntimeUITests' failed at 2026-09-18 12:24:13.791.
+	 Executed 1 test, with 1 failure (0 unexpected) in 21.977 (21.977) seconds
+Test Suite 'NavRuntimeUITests.xctest' failed at 2026-09-18 12:24:13.792.
+	 Executed 1 test, with 1 failure (0 unexpected) in 21.977 (21.978) seconds
+Test Suite 'Selected tests' failed at 2026-09-18 12:24:13.792.
+	 Executed 1 test, with 1 failure (0 unexpected) in 21.977 (21.978) seconds
+2026-09-18 12:24:24.804 xcodebuild[98945:19099828] [MT] IDETestOperationsObserverDebug: 34.221 elapsed -- Testing started completed.
+2026-09-18 12:24:24.804 xcodebuild[98945:19099828] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-18 12:24:24.804 xcodebuild[98945:19099828] [MT] IDETestOperationsObserverDebug: 34.221 sec, +34.221 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/cartes-ui-B2.xcresult
+
+Failing tests:
+	NavRuntimeUITests.testBOrangeJusquaCollection()
+
+** TEST FAILED **
+
+Testing started

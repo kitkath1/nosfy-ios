@@ -1,0 +1,21 @@
+getpwuid_r did not find a match for uid 501
+Filtering the log data using "subsystem == "fr.kathryn.woop" AND category == "cartesQA""
+Timestamp               Ty Process[PID:TID]
+2026-09-18 12:34:29.919 Df Nosfy[713:123eee3] [fr.kathryn.woop:cartesQA] pied : tap Ouvrir (OUVRIR)
+2026-09-18 12:34:29.923 Df Nosfy[713:123eee3] [fr.kathryn.woop:cartesQA] coffre : ouvrirManege(lune) boosters=3 noirs=3
+2026-09-18 12:34:30.389 Df Nosfy[713:123eee3] [fr.kathryn.woop:cartesQA] sacre : ouvrirManege(Optional(Woop.RobeBooster.lune)) dejaOuvert=false popup=false
+2026-09-18 12:34:30.505 Df Nosfy[713:123eee3] [fr.kathryn.woop:cartesQA] racine : manegeOuvert=true
+2026-09-18 12:34:40.037 Df Nosfy[713:123eee3] [fr.kathryn.woop:cartesQA] racine : manegeOuvert=false
+2026-09-18 12:35:07.166 Df Nosfy[803:123f429] [fr.kathryn.woop:cartesQA] pied : tap Ouvrir (OUVRIR)
+2026-09-18 12:35:07.169 Df Nosfy[803:123f429] [fr.kathryn.woop:cartesQA] coffre : ouvrirManege(noire) boosters=2 noirs=3
+2026-09-18 12:35:07.624 Df Nosfy[803:123f429] [fr.kathryn.woop:cartesQA] sacre : ouvrirManege(Optional(Woop.RobeBooster.noire)) dejaOuvert=false popup=false
+2026-09-18 12:35:08.199 Df Nosfy[803:123f429] [fr.kathryn.woop:cartesQA] racine : manegeOuvert=true
+2026-09-18 12:35:37.883 Df Nosfy[946:123f9b1] [fr.kathryn.woop:cartesQA] pied : tap Ouvrir (OUVRIR)
+2026-09-18 12:35:37.886 Df Nosfy[946:123f9b1] [fr.kathryn.woop:cartesQA] coffre : ouvrirManege(lune) boosters=2 noirs=2
+2026-09-18 12:35:38.350 Df Nosfy[946:123f9b1] [fr.kathryn.woop:cartesQA] sacre : ouvrirManege(Optional(Woop.RobeBooster.lune)) dejaOuvert=false popup=false
+2026-09-18 12:35:38.495 Df Nosfy[946:123f9b1] [fr.kathryn.woop:cartesQA] racine : manegeOuvert=true
+2026-09-18 12:35:58.766 Df Nosfy[1099:123fe94] [fr.kathryn.woop:cartesQA] pied : tap Ouvrir (OUVRIR)
+2026-09-18 12:35:58.770 Df Nosfy[1099:123fe94] [fr.kathryn.woop:cartesQA] coffre : ouvrirManege(noire) boosters=2 noirs=2
+2026-09-18 12:35:59.242 Df Nosfy[1099:123fe94] [fr.kathryn.woop:cartesQA] sacre : ouvrirManege(Optional(Woop.RobeBooster.noire)) dejaOuvert=false popup=false
+2026-09-18 12:35:59.864 Df Nosfy[1099:123fe94] [fr.kathryn.woop:cartesQA] racine : manegeOuvert=true
+Child process terminated with signal 15: Terminated

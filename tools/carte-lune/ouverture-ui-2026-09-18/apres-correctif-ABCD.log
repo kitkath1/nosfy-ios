@@ -1,0 +1,779 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project /tmp/nosfy-cartes-runner/NavRuntimeUITests.xcodeproj -scheme NavRuntimeUITests -destination "platform=iOS Simulator,id=ADFE5348-7E75-4E67-9975-E0C409DCAD55" -derivedDataPath /tmp/nosfy-cartes-runner-dd -resultBundlePath /tmp/cartes-ui-ABCD.xcresult CODE_SIGNING_ALLOWED=NO "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testADeuxPortesEtCollectionVide" "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testBOrangeJusquaCollection" "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testCNoirGratuitEtReconnexion" "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testDDeuxManegesEtInterruption" test
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/tmp/cartes-ui-ABCD.xcresult
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'NavRuntimeUITests' in project 'NavRuntimeUITests' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk /tmp/nosfy-cartes-runner-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+    cd /tmp/nosfy-cartes-runner/NavRuntimeUITests.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -o /tmp/nosfy-cartes-runner-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+
+2026-09-18 12:33:04.824121+0200 NavRuntimeUITests-Runner[544:19129940] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-18 12:33:05.208.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-18 12:33:05.208.
+Test Suite 'NavRuntimeUITests' started at 2026-09-18 12:33:05.209.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testADeuxPortesEtCollectionVide]' started.
+    t =     0.00s Start Test at 2026-09-18 12:33:05.209
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+    t =     0.09s         Setting up automation session
+    t =     0.56s         Wait for fr.kathryn.woop to idle
+objc[544]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10ae44310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10a2c0398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     1.96s Waiting 6.0s for Button (First Match) to exist
+    t =     3.02s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     3.02s         Checking existence of `Button (First Match)`
+    t =     3.08s         Capturing element debug description
+    t =     4.01s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     4.01s         Checking existence of `Button (First Match)`
+    t =     4.02s         Capturing element debug description
+    t =     5.04s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     5.04s         Checking existence of `Button (First Match)`
+    t =     5.05s         Capturing element debug description
+    t =     5.96s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     5.97s         Checking existence of `Button (First Match)`
+    t =     5.97s         Capturing element debug description
+    t =     6.99s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     6.99s         Checking existence of `Button (First Match)`
+    t =     7.00s         Capturing element debug description
+    t =     7.97s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     7.97s         Checking existence of `Button (First Match)`
+    t =     7.98s         Capturing element debug description
+    t =     7.98s     Checking existence of `Button (First Match)`
+    t =     7.98s Collecting debug information to assist test failure triage
+    t =     7.99s     Requesting snapshot of accessibility hierarchy for app with pid 548
+    t =     8.00s Waiting 60.0s for "profil-booster-orange" Button to exist
+    t =     9.03s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =     9.03s         Checking existence of `"profil-booster-orange" Button`
+    t =     9.04s         Capturing element debug description
+    t =    10.05s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    10.05s         Checking existence of `"profil-booster-orange" Button`
+    t =    10.06s         Capturing element debug description
+    t =    11.09s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    11.09s         Checking existence of `"profil-booster-orange" Button`
+    t =    11.10s         Capturing element debug description
+    t =    12.01s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    12.01s         Checking existence of `"profil-booster-orange" Button`
+    t =    12.02s         Capturing element debug description
+    t =    13.03s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    13.03s         Checking existence of `"profil-booster-orange" Button`
+    t =    13.04s         Capturing element debug description
+    t =    14.08s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    14.08s         Checking existence of `"profil-booster-orange" Button`
+    t =    14.09s         Capturing element debug description
+    t =    15.00s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    15.00s         Checking existence of `"profil-booster-orange" Button`
+    t =    15.01s         Capturing element debug description
+    t =    16.03s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    16.03s         Checking existence of `"profil-booster-orange" Button`
+    t =    16.04s         Capturing element debug description
+    t =    17.03s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    17.03s         Checking existence of `"profil-booster-orange" Button`
+    t =    17.04s         Capturing element debug description
+    t =    18.07s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    18.07s         Checking existence of `"profil-booster-orange" Button`
+    t =    18.08s         Capturing element debug description
+    t =    19.01s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    19.01s         Checking existence of `"profil-booster-orange" Button`
+    t =    19.02s         Capturing element debug description
+    t =    20.05s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    20.05s         Checking existence of `"profil-booster-orange" Button`
+    t =    20.06s         Capturing element debug description
+    t =    21.08s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    21.08s         Checking existence of `"profil-booster-orange" Button`
+    t =    21.09s         Capturing element debug description
+    t =    22.00s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    22.00s         Checking existence of `"profil-booster-orange" Button`
+    t =    22.01s         Capturing element debug description
+    t =    23.01s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    23.01s         Checking existence of `"profil-booster-orange" Button`
+    t =    23.02s         Capturing element debug description
+    t =    24.01s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    24.01s         Checking existence of `"profil-booster-orange" Button`
+    t =    24.02s         Capturing element debug description
+    t =    25.05s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    25.05s         Checking existence of `"profil-booster-orange" Button`
+    t =    25.06s         Capturing element debug description
+    t =    26.07s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    26.08s         Checking existence of `"profil-booster-orange" Button`
+    t =    26.08s         Capturing element debug description
+    t =    27.01s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    27.01s         Checking existence of `"profil-booster-orange" Button`
+    t =    27.02s         Capturing element debug description
+    t =    28.03s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    28.03s         Checking existence of `"profil-booster-orange" Button`
+    t =    28.04s         Capturing element debug description
+    t =    29.04s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    29.04s         Checking existence of `"profil-booster-orange" Button`
+    t =    29.05s         Capturing element debug description
+    t =    30.07s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    30.08s         Checking existence of `"profil-booster-orange" Button`
+    t =    30.09s         Capturing element debug description
+    t =    31.00s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    31.00s         Checking existence of `"profil-booster-orange" Button`
+    t =    31.01s         Capturing element debug description
+    t =    32.03s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    32.03s         Checking existence of `"profil-booster-orange" Button`
+    t =    32.04s         Capturing element debug description
+    t =    33.07s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    33.07s         Checking existence of `"profil-booster-orange" Button`
+    t =    33.08s         Capturing element debug description
+    t =    34.00s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    34.00s         Checking existence of `"profil-booster-orange" Button`
+    t =    34.01s         Capturing element debug description
+    t =    35.03s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    35.03s         Checking existence of `"profil-booster-orange" Button`
+    t =    35.04s         Capturing element debug description
+    t =    36.05s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    36.05s         Checking existence of `"profil-booster-orange" Button`
+    t =    36.06s         Capturing element debug description
+    t =    37.07s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    37.08s         Checking existence of `"profil-booster-orange" Button`
+    t =    37.09s         Capturing element debug description
+    t =    38.00s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    38.00s         Checking existence of `"profil-booster-orange" Button`
+    t =    38.01s         Capturing element debug description
+    t =    39.01s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    39.01s         Checking existence of `"profil-booster-orange" Button`
+    t =    39.02s         Capturing element debug description
+    t =    40.03s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    40.03s         Checking existence of `"profil-booster-orange" Button`
+    t =    40.04s         Capturing element debug description
+    t =    41.06s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    41.06s         Checking existence of `"profil-booster-orange" Button`
+    t =    41.06s         Capturing element debug description
+    t =    42.07s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    42.08s         Checking existence of `"profil-booster-orange" Button`
+    t =    42.08s         Capturing element debug description
+    t =    43.00s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    43.00s         Checking existence of `"profil-booster-orange" Button`
+    t =    43.01s         Capturing element debug description
+    t =    44.01s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    44.01s         Checking existence of `"profil-booster-orange" Button`
+    t =    44.02s         Capturing element debug description
+    t =    45.03s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    45.03s         Checking existence of `"profil-booster-orange" Button`
+    t =    45.04s         Capturing element debug description
+    t =    46.06s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    46.06s         Checking existence of `"profil-booster-orange" Button`
+    t =    46.07s         Capturing element debug description
+    t =    47.00s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    47.00s         Checking existence of `"profil-booster-orange" Button`
+    t =    47.01s         Capturing element debug description
+    t =    48.01s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    48.01s         Checking existence of `"profil-booster-orange" Button`
+    t =    48.02s         Capturing element debug description
+    t =    49.01s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    49.01s         Checking existence of `"profil-booster-orange" Button`
+    t =    49.01s         Capturing element debug description
+    t =    50.03s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    50.03s         Checking existence of `"profil-booster-orange" Button`
+    t =    50.04s         Capturing element debug description
+    t =    51.06s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    51.06s         Checking existence of `"profil-booster-orange" Button`
+    t =    51.07s         Capturing element debug description
+    t =    52.00s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    52.00s         Checking existence of `"profil-booster-orange" Button`
+    t =    52.01s         Capturing element debug description
+    t =    53.03s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    53.03s         Checking existence of `"profil-booster-orange" Button`
+    t =    53.04s         Capturing element debug description
+    t =    54.06s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    54.06s         Checking existence of `"profil-booster-orange" Button`
+    t =    54.07s         Capturing element debug description
+    t =    55.10s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    55.10s         Checking existence of `"profil-booster-orange" Button`
+    t =    55.11s         Capturing element debug description
+    t =    56.01s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    56.02s         Checking existence of `"profil-booster-orange" Button`
+    t =    56.02s         Capturing element debug description
+    t =    57.05s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    57.05s         Checking existence of `"profil-booster-orange" Button`
+    t =    57.06s         Capturing element debug description
+    t =    58.08s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    58.08s         Checking existence of `"profil-booster-orange" Button`
+    t =    58.09s         Capturing element debug description
+    t =    59.01s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    59.01s         Checking existence of `"profil-booster-orange" Button`
+    t =    59.01s         Capturing element debug description
+    t =    60.03s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    60.03s         Checking existence of `"profil-booster-orange" Button`
+    t =    60.04s         Capturing element debug description
+    t =    61.05s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    61.05s         Checking existence of `"profil-booster-orange" Button`
+    t =    61.06s         Capturing element debug description
+    t =    62.08s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    62.08s         Checking existence of `"profil-booster-orange" Button`
+    t =    62.09s         Capturing element debug description
+    t =    63.01s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    63.01s         Checking existence of `"profil-booster-orange" Button`
+    t =    63.02s         Capturing element debug description
+    t =    64.01s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    64.01s         Checking existence of `"profil-booster-orange" Button`
+    t =    64.02s         Capturing element debug description
+    t =    65.05s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    65.05s         Checking existence of `"profil-booster-orange" Button`
+    t =    65.06s         Capturing element debug description
+    t =    66.07s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    66.08s         Checking existence of `"profil-booster-orange" Button`
+    t =    66.08s         Capturing element debug description
+    t =    67.01s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    67.01s         Checking existence of `"profil-booster-orange" Button`
+    t =    67.02s         Capturing element debug description
+    t =    68.02s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    68.02s         Checking existence of `"profil-booster-orange" Button`
+    t =    68.02s         Capturing element debug description
+    t =    68.02s     Checking existence of `"profil-booster-orange" Button`
+    t =    68.02s Collecting debug information to assist test failure triage
+    t =    68.02s     Requesting snapshot of accessibility hierarchy for app with pid 548
+/tmp/nosfy-cartes-runner/NavRuntimeUITests.swift:22: error: -[NavRuntimeUITests.NavRuntimeUITests testADeuxPortesEtCollectionVide] : XCTAssertTrue failed
+    t =    68.06s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testADeuxPortesEtCollectionVide]' failed (68.282 seconds).
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testBOrangeJusquaCollection]' started.
+    t =     0.00s Start Test at 2026-09-18 12:34:13.492
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+    t =     0.02s         Terminate fr.kathryn.woop:548
+    t =     1.17s         Setting up automation session
+    t =     1.55s         Wait for fr.kathryn.woop to idle
+    t =     2.70s Waiting 6.0s for Button (First Match) to exist
+    t =     3.73s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     3.73s         Checking existence of `Button (First Match)`
+    t =     3.81s         Capturing element debug description
+    t =     4.73s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     4.73s         Checking existence of `Button (First Match)`
+    t =     4.77s         Capturing element debug description
+    t =     5.70s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     5.70s         Checking existence of `Button (First Match)`
+    t =     5.74s         Capturing element debug description
+    t =     6.78s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     6.78s         Checking existence of `Button (First Match)`
+    t =     6.82s         Capturing element debug description
+    t =     7.75s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     7.75s         Checking existence of `Button (First Match)`
+    t =     7.79s         Capturing element debug description
+    t =     8.70s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     8.70s         Checking existence of `Button (First Match)`
+    t =     8.74s         Capturing element debug description
+    t =     8.75s     Checking existence of `Button (First Match)`
+    t =     8.79s Collecting debug information to assist test failure triage
+    t =     8.79s     Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =     8.85s Waiting 35.0s for "profil-booster-orange" Button to exist
+    t =     9.88s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =     9.88s         Checking existence of `"profil-booster-orange" Button`
+    t =     9.91s Tap "profil-booster-orange" Button
+    t =     9.91s     Wait for fr.kathryn.woop to idle
+    t =     9.91s     Find the "profil-booster-orange" Button
+    t =     9.93s     Check for interrupting elements affecting "profil-booster-orange" Button
+    t =     9.95s     Synthesize event
+    t =    10.36s     Wait for fr.kathryn.woop to idle
+    t =    11.18s Waiting 8.0s for Button (First Match) to exist
+    t =    12.21s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    12.21s         Checking existence of `Button (First Match)`
+    t =    12.25s         Capturing element debug description
+    t =    13.18s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    13.18s         Checking existence of `Button (First Match)`
+    t =    13.22s         Capturing element debug description
+    t =    14.26s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    14.26s         Checking existence of `Button (First Match)`
+    t =    14.29s         Capturing element debug description
+    t =    15.22s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    15.22s         Checking existence of `Button (First Match)`
+    t =    15.26s         Capturing element debug description
+    t =    16.18s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    16.18s         Checking existence of `Button (First Match)`
+    t =    16.20s Tap Button (First Match)[0.50, 0.50]
+    t =    16.20s     Wait for fr.kathryn.woop to idle
+    t =    16.25s     Find the Button (First Match)
+    t =    16.27s     Check for interrupting elements affecting "OUVRIR" Button
+    t =    16.30s     Synthesize event
+    t =    16.31s         Find the "OUVRIR" Button
+    t =    16.32s         Find the "OUVRIR" Button
+    t =    16.33s         Find the "OUVRIR" Button
+    t =    16.63s     Wait for fr.kathryn.woop to idle
+    t =    16.97s Find the Application 'fr.kathryn.woop'
+    t =    17.13s Added attachment named 'apres-ouvrir'
+    t =    17.13s Waiting 10.0s for "cartes-qa-ouverture" StaticText to exist
+    t =    18.16s     Checking `Expect predicate `existsNoRetry == 1` for object "cartes-qa-ouverture" StaticText`
+    t =    18.16s         Checking existence of `"cartes-qa-ouverture" StaticText`
+    t =    19.23s Checking `Expect predicate `label CONTAINS "revelee=true"` for object "cartes-qa-ouverture" StaticText`
+    t =    19.23s     Find the "cartes-qa-ouverture" StaticText
+    t =    19.25s     Capturing element debug description
+    t =    19.27s         Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =    19.31s         Find: Descendants matching type StaticText
+    t =    19.31s         Find: Elements matching predicate '"cartes-qa-ouverture" IN identifiers'
+    t =    19.31s         Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =    19.35s         Find: Descendants matching type StaticText
+    t =    19.35s         Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =    20.25s Checking `Expect predicate `label CONTAINS "revelee=true"` for object "cartes-qa-ouverture" StaticText`
+    t =    20.25s     Find the "cartes-qa-ouverture" StaticText
+    t =    20.28s     Capturing element debug description
+    t =    20.30s         Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =    20.33s         Find: Descendants matching type StaticText
+    t =    20.33s         Find: Elements matching predicate '"cartes-qa-ouverture" IN identifiers'
+    t =    20.34s         Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =    20.37s         Find: Descendants matching type StaticText
+    t =    20.37s         Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =    21.27s Checking `Expect predicate `label CONTAINS "revelee=true"` for object "cartes-qa-ouverture" StaticText`
+    t =    21.28s     Find the "cartes-qa-ouverture" StaticText
+    t =    21.30s     Capturing element debug description
+    t =    21.32s         Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =    21.35s         Find: Descendants matching type StaticText
+    t =    21.35s         Find: Elements matching predicate '"cartes-qa-ouverture" IN identifiers'
+    t =    21.35s         Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =    21.38s         Find: Descendants matching type StaticText
+    t =    21.38s         Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =    22.19s Checking `Expect predicate `label CONTAINS "revelee=true"` for object "cartes-qa-ouverture" StaticText`
+    t =    22.19s     Find the "cartes-qa-ouverture" StaticText
+    t =    22.22s     Capturing element debug description
+    t =    22.24s         Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =    22.28s         Find: Descendants matching type StaticText
+    t =    22.28s         Find: Elements matching predicate '"cartes-qa-ouverture" IN identifiers'
+    t =    22.28s         Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =    22.31s         Find: Descendants matching type StaticText
+    t =    22.32s         Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =    23.22s Checking `Expect predicate `label CONTAINS "revelee=true"` for object "cartes-qa-ouverture" StaticText`
+    t =    23.22s     Find the "cartes-qa-ouverture" StaticText
+    t =    23.24s     Capturing element debug description
+    t =    23.27s         Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =    23.28s         Find: Descendants matching type StaticText
+    t =    23.28s         Find: Elements matching predicate '"cartes-qa-ouverture" IN identifiers'
+    t =    23.28s         Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =    23.29s         Find: Descendants matching type StaticText
+    t =    23.29s         Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =    24.23s Checking `Expect predicate `label CONTAINS "revelee=true"` for object "cartes-qa-ouverture" StaticText`
+    t =    24.23s     Find the "cartes-qa-ouverture" StaticText
+    t =    24.25s     Capturing element debug description
+    t =    24.28s         Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =    24.30s         Find: Descendants matching type StaticText
+    t =    24.30s         Find: Elements matching predicate '"cartes-qa-ouverture" IN identifiers'
+    t =    24.30s         Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =    24.31s         Find: Descendants matching type StaticText
+    t =    24.31s         Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =    25.25s Checking `Expect predicate `label CONTAINS "revelee=true"` for object "cartes-qa-ouverture" StaticText`
+    t =    25.25s     Find the "cartes-qa-ouverture" StaticText
+    t =    25.27s     Capturing element debug description
+    t =    25.30s         Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =    25.31s         Find: Descendants matching type StaticText
+    t =    25.31s         Find: Elements matching predicate '"cartes-qa-ouverture" IN identifiers'
+    t =    25.31s         Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =    25.33s         Find: Descendants matching type StaticText
+    t =    25.33s         Requesting snapshot of accessibility hierarchy for app with pid 713
+    t =    26.27s Checking `Expect predicate `label CONTAINS "revelee=true"` for object "cartes-qa-ouverture" StaticText`
+    t =    26.27s     Find the "cartes-qa-ouverture" StaticText
+    t =    26.28s Find the "cartes-qa-ouverture" StaticText
+    t =    26.30s Find the "cartes-qa-ouverture" StaticText
+    t =    26.31s Find the Application 'fr.kathryn.woop'
+    t =    26.41s Added attachment named 'orange-carte-reelle'
+    t =    26.41s Get all elements bound by index for: Elements matching predicate '"Retour" IN identifiers'
+    t =    26.42s Find the "Retour" Button
+    t =    26.43s Tap "Retour" Button
+    t =    26.43s     Wait for fr.kathryn.woop to idle
+    t =    26.44s     Find the "Retour" Button
+    t =    26.44s     Check for interrupting elements affecting "Retour" Button
+    t =    26.45s     Synthesize event
+    t =    26.73s     Wait for fr.kathryn.woop to idle
+    t =    26.84s Waiting 10.0s for "profil-booster-orange" Button to exist
+    t =    27.86s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    27.86s         Checking existence of `"profil-booster-orange" Button`
+    t =    27.91s         Capturing element debug description
+    t =    28.93s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    28.93s         Checking existence of `"profil-booster-orange" Button`
+    t =    28.95s         Capturing element debug description
+    t =    29.88s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    29.88s         Checking existence of `"profil-booster-orange" Button`
+    t =    29.90s         Capturing element debug description
+    t =    30.92s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    30.93s         Checking existence of `"profil-booster-orange" Button`
+    t =    30.95s         Capturing element debug description
+    t =    31.87s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    31.88s         Checking existence of `"profil-booster-orange" Button`
+    t =    31.90s         Capturing element debug description
+    t =    32.93s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    32.93s         Checking existence of `"profil-booster-orange" Button`
+    t =    32.95s         Capturing element debug description
+    t =    33.86s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    33.86s         Checking existence of `"profil-booster-orange" Button`
+    t =    33.89s         Capturing element debug description
+    t =    34.92s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    34.92s         Checking existence of `"profil-booster-orange" Button`
+    t =    34.94s         Capturing element debug description
+    t =    35.86s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    35.86s         Checking existence of `"profil-booster-orange" Button`
+    t =    35.89s         Capturing element debug description
+    t =    36.84s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    36.84s         Checking existence of `"profil-booster-orange" Button`
+    t =    36.87s         Capturing element debug description
+    t =    36.87s     Checking existence of `"profil-booster-orange" Button`
+    t =    36.88s Collecting debug information to assist test failure triage
+    t =    36.88s     Requesting snapshot of accessibility hierarchy for app with pid 713
+/tmp/nosfy-cartes-runner/NavRuntimeUITests.swift:47: error: -[NavRuntimeUITests.NavRuntimeUITests testBOrangeJusquaCollection] : XCTAssertTrue failed
+    t =    36.91s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testBOrangeJusquaCollection]' failed (37.277 seconds).
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testCNoirGratuitEtReconnexion]' started.
+    t =     0.00s Start Test at 2026-09-18 12:34:50.769
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+    t =     0.02s         Terminate fr.kathryn.woop:713
+    t =     1.18s         Setting up automation session
+    t =     1.56s         Wait for fr.kathryn.woop to idle
+    t =     2.71s Waiting 6.0s for Button (First Match) to exist
+    t =     3.73s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     3.73s         Checking existence of `Button (First Match)`
+    t =     3.81s         Capturing element debug description
+    t =     4.74s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     4.74s         Checking existence of `Button (First Match)`
+    t =     4.78s         Capturing element debug description
+    t =     5.80s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     5.80s         Checking existence of `Button (First Match)`
+    t =     5.84s         Capturing element debug description
+    t =     6.77s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     6.77s         Checking existence of `Button (First Match)`
+    t =     6.81s         Capturing element debug description
+    t =     7.73s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     7.73s         Checking existence of `Button (First Match)`
+    t =     7.77s         Capturing element debug description
+    t =     8.71s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     8.72s         Checking existence of `Button (First Match)`
+    t =     8.76s         Capturing element debug description
+    t =     8.76s     Checking existence of `Button (First Match)`
+    t =     8.79s Collecting debug information to assist test failure triage
+    t =     8.79s     Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =     8.84s Waiting 35.0s for "profil-booster-noir" Button to exist
+    t =     9.85s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-noir" Button`
+    t =     9.85s         Checking existence of `"profil-booster-noir" Button`
+    t =     9.89s Tap "profil-booster-noir" Button
+    t =     9.89s     Wait for fr.kathryn.woop to idle
+    t =     9.89s     Find the "profil-booster-noir" Button
+    t =     9.92s     Check for interrupting elements affecting "profil-booster-noir" Button
+    t =     9.94s     Synthesize event
+    t =    10.24s     Wait for fr.kathryn.woop to idle
+    t =    11.02s Waiting 8.0s for Button (First Match) to exist
+    t =    12.05s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    12.05s         Checking existence of `Button (First Match)`
+    t =    12.10s         Capturing element debug description
+    t =    13.12s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    13.12s         Checking existence of `Button (First Match)`
+    t =    13.16s         Capturing element debug description
+    t =    14.08s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    14.08s         Checking existence of `Button (First Match)`
+    t =    14.12s         Capturing element debug description
+    t =    15.04s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    15.04s         Checking existence of `Button (First Match)`
+    t =    15.07s         Capturing element debug description
+    t =    16.08s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    16.08s         Checking existence of `Button (First Match)`
+    t =    16.09s Find the Application 'fr.kathryn.woop'
+    t =    16.25s Added attachment named 'coffre-noir-offert'
+    t =    16.25s Tap Button (First Match)[0.50, 0.50]
+    t =    16.26s     Wait for fr.kathryn.woop to idle
+    t =    16.26s     Find the Button (First Match)
+    t =    16.26s     Check for interrupting elements affecting "OUVRIR" Button
+    t =    16.28s     Synthesize event
+    t =    16.29s         Find the "OUVRIR" Button
+    t =    16.29s         Find the "OUVRIR" Button
+    t =    16.30s         Find the "OUVRIR" Button
+    t =    16.59s     Wait for fr.kathryn.woop to idle
+    t =    17.44s Find the Application 'fr.kathryn.woop'
+    t =    17.55s Added attachment named 'apres-ouvrir'
+    t =    17.55s Waiting 10.0s for "cartes-qa-ouverture" StaticText to exist
+    t =    18.57s     Checking `Expect predicate `existsNoRetry == 1` for object "cartes-qa-ouverture" StaticText`
+    t =    18.57s         Checking existence of `"cartes-qa-ouverture" StaticText`
+    t =    19.62s Checking `Expect predicate `label CONTAINS "revelee=true"` for object "cartes-qa-ouverture" StaticText`
+    t =    19.62s     Find the "cartes-qa-ouverture" StaticText
+    t =    19.65s     Capturing element debug description
+    t =    19.67s         Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =    19.71s         Find: Descendants matching type StaticText
+    t =    19.71s         Find: Elements matching predicate '"cartes-qa-ouverture" IN identifiers'
+    t =    19.71s         Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =    19.75s         Find: Descendants matching type StaticText
+    t =    19.75s         Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =    20.65s Checking `Expect predicate `label CONTAINS "revelee=true"` for object "cartes-qa-ouverture" StaticText`
+    t =    20.65s     Find the "cartes-qa-ouverture" StaticText
+    t =    20.68s     Capturing element debug description
+    t =    20.72s         Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =    20.76s         Find: Descendants matching type StaticText
+    t =    20.76s         Find: Elements matching predicate '"cartes-qa-ouverture" IN identifiers'
+    t =    20.76s         Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =    20.79s         Find: Descendants matching type StaticText
+    t =    20.80s         Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =    21.60s Checking `Expect predicate `label CONTAINS "revelee=true"` for object "cartes-qa-ouverture" StaticText`
+    t =    21.60s     Find the "cartes-qa-ouverture" StaticText
+    t =    21.63s     Capturing element debug description
+    t =    21.65s         Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =    21.69s         Find: Descendants matching type StaticText
+    t =    21.69s         Find: Elements matching predicate '"cartes-qa-ouverture" IN identifiers'
+    t =    21.69s         Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =    21.73s         Find: Descendants matching type StaticText
+    t =    21.73s         Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =    22.63s Checking `Expect predicate `label CONTAINS "revelee=true"` for object "cartes-qa-ouverture" StaticText`
+    t =    22.63s     Find the "cartes-qa-ouverture" StaticText
+    t =    22.66s     Capturing element debug description
+    t =    22.69s         Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =    22.72s         Find: Descendants matching type StaticText
+    t =    22.72s         Find: Elements matching predicate '"cartes-qa-ouverture" IN identifiers'
+    t =    22.72s         Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =    22.76s         Find: Descendants matching type StaticText
+    t =    22.76s         Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =    23.66s Checking `Expect predicate `label CONTAINS "revelee=true"` for object "cartes-qa-ouverture" StaticText`
+    t =    23.66s     Find the "cartes-qa-ouverture" StaticText
+    t =    23.68s     Capturing element debug description
+    t =    23.70s         Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =    23.72s         Find: Descendants matching type StaticText
+    t =    23.72s         Find: Elements matching predicate '"cartes-qa-ouverture" IN identifiers'
+    t =    23.72s         Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =    23.73s         Find: Descendants matching type StaticText
+    t =    23.73s         Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =    24.67s Checking `Expect predicate `label CONTAINS "revelee=true"` for object "cartes-qa-ouverture" StaticText`
+    t =    24.67s     Find the "cartes-qa-ouverture" StaticText
+    t =    24.67s     Capturing element debug description
+    t =    24.69s         Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =    24.70s         Find: Descendants matching type StaticText
+    t =    24.70s         Find: Elements matching predicate '"cartes-qa-ouverture" IN identifiers'
+    t =    24.70s         Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =    24.71s         Find: Descendants matching type StaticText
+    t =    24.71s         Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =    25.65s Checking `Expect predicate `label CONTAINS "revelee=true"` for object "cartes-qa-ouverture" StaticText`
+    t =    25.66s     Find the "cartes-qa-ouverture" StaticText
+    t =    25.67s     Capturing element debug description
+    t =    25.70s         Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =    25.72s         Find: Descendants matching type StaticText
+    t =    25.72s         Find: Elements matching predicate '"cartes-qa-ouverture" IN identifiers'
+    t =    25.72s         Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =    25.73s         Find: Descendants matching type StaticText
+    t =    25.73s         Requesting snapshot of accessibility hierarchy for app with pid 803
+    t =    26.67s Checking `Expect predicate `label CONTAINS "revelee=true"` for object "cartes-qa-ouverture" StaticText`
+    t =    26.67s     Find the "cartes-qa-ouverture" StaticText
+    t =    26.69s Find the "cartes-qa-ouverture" StaticText
+    t =    26.70s Find the Application 'fr.kathryn.woop'
+    t =    26.81s Added attachment named 'noir-legendaire-reelle'
+    t =    26.81s Terminate fr.kathryn.woop:803
+    t =    27.86s Open fr.kathryn.woop
+    t =    27.86s     Launch fr.kathryn.woop
+    t =    27.97s         Setting up automation session
+    t =    28.35s         Wait for fr.kathryn.woop to idle
+    t =    29.51s Waiting 35.0s for "profil-booster-noir" Button to exist
+    t =    30.53s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-noir" Button`
+    t =    30.53s         Checking existence of `"profil-booster-noir" Button`
+    t =    30.61s Find the "cartes-qa-collection" StaticText
+    t =    30.63s Find the Application 'fr.kathryn.woop'
+    t =    30.73s Added attachment named 'collection-apres-relance'
+    t =    30.73s Terminate fr.kathryn.woop:940
+    t =    31.75s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testCNoirGratuitEtReconnexion]' passed (31.907 seconds).
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testDDeuxManegesEtInterruption]' started.
+    t =     0.00s Start Test at 2026-09-18 12:35:22.676
+    t =     0.01s Set Up
+    t =     0.01s Open fr.kathryn.woop
+    t =     0.01s     Launch fr.kathryn.woop
+    t =     0.11s         Setting up automation session
+    t =     0.49s         Wait for fr.kathryn.woop to idle
+    t =     1.63s Waiting 6.0s for Button (First Match) to exist
+    t =     2.66s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     2.66s         Checking existence of `Button (First Match)`
+    t =     2.73s         Capturing element debug description
+    t =     3.66s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     3.66s         Checking existence of `Button (First Match)`
+    t =     3.70s         Capturing element debug description
+    t =     4.72s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     4.72s         Checking existence of `Button (First Match)`
+    t =     4.76s         Capturing element debug description
+    t =     5.69s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     5.69s         Checking existence of `Button (First Match)`
+    t =     5.72s         Capturing element debug description
+    t =     6.64s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     6.64s         Checking existence of `Button (First Match)`
+    t =     6.67s         Capturing element debug description
+    t =     7.63s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     7.63s         Checking existence of `Button (First Match)`
+    t =     7.67s         Capturing element debug description
+    t =     7.67s     Checking existence of `Button (First Match)`
+    t =     7.70s Collecting debug information to assist test failure triage
+    t =     7.70s     Requesting snapshot of accessibility hierarchy for app with pid 946
+    t =     7.75s Waiting 35.0s for "profil-booster-orange" Button to exist
+    t =     8.77s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =     8.77s         Checking existence of `"profil-booster-orange" Button`
+    t =     8.80s Tap "profil-booster-orange" Button
+    t =     8.80s     Wait for fr.kathryn.woop to idle
+    t =     8.81s     Find the "profil-booster-orange" Button
+    t =     8.83s     Check for interrupting elements affecting "profil-booster-orange" Button
+    t =     8.85s     Synthesize event
+    t =     9.14s     Wait for fr.kathryn.woop to idle
+    t =     9.93s Waiting 8.0s for Button (First Match) to exist
+    t =    10.96s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    10.96s         Checking existence of `Button (First Match)`
+    t =    11.01s         Capturing element debug description
+    t =    11.94s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    11.94s         Checking existence of `Button (First Match)`
+    t =    11.98s         Capturing element debug description
+    t =    13.01s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    13.01s         Checking existence of `Button (First Match)`
+    t =    13.04s         Capturing element debug description
+    t =    13.96s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    13.96s         Checking existence of `Button (First Match)`
+    t =    14.00s         Capturing element debug description
+    t =    15.01s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    15.01s         Checking existence of `Button (First Match)`
+    t =    15.05s Tap Button (First Match)[0.50, 0.50]
+    t =    15.05s     Wait for fr.kathryn.woop to idle
+    t =    15.05s     Find the Button (First Match)
+    t =    15.07s     Check for interrupting elements affecting "OUVRIR" Button
+    t =    15.09s     Synthesize event
+    t =    15.10s         Find the "OUVRIR" Button
+    t =    15.11s         Find the "OUVRIR" Button
+    t =    15.12s         Find the "OUVRIR" Button
+    t =    15.41s     Wait for fr.kathryn.woop to idle
+    t =    15.83s Waiting 10.0s for "cartes-qa-ouverture" StaticText to exist
+    t =    16.85s     Checking `Expect predicate `existsNoRetry == 1` for object "cartes-qa-ouverture" StaticText`
+    t =    16.86s         Checking existence of `"cartes-qa-ouverture" StaticText`
+    t =    16.88s Find the Application 'fr.kathryn.woop'
+    t =    16.96s Added attachment named 'manege-orange'
+    t =    16.96s Pressing Home button
+    t =    17.43s Open fr.kathryn.woop
+    t =    17.43s     Activate fr.kathryn.woop
+    t =    18.00s         Wait for fr.kathryn.woop to idle
+    t =    18.03s Find the "cartes-qa-ouverture" StaticText
+    t =    18.08s Find the Application 'fr.kathryn.woop'
+    t =    18.28s Added attachment named 'manege-orange-reprise'
+    t =    18.28s Get all elements bound by index for: Elements matching predicate '"Retour" IN identifiers'
+    t =    18.30s Find the "Retour" Button
+    t =    18.50s Tap "Retour" Button
+    t =    18.50s     Wait for fr.kathryn.woop to idle
+    t =    18.50s     Find the "Retour" Button
+    t =    18.52s     Check for interrupting elements affecting "Retour" Button
+    t =    18.55s     Synthesize event
+    t =    18.85s     Wait for fr.kathryn.woop to idle
+    t =    18.85s Waiting 8.0s for "profil-booster-orange" Button to exist
+    t =    19.87s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    19.87s         Checking existence of `"profil-booster-orange" Button`
+    t =    19.89s Terminate fr.kathryn.woop:946
+    t =    20.91s Open fr.kathryn.woop
+    t =    20.91s     Launch fr.kathryn.woop
+    t =    21.01s         Setting up automation session
+    t =    21.40s         Wait for fr.kathryn.woop to idle
+    t =    22.56s Waiting 6.0s for Button (First Match) to exist
+    t =    23.59s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    23.59s         Checking existence of `Button (First Match)`
+    t =    23.67s         Capturing element debug description
+    t =    24.59s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    24.59s         Checking existence of `Button (First Match)`
+    t =    24.63s         Capturing element debug description
+    t =    25.65s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    25.65s         Checking existence of `Button (First Match)`
+    t =    25.68s         Capturing element debug description
+    t =    26.61s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    26.61s         Checking existence of `Button (First Match)`
+    t =    26.65s         Capturing element debug description
+    t =    27.57s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    27.58s         Checking existence of `Button (First Match)`
+    t =    27.61s         Capturing element debug description
+    t =    28.56s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    28.56s         Checking existence of `Button (First Match)`
+    t =    28.60s         Capturing element debug description
+    t =    28.60s     Checking existence of `Button (First Match)`
+    t =    28.63s Collecting debug information to assist test failure triage
+    t =    28.63s     Requesting snapshot of accessibility hierarchy for app with pid 1099
+    t =    28.68s Waiting 35.0s for "profil-booster-noir" Button to exist
+    t =    29.70s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-noir" Button`
+    t =    29.70s         Checking existence of `"profil-booster-noir" Button`
+    t =    29.74s Tap "profil-booster-noir" Button
+    t =    29.74s     Wait for fr.kathryn.woop to idle
+    t =    29.74s     Find the "profil-booster-noir" Button
+    t =    29.77s     Check for interrupting elements affecting "profil-booster-noir" Button
+    t =    29.79s     Synthesize event
+    t =    30.08s     Wait for fr.kathryn.woop to idle
+    t =    30.88s Waiting 8.0s for Button (First Match) to exist
+    t =    31.92s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    31.92s         Checking existence of `Button (First Match)`
+    t =    31.97s         Capturing element debug description
+    t =    32.90s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    32.90s         Checking existence of `Button (First Match)`
+    t =    32.94s         Capturing element debug description
+    t =    33.97s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    33.97s         Checking existence of `Button (First Match)`
+    t =    34.01s         Capturing element debug description
+    t =    34.95s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    34.95s         Checking existence of `Button (First Match)`
+    t =    34.98s         Capturing element debug description
+    t =    35.91s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    35.91s         Checking existence of `Button (First Match)`
+    t =    35.92s Tap Button (First Match)[0.50, 0.50]
+    t =    35.92s     Wait for fr.kathryn.woop to idle
+    t =    35.92s     Find the Button (First Match)
+    t =    35.94s     Check for interrupting elements affecting "OUVRIR" Button
+    t =    35.97s     Synthesize event
+    t =    35.98s         Find the "OUVRIR" Button
+    t =    35.99s         Find the "OUVRIR" Button
+    t =    36.01s         Find the "OUVRIR" Button
+    t =    36.30s     Wait for fr.kathryn.woop to idle
+    t =    36.63s Waiting 10.0s for "cartes-qa-ouverture" StaticText to exist
+    t =    37.66s     Checking `Expect predicate `existsNoRetry == 1` for object "cartes-qa-ouverture" StaticText`
+    t =    37.66s         Checking existence of `"cartes-qa-ouverture" StaticText`
+    t =    37.68s Find the Application 'fr.kathryn.woop'
+    t =    37.76s Added attachment named 'manege-noir'
+    t =    37.76s Pressing Home button
+    t =    38.23s Open fr.kathryn.woop
+    t =    38.23s     Activate fr.kathryn.woop
+    t =    38.71s         Wait for fr.kathryn.woop to idle
+    t =    38.74s Find the "cartes-qa-ouverture" StaticText
+    t =    38.76s Find the Application 'fr.kathryn.woop'
+    t =    38.93s Added attachment named 'manege-noir-reprise'
+    t =    38.93s Get all elements bound by index for: Elements matching predicate '"Retour" IN identifiers'
+    t =    38.95s Find the "Retour" Button
+    t =    38.99s Tap "Retour" Button
+    t =    38.99s     Wait for fr.kathryn.woop to idle
+    t =    39.01s     Find the "Retour" Button
+    t =    39.04s     Check for interrupting elements affecting "Retour" Button
+    t =    39.07s     Synthesize event
+    t =    39.37s     Wait for fr.kathryn.woop to idle
+    t =    39.37s Waiting 8.0s for "profil-booster-noir" Button to exist
+    t =    40.40s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-noir" Button`
+    t =    40.40s         Checking existence of `"profil-booster-noir" Button`
+    t =    40.52s Terminate fr.kathryn.woop:1099
+    t =    41.59s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testDDeuxManegesEtInterruption]' passed (41.796 seconds).
+Test Suite 'NavRuntimeUITests' failed at 2026-09-18 12:36:04.473.
+	 Executed 4 tests, with 2 failures (0 unexpected) in 179.261 (179.264) seconds
+Test Suite 'NavRuntimeUITests.xctest' failed at 2026-09-18 12:36:04.474.
+	 Executed 4 tests, with 2 failures (0 unexpected) in 179.261 (179.265) seconds
+Test Suite 'Selected tests' failed at 2026-09-18 12:36:04.474.
+	 Executed 4 tests, with 2 failures (0 unexpected) in 179.261 (179.266) seconds
+2026-09-18 12:36:14.788 xcodebuild[510:19129667] [MT] IDETestOperationsObserverDebug: 190.748 elapsed -- Testing started completed.
+2026-09-18 12:36:14.788 xcodebuild[510:19129667] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-18 12:36:14.788 xcodebuild[510:19129667] [MT] IDETestOperationsObserverDebug: 190.748 sec, +190.748 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/cartes-ui-ABCD.xcresult
+
+Failing tests:
+	NavRuntimeUITests.testADeuxPortesEtCollectionVide()
+	NavRuntimeUITests.testBOrangeJusquaCollection()
+
+** TEST FAILED **
+
+Testing started

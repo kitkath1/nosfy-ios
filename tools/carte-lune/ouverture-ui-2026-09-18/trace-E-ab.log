@@ -1,0 +1,8 @@
+getpwuid_r did not find a match for uid 501
+Filtering the log data using "subsystem == "fr.kathryn.woop" AND category == "cartesQA""
+Timestamp               Ty Process[PID:TID]
+2026-09-18 12:26:11.597 Df Nosfy[99270:1239657] [fr.kathryn.woop:cartesQA] pied : tap Ouvrir (OUVRIR)
+2026-09-18 12:26:11.600 Df Nosfy[99270:1239657] [fr.kathryn.woop:cartesQA] coffre : ouvrirManege(lune) boosters=3 noirs=3
+2026-09-18 12:26:12.071 Df Nosfy[99270:1239657] [fr.kathryn.woop:cartesQA] sacre : ouvrirManege(Optional(Woop.RobeBooster.lune)) dejaOuvert=false popup=false
+2026-09-18 12:26:12.158 Df Nosfy[99270:1239657] [fr.kathryn.woop:cartesQA] racine : manegeOuvert=true
+Child process terminated with signal 15: Terminated

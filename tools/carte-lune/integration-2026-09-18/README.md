@@ -48,6 +48,9 @@ prise avant ce dernier correctif Profil. Logs conservés. Le banc UI final donne
 scénarios suivants ne franchissent pas le bouton Ouvrir au simulateur ; la
 sonde du manège n’apparaît pas. Ni révélation ni retour collection ne sont
 validés dans cette nouvelle app. Échec consigné, aucun verdict global vert.
+→ **Levé le 18-09 à 12:40** : cause et correctif dans
+`../ouverture-ui-2026-09-18/README.md` (le banc tapait pendant le film
+d'arrivée ; 4 scénarios PASS au simulateur ; téléphone non mesuré).
 
 La reprise des API et les garanties restent PASS. Ne pas confondre ces preuves
 avec le parcours visuel. La publication de l’app reste suspendue à la correction

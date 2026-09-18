@@ -2350,6 +2350,9 @@ struct RootView: View {
                 // la route — audit §4, accepté).
                 if depart.cheminOuvert { depart.fermerChemin() }
                 // Le FILET : si la mise en place ne publie jamais sa
+            #if DEBUG
+            traceQA("racine : manegeOuvert=\(ouvert)")
+            #endif
                 // pose (banc -boosterCine sans galerie, chemin
                 // imprévu), la home s'éclipse quand même — tard, mais
                 // jamais pendant la roue.

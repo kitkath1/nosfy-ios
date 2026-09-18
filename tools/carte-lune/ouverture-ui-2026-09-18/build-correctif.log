@@ -1,0 +1,30 @@
+[tronqué par la passation :      990 lignes ; ne restent que l'invocation, les erreurs et la fin]
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project Nosfy.xcodeproj -scheme Nosfy -configuration Debug -destination "platform=iOS Simulator,id=ADFE5348-7E75-4E67-9975-E0C409DCAD55" -derivedDataPath /tmp/nosfy-cartes-dd CODE_SIGNING_ALLOWED=NO ARCHS=arm64 build
+
+...
+Copy /tmp/nosfy-cartes-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/PlugIns/NosfyWidgets.appex /tmp/nosfy-cartes-dd/Build/Products/Debug-iphonesimulator/NosfyWidgets.appex (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks -remove-static-executable /tmp/nosfy-cartes-dd/Build/Products/Debug-iphonesimulator/NosfyWidgets.appex /tmp/nosfy-cartes-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/PlugIns
+
+ProcessInfoPlistFile /tmp/nosfy-cartes-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Info.plist /Users/kathryn/Desktop/Nosfy/Nosfy/Info.plist (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    builtin-infoPlistUtility /Users/kathryn/Desktop/Nosfy/Nosfy/Info.plist -producttype com.apple.product-type.application -genpkginfo /tmp/nosfy-cartes-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /tmp/nosfy-cartes-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/assetcatalog_generated_info.plist -scanforprivacyfile /tmp/nosfy-cartes-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/PlugIns/NosfyWidgets.appex -o /tmp/nosfy-cartes-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Info.plist
+
+ExtractAppIntentsMetadata (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --module-name Woop --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F42 --platform-family iOS --deployment-target 26.0 --bundle-identifier fr.kathryn.woop --output /tmp/nosfy-cartes-dd/Build/Products/Debug-iphonesimulator/Nosfy.app --target-triple arm64-apple-ios26.0-simulator --binary-file /tmp/nosfy-cartes-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Nosfy --dependency-file /tmp/nosfy-cartes-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy_dependency_info.dat --stringsdata-file /tmp/nosfy-cartes-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /tmp/nosfy-cartes-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy.SwiftFileList --metadata-file-list /tmp/nosfy-cartes-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy.DependencyMetadataFileList --static-metadata-file-list /tmp/nosfy-cartes-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy.DependencyStaticMetadataFileList --swift-const-vals-list /tmp/nosfy-cartes-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-09-18 12:19:43.865 appintentsmetadataprocessor[97654:19081641] Starting appintentsmetadataprocessor export
+2026-09-18 12:19:43.887 appintentsmetadataprocessor[97654:19081641] Extracted no relevant App Intents symbols, skipping writing output
+
+CopySwiftLibs /tmp/nosfy-cartes-dd/Build/Products/Debug-iphonesimulator/Nosfy.app (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /tmp/nosfy-cartes-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Nosfy.debug.dylib --scan-folder /tmp/nosfy-cartes-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Frameworks --scan-folder /tmp/nosfy-cartes-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/PlugIns --scan-folder /tmp/nosfy-cartes-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/SystemExtensions --scan-folder /tmp/nosfy-cartes-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /tmp/nosfy-cartes-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /tmp/nosfy-cartes-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+ValidateEmbeddedBinary /tmp/nosfy-cartes-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/PlugIns/NosfyWidgets.appex (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    /Applications/Xcode.app/Contents/Developer/usr/bin/embeddedBinaryValidationUtility /tmp/nosfy-cartes-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/PlugIns/NosfyWidgets.appex -info-plist-path /tmp/nosfy-cartes-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Info.plist
+
+** BUILD SUCCEEDED **
+

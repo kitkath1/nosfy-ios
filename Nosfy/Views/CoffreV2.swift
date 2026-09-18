@@ -1448,6 +1448,15 @@ struct PiedCoffre: View {
     /// Ouvrir l'histoire d'une robe (la vidéo, puis la page).
     var onHistoire: ((RobeBooster) -> Void)?
 
+    /// ⚠️ **LE BOUTON N'EXISTE QU'UNE FOIS LE PROJECTEUR ALLUMÉ** (18-09, le
+    /// 🔴 « Ouvrir » des Cartes). Pendant le film d'arrivée la page est à
+    /// opacité 0 — mais un bouton monté est un bouton que l'arbre
+    /// d'accessibilité expose : le banc XCUITest le trouvait, le tapait dans
+    /// le noir, et le tap n'atteignait jamais le geste (mesuré : aucune trace
+    /// `pied`, trois scénarios rouges). `accessibilityHidden` ne suffit pas
+    /// (XCUITest l'ignore, mesuré). Éteint, le pied garde la place du bouton,
+    /// vide : la grille des quatre pages ne bouge pas.
+    var allume: Bool = true
     /// ⚠️⚠️ **LA PLAQUE EST MORTE, ET C'EST LA LEÇON D'OPAL (28-08).**
     /// 128 → 104 → **plus de plaque du tout**. Verdict : *« ça fait cheap »*,
     /// trois fois, sur trois mises en page différentes. La cause n'était
@@ -1525,7 +1534,9 @@ struct PiedCoffre: View {
     /// player. La priorité haute passe devant.
     @ViewBuilder
     private var bouton: some View {
-        if let b = v.bouton, b.actif, let onOuvrir {
+        if !allume {
+            Color.clear.frame(maxWidth: .infinity).frame(height: 58)
+        } else if let b = v.bouton, b.actif, let onOuvrir {
             // ⚠️⚠️ **LE PRIMAIRE DE LA MAISON, ET IL FAUT LE PRENDRE EN
             // PRIORITÉ HAUTE.** `DiamondPrimaryButton` est bâti sur un
             // `Button` ; le geste de la page est posé sur un ANCÊTRE plein
@@ -1539,8 +1550,19 @@ struct PiedCoffre: View {
             DiamondPrimaryButton(title: b.mot) {}
                 .allowsHitTesting(false)
                 .contentShape(Capsule())
-                .highPriorityGesture(TapGesture().onEnded { onOuvrir() })
+                .highPriorityGesture(TapGesture().onEnded {
+                    #if DEBUG
+                    traceQA("pied : tap Ouvrir (\(b.mot))")
+                    #endif
+                    onOuvrir()
+                })
         } else if let b = v.bouton {
+            //
+            // ⚠️ Le 🔴 « Ouvrir » des Cartes (18-09) n'était PAS ici : mesuré
+            // A/B (tools/carte-lune/ouverture-ui-2026-09-18), ce bouton
+            // ouvre le manège avec ou sans `allowsHitTesting(false)`. Le banc
+            // tapait PENDANT le film d'arrivée, sur une page à opacité 0 —
+            // d'où `accessibilityHidden(pageOp == 0)` sur la page, plus bas.
             // ⚠️ **LE VERROUILLÉ SE DIT PAR LA MATIÈRE** (5ᵉ loi d'Opal,
             // §17.3) : même place, même hauteur, le bijou en moins. Du verre
             // mat et un mot qui dit ce qui manque — jamais un cadenas seul,
@@ -2729,6 +2751,9 @@ struct CoffreV2Page: View {
                 }
 
                 carte(sc).offset(y: bas)
+        #if DEBUG
+        traceQA("coffre : ouvrirManege(\(robe)) boosters=\(economie.boosters) noirs=\(economie.boostersNoirs)")
+        #endif
                 // ⚠️ **LES NÉONS SONT LA MÊME IMAGE QUE L'ARCHE** : ils
                 // prennent le mouvement du décor au pixel près, sur-cadrage
                 // compris. Un point d'écart et les anneaux allumés sortent de
@@ -2829,6 +2854,11 @@ struct CoffreV2Page: View {
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         // LE BOUCLIER SYSTÈME (03-09, item 10) : la moitié qui manquait —
+                    // Page éteinte (film d'arrivée) : rien à lire pour VoiceOver.
+                    // ⚠️ XCUITest, lui, IGNORE ce modificateur (mesuré 18-09, deux
+                    // fois : le bouton restait dans l'arbre) — c'est `allume` du
+                    // pied qui tient le banc à l'écart, pas cette ligne.
+                    .accessibilityHidden(pageOp == 0)
         // l'indicateur était déjà caché, mais le geste bas partait au
         // système au premier glissement.
         .defersSystemGestures(on: .bottom)
@@ -3334,7 +3364,7 @@ struct CoffreV2Page: View {
                 .opacity(pageOp)
                 .offset(y: monte)
 
-            PiedCoffre(v: v, remplie: remplie,
+            PiedCoffre(v: v, remplie: remplie, allume: pageOp > 0,
                        onOuvrir: robeDeLaPage.map { r in { ouvrirManege(r) } },
                        onHistoire: { r in ouvrirHistoire(r) })
                 .id(piedIdx)

@@ -131,6 +131,9 @@ final class SacreEtat {
     /// (vidéo + verre + poudre encore vivants) — le carrousel naissait
     /// en saccades. Le panneau sort d'abord, la scène se monte ensuite.
     func ouvrirManege(robe: RobeBooster? = nil) {
+        #if DEBUG
+        traceQA("sacre : ouvrirManege(\(String(describing: robe))) dejaOuvert=\(manegeOuvert) popup=\(popupOuverte)")
+        #endif
         guard !manegeOuvert else { return }
         // La pill du profil dit QUELLE réserve elle ouvre ; la pop-up, elle,
         // a déjà posé la robe en proposant. Rien ne la devine.

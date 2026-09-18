@@ -1,0 +1,131 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project /tmp/nosfy-cartes-runner/NavRuntimeUITests.xcodeproj -scheme NavRuntimeUITests -destination "platform=iOS Simulator,id=ADFE5348-7E75-4E67-9975-E0C409DCAD55" -derivedDataPath /tmp/nosfy-cartes-runner-dd -resultBundlePath /tmp/cartes-ui-E3.xcresult CODE_SIGNING_ALLOWED=NO "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testEOuvrirTrace" test
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/tmp/cartes-ui-E3.xcresult
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'NavRuntimeUITests' in project 'NavRuntimeUITests' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk /tmp/nosfy-cartes-runner-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+    cd /tmp/nosfy-cartes-runner/NavRuntimeUITests.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -o /tmp/nosfy-cartes-runner-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+
+2026-09-18 12:31:30.083279+0200 NavRuntimeUITests-Runner[179:19126131] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-18 12:31:30.477.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-18 12:31:30.477.
+Test Suite 'NavRuntimeUITests' started at 2026-09-18 12:31:30.477.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testEOuvrirTrace]' started.
+    t =     0.00s Start Test at 2026-09-18 12:31:30.478
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+    t =     0.09s         Setting up automation session
+    t =     0.51s         Wait for fr.kathryn.woop to idle
+objc[179]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x106488310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x105d0c398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     1.68s Waiting 6.0s for Button (First Match) to exist
+    t =     2.74s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     2.74s         Checking existence of `Button (First Match)`
+    t =     2.82s         Capturing element debug description
+    t =     3.75s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     3.75s         Checking existence of `Button (First Match)`
+    t =     3.79s         Capturing element debug description
+    t =     4.72s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     4.72s         Checking existence of `Button (First Match)`
+    t =     4.76s         Capturing element debug description
+    t =     5.69s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     5.69s         Checking existence of `Button (First Match)`
+    t =     5.73s         Capturing element debug description
+    t =     6.76s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     6.76s         Checking existence of `Button (First Match)`
+    t =     6.80s         Capturing element debug description
+    t =     7.68s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     7.68s         Checking existence of `Button (First Match)`
+    t =     7.72s         Capturing element debug description
+    t =     7.72s     Checking existence of `Button (First Match)`
+    t =     7.75s Collecting debug information to assist test failure triage
+    t =     7.75s     Requesting snapshot of accessibility hierarchy for app with pid 188
+    t =     7.81s Waiting 35.0s for "profil-booster-orange" Button to exist
+    t =     8.84s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =     8.84s         Checking existence of `"profil-booster-orange" Button`
+    t =     8.88s Tap "profil-booster-orange" Button
+    t =     8.88s     Wait for fr.kathryn.woop to idle
+    t =     8.88s     Find the "profil-booster-orange" Button
+    t =     8.90s     Check for interrupting elements affecting "profil-booster-orange" Button
+    t =     8.92s     Synthesize event
+    t =     9.22s     Wait for fr.kathryn.woop to idle
+    t =    10.01s Waiting 8.0s for Button (First Match) to exist
+    t =    11.04s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    11.04s         Checking existence of `Button (First Match)`
+    t =    11.05s Find the Application 'fr.kathryn.woop'
+    t =    11.16s Added attachment named 'E0-coffre-t0'
+    t =    11.16s Requesting snapshot of accessibility hierarchy for app with pid 188
+    t =    11.40s Requesting snapshot of accessibility hierarchy for app with pid 188
+    t =    11.44s Added attachment named 'E0-hierarchie-t0'
+    t =    17.45s Find the Application 'fr.kathryn.woop'
+    t =    17.89s Added attachment named 'E1-coffre-apres-film'
+    t =    17.89s Find the Button (First Match)
+    t =    17.90s Find the "OUVRIR" Button
+2026-09-18 12:31:48.385303+0200 NavRuntimeUITests-Runner[179:19126131] QA-TRACE ouvrir frame=(36.666666666666664, 764.3333333333334, 320.0, 58.0) hittable=true
+    t =    17.91s Requesting snapshot of accessibility hierarchy for app with pid 188
+    t =    18.10s Requesting snapshot of accessibility hierarchy for app with pid 188
+    t =    18.20s Added attachment named 'E1-hierarchie-avant-tap'
+    t =    18.20s Tap "OUVRIR" Button[0.50, 0.50]
+    t =    18.20s     Wait for fr.kathryn.woop to idle
+    t =    18.20s     Find the "OUVRIR" Button
+    t =    18.21s     Check for interrupting elements affecting "OUVRIR" Button
+    t =    18.23s     Synthesize event
+    t =    18.24s         Find the "OUVRIR" Button
+    t =    18.25s         Find the "OUVRIR" Button
+    t =    18.26s         Find the "OUVRIR" Button
+    t =    18.54s     Wait for fr.kathryn.woop to idle
+    t =    21.91s Find the Application 'fr.kathryn.woop'
+    t =    22.01s Added attachment named 'E2-apres-tap'
+    t =    22.02s Waiting 10.0s for "cartes-qa-ouverture" StaticText to exist
+    t =    23.05s     Checking `Expect predicate `existsNoRetry == 1` for object "cartes-qa-ouverture" StaticText`
+    t =    23.05s         Checking existence of `"cartes-qa-ouverture" StaticText`
+2026-09-18 12:31:53.559191+0200 NavRuntimeUITests-Runner[179:19126131] QA-TRACE sonde=true
+    t =    23.08s Requesting snapshot of accessibility hierarchy for app with pid 188
+    t =    23.26s Requesting snapshot of accessibility hierarchy for app with pid 188
+    t =    23.29s Added attachment named 'E3-hierarchie-fin'
+    t =    23.29s Find the Application 'fr.kathryn.woop'
+    t =    23.41s Added attachment named 'E3-fin'
+    t =    23.41s Terminate fr.kathryn.woop:188
+    t =    24.45s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testEOuvrirTrace]' passed (24.603 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-18 12:31:55.081.
+	 Executed 1 test, with 0 failures (0 unexpected) in 24.603 (24.604) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-18 12:31:55.082.
+	 Executed 1 test, with 0 failures (0 unexpected) in 24.603 (24.605) seconds
+Test Suite 'Selected tests' passed at 2026-09-18 12:31:55.083.
+	 Executed 1 test, with 0 failures (0 unexpected) in 24.603 (24.606) seconds
+2026-09-18 12:31:55.386 xcodebuild[152:19125972] [MT] IDETestOperationsObserverDebug: 26.101 elapsed -- Testing started completed.
+2026-09-18 12:31:55.386 xcodebuild[152:19125972] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-18 12:31:55.386 xcodebuild[152:19125972] [MT] IDETestOperationsObserverDebug: 26.101 sec, +26.101 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/cartes-ui-E3.xcresult
+
+** TEST SUCCEEDED **
+
+Testing started

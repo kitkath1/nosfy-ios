@@ -1,5 +1,12 @@
 #if DEBUG
 import SwiftUI
+import os
+
+/// Trace du banc Cartes : lisible par `log stream --predicate 'subsystem == "fr.kathryn.woop" AND category == "cartesQA"'`.
+func traceQA(_ message: String) {
+    guard CommandLine.arguments.contains("-cartesQA") else { return }
+    Logger(subsystem: "fr.kathryn.woop", category: "cartesQA").notice("\(message, privacy: .public)")
+}
 
 /// Banc isolé : session QA fournie dans Documents, jamais dans le binaire ni les logs.
 struct CartesQABanc: View {

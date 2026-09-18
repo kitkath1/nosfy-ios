@@ -1,5 +1,21 @@
 # Règle multi-session (Nosfy)
 
+## Cartes — blocage « Ouvrir » LEVÉ au simulateur, commité (session Ouvrir, 18-09 15:00)
+
+12:15-12:45 : les 4 scénarios UI Cartes passent (0 échec) sur `nosfy-cartes-20260918`,
+fixture jetable, compte supprimé après, sim éteint. La cause n'était PAS le bouton
+(`allowsHitTesting` innocenté par A/B) : le banc tapait PENDANT le film d'arrivée du
+coffre. Correctif `PiedCoffre.allume` (CoffreV2.swift) + trace `traceQA()` DEBUG.
+`accessibilityHidden` est ignoré par XCUITest (mesuré). Tests A/B corrigés
+(`CartesUITests-apres.swift`). Tout dans `tools/carte-lune/ouverture-ui-2026-09-18/`.
+Site : b-cartes-ouverture-qa 🟢, page Cartes, mesure iPhone toujours ◌ ; republié v74.
+⚠️ Commit par hunks : CoffreV2.swift et NosfyApp.swift gardent VOS hunks non commités
+dans l'arbre (24 + 5), rien emporté. Sur ordre explicite de Kathryn, ce commit porte
+aussi les 36 captures allégées + `scripts/alleger.py` (octets identiques aux vôtres,
+repris depuis `out/`) : sans elles le livrable dépasse 2 Mo. `captures.py` n'est pas
+emporté. Aucun iPhone touché. Reste ouvert : Ouvrir/envol/chauffe sur le téléphone.
+
+
 ## Live Activity — portrait, lune et Stop,18-09
 
 Commit limité à cette session, demandé par Kathryn. Grande carte et île déployée :
