@@ -2,16 +2,16 @@
   {
     "schema": 1,
     "langue": "fr",
-    "revision": "ia-relue-20260916-03",
+    "revision": "fr-sobre-20260918-01",
     "variantes": {
       "vide": [
         {
           "id": "fr-vide-1",
           "fragments": [
             "{salut}",
-            "On bouge ?",
-            "Ta première séance.",
-            "On essaie ?"
+            "Ta première",
+            "séance.",
+            "À ton rythme."
           ],
           "bouton": null
         },
@@ -19,8 +19,8 @@
           "id": "fr-vide-2",
           "fragments": [
             "{salut}",
-            "On commence ?",
-            "Ta première séance.",
+            "Un moment",
+            "pour toi.",
             "À ton rythme."
           ],
           "bouton": null
@@ -29,9 +29,9 @@
           "id": "fr-vide-3",
           "fragments": [
             "{salut}",
-            "C’est ton moment",
-            "Un premier pas.",
-            "À ton rythme."
+            "Place à ta",
+            "première séance.",
+            "Quand tu veux."
           ],
           "bouton": null
         }
@@ -41,9 +41,9 @@
           "id": "fr-active_zero-1",
           "fragments": [
             "{salut}",
-            "Semaine calme ?",
-            "On reprend ?",
-            "Quand tu veux"
+            "Ta prochaine",
+            "séance.",
+            "À ton rythme."
           ],
           "bouton": null
         },
@@ -51,9 +51,9 @@
           "id": "fr-active_zero-2",
           "fragments": [
             "{salut}",
-            "Pas de séance",
-            "cette semaine.",
-            "On reprend ?"
+            "Un moment",
+            "pour bouger.",
+            "Quand tu veux."
           ],
           "bouton": null
         },
@@ -61,8 +61,8 @@
           "id": "fr-active_zero-3",
           "fragments": [
             "{salut}",
-            "Rien cette semaine.",
-            "On bouge ?",
+            "Place à ta",
+            "prochaine séance.",
             "À ton rythme."
           ],
           "bouton": null
@@ -73,9 +73,9 @@
           "id": "fr-active-1",
           "fragments": [
             "{salut}",
-            "Cette semaine, déjà",
+            "Déjà",
             "{seances}",
-            "On garde l’élan"
+            "cette semaine."
           ],
           "bouton": null
         },
@@ -83,9 +83,9 @@
           "id": "fr-active-2",
           "fragments": [
             "{salut}",
-            "Cette semaine, tu as",
+            "Cette semaine,",
             "{seances}",
-            "À ton rythme."
+            "Bien joué."
           ],
           "bouton": null
         },
@@ -95,7 +95,7 @@
             "{salut}",
             "Cette semaine,",
             "{seances}",
-            "à ton actif."
+            "À ton rythme."
           ],
           "bouton": null
         }
@@ -105,9 +105,9 @@
           "id": "fr-seance_debut-1",
           "fragments": [
             "{allez}",
-            "C’est parti",
-            "Trouve ton flow.",
-            "Tu gères le tempo"
+            "Ta séance",
+            "commence.",
+            "À ton rythme."
           ],
           "bouton": null
         },
@@ -115,9 +115,9 @@
           "id": "fr-seance_debut-2",
           "fragments": [
             "{allez}",
-            "Séance lancée",
-            "Écoute ton corps",
-            "On y va tranquille"
+            "La séance",
+            "est lancée.",
+            "À toi de jouer."
           ],
           "bouton": null
         },
@@ -125,9 +125,9 @@
           "id": "fr-seance_debut-3",
           "fragments": [
             "{allez}",
-            "On démarre",
-            "Un geste à la fois.",
-            "Reste à l’aise"
+            "C’est parti.",
+            "Un geste",
+            "à la fois."
           ],
           "bouton": null
         }
@@ -137,9 +137,9 @@
           "id": "fr-seance-1",
           "fragments": [
             "{allez}",
-            "En cours depuis",
+            "Déjà",
             "{minutes}",
-            "Garde ton cap"
+            "à ton rythme."
           ],
           "bouton": null
         },
@@ -147,9 +147,9 @@
           "id": "fr-seance-2",
           "fragments": [
             "{allez}",
-            "La séance dure",
+            "Ta séance :",
             "{minutes}",
-            "Suis tes sensations"
+            "À ton rythme."
           ],
           "bouton": null
         },
@@ -157,9 +157,9 @@
           "id": "fr-seance-3",
           "fragments": [
             "{allez}",
-            "Tu en es à",
+            "En mouvement,",
             "{minutes}",
-            "Tout en douceur"
+            "pour toi."
           ],
           "bouton": null
         }

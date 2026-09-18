@@ -332,34 +332,34 @@ enum PhraseTexte {
         if let mots = HomeTextes.phrase(etat, nombre: faits) {
             return mots.enumerated().map { PhraseFragment($0.element, clair: $0.offset.isMultiple(of: 2)) }
         }
-        let salut = Langue.en ? salut(prenom) : (prenom?.isEmpty == false ? "Salut \(prenom!)," : "Salut,")
+        let salut = Langue.en ? salut(prenom) : (prenom?.isEmpty == false ? "Bonjour \(prenom!)," : "Bonjour,")
         if faits > 0 {
             let mot = L(faits == 1 ? "séance" : "séances", faits == 1 ? "workout" : "workouts")
             return [PhraseFragment(salut, clair: true),
-                    PhraseFragment(L("déjà", "you’ve done"), clair: false),
+                    PhraseFragment(L("Déjà", "you’ve done"), clair: false),
                     PhraseFragment("\(faits) \(mot)", clair: true),
                     PhraseFragment(L("cette semaine.", "this week."), clair: false)]
         }
         return [PhraseFragment(salut, clair: true),
-                PhraseFragment(L("pas encore", "no workout yet"), clair: false),
-                PhraseFragment(L("de séance", "this week."), clair: true),
-                PhraseFragment(L("cette semaine.", "Let’s go."), clair: false)]
+                PhraseFragment(L("Ta prochaine", "no workout yet"), clair: false),
+                PhraseFragment(L("séance.", "this week."), clair: true),
+                PhraseFragment(L("À ton rythme.", "Let’s go."), clair: false)]
     }
 
     /// LA PHRASE DE LA PREMIÈRE FOIS (13-09, PLAN-PREMIERE-ARRIVEE ②) — tant
     /// qu'aucune séance n'est finie. Quatre fragments, clair/sourd/clair/sourd,
     /// fin sur un sourd, chacun sous les 300 pt de `PhraseParams.largeur`
-    /// (« ta première séance » : 18 lettres, le plus long — « you've been at it »
-    /// en fait 17 et tient). Dans les deux langues (le contrat de la langue, § 9).
+    /// Dans les deux langues (le contrat de la langue, § 9).
     /// Le wording parle SPORT et dit quelque chose (verdict 14-09 : « Hey Margaux
     /// bien, mais le reste ne veut rien dire ») : la séance attend, on y va.
     static func fragmentsPremiereFois(prenom: String? = ProfilServeur.prenomLocal) -> [PhraseFragment] {
-        let hey = (prenom?.isEmpty ?? true) ? "Hey," : "Hey \(prenom!),"
+        let hey = Langue.en ? ((prenom?.isEmpty ?? true) ? "Hey," : "Hey \(prenom!),")
+                           : ((prenom?.isEmpty ?? true) ? "Bonjour," : "Bonjour \(prenom!),")
         return [
             PhraseFragment(hey, clair: true),
-            PhraseFragment(L("ta première séance", "your first workout"), clair: false),
-            PhraseFragment(L("t'attend.", "is waiting."), clair: true),
-            PhraseFragment(L("On y va.", "Let's go."), clair: false)
+            PhraseFragment(L("Ta première", "your first workout"), clair: false),
+            PhraseFragment(L("séance.", "is waiting."), clair: true),
+            PhraseFragment(L("À ton rythme.", "Let's go."), clair: false)
         ]
     }
 
@@ -428,16 +428,16 @@ enum PhraseTexte {
             if minutes < 1 {
                 return [
                     PhraseFragment(salut, clair: true),
-                    PhraseFragment("on y est,", clair: false),
-                    PhraseFragment("la séance", clair: true),
-                    PhraseFragment("commence.", clair: false)
+                    PhraseFragment("Ta séance", clair: false),
+                    PhraseFragment("commence.", clair: true),
+                    PhraseFragment("À ton rythme.", clair: false)
                 ]
             }
             return [
                 PhraseFragment(salut, clair: true),
-                PhraseFragment("déjà", clair: false),
+                PhraseFragment("Déjà", clair: false),
                 PhraseFragment("\(minutes) \(mot)", clair: true),
-                PhraseFragment("dans les jambes.", clair: false)
+                PhraseFragment("à ton rythme.", clair: false)
             ]
         }
         let mot = minutes == 1 ? "minute" : "minutes"

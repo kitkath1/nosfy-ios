@@ -11,7 +11,7 @@ struct HomeVariante: Codable, Equatable {
         let en = langue == "en"
         let nom = prenom?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let salut = en ? (nom.isEmpty ? "Hello there," : "Hello \(nom),")
-                       : (nom.isEmpty ? "Salut," : "Salut \(nom),")
+                       : (nom.isEmpty ? "Bonjour," : "Bonjour \(nom),")
         let allez = en ? (nom.isEmpty ? "Alright," : "Alright \(nom),")
                        : (nom.isEmpty ? "Allez," : "Allez \(nom),")
         let n = max(0, nombre)
