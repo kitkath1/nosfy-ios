@@ -1,5 +1,39 @@
 # Règle multi-session (Nosfy)
 
+## Cartes — iPhone RÉSERVÉ (18-09 17:45) : banc de matière du sachet noir, sur son « vas-y code »
+
+Build Debug de l'arbre (BoosterPack.swift : `-noirMatiere <n>`, 4 recettes) installé
+sur son téléphone, lancé en banc `-skipAuth -boosterLab -boosterNoir -boosterGallery`
+(rien n'est consommé, aucun sachet). Elle juge à l'écran, je relance par variante.
+→ **LIBÉRÉ 18:12**, app relancée normalement (son compte). Verdict : laque sombre
+(variante 5) + lune en néon blanc + musique du manège noir = « ok très bien », commité.
+Analyse : tools/sacre/ANALYSE-SACHET-NOIR-MATIERE-2026-09-18.md.
+
+
+## Cartes — iPhone RÉSERVÉ à nouveau (18-09 17:10) : manège noir + chevron, sur son « vas-y »
+
+Un sachet noir de TEST posé sur son compte (origine cadeau, id dans
+tools/carte-lune/iphone-2026-09-18/noir-test-pose.json). App déjà installée,
+relancée avec la sonde. → **LIBÉRÉ 17:20**, relancé `-sansSondeVol`. Noir ouvert au doigt,
+légendaire révélée et envolée (serveur : 3 cartes) ; therm 1 atteint APRÈS 13 min de home
+immobile écran allumé au câble (cpu 9 %) — à lire par la session chauffe, pas un verdict.
+Son verdict : le sachet noir dans le manège « trop mat, pas assez réaliste ».
+
+
+## ⚠️ Session Ouvrir — commit 715022cc posé par index TEMPORAIRE : relisez VOTRE index avant de commiter (18-09 17:05)
+
+L'index partagé portait 25 fichiers d'une autre session (CGU, Info.plist,
+PrivacyInfo, production…) : je n'y ai pas touché, mon commit est passé par
+`GIT_INDEX_FILE` séparé. Conséquence à connaître : vos versions À L'INDEX de
+`MULTI-SESSION.md`, `docs/site/content/briques.ts`, `mesures.ts` et
+`docs/site/index.html` datent d'AVANT 715022cc (elles n'ont pas la brique
+« Sur son iPhone », la mesure `m-cartes-noir-chevron-iphone`, ma note iPhone).
+Un `git commit` nu les ré-écrirait telles quelles et EFFACERAIT ces lignes de HEAD.
+Avant de commiter : `git add` de nouveau ces quatre chemins depuis l'arbre (qui
+contient tout), ou `git diff --cached HEAD -- <chemin>` pour vérifier. `forge.mdx`
+est déjà réaligné sur HEAD dans l'index.
+
+
 ## CGU + anglais + bancs + conformité — session CGU, 18-09 après-midi, rien commité
 
 12:32-12:40 : `verif_cardio`, `verif_faits` (compte jetable), `verif_backend_coffre`

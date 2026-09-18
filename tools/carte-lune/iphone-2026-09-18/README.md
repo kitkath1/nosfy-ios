@@ -72,3 +72,48 @@ Ouvert : le manège **noir** (0 sachet noir sur son compte — rien inventé), l
 sortie par le **chevron** pendant le manège, la **coupure réseau** pendant
 l'ouverture, l'endurance thermique, et ses verdicts d'œil (shiny, contraste des
 trois familles : elle a dit « je crois que c'est bon », pas un verdict par point).
+
+## Seconde passe, 17:10 → 17:20 — le manège NOIR (sachet de test), sur son « vas-y »
+
+Son compte n'avait aucun sachet noir : sur sa demande explicite (« teste le manège
+noir ici »), UN sachet noir de test a été posé côté serveur (`noir-test-pose.json`,
+id `9dd137cd`, origine cadeau, 14:48:22 UTC). Il laisse une légendaire réelle dans
+sa collection — à retirer si elle le demande. App relancée avec la sonde à 16:48:22.
+
+Elle a ouvert le noir à ~17:01 : serveur `serveur-apres-noir.json` — sachet ouvert
+15:01:43 UTC, révélé 15:01:51, carte `1d5e44d0` **legendary** ; `user_cards` = 3
+(rare `6ab3e4be`, common `1ff5a6c5`, legendary `1d5e44d0`). Journal nav
+(`nav-20260918-164822.jsonl`, t depuis le lancement) : Profil 785,9 s → manège
+794,9 s → carte révélée 808,6 s → envol / retour Profil 815,0 s → carte rouverte
+depuis la collection 821,7-831,7 s.
+
+**Le chevron n'apparaît PAS dans le journal** : aucun `selection home` entre le
+départ du manège (794,9 s) et la révélation (808,6 s), et une seule ouverture côté
+serveur. Soit l'étape n'a pas été faite, soit le tap n'a rien fait — le journal ne
+permet pas de trancher ; à lui redemander. Le chevron reste ◌.
+
+Sonde (`vol-20260918-164822.jsonl`, 869 lignes) :
+
+| fenêtre | n | img/s méd (min) | cpu % méd (max) | pire | therm |
+|---|---|---|---|---|---|
+| home immobile 15-300 s | 281 | 60,1 (59,9) | 9 (14) | 19 ms | 0→1 (à 273 s) |
+| home immobile 300-785 s | 478 | 60,1 (60,1) | 9-10 (15) | 17 ms | 0/1 |
+| Profil 786-795 s | 8 | 52,5 (**10,1**) | 51,5 (79) | **1010 ms** | 0 |
+| coffre noir + film 795-800 s | 5 | 58,1 (55,4) | 40 (56) | 88 ms | 0→1 |
+| **manège noir** 800-809 s | 9 | 60,1 (48,3) | **31 (39)** | 199 ms | 1 |
+| légendaire → envol 809-815 s | 6 | 60,1 (58,1) | 48,5 (49) | 49 ms | 1 |
+| Profil, carte rouverte 815-869 s | 53 | 60,1 (50,2) | 14 (51) | 187 ms | 1 |
+
+- Le manège noir coûte comme l'orange (31 % contre 30 %), à 60 img/s.
+- **Deux observations hors périmètre, à transmettre** : (1) la home laissée 13 min
+  écran allumé, au câble, à 9 % CPU et 60 img/s, atteint **thermique 1 à 4,5 min**
+  (contexte home vérifié : welcome=0, séance=0, story=0) — le câble charge et
+  chauffe, la sonde ne dit pas la cause ; (2) **un gel d'1,01 s** à l'ouverture du
+  Profil après ces 13 min (img 10, cpu 79 : la relecture de la collection et la
+  naissance du géant SceneKit ensemble ?). Ni l'un ni l'autre n'est un verdict.
+- **Son verdict d'œil** : le sachet noir dans le manège est « très beau » de loin
+  mais « trop mat, pas assez réaliste » — « pas très beau ». C'est un chantier de
+  matière (le sachet noir du manège), à ouvrir ; il ne bloque pas le parcours.
+
+Fermé en plus : le manège noir de bout en bout (Ouvrir → légendaire → envol →
+collection). Toujours ouvert : le chevron, la coupure réseau, l'endurance.

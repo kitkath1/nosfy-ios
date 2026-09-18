@@ -375,14 +375,60 @@ enum RobeBooster {
         let rugosite: CGFloat
         let vernis: CGFloat
         let vernisRugosite: CGFloat
+        /// Le métal du corps (0 = laque : encre F0 4 % ; > 0 = foil laminé)
+        /// et le relèvement du film qui va avec (`metalLift`, sinon métal
+        /// noir = trou noir — la leçon du banc mylar).
+        var metal: CGFloat = 0
+        var metalLift: CGFloat = 0
     }
+
+    /// `-noirMatiere <n>` (18-09) — LE BANC DE LA MATIÈRE NOIRE. Verdict de
+    /// Kathryn sur son iPhone, manège noir ouvert : « trop mat, pas assez
+    /// réaliste ». Le mat du 28-08 chassait la « vitre grise » d'un vernis
+    /// épais sous un horizon orange FORT ; le studio noir a depuis été
+    /// refroidi et presque éteint (horizon 0,09), et il ne restait plus rien
+    /// à refléter. Cinq candidates jugées à l'écran, sur SON téléphone
+    /// (tools/sacre/ANALYSE-SACHET-NOIR-MATIERE-2026-09-18.md) : la 1 « plus
+    /// sombre » → la 5, LAQUE SOMBRE, « ok très bien » (18-09 18:10). Elle
+    /// est la valeur par DÉFAUT ; le mat du 28-08 reste au banc en 9.
+    static let variantNoir: Int = UserDefaults.standard
+        .string(forKey: "noirMatiere").flatMap(Int.init) ?? 0
 
     var matiere: Matiere {
         switch self {
         case .lune: return Matiere(rugosite: 0.35, vernis: 1.0,
                                    vernisRugosite: 0.04)
-        case .noire: return Matiere(rugosite: 0.62, vernis: 0.30,
-                                    vernisRugosite: 0.32)
+        case .noire:
+            switch Self.variantNoir {
+            case 1: // laque noire — la recette Lune
+                return Matiere(rugosite: 0.35, vernis: 1.0, vernisRugosite: 0.05)
+            case 2: // satin — reflet présent, doux
+                return Matiere(rugosite: 0.45, vernis: 0.75, vernisRugosite: 0.14)
+            case 3: // foil noir — métal sombre laminé (au banc : le film
+                    // remonté à 0,45 vire au GRIS clair, la leçon mylar)
+                return Matiere(rugosite: 0.24, vernis: 0.55, vernisRugosite: 0.08,
+                               metal: 0.55, metalLift: 0.45)
+            case 4: // foil sombre — un soupçon de métal, le film reste noir
+                return Matiere(rugosite: 0.30, vernis: 0.85, vernisRugosite: 0.06,
+                               metal: 0.32, metalLift: 0.14)
+            case 9: // le mat du 28-08 (témoin d'A/B)
+                return Matiere(rugosite: 0.62, vernis: 0.30, vernisRugosite: 0.32)
+            default: // 5, LAQUE SOMBRE — la valeur de la maison depuis le 18-09
+                return Matiere(rugosite: 0.38, vernis: 1.0, vernisRugosite: 0.06)
+            }
+        }
+    }
+
+    /// La force de l'horizon HDR que la matière noire reflète — elle va
+    /// AVEC la matière (un vernis sans lumière à renvoyer ne se voit pas).
+    private static var horizonNoir: Float {
+        switch variantNoir {
+        case 1: return 0.22
+        case 2: return 0.16
+        case 3: return 0.28
+        case 4: return 0.25
+        case 9: return 0.09
+        default: return 0.13
         }
     }
 
@@ -415,7 +461,7 @@ enum RobeBooster {
                 // que le studio vient d'éteindre.
                 poudre: .white,
                 horizonHDR: SIMD3<Float>(0.34, 0.28, 0.72),
-                horizonForce: 0.09, solForce: 0.02)
+                horizonForce: Self.horizonNoir, solForce: 0.02)
         }
     }
 }
@@ -516,7 +562,7 @@ final class BoosterScene {
                 m.clearCoat.contents = 0.5
                 m.clearCoatRoughness.contents = 0.10
             } else {
-                m.metalness.contents = 0.0
+                m.metalness.contents = robe.matiere.metal
                 m.roughness.contents = robe.matiere.rugosite
                 m.clearCoat.contents = robe.matiere.vernis
                 m.clearCoatRoughness.contents = robe.matiere.vernisRugosite
@@ -532,7 +578,7 @@ final class BoosterScene {
             m.setValue(0.0 as CGFloat, forKey: "tearU")
             m.setValue(0.0 as CGFloat, forKey: "tornGlow")
             m.setValue(0.55 as CGFloat, forKey: "rimGain")
-            m.setValue((mylar ? 1.0 : 0.0) as CGFloat, forKey: "metalLift")
+            m.setValue((mylar ? 1.0 : robe.matiere.metalLift) as CGFloat, forKey: "metalLift")
             m.setValue(-1.0 as CGFloat, forKey: "inviteU")
             m.setValue(0.0 as CGFloat, forKey: "inviteGlow")
             m.setValue(0.0 as CGFloat, forKey: "moonCharge")

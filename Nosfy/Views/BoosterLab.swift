@@ -299,25 +299,41 @@ final class BoosterHaptics {
 /// respecte le silencieux, et se tait si une musique joue déjà — on ne
 /// se bat pas contre la playlist de séance.
 final class BoosterAmbience {
-    /// Les pistes et leur volume de croisière.
+    /// Les pistes et leur volume de croisière — celles du manège ORANGE.
     static let manege = "manege-nappe"
     static let veille = "braise-veille"
     static let sacre = "sacre-lune"
+    /// LE MANÈGE NOIR A SA MUSIQUE (Kathryn, 18-09, sur son iPhone :
+    /// « musique autre, car c'est légendaire ») : une boîte à musique plus
+    /// lente et plus grave, en mineur, sur un bourdon
+    /// (`tools/sacre/cuire_manege_noir.py`) ; et SON sacre quand la carte se
+    /// présente — « un truc plus beau, plus légendaire » : un chœur qui
+    /// s'élève, une pluie de cloches (`tools/sacre/cuire_sacre_noir.py`).
+    /// `sacre-legendaire.caf` (15-08, jamais branché) reste dans le bundle.
+    static let manegeNoir = "manege-noir"
+    static let sacreNoir = "sacre-noir"
     private static let levels: [String: Float] = [
         manege: 0.22, veille: 0.30, sacre: 0.30,
+        manegeNoir: 0.22, sacreNoir: 0.30,
     ]
+    /// Les pistes de CETTE robe — les sites d'appel lisent l'instance, pas
+    /// les statiques, pour que le noir chante le sien.
+    let pisteManege: String
+    let pisteSacre: String
 
     private let engine = AVAudioEngine()
     private var players: [String: AVAudioPlayerNode] = [:]
     private var ready = false
     private var fadeTimers: [String: Timer] = [:]
 
-    init() {
+    init(robe: RobeBooster = .lune) {
+        pisteManege = robe == .noire ? Self.manegeNoir : Self.manege
+        pisteSacre = robe == .noire ? Self.sacreNoir : Self.sacre
         let session = AVAudioSession.sharedInstance()
         try? session.setCategory(.ambient, mode: .default,
                                  options: [.mixWithOthers])
         guard !session.isOtherAudioPlaying else { return }
-        for name in [Self.manege, Self.veille, Self.sacre] {
+        for name in [pisteManege, Self.veille, pisteSacre] {
             guard let url = Bundle.main.url(forResource: name,
                                             withExtension: "caf"),
                   let file = try? AVAudioFile(forReading: url),
@@ -2049,8 +2065,8 @@ struct BoosterStage: UIViewRepresentable {
                     // `nappeT0` se pose QUAND MÊME : la porte-nappe de
                     // placingStep est une horloge, elle doit passer.
                     if !muet {
-                        ambience = BoosterAmbience()
-                        ambience?.act(BoosterAmbience.manege, over: 0.9)
+                        ambience = BoosterAmbience(robe: robe)
+                        ambience?.act(ambience!.pisteManege, over: 0.9)
                     }
                     nappeT0 = CACurrentMediaTime()
                     beginPlacing()
@@ -2771,7 +2787,7 @@ struct BoosterStage: UIViewRepresentable {
             // L'anneau reprend ses droits : le clone revient posé de face.
             cloneYaw = 0
             cloneVel = 0
-            ambience?.act(BoosterAmbience.manege, over: 0.9)
+            ambience?.act(ambience!.pisteManege, over: 0.9)
 
             SCNTransaction.begin()
             SCNTransaction.animationDuration = 0.45
@@ -3499,7 +3515,7 @@ struct BoosterStage: UIViewRepresentable {
                 stage.celebrate()
                 self.sfx?.chime()
                 self.haptics.sparkle()
-                self.ambience?.act(BoosterAmbience.sacre, over: 1.4)
+                self.ambience?.act(self.ambience!.pisteSacre, over: 1.4)
             }
 
             // L'assise : un ressort discret après la pose — et pendant
