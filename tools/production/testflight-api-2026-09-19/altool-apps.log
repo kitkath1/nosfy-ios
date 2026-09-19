@@ -1,0 +1,26 @@
+Running altool at path '/Applications/Xcode.app/Contents/SharedFrameworks/ContentDelivery.framework/Resources/altool'...
+
+2026-09-19 10:04:58.711 ERROR: [altool.1017FEE40] GET APP SETTINGS: failed to authenticate. The server response was: {
+    errors =     (
+                {
+            code = "NOT_AUTHORIZED";
+            detail = "Provide a properly configured and signed bearer token, and make sure that it has not expired. Learn more about Generating Tokens for API Requests https://developer.apple.com/go/?id=api-generating-tokens";
+            status = 401;
+            title = "Authentication credentials are missing or invalid.";
+        }
+    );
+}
+2026-09-19 10:04:58.712 ERROR: [altool.1017FEE40] GET APP SETTINGS: received status code 401, auth issue.
+2026-09-19 10:04:59.358 ERROR: [altool.857076FC0] logKpiName: received status code 401, auth issue.
+2026-09-19 10:04:59.675 ERROR: [CDASCAPI.857075940] APP STORE CONNECT API list-apps: failed to authenticate. The server response was: {
+    errors =     (
+                {
+            code = "NOT_AUTHORIZED";
+            detail = "Provide a properly configured and signed bearer token, and make sure that it has not expired. Learn more about Generating Tokens for API Requests https://developer.apple.com/go/?id=api-generating-tokens";
+            status = 401;
+            title = "Authentication credentials are missing or invalid.";
+        }
+    );
+}
+2026-09-19 10:04:59.676 ERROR: [CDASCAPI.857075940] APP STORE CONNECT API list-apps: received status code 401, auth issue.
+2026-09-19 10:04:59.676 [altool.857075940] No applications found.

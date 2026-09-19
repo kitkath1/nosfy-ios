@@ -1,5 +1,33 @@
 # Règle multi-session (Nosfy)
 
+## Sauvegarde Parcours/TestFlight — 19-09
+
+Commit Parcours 858abef5 poussé sur main à la demande de Kathryn.
+Sélection dans une copie isolée, index partagé inchangé. Parent et sélection
+rencontrent le même ToasterGain absent ; le build intégré 81 est VALID chez Apple.
+Sonde de parcours demandée ensuite : chantier suivant, absente du build81.
+
+## TestFlight via API — build 81 envoyé, 19-09
+
+Kathryn autorise les fiches et la publication TestFlight. Clé JBXG6FH45V +
+Issuer fourni : API 200 ; ancienne clé 48V7W7DND9 refusée 401.
+Archive et export Release signés réussis, copie figée de 588 fichiers.
+Apple accepte l’IPA 1.0 (81) sans erreur à 10:18 Paris ; traitement COMPLETE,
+build VALID. Consignes FR/en-GB relues, build sélectionné dans le brouillon1.0.
+Descriptions/sous-titres/mots-clés FR/en-GB enregistrés puis relus, catégorie
+Santé et forme. Icône lune compilée, puis extraite par Apple et vue.
+Groupe « Premiers testeurs » créé vide, lien public et notifications désactivés.
+Téléphone fourni ensuite : contacts et notes de revue enregistrés.
+Build rattaché au groupe ; demande de revue HTTP201, WAITING_FOR_REVIEW relu.
+URL confidentialité/assistance encore manquantes pour la fiche publique.
+50 cartes requises pour ouvrir aux testeurs : catalogue relu 14/50.
+Aucune invitation, aucun téléphone ni art touché ; index partagé intact.
+Preuves : tools/production/testflight-api-2026-09-19/README.md.
+Documentation artefact/verif PASS : 23 tests, dix pages à 390 px ; captures
+relues. 588 fichiers sources encore identiques au build après envoi.
+Revue externe soumise, réponse Apple attendue ; aucune invitation.
+
+
 ## Parcours — nouvelle vérification sans téléphone, 19-09
 
 Sur demande de Kathryn : relancer les tests front/backend en arrière-plan,

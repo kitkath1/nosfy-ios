@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "build": "81",
+  "bundleId": "fr.kathryn.woop",
+  "ipa_sha256": "fc7a73f7e82453e47adf5621278070367f600684c69250438d209fd96fe9e050",
+  "ipa_octets": 348383515,
+  "delivery_uuid": "589d3971-8596-438e-9c45-07ff24f07d15",
+  "upload": "SUCCEEDED",
+  "archive": "SUCCEEDED",
+  "export": "SUCCEEDED",
+  "usesNonExemptEncryption": false,
+  "cle_api_validee": "JBXG6FH45V",
+  "sources_figees": 588,
+  "source_manifest": "sources.json",
+  "testeurs_invites": 0,
+  "publication_App_Store": false
+}

@@ -1,0 +1,36 @@
+[
+  {
+    "type": "buildIcons",
+    "id": "YnVpbGQgNTg5ZDM5NzEtODU5Ni00MzhlLTljNDUtMDdmZjI0ZjA3ZDE1IEFQUF9TVE9SRSB0cnVl",
+    "attributes": {
+      "iconAsset": {
+        "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/73/75/fe/7375fead-89b7-5272-fc34-85a3b94cfb67/Placeholder.mill/{w}x{h}bb.{f}",
+        "width": 1024,
+        "height": 1024
+      },
+      "iconType": "APP_STORE",
+      "masked": true,
+      "name": null
+    },
+    "links": {
+      "self": "https://api.appstoreconnect.apple.com/v1/buildIcons/YnVpbGQgNTg5ZDM5NzEtODU5Ni00MzhlLTljNDUtMDdmZjI0ZjA3ZDE1IEFQUF9TVE9SRSB0cnVl"
+    }
+  },
+  {
+    "type": "buildIcons",
+    "id": "YnVpbGQgNTg5ZDM5NzEtODU5Ni00MzhlLTljNDUtMDdmZjI0ZjA3ZDE1IEFQUF9TVE9SRSBmYWxzZQ",
+    "attributes": {
+      "iconAsset": {
+        "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/c8/47/32/c84732b6-dee6-3275-835e-b44ef313d11e/AppIcon-0-0-1x_U007ephone-0-1-0-P3-85-220.png/{w}x{h}bb.{f}",
+        "width": 1024,
+        "height": 1024
+      },
+      "iconType": "APP_STORE",
+      "masked": false,
+      "name": null
+    },
+    "links": {
+      "self": "https://api.appstoreconnect.apple.com/v1/buildIcons/YnVpbGQgNTg5ZDM5NzEtODU5Ni00MzhlLTljNDUtMDdmZjI0ZjA3ZDE1IEFQUF9TVE9SRSBmYWxzZQ"
+    }
+  }
+]

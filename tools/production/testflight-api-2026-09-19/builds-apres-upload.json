@@ -1,0 +1,16 @@
+{
+  "status": 200,
+  "body": {
+    "data": [],
+    "included": [],
+    "links": {
+      "self": "https://api.appstoreconnect.apple.com/v1/builds?filter%5Bapp%5D=6813439459&include=buildBetaDetail&limit=10"
+    },
+    "meta": {
+      "paging": {
+        "total": 0,
+        "limit": 10
+      }
+    }
+  }
+}

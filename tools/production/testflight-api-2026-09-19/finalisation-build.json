@@ -1,0 +1,417 @@
+[
+  {
+    "path": "/v1/builds?filter[app]=6813439459&filter[version]=81&include=preReleaseVersion",
+    "method": "GET",
+    "status": 200,
+    "body": {
+      "data": [
+        {
+          "type": "builds",
+          "id": "589d3971-8596-438e-9c45-07ff24f07d15",
+          "attributes": {
+            "version": "81",
+            "uploadedDate": "2026-09-19T01:19:52-07:00",
+            "expirationDate": "2026-12-18T00:19:52-08:00",
+            "expired": false,
+            "minOsVersion": "26.0",
+            "lsMinimumSystemVersion": null,
+            "computedMinMacOsVersion": "26.0",
+            "computedMinVisionOsVersion": "26.0",
+            "iconAssetToken": {
+              "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/7c/29/03/7c2903b3-40eb-c7b7-0c60-8a36ebe84394/AppIcon60x60@2x.png/{w}x{h}bb.{f}",
+              "width": 120,
+              "height": 120
+            },
+            "processingState": "VALID",
+            "buildAudienceType": "APP_STORE_ELIGIBLE",
+            "usesNonExemptEncryption": false
+          },
+          "relationships": {
+            "preReleaseVersion": {
+              "data": {
+                "type": "preReleaseVersions",
+                "id": "7a3cb7b2-4f89-48e9-ab7f-ed3aed43163d"
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/relationships/preReleaseVersion",
+                "related": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/preReleaseVersion"
+              }
+            },
+            "individualTesters": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/relationships/individualTesters",
+                "related": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/individualTesters"
+              }
+            },
+            "betaGroups": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/relationships/betaGroups"
+              }
+            },
+            "betaBuildLocalizations": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/relationships/betaBuildLocalizations",
+                "related": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/betaBuildLocalizations"
+              }
+            },
+            "appEncryptionDeclaration": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/relationships/appEncryptionDeclaration",
+                "related": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/appEncryptionDeclaration"
+              }
+            },
+            "betaAppReviewSubmission": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/relationships/betaAppReviewSubmission",
+                "related": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/betaAppReviewSubmission"
+              }
+            },
+            "app": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/relationships/app",
+                "related": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/app"
+              }
+            },
+            "buildBetaDetail": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/relationships/buildBetaDetail",
+                "related": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/buildBetaDetail"
+              }
+            },
+            "appStoreVersion": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/relationships/appStoreVersion",
+                "related": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/appStoreVersion"
+              }
+            },
+            "icons": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/relationships/icons",
+                "related": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/icons"
+              }
+            },
+            "perfPowerMetrics": {
+              "links": {
+                "related": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/perfPowerMetrics"
+              }
+            },
+            "diagnosticSignatures": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/relationships/diagnosticSignatures",
+                "related": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/diagnosticSignatures"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15"
+          }
+        }
+      ],
+      "included": [
+        {
+          "type": "preReleaseVersions",
+          "id": "7a3cb7b2-4f89-48e9-ab7f-ed3aed43163d",
+          "attributes": {
+            "version": "1.0",
+            "platform": "IOS"
+          },
+          "relationships": {
+            "builds": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/preReleaseVersions/7a3cb7b2-4f89-48e9-ab7f-ed3aed43163d/relationships/builds",
+                "related": "https://api.appstoreconnect.apple.com/v1/preReleaseVersions/7a3cb7b2-4f89-48e9-ab7f-ed3aed43163d/builds"
+              }
+            },
+            "app": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/preReleaseVersions/7a3cb7b2-4f89-48e9-ab7f-ed3aed43163d/relationships/app",
+                "related": "https://api.appstoreconnect.apple.com/v1/preReleaseVersions/7a3cb7b2-4f89-48e9-ab7f-ed3aed43163d/app"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/preReleaseVersions/7a3cb7b2-4f89-48e9-ab7f-ed3aed43163d"
+          }
+        }
+      ],
+      "links": {
+        "self": "https://api.appstoreconnect.apple.com/v1/builds?filter%5Bapp%5D=6813439459&filter%5Bversion%5D=81&include=preReleaseVersion"
+      },
+      "meta": {
+        "paging": {
+          "total": 1,
+          "limit": 50
+        }
+      }
+    }
+  },
+  {
+    "path": "/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/betaBuildLocalizations",
+    "method": "GET",
+    "status": 200,
+    "body": {
+      "data": [
+        {
+          "type": "betaBuildLocalizations",
+          "id": "0b52a50d-68ff-4eb6-a2ce-8c34dc7d73e2",
+          "attributes": {
+            "whatsNew": null,
+            "locale": "fr-FR"
+          },
+          "relationships": {
+            "build": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/0b52a50d-68ff-4eb6-a2ce-8c34dc7d73e2/relationships/build",
+                "related": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/0b52a50d-68ff-4eb6-a2ce-8c34dc7d73e2/build"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/0b52a50d-68ff-4eb6-a2ce-8c34dc7d73e2"
+          }
+        },
+        {
+          "type": "betaBuildLocalizations",
+          "id": "ce24d95d-6b76-4878-84d8-b07a978068fb",
+          "attributes": {
+            "whatsNew": null,
+            "locale": "en-GB"
+          },
+          "relationships": {
+            "build": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/ce24d95d-6b76-4878-84d8-b07a978068fb/relationships/build",
+                "related": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/ce24d95d-6b76-4878-84d8-b07a978068fb/build"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/ce24d95d-6b76-4878-84d8-b07a978068fb"
+          }
+        }
+      ],
+      "links": {
+        "self": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/betaBuildLocalizations"
+      },
+      "meta": {
+        "paging": {
+          "total": 2,
+          "limit": 50
+        }
+      }
+    }
+  },
+  {
+    "path": "/v1/betaBuildLocalizations/0b52a50d-68ff-4eb6-a2ce-8c34dc7d73e2",
+    "method": "PATCH",
+    "status": 200,
+    "body": {
+      "data": {
+        "type": "betaBuildLocalizations",
+        "id": "0b52a50d-68ff-4eb6-a2ce-8c34dc7d73e2",
+        "attributes": {
+          "whatsNew": "Teste le parcours complet avec un compte neuf :\n• Connecte-toi avec Apple, puis choisis ta langue, ton prénom et ton objectif.\n• Vérifie que les séances, les pièces, les boosters et la collection commencent à zéro.\n• Fais une séance de musculation ou de cardio et termine-la.\n• Consulte les stories et les récompenses, puis l’animation du galet accompli.\n• Ouvre le booster gagné et retrouve la carte dans ta collection.\n• Touche un jour fait dans le widget Regularity pour revoir sa séance. Si tu as fait plusieurs séances ce jour-là, choisis celle à revoir.\n• Déconnecte-toi puis reconnecte-toi : tes séances, leurs reçus et ta collection doivent revenir sans gain en double.\n• Reviens un autre jour pour vérifier le retour quotidien.\n\nEn cas de problème, indique l’étape, le modèle d’iPhone, la version d’iOS et joins une capture via TestFlight.",
+          "locale": "fr-FR"
+        },
+        "relationships": {
+          "build": {
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/0b52a50d-68ff-4eb6-a2ce-8c34dc7d73e2/relationships/build",
+              "related": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/0b52a50d-68ff-4eb6-a2ce-8c34dc7d73e2/build"
+            }
+          }
+        },
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/0b52a50d-68ff-4eb6-a2ce-8c34dc7d73e2"
+        }
+      },
+      "links": {
+        "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/0b52a50d-68ff-4eb6-a2ce-8c34dc7d73e2"
+      }
+    }
+  },
+  {
+    "path": "/v1/betaBuildLocalizations/ce24d95d-6b76-4878-84d8-b07a978068fb",
+    "method": "PATCH",
+    "status": 200,
+    "body": {
+      "data": {
+        "type": "betaBuildLocalizations",
+        "id": "ce24d95d-6b76-4878-84d8-b07a978068fb",
+        "attributes": {
+          "whatsNew": "Test the full experience with a new account:\n• Sign in with Apple, then choose your language, name and goal.\n• Check that workouts, coins, boosters and your collection start empty.\n• Complete a strength or cardio workout.\n• View the session stories, rewards and completed pebble animation.\n• Open the earned booster and find the card in your collection.\n• Tap a completed day in the Regularity widget to revisit its workout. Choose a session when the day contains several.\n• Sign out and back in: workouts, reward receipts and your collection should return without duplicate rewards.\n• Return on another day to check the daily return.\n\nIf something goes wrong, include the step, iPhone model, iOS version and a screenshot through TestFlight.",
+          "locale": "en-GB"
+        },
+        "relationships": {
+          "build": {
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/ce24d95d-6b76-4878-84d8-b07a978068fb/relationships/build",
+              "related": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/ce24d95d-6b76-4878-84d8-b07a978068fb/build"
+            }
+          }
+        },
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/ce24d95d-6b76-4878-84d8-b07a978068fb"
+        }
+      },
+      "links": {
+        "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/ce24d95d-6b76-4878-84d8-b07a978068fb"
+      }
+    }
+  },
+  {
+    "path": "/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/betaBuildLocalizations",
+    "method": "GET",
+    "status": 200,
+    "body": {
+      "data": [
+        {
+          "type": "betaBuildLocalizations",
+          "id": "0b52a50d-68ff-4eb6-a2ce-8c34dc7d73e2",
+          "attributes": {
+            "whatsNew": "Teste le parcours complet avec un compte neuf :\n• Connecte-toi avec Apple, puis choisis ta langue, ton prénom et ton objectif.\n• Vérifie que les séances, les pièces, les boosters et la collection commencent à zéro.\n• Fais une séance de musculation ou de cardio et termine-la.\n• Consulte les stories et les récompenses, puis l’animation du galet accompli.\n• Ouvre le booster gagné et retrouve la carte dans ta collection.\n• Touche un jour fait dans le widget Regularity pour revoir sa séance. Si tu as fait plusieurs séances ce jour-là, choisis celle à revoir.\n• Déconnecte-toi puis reconnecte-toi : tes séances, leurs reçus et ta collection doivent revenir sans gain en double.\n• Reviens un autre jour pour vérifier le retour quotidien.\n\nEn cas de problème, indique l’étape, le modèle d’iPhone, la version d’iOS et joins une capture via TestFlight.",
+            "locale": "fr-FR"
+          },
+          "relationships": {
+            "build": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/0b52a50d-68ff-4eb6-a2ce-8c34dc7d73e2/relationships/build",
+                "related": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/0b52a50d-68ff-4eb6-a2ce-8c34dc7d73e2/build"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/0b52a50d-68ff-4eb6-a2ce-8c34dc7d73e2"
+          }
+        },
+        {
+          "type": "betaBuildLocalizations",
+          "id": "ce24d95d-6b76-4878-84d8-b07a978068fb",
+          "attributes": {
+            "whatsNew": "Test the full experience with a new account:\n• Sign in with Apple, then choose your language, name and goal.\n• Check that workouts, coins, boosters and your collection start empty.\n• Complete a strength or cardio workout.\n• View the session stories, rewards and completed pebble animation.\n• Open the earned booster and find the card in your collection.\n• Tap a completed day in the Regularity widget to revisit its workout. Choose a session when the day contains several.\n• Sign out and back in: workouts, reward receipts and your collection should return without duplicate rewards.\n• Return on another day to check the daily return.\n\nIf something goes wrong, include the step, iPhone model, iOS version and a screenshot through TestFlight.",
+            "locale": "en-GB"
+          },
+          "relationships": {
+            "build": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/ce24d95d-6b76-4878-84d8-b07a978068fb/relationships/build",
+                "related": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/ce24d95d-6b76-4878-84d8-b07a978068fb/build"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/ce24d95d-6b76-4878-84d8-b07a978068fb"
+          }
+        }
+      ],
+      "links": {
+        "self": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/betaBuildLocalizations"
+      },
+      "meta": {
+        "paging": {
+          "total": 2,
+          "limit": 50
+        }
+      }
+    }
+  },
+  {
+    "path": "/v1/appStoreVersions/604aaea9-5e11-4dff-ac24-76b3b455eb53/relationships/build",
+    "method": "GET",
+    "status": 200,
+    "body": {
+      "data": null,
+      "links": {
+        "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/604aaea9-5e11-4dff-ac24-76b3b455eb53/relationships/build"
+      }
+    }
+  },
+  {
+    "path": "/v1/appStoreVersions/604aaea9-5e11-4dff-ac24-76b3b455eb53/relationships/build",
+    "method": "PATCH",
+    "status": 204,
+    "body": null
+  },
+  {
+    "path": "/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/icons",
+    "method": "GET",
+    "status": 200,
+    "body": {
+      "data": [
+        {
+          "type": "buildIcons",
+          "id": "YnVpbGQgNTg5ZDM5NzEtODU5Ni00MzhlLTljNDUtMDdmZjI0ZjA3ZDE1IEFQUF9TVE9SRSB0cnVl",
+          "attributes": {
+            "iconAsset": {
+              "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/73/75/fe/7375fead-89b7-5272-fc34-85a3b94cfb67/Placeholder.mill/{w}x{h}bb.{f}",
+              "width": 1024,
+              "height": 1024
+            },
+            "iconType": "APP_STORE",
+            "masked": true,
+            "name": null
+          },
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/buildIcons/YnVpbGQgNTg5ZDM5NzEtODU5Ni00MzhlLTljNDUtMDdmZjI0ZjA3ZDE1IEFQUF9TVE9SRSB0cnVl"
+          }
+        },
+        {
+          "type": "buildIcons",
+          "id": "YnVpbGQgNTg5ZDM5NzEtODU5Ni00MzhlLTljNDUtMDdmZjI0ZjA3ZDE1IEFQUF9TVE9SRSBmYWxzZQ",
+          "attributes": {
+            "iconAsset": {
+              "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/c8/47/32/c84732b6-dee6-3275-835e-b44ef313d11e/AppIcon-0-0-1x_U007ephone-0-1-0-P3-85-220.png/{w}x{h}bb.{f}",
+              "width": 1024,
+              "height": 1024
+            },
+            "iconType": "APP_STORE",
+            "masked": false,
+            "name": null
+          },
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/buildIcons/YnVpbGQgNTg5ZDM5NzEtODU5Ni00MzhlLTljNDUtMDdmZjI0ZjA3ZDE1IEFQUF9TVE9SRSBmYWxzZQ"
+          }
+        }
+      ],
+      "links": {
+        "self": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/icons"
+      },
+      "meta": {
+        "paging": {
+          "total": 2,
+          "limit": 50
+        }
+      }
+    }
+  },
+  {
+    "path": "/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/buildBetaDetail",
+    "method": "GET",
+    "status": 200,
+    "body": {
+      "data": {
+        "type": "buildBetaDetails",
+        "id": "589d3971-8596-438e-9c45-07ff24f07d15",
+        "attributes": {
+          "autoNotifyEnabled": true,
+          "internalBuildState": "READY_FOR_BETA_TESTING",
+          "externalBuildState": "READY_FOR_BETA_SUBMISSION"
+        },
+        "relationships": {
+          "build": {
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/buildBetaDetails/589d3971-8596-438e-9c45-07ff24f07d15/relationships/build",
+              "related": "https://api.appstoreconnect.apple.com/v1/buildBetaDetails/589d3971-8596-438e-9c45-07ff24f07d15/build"
+            }
+          }
+        },
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/buildBetaDetails/589d3971-8596-438e-9c45-07ff24f07d15"
+        }
+      },
+      "links": {
+        "self": "https://api.appstoreconnect.apple.com/v1/builds/589d3971-8596-438e-9c45-07ff24f07d15/buildBetaDetail"
+      }
+    }
+  }
+]

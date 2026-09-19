@@ -1,0 +1,41 @@
+{
+  "contacts": {
+    "contactFirstName": true,
+    "contactLastName": true,
+    "contactEmail": true,
+    "contactPhone": true,
+    "notes": true
+  },
+  "groupe": {
+    "status": 204,
+    "body": null
+  },
+  "soumission": {
+    "status": 201,
+    "body": {
+      "data": {
+        "type": "betaAppReviewSubmissions",
+        "id": "589d3971-8596-438e-9c45-07ff24f07d15",
+        "attributes": {
+          "betaReviewState": "WAITING_FOR_REVIEW",
+          "submittedDate": null
+        },
+        "relationships": {
+          "build": {
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/betaAppReviewSubmissions/589d3971-8596-438e-9c45-07ff24f07d15/relationships/build",
+              "related": "https://api.appstoreconnect.apple.com/v1/betaAppReviewSubmissions/589d3971-8596-438e-9c45-07ff24f07d15/build"
+            }
+          }
+        },
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/betaAppReviewSubmissions/589d3971-8596-438e-9c45-07ff24f07d15"
+        }
+      },
+      "links": {
+        "self": "https://api.appstoreconnect.apple.com/v1/betaAppReviewSubmissions"
+      }
+    }
+  },
+  "le_utc": "2026-09-19T08:30:42.402799+00:00"
+}

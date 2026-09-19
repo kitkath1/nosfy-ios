@@ -1,0 +1,24 @@
+{
+  "lu_le_utc": "2026-09-19T08:19:26.530870+00:00",
+  "lecture_seule": true,
+  "references_publiees": 14,
+  "objectif": 50,
+  "rareté": [
+    {
+      "rarete": "common",
+      "nombre": 5
+    },
+    {
+      "rarete": "epic",
+      "nombre": 3
+    },
+    {
+      "rarete": "legendary",
+      "nombre": 3
+    },
+    {
+      "rarete": "rare",
+      "nombre": 3
+    }
+  ]
+}

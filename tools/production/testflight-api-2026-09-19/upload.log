@@ -1,0 +1,18 @@
+Running altool at path '/Applications/Xcode.app/Contents/SharedFrameworks/ContentDelivery.framework/Resources/altool'...
+
+2026-09-19 10:18:51.006  INFO: [ContentDelivery.Uploader.C0B074380] 
+==========================================
+UPLOAD SUCCEEDED with no errors
+Delivery UUID: 589d3971-8596-438e-9c45-07ff24f07d15
+Transferred 348383515 bytes in 15.671 seconds (22.2MB/s, 177.848Mbps)
+==========================================
+{
+  "details" : {
+    "delivery-uuid" : "589d3971-8596-438e-9c45-07ff24f07d15",
+    "transferred" : "348383515 bytes in 15.671 seconds (22.2MB/s, 177.848Mbps)"
+  },
+  "os-version" : "Version 26.5.1 (Build 25F80)",
+  "success-message" : "No errors uploading archive at '/var/folders/sk/1y78dckn1fbdyvwtdtdy76680000gn/T/nosfy-testflight-20260919-3ndqywhv/export-81/Nosfy.ipa'.",
+  "tool-path" : "/Applications/Xcode.app/Contents/SharedFrameworks/ContentDelivery.framework/Resources",
+  "tool-version" : "26.40.1 (174001)"
+}

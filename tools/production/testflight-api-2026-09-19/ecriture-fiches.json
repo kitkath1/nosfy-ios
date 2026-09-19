@@ -1,0 +1,82 @@
+[
+  {
+    "method": "GET",
+    "path": "/v1/users?limit=50&fields[users]=firstName,lastName,username,roles",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/v1/apps/6813439459/betaAppLocalizations",
+    "status": 200
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/betaAppLocalizations/427c9bd4-d4eb-4d0d-8c19-4589939121ec",
+    "status": 200
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/betaAppLocalizations/475d6e39-bd7e-4166-b975-034cc921e042",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/v1/appInfos/e3bf6eb6-8d9e-46b7-a653-3f810a66e870/appInfoLocalizations",
+    "status": 200
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/appInfoLocalizations/620a90c5-e1c5-47d9-9cc4-f1e51f3c2dbd",
+    "status": 200
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/appInfoLocalizations/a880125f-9cb3-4b39-a20d-f8cdebe6cea6",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/v1/appStoreVersions/604aaea9-5e11-4dff-ac24-76b3b455eb53/appStoreVersionLocalizations",
+    "status": 200
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/appStoreVersionLocalizations/9bd810ad-b706-4f5f-a017-54ca6e4696f3",
+    "status": 200
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/appStoreVersionLocalizations/5f0911c7-f45c-4e1a-9a2d-f3c7207831c6",
+    "status": 200
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/appInfos/e3bf6eb6-8d9e-46b7-a653-3f810a66e870",
+    "status": 200
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/appStoreVersions/604aaea9-5e11-4dff-ac24-76b3b455eb53",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/v1/apps/6813439459/betaAppReviewDetail",
+    "status": 200
+  },
+  {
+    "method": "PATCH",
+    "path": "/v1/betaAppReviewDetails/6813439459",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/v1/appStoreVersions/604aaea9-5e11-4dff-ac24-76b3b455eb53/appStoreReviewDetail",
+    "status": 200
+  },
+  {
+    "method": "POST",
+    "path": "/v1/appStoreReviewDetails",
+    "status": 201
+  }
+]

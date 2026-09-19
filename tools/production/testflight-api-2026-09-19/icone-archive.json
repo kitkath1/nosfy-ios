@@ -1,0 +1,22 @@
+{
+  "CFBundleIcons": {
+    "CFBundlePrimaryIcon": {
+      "CFBundleIconFiles": [
+        "AppIcon60x60"
+      ],
+      "CFBundleIconName": "AppIcon"
+    }
+  },
+  "CFBundleIcons~ipad": {
+    "CFBundlePrimaryIcon": {
+      "CFBundleIconFiles": [
+        "AppIcon60x60",
+        "AppIcon76x76"
+      ]
+    }
+  },
+  "fichiers": [
+    "AppIcon60x60@2x.png",
+    "AppIcon76x76@2x~ipad.png"
+  ]
+}
