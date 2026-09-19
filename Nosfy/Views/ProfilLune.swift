@@ -862,6 +862,9 @@ struct ProfilLuneView: View {
                 MoonCoinView(coinR: 11, draggable: false,
                              yawOverride: 0.34, idleLife: 0, fps: 6,
                              reveal: 0.34, matte: 0, figee: true)
+                    // Le métal est décoratif : son tap interne, même sans
+                    // action, ne doit pas absorber celui de la pastille.
+                    .allowsHitTesting(false)
                     .frame(width: 11 * MoonCoinView.hostScale,
                            height: 11 * MoonCoinView.hostScale)
                     .frame(width: 24, height: 24)
@@ -903,12 +906,12 @@ struct ProfilLuneView: View {
     // MARK: Les quatre registres
 
     private static let registresProfil: [(nom: String, sous: String,
-                                          pips: Int, total: Int,
+                                          pips: Int,
                                           cle: String)] = [
-        ("Une Lune", "Normal", 1, 4, "common"),
-        ("Deux Lunes", "Plus rare", 2, 11, "rare"),
-        ("Trois Lunes", "Très rare", 3, 4, "epic"),
-        ("Quatre Lunes", "Légendaire", 4, 6, "legendary"),
+        ("Une Lune", "Normal", 1, "common"),
+        ("Deux Lunes", "Plus rare", 2, "rare"),
+        ("Trois Lunes", "Très rare", 3, "epic"),
+        ("Quatre Lunes", "Légendaire", 4, "legendary"),
     ]
 
     private var registres: some View {
@@ -925,6 +928,7 @@ struct ProfilLuneView: View {
                                                   .opacity(0.55))
                             }
                         }
+                        .frame(width: 44, alignment: .leading)
                         VStack(alignment: .leading, spacing: 1) {
                             Text(reg.nom)
                                 .font(.inter(15, .semibold))
@@ -944,6 +948,7 @@ struct ProfilLuneView: View {
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(Color.inkMuted)
                     }
+                    .accessibilityIdentifier("profil-registre-\(reg.cle)")
                     .padding(.horizontal, 20)
 
                     // Les collectées d'abord (l'ordre d'obtention, la

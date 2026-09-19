@@ -1,0 +1,643 @@
+{
+  "status": "plan_sans_generation",
+  "date": "2026-09-19",
+  "decision_utilisatrice": {
+    "total_scenes": 50,
+    "generer_images": false,
+    "mondes": "les trois familles validées uniquement",
+    "catalogue_commun": true,
+    "shiny": "très très marqué",
+    "personnages": "récurrents, identité conservée ; poses, angles, actions et compositions très différents, très beaux"
+  },
+  "portee": "14 références publiées conservées ; 36 scènes nouvelles proposées. Les noms et la répartition ci-dessous sont des propositions éditoriales, pas des illustrations validées. Aucune génération, publication ou modification de carte possédée.",
+  "contrat": {
+    "reference": "une scène officielle = un identifiant stable et une illustration canonique pour tous",
+    "generation": "atelier uniquement, jamais au tirage et jamais par utilisateur",
+    "tirage": "le serveur peut tirer une référence existante ; il ne génère pas une scène personnelle",
+    "doublons": "même scène = vrai doublon ; nouveau décor seul ou recoloration ne suffit pas à créer une scène",
+    "finition": "shiny officiel commun ; aucune seconde loterie implicite ; matière très marquée sur rares, épiques et légendaires, communes sobres",
+    "animation": "éveil bref et réaction au geste pour la seule carte visible, arrêt hors écran/arrière-plan/recouverte, Reduce Motion et protection thermique ; qualité et coût à mesurer",
+    "publication": "seules les images réalisées, approuvées et vérifiées peuvent être publiées ; les compteurs du profil restent ceux du catalogue disponible"
+  },
+  "families": [
+    {
+      "key": "foret-des-veilles",
+      "name": {
+        "fr": "La Forêt des Veilles",
+        "en": "The Vigil Woods"
+      },
+      "signature": [
+        "forêt",
+        "brume lunaire",
+        "nacre",
+        "braise discrète"
+      ],
+      "total_cible": 16,
+      "cards": [
+        {
+          "key": "la-veille",
+          "name": {
+            "fr": "La Veille",
+            "en": "The Vigil"
+          },
+          "rarity": "common",
+          "status": "publiee",
+          "reference": "foret-des-veilles/la-veille/1",
+          "art": "tools/carte-lune/references-2026-09-18/01-commune-la-veille-v2.png",
+          "sha256": "412d8eb54b023d18113bc3302a2c85afcd744eceb9bc9929f6f8adc2e7f6fe74"
+        },
+        {
+          "key": "les-veilleuses",
+          "name": {
+            "fr": "Les Veilleuses",
+            "en": "The Watchers"
+          },
+          "rarity": "rare",
+          "status": "publiee",
+          "reference": "foret-des-veilles/les-veilleuses/1",
+          "art": "tools/carte-lune/references-2026-09-18/02-rare-les-veilleuses-v3.png",
+          "sha256": "c2258958332ea1a572652a898b835218cf41bb93576b4933e3c566804000a478"
+        },
+        {
+          "key": "le-passage",
+          "name": {
+            "fr": "Le Passage",
+            "en": "The Passage"
+          },
+          "rarity": "epic",
+          "status": "publiee",
+          "reference": "foret-des-veilles/le-passage/1",
+          "art": "tools/carte-lune/references-2026-09-18/03-epique-le-passage-v2.png",
+          "sha256": "c9af3fcdc6adc51ae9cb170612f96e1b306cce069c07d9646b6c5cb489cdf132"
+        },
+        {
+          "key": "le-souverain",
+          "name": {
+            "fr": "Le Souverain",
+            "en": "The Sovereign"
+          },
+          "rarity": "legendary",
+          "status": "publiee",
+          "reference": "foret-des-veilles/le-souverain/1",
+          "art": "tools/carte-lune/references-2026-09-18/04-legendaire-le-souverain-v3.png",
+          "sha256": "bbbf6ec300fbdda4fba8a5cda782775f81adb10db326289f0de0a0a36e507df0"
+        },
+        {
+          "key": "le-gue-de-brume",
+          "name": {
+            "fr": "Le Gué de Brume",
+            "en": "The Mist Ford"
+          },
+          "rarity": "common",
+          "status": "proposee_non_generee",
+          "scene": "Paysage intime : pierres moussues au ras de la rivière, brume au fond, un seul éclat de lune.",
+          "art": null
+        },
+        {
+          "key": "lecorce-claire",
+          "name": {
+            "fr": "L’Écorce Claire",
+            "en": "The Pale Bark"
+          },
+          "rarity": "common",
+          "status": "proposee_non_generee",
+          "scene": "Gros plan oblique sur une écorce mouillée ; le petit papillon de La Veille ferme ses ailes sur une goutte.",
+          "art": null
+        },
+        {
+          "key": "la-branche-basse",
+          "name": {
+            "fr": "La Branche Basse",
+            "en": "The Low Bough"
+          },
+          "rarity": "common",
+          "status": "proposee_non_generee",
+          "scene": "Le papillon vu de dessous prend son envol sous une branche, ailes de profil, braise minuscule.",
+          "art": null
+        },
+        {
+          "key": "le-sentier-noye",
+          "name": {
+            "fr": "Le Sentier Noyé",
+            "en": "The Drowned Path"
+          },
+          "rarity": "common",
+          "status": "proposee_non_generee",
+          "scene": "Sentier forestier à demi couvert de brume, composition depuis une souche proche, lune cachée.",
+          "art": null
+        },
+        {
+          "key": "le-creux-du-pin",
+          "name": {
+            "fr": "Le Creux du Pin",
+            "en": "The Pine Hollow"
+          },
+          "rarity": "common",
+          "status": "proposee_non_generee",
+          "scene": "Cavité sombre d’un pin ancien, nacre sur la résine et profondeur calme entre les racines.",
+          "art": null
+        },
+        {
+          "key": "la-ronde-des-veilleuses",
+          "name": {
+            "fr": "La Ronde des Veilleuses",
+            "en": "The Watchers’ Circle"
+          },
+          "rarity": "rare",
+          "status": "proposee_non_generee",
+          "scene": "Les trois chauves-souris identiques à la référence tournent autour du tronc, une de dos, une en profil, une en piqué.",
+          "art": null
+        },
+        {
+          "key": "au-revers-des-ailes",
+          "name": {
+            "fr": "Au Revers des Ailes",
+            "en": "Beneath Their Wings"
+          },
+          "rarity": "rare",
+          "status": "proposee_non_generee",
+          "scene": "Deux veilleuses se croisent au-dessus du ruisseau, caméra basse, membranes nacrées en raccourci.",
+          "art": null
+        },
+        {
+          "key": "le-repos-des-veilleuses",
+          "name": {
+            "fr": "Le Repos des Veilleuses",
+            "en": "The Watchers at Rest"
+          },
+          "rarity": "rare",
+          "status": "proposee_non_generee",
+          "scene": "Les veilleuses suspendues à des hauteurs différentes dans un creux, une aile entrouverte accroche fortement la lumière.",
+          "art": null
+        },
+        {
+          "key": "la-percee",
+          "name": {
+            "fr": "La Percée",
+            "en": "The Breakthrough"
+          },
+          "rarity": "rare",
+          "status": "proposee_non_generee",
+          "scene": "Une veilleuse sort de la brume vers le bord inférieur, torsion nette du corps et éclats nacrés sur ses membranes.",
+          "art": null
+        },
+        {
+          "key": "laile-sur-le-fleuve",
+          "name": {
+            "fr": "L’Aile sur le Fleuve",
+            "en": "The Wing over the River"
+          },
+          "rarity": "epic",
+          "status": "proposee_non_generee",
+          "scene": "L’oiseau immense du Passage effleure l’eau avec une aile, vu de trois quarts arrière, vallée ouverte en diagonale.",
+          "art": null
+        },
+        {
+          "key": "le-contrevent",
+          "name": {
+            "fr": "Le Contrevent",
+            "en": "Into the Headwind"
+          },
+          "rarity": "epic",
+          "status": "proposee_non_generee",
+          "scene": "Le même grand oiseau remonte face au vent, poitrine en raccourci et ailes pliées vers le haut, nuages sculptés.",
+          "art": null
+        },
+        {
+          "key": "le-souverain-au-gue",
+          "name": {
+            "fr": "Le Souverain au Gué",
+            "en": "The Sovereign at the Ford"
+          },
+          "rarity": "legendary",
+          "status": "proposee_non_generee",
+          "scene": "Le même cerf noir argenté franchit le gué en bond latéral, bois d’obsidienne tournés de trois quarts ; argent et braise spectaculaires.",
+          "art": null
+        }
+      ]
+    },
+    {
+      "key": "cimes-eteintes",
+      "name": {
+        "fr": "Les Cimes Éteintes",
+        "en": "The Darkened Peaks"
+      },
+      "signature": [
+        "ténèbres",
+        "montagnes noires",
+        "orange braise",
+        "suie",
+        "obsidienne"
+      ],
+      "total_cible": 18,
+      "cards": [
+        {
+          "key": "corbeau-de-suie",
+          "name": {
+            "fr": "Corbeau de Suie",
+            "en": "Soot Raven"
+          },
+          "rarity": "common",
+          "status": "publiee",
+          "reference": "cimes-eteintes/corbeau-de-suie/1",
+          "art": "tools/carte-lune/cimes-eteintes-2026-09-18/01-commune-corbeau-de-suie-v3.png",
+          "sha256": "ae26aad7b3b0c471106adb0803893b4dcac3dba3d0752a00518215e2cc0a6e7c"
+        },
+        {
+          "key": "aile-d-ambre",
+          "name": {
+            "fr": "Aile d’Ambre",
+            "en": "Amberwing"
+          },
+          "rarity": "rare",
+          "status": "publiee",
+          "reference": "cimes-eteintes/aile-d-ambre/1",
+          "art": "tools/carte-lune/cimes-eteintes-2026-09-18/02-rare-aile-d-ambre-v3.png",
+          "sha256": "090e4ae74da55646df1c8f9ca864f41df4298a99b4e2b3040f3e84e9dccfa134"
+        },
+        {
+          "key": "loup-de-cendre",
+          "name": {
+            "fr": "Loup de Cendre",
+            "en": "Ash Wolf"
+          },
+          "rarity": "epic",
+          "status": "publiee",
+          "reference": "cimes-eteintes/loup-de-cendre/1",
+          "art": "tools/carte-lune/cimes-eteintes-2026-09-18/03-epique-loup-de-cendre-v3.png",
+          "sha256": "ddbfd9cc512fa1fb2976d6df38184a998e0664497223bacdf97d2a00632bbcb0"
+        },
+        {
+          "key": "dragon-d-obsidienne",
+          "name": {
+            "fr": "Dragon d’Obsidienne",
+            "en": "Obsidian Dragon"
+          },
+          "rarity": "legendary",
+          "status": "publiee",
+          "reference": "cimes-eteintes/dragon-d-obsidienne/1",
+          "art": "tools/carte-lune/cimes-eteintes-2026-09-18/04-legendaire-dragon-d-obsidienne-v3.png",
+          "sha256": "56f2dd05bcdd38c93eac7b503ffba2f5784f2e1fb2d74ebf7e85dfc992753068"
+        },
+        {
+          "key": "la-faille-ardente",
+          "name": {
+            "fr": "La Faille Ardente",
+            "en": "Emberrift"
+          },
+          "rarity": "common",
+          "status": "publiee",
+          "reference": "cimes-eteintes/la-faille-ardente/1",
+          "art": "tools/carte-lune/cimes-eteintes-2026-09-18/05-commune-la-faille-ardente-v1.png",
+          "sha256": "8965d31ae8332f8e4d59c0fcc36c58360f60b96cdcd436c8d7a3119701da6950"
+        },
+        {
+          "key": "le-col-des-cendres",
+          "name": {
+            "fr": "Le Col des Cendres",
+            "en": "Ashen Pass"
+          },
+          "rarity": "common",
+          "status": "publiee",
+          "reference": "cimes-eteintes/le-col-des-cendres/1",
+          "art": "tools/carte-lune/cimes-eteintes-2026-09-18/06-commune-le-col-des-cendres-v1.png",
+          "sha256": "6c1b9ee1c17b34d14527caf501af9383bb5eef137840305321337d7e2367fd5e"
+        },
+        {
+          "key": "la-corniche-de-suie",
+          "name": {
+            "fr": "La Corniche de Suie",
+            "en": "The Soot Ledge"
+          },
+          "rarity": "common",
+          "status": "proposee_non_generee",
+          "scene": "Le corbeau au petit cimier marche de profil sur une corniche, bec baissé, poussière de suie contre les montagnes noires.",
+          "art": null
+        },
+        {
+          "key": "le-nid-de-cendre",
+          "name": {
+            "fr": "Le Nid de Cendre",
+            "en": "The Ash Nest"
+          },
+          "rarity": "common",
+          "status": "proposee_non_generee",
+          "scene": "Corbeau vu de dessus ramenant une brindille au nid d’obsidienne ; ailes refermées, braise discrète au fond.",
+          "art": null
+        },
+        {
+          "key": "les-marches-noires",
+          "name": {
+            "fr": "Les Marches Noires",
+            "en": "The Black Steps"
+          },
+          "rarity": "common",
+          "status": "proposee_non_generee",
+          "scene": "Paysage de marches basaltiques irrégulières, horizon éteint, faille orange étroite et profonde.",
+          "art": null
+        },
+        {
+          "key": "le-ravin-rouge",
+          "name": {
+            "fr": "Le Ravin Rouge",
+            "en": "The Red Ravine"
+          },
+          "rarity": "common",
+          "status": "proposee_non_generee",
+          "scene": "Vue plongeante d’un ravin couvert de suie, filet de braise au fond, premier plan noir lisible.",
+          "art": null
+        },
+        {
+          "key": "la-pierre-tiede",
+          "name": {
+            "fr": "La Pierre Tiède",
+            "en": "The Warm Stone"
+          },
+          "rarity": "common",
+          "status": "proposee_non_generee",
+          "scene": "Gros plan sur obsidienne fendue et cendre froide ; lueur cuivrée contenue, silence de la montagne.",
+          "art": null
+        },
+        {
+          "key": "le-virage-dambre",
+          "name": {
+            "fr": "Le Virage d’Ambre",
+            "en": "The Amber Turn"
+          },
+          "rarity": "rare",
+          "status": "proposee_non_generee",
+          "scene": "La même chauve-souris aux membranes ovales vire sur l’aile à angle serré, visage en profil, cuivre très marqué.",
+          "art": null
+        },
+        {
+          "key": "sous-la-voute",
+          "name": {
+            "fr": "Sous la Voûte",
+            "en": "Beneath the Vault"
+          },
+          "rarity": "rare",
+          "status": "proposee_non_generee",
+          "scene": "La même chauve-souris se décroche d’une voûte de basalte tête en bas, une aile déployée et l’autre repliée.",
+          "art": null
+        },
+        {
+          "key": "la-fente-de-feu",
+          "name": {
+            "fr": "La Fente de Feu",
+            "en": "The Ember Cleft"
+          },
+          "rarity": "rare",
+          "status": "proposee_non_generee",
+          "scene": "La chauve-souris passe dans une faille verticale en montée, contre-plongée, membranes traversées par la braise.",
+          "art": null
+        },
+        {
+          "key": "la-veille-dambre",
+          "name": {
+            "fr": "La Veille d’Ambre",
+            "en": "The Amber Vigil"
+          },
+          "rarity": "rare",
+          "status": "proposee_non_generee",
+          "scene": "Chauve-souris accrochée de biais sur une paroi, tête tournée vers nous ; plis et nervures brillent comme du cuivre poli.",
+          "art": null
+        },
+        {
+          "key": "le-loup-au-bord",
+          "name": {
+            "fr": "Le Loup au Bord",
+            "en": "The Wolf on the Brink"
+          },
+          "rarity": "epic",
+          "status": "proposee_non_generee",
+          "scene": "Le même loup à crinière d’obsidienne freine au bord d’un précipice, corps bas de profil, griffes dans les cendres.",
+          "art": null
+        },
+        {
+          "key": "la-descente-de-cendre",
+          "name": {
+            "fr": "La Descente de Cendre",
+            "en": "The Ash Descent"
+          },
+          "rarity": "epic",
+          "status": "proposee_non_generee",
+          "scene": "Le loup dévale une pente vers nous en fort raccourci, crinière en arrière et éclats cuivrés dans la suie.",
+          "art": null
+        },
+        {
+          "key": "leveil-dobsidienne",
+          "name": {
+            "fr": "L’Éveil d’Obsidienne",
+            "en": "Obsidian Awakening"
+          },
+          "rarity": "legendary",
+          "status": "proposee_non_generee",
+          "scene": "Le même dragon sombre se redresse autour d’une crête, une aile ouverte en arche, tête basse de profil ; plaques noires et cuivre éclatant.",
+          "art": null
+        }
+      ]
+    },
+    {
+      "key": "bois-sans-lune",
+      "name": {
+        "fr": "Les Bois Sans Lune",
+        "en": "The Moonless Woods"
+      },
+      "signature": [
+        "nuit profonde",
+        "pins denses",
+        "racines",
+        "noir et nacre blanche"
+      ],
+      "total_cible": 16,
+      "cards": [
+        {
+          "key": "la-clairiere-muette",
+          "name": {
+            "fr": "La Clairière Muette",
+            "en": "The Silent Clearing"
+          },
+          "rarity": "common",
+          "status": "publiee",
+          "reference": "bois-sans-lune/la-clairiere-muette/1",
+          "art": "tools/carte-lune/bois-sans-lune-2026-09-18/01-commune-la-clairiere-muette-v2.png",
+          "sha256": "668e567ed87e0290050732eb7a59b3ddf907db46dd252de0ab6d2261003fad04"
+        },
+        {
+          "key": "aile-de-brume",
+          "name": {
+            "fr": "Aile de Brume",
+            "en": "Mistwing"
+          },
+          "rarity": "rare",
+          "status": "publiee",
+          "reference": "bois-sans-lune/aile-de-brume/1",
+          "art": "tools/carte-lune/bois-sans-lune-2026-09-18/02-rare-aile-de-brume-v3.png",
+          "sha256": "33b315a14c13ce3b2f1f1c72344f8e9f11afd913f888638344c4d7e1b42bb31c"
+        },
+        {
+          "key": "loup-des-racines",
+          "name": {
+            "fr": "Loup des Racines",
+            "en": "Rootbound Wolf"
+          },
+          "rarity": "epic",
+          "status": "publiee",
+          "reference": "bois-sans-lune/loup-des-racines/1",
+          "art": "tools/carte-lune/bois-sans-lune-2026-09-18/03-epique-loup-des-racines-v3.png",
+          "sha256": "8acfbfeb798de1379fe7716631aedc4f7d1c07aa380e036a693378a1a55039d9"
+        },
+        {
+          "key": "le-grand-silence",
+          "name": {
+            "fr": "Le Grand Silence",
+            "en": "The Great Stillness"
+          },
+          "rarity": "legendary",
+          "status": "publiee",
+          "reference": "bois-sans-lune/le-grand-silence/1",
+          "art": "tools/carte-lune/bois-sans-lune-2026-09-18/04-legendaire-le-grand-silence-v3.png",
+          "sha256": "05733bd8c0a98cd9a01f163465048299b62745984a46be7fc17b00a43c1cfaa2"
+        },
+        {
+          "key": "le-seuil-des-racines",
+          "name": {
+            "fr": "Le Seuil des Racines",
+            "en": "The Root Threshold"
+          },
+          "rarity": "common",
+          "status": "proposee_non_generee",
+          "scene": "Passage très bas entre des racines gigantesques, vue au ras du sol, nacre ponctuelle dans une vraie nuit noire.",
+          "art": null
+        },
+        {
+          "key": "le-sentier-ferme",
+          "name": {
+            "fr": "Le Sentier Fermé",
+            "en": "The Closed Path"
+          },
+          "rarity": "common",
+          "status": "proposee_non_generee",
+          "scene": "Pins si denses que le sentier disparaît en profondeur, écorces noires et minces lignes blanches.",
+          "art": null
+        },
+        {
+          "key": "la-souche-creuse",
+          "name": {
+            "fr": "La Souche Creuse",
+            "en": "The Hollow Stump"
+          },
+          "rarity": "common",
+          "status": "proposee_non_generee",
+          "scene": "Souche fendue en premier plan, sous-bois fermé et mousse sombre humide ; aucun rayon de jour.",
+          "art": null
+        },
+        {
+          "key": "le-miroir-noir",
+          "name": {
+            "fr": "Le Miroir Noir",
+            "en": "The Black Mirror"
+          },
+          "rarity": "common",
+          "status": "proposee_non_generee",
+          "scene": "Petite flaque immobile reflétant les racines et la nacre blanche, composition presque verticale dans la nuit.",
+          "art": null
+        },
+        {
+          "key": "les-pins-couches",
+          "name": {
+            "fr": "Les Pins Couchés",
+            "en": "The Fallen Pines"
+          },
+          "rarity": "common",
+          "status": "proposee_non_generee",
+          "scene": "Deux troncs tombés se croisent au-dessus du sol sombre, reflets nacrés retenus sur le bois mouillé.",
+          "art": null
+        },
+        {
+          "key": "la-descente-de-brume",
+          "name": {
+            "fr": "La Descente de Brume",
+            "en": "The Mist Descent"
+          },
+          "rarity": "rare",
+          "status": "proposee_non_generee",
+          "scene": "La chauve-souris aux membranes ovales plonge entre deux racines, vue de dessus, visage et proportions conservés.",
+          "art": null
+        },
+        {
+          "key": "laile-contre-lecorce",
+          "name": {
+            "fr": "L’Aile contre l’Écorce",
+            "en": "Wing against Bark"
+          },
+          "rarity": "rare",
+          "status": "proposee_non_generee",
+          "scene": "La même chauve-souris grimpe sur un pin tête relevée, ailes repliées asymétriquement, nacre blanche très brillante.",
+          "art": null
+        },
+        {
+          "key": "le-croisement-muet",
+          "name": {
+            "fr": "Le Croisement Muet",
+            "en": "The Silent Crossing"
+          },
+          "rarity": "rare",
+          "status": "proposee_non_generee",
+          "scene": "Chauve-souris en virage horizontal sous une branche, silhouette latérale et reflet blanc continu sur une membrane.",
+          "art": null
+        },
+        {
+          "key": "la-sortie-du-creux",
+          "name": {
+            "fr": "La Sortie du Creux",
+            "en": "Out of the Hollow"
+          },
+          "rarity": "rare",
+          "status": "proposee_non_generee",
+          "scene": "Chauve-souris jaillissant d’un tronc vers nous, ailes en éventail et corps en raccourci ; noir profond et nacre franche.",
+          "art": null
+        },
+        {
+          "key": "larret-des-racines",
+          "name": {
+            "fr": "L’Arrêt des Racines",
+            "en": "The Rootbound Halt"
+          },
+          "rarity": "epic",
+          "status": "proposee_non_generee",
+          "scene": "Le même loup freine entre les racines, épaule tournée et regard en arrière, pelage noir aux reflets blancs puissants.",
+          "art": null
+        },
+        {
+          "key": "le-loup-sous-le-pin",
+          "name": {
+            "fr": "Le Loup sous le Pin",
+            "en": "The Wolf beneath the Pine"
+          },
+          "rarity": "epic",
+          "status": "proposee_non_generee",
+          "scene": "Le loup se glisse sous un tronc en position basse, vue presque au niveau des yeux ; crinière nacrée et espace très fermé.",
+          "art": null
+        },
+        {
+          "key": "le-silence-deploye",
+          "name": {
+            "fr": "Le Silence Déployé",
+            "en": "Stillness Unfurled"
+          },
+          "rarity": "legendary",
+          "status": "proposee_non_generee",
+          "scene": "Le même corbeau au petit cimier décolle verticalement d’un pin, vu de dessous, ailes hautes en couronne ; nacre blanche spectaculaire sur plumes noires.",
+          "art": null
+        }
+      ]
+    }
+  ],
+  "totaux_cibles": {
+    "common": 20,
+    "rare": 15,
+    "epic": 9,
+    "legendary": 6
+  }
+}

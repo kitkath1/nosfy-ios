@@ -1,0 +1,16 @@
+{
+  "resultat": "PASS",
+  "references": 14,
+  "par_rarete": {
+    "common": 5,
+    "epic": 3,
+    "legendary": 3,
+    "rare": 3
+  },
+  "par_monde": {
+    "cimes-eteintes": 6,
+    "bois-sans-lune": 4,
+    "foret-des-veilles": 4
+  },
+  "identites_et_empreintes": "identiques au manifeste publie"
+}

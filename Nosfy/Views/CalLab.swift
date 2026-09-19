@@ -4738,7 +4738,7 @@ struct DemoSession: Identifiable {
 
     /// La partition de démonstration : deux-trois exercices du catalogue,
     /// leurs séries faites — la matière de la story 2 et de l'ardoise.
-    var groupes: [SlateGroupe] {
+    @MainActor var groupes: [SlateGroupe] {
         if let w = workout { return StorySession(workout: w).groupes }
         let n = dayNumber
         let all = ExerciseCatalog.all
@@ -4756,7 +4756,7 @@ struct DemoSession: Identifiable {
     }
 
     /// Le récit que la story raconte, fabriqué depuis la démo.
-    var storySession: StorySession {
+    @MainActor var storySession: StorySession {
         if let w = workout { return StorySession(workout: w) }
         let g = groupes
         let toutes = g.flatMap(\.rows)

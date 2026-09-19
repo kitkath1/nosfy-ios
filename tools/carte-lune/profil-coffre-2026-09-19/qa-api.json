@@ -1,0 +1,33 @@
+{
+  "checks": [
+    "compte neuf vide",
+    "14 références, totaux sans spoiler",
+    "catalogue inconnu non dévoilé par REST",
+    "attribuer_carte refuse sans session",
+    "preparer_booster refuse sans session",
+    "10 séries :200pièces,3boosters,solde0",
+    "IDs des conversions et forfaitaire dans le reçu",
+    "rejeu : mêmes reçu, événements et stock",
+    "première ouverture ordinaire rare ou mieux",
+    "provenance réelle du serveur, paramètre client ignoré",
+    "image non confirmée : reprise de la même carte",
+    "noir offert repris après2jours sans argent",
+    "20appels simultanés :1exemplaire légendaire",
+    "attribution et collection atomiques",
+    "opération rejouée après révélation ne consomme pas le suivant",
+    "noir gratuit : argent et stock orange préservés",
+    "autre compte sans accès à la carte",
+    "écriture directe d’une acquisition interdite",
+    "deux comptes découvrent les mêmes3légendaires",
+    "mêmes pixels canoniques, SHA256 vérifié",
+    "reconnexion : collection et vrais exemplaires restaurés",
+    "annonces durables, identités distinctes",
+    "un autre compte ne peut acquitter les annonces",
+    "annonces acquittées non rejouées",
+    "reçu relu après acquittement sans nouvelle annonce",
+    "galet futur reste verrouillé par la progression",
+    "argent→noir :8appels,un seul débit et sachet",
+    "noir acheté toujours légendaire"
+  ],
+  "resultat": "PASS"
+}

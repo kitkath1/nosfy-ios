@@ -386,11 +386,6 @@ struct RootView: View {
     /// une NOUVELLE. La porte se dissout sous lui pendant que l'île s'allume.
     @State private var nosfyOuvert = !CommandLine.arguments.contains("-skipAuth")
         && SupabaseSession.sessionGardee() && InscriptionCompte.aReprendre && !InscriptionCompte.aVerifier
-    /// LE REJEU (13-09, sa demande : « un bouton sur la home pour relancer le
-    /// parcours après la partie Apple »). Le film seul, par-dessus tout ; à la
-    /// fin, la home, sans cérémonie.
-    @State private var nosfyRejoue = false
-        && !RootView.filmDemande
     /// LA PORTE ÉTEINTE (13-09) : une fois le film fini, le carrousel ne
     /// revient jamais — la cérémonie d'entrée se joue sur le noir, jusqu'à
     /// ce que `showAuth` tombe et l'emporte.
@@ -519,7 +514,6 @@ struct RootView: View {
         barArriving = false
         invitePulseAt = nil
         nosfyOuvert = false
-        nosfyRejoue = false
         filmNosfy = false
         porteEteinte = false
         withAnimation(.easeInOut(duration: 0.6)) { showAuth = true }
@@ -1283,7 +1277,7 @@ struct RootView: View {
     @State private var retourDepuisIle = false
 
     private var peutReprendreDepuisIle: Bool {
-        retourDepuisIle && active != nil && !showSplash && !showAuth && !nosfyOuvert && !nosfyRejoue
+        retourDepuisIle && active != nil && !showSplash && !showAuth && !nosfyOuvert
     }
 
     /// L'ONGLET ACCUEIL, SORTI DU MUR (06-09). La home v2 rouge, son menu qui
@@ -2152,40 +2146,6 @@ struct RootView: View {
         // gel du 03-09). Les covers plein écran gardent LEUR paire (un VC
         // présenté n'hérite pas). Ça DIFFÈRE le geste Home (1er glissement
         // à l'app) ; ni le 2e ni Reachability — lois iOS.
-        // LE BOUTON « ▶ Nosfy » (13-09) — DEBUG seulement, un overlay de la
-        // racine : il ne touche ni HomeNuit ni le TabView. Il rejoue le film
-        // exactement comme après un verdict NOUVELLE, et rend la home à la fin.
-        .overlay(alignment: .topTrailing) {
-            #if DEBUG
-            if !showAuth && !showSplash && !nosfyRejoue {
-                Button {
-                    Haptique.leger()
-                    withAnimation(.easeInOut(duration: 0.6)) { nosfyRejoue = true }
-                } label: {
-                    Text("▶ Nosfy")
-                        .font(.inter(11, .semibold))
-                        .foregroundStyle(.white.opacity(0.55))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Capsule().fill(.white.opacity(0.08)))
-                        .overlay(Capsule().strokeBorder(.white.opacity(0.18), lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-                .padding(.top, 54)
-                .padding(.trailing, 14)
-            }
-            #endif
-        }
-        .overlay {
-            if nosfyRejoue {
-                NosfyOnboarding { reponses in
-                    try await ecrireProfil(reponses)
-                    withAnimation(.easeOut(duration: 0.5)) { nosfyRejoue = false }
-                }
-                .transition(.opacity)
-                .zIndex(30)
-            }
-        }
         // LA VISITE GUIDÉE DE LA HOME (13/14-09, VisiteHome.swift) : à la RACINE,
         // au-dessus de la Home ET de la nav (l'onglet Profil est un temps). Les
         // quatre éléments publient leur cadre (`visiteAncre`), la racine les lit
@@ -2247,7 +2207,7 @@ struct RootView: View {
             revenirALaPorte()
             compte.porteDemandee = false
         }
-        .onChange(of: showAuth || showSplash || nosfyOuvert || filmNosfy || nosfyRejoue,
+        .onChange(of: showAuth || showSplash || nosfyOuvert || filmNosfy,
                   initial: true) { _, tient in
             compte.enPorte = tient
         }
@@ -2265,7 +2225,7 @@ struct RootView: View {
             await EconomieWoop.shared.rafraichir()
             Compte.proposerWelcomeBack()
         }
-        .onChange(of: showAuth || showSplash || nosfyOuvert || nosfyRejoue,
+        .onChange(of: showAuth || showSplash || nosfyOuvert,
                   initial: true) { _, ouverte in
             BancCoutHome.shared.porteOuverte = ouverte
         }

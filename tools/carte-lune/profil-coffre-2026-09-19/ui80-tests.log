@@ -1,0 +1,398 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project /tmp/nosfy-profil-runner/NavRuntimeUITests.xcodeproj -scheme NavRuntimeUITests -destination "platform=iOS Simulator,id=79DA23F2-3A53-4BCB-9410-E5D88E6342B1" -derivedDataPath /tmp/nosfy-profil-runner-dd -resultBundlePath /tmp/nosfy-profil-ui80b.xcresult "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testAProfilEtQuatrePagesCoffre" test
+
+Writing result bundle at path:
+	/tmp/nosfy-profil-ui80b.xcresult
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'NavRuntimeUITests' in project 'NavRuntimeUITests' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: 211bd18c7ee5423a9ab0d6497894e3ca
+Build description path: /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/XCBuildData/211bd18c7ee5423a9ab0d6497894e3ca.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk /tmp/nosfy-profil-runner-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+    cd /tmp/nosfy-profil-runner/NavRuntimeUITests.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -o /tmp/nosfy-profil-runner-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+
+MkDir /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-profil-runner
+    /bin/mkdir -p /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest
+
+WriteAuxiliaryFile /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/DerivedSources/Entitlements-Simulated.plist (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-profil-runner
+    write-file /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/DerivedSources/Entitlements-Simulated.plist
+
+ProcessProductPackaging "" /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests.xctest-Simulated.xcent (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-profil-runner
+    
+    Entitlements:
+    
+    {
+    "application-identifier" = "V45F4LUU8D.fr.kathryn.woop.NavRuntimeUITests.xctrunner";
+    "keychain-access-groups" =     (
+        "V45F4LUU8D.fr.kathryn.woop.NavRuntimeUITests.xctrunner"
+    );
+}
+    
+    builtin-productPackagingUtility -entitlements -format xml -o /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests.xctest-Simulated.xcent
+
+ProcessProductPackagingDER /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests.xctest-Simulated.xcent /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests.xctest-Simulated.xcent.der (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-profil-runner
+    /usr/bin/derq query -f xml -i /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests.xctest-Simulated.xcent -o /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests.xctest-Simulated.xcent.der --raw
+
+ProcessInfoPlistFile /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest/Info.plist /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/empty-NavRuntimeUITests.plist (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-profil-runner
+    builtin-infoPlistUtility /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/empty-NavRuntimeUITests.plist -producttype com.apple.product-type.bundle.ui-testing -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/ProductTypeInfoPlistAdditions.plist -o /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest/Info.plist
+
+SwiftDriver NavRuntimeUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-profil-runner
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name NavRuntimeUITests -Onone @/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/nosfy-profil-runner-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/nosfy-profil-runner-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -parse-as-library -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/nosfy-profil-runner-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/nosfy-profil-runner-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/nosfy-profil-runner-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/nosfy-profil-runner-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-generated-files.hmap -Xcc -I/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-own-target-headers.hmap -Xcc -I/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-project-headers.hmap -Xcc -I/tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/DerivedSources-normal/arm64 -Xcc -I/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/DerivedSources/arm64 -Xcc -I/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests-Swift.h -working-directory /tmp/nosfy-profil-runner -experimental-emit-module-separately -disable-cmo
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ NavRuntimeUITests (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-runner/NavRuntimeUITests.swift (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-profil-runner
+    
+
+SwiftCompile normal arm64 Compiling\ NavRuntimeUITests.swift /tmp/nosfy-profil-runner/NavRuntimeUITests.swift (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+SwiftCompile normal arm64 /tmp/nosfy-profil-runner/NavRuntimeUITests.swift (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-profil-runner
+    
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for NavRuntimeUITests (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+
+SwiftDriver\ Compilation\ Requirements NavRuntimeUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-profil-runner
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name NavRuntimeUITests -Onone @/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/nosfy-profil-runner-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/nosfy-profil-runner-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -parse-as-library -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/nosfy-profil-runner-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/nosfy-profil-runner-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/nosfy-profil-runner-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/nosfy-profil-runner-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-generated-files.hmap -Xcc -I/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-own-target-headers.hmap -Xcc -I/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-project-headers.hmap -Xcc -I/tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/DerivedSources-normal/arm64 -Xcc -I/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/DerivedSources/arm64 -Xcc -I/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests-Swift.h -working-directory /tmp/nosfy-profil-runner -experimental-emit-module-separately -disable-cmo
+
+Copy /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests.swiftmodule/arm64-apple-ios-simulator.abi.json /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.abi.json (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-profil-runner
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.abi.json /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.swiftsourceinfo (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-profil-runner
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.swiftsourceinfo /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+SwiftDriverJobDiscovery normal arm64 Compiling NavRuntimeUITests.swift (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+
+SwiftDriver\ Compilation NavRuntimeUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-profil-runner
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name NavRuntimeUITests -Onone @/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/nosfy-profil-runner-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/nosfy-profil-runner-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -parse-as-library -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/nosfy-profil-runner-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/nosfy-profil-runner-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/nosfy-profil-runner-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/nosfy-profil-runner-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-generated-files.hmap -Xcc -I/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-own-target-headers.hmap -Xcc -I/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests-project-headers.hmap -Xcc -I/tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/DerivedSources-normal/arm64 -Xcc -I/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/DerivedSources/arm64 -Xcc -I/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests-Swift.h -working-directory /tmp/nosfy-profil-runner -experimental-emit-module-separately -disable-cmo
+
+Ld /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest/NavRuntimeUITests normal (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-profil-runner
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -bundle -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator -L/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -filelist /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.LinkFileList -Xlinker -rpath -Xlinker @loader_path/Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.swiftmodule @/tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests-linker-args.resp -Xlinker -needed_framework -Xlinker XCTest -framework XCTest -Xlinker -needed-lXCTestSwiftSupport -lXCTestSwiftSupport -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __entitlements -Xlinker /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests.xctest-Simulated.xcent -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __ents_der -Xlinker /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests.xctest-Simulated.xcent.der -framework Foundation -Xlinker -no_adhoc_codesign -o /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest/NavRuntimeUITests
+
+ExtractAppIntentsMetadata (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-profil-runner
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --module-name NavRuntimeUITests --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F42 --platform-family iOS --deployment-target 26.0 --bundle-identifier fr.kathryn.woop.NavRuntimeUITests --output /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest --target-triple arm64-apple-ios26.0-simulator --binary-file /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest/NavRuntimeUITests --dependency-file /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests_dependency_info.dat --stringsdata-file /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.SwiftFileList --metadata-file-list /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests.DependencyMetadataFileList --static-metadata-file-list /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/NavRuntimeUITests.DependencyStaticMetadataFileList --swift-const-vals-list /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/Objects-normal/arm64/NavRuntimeUITests.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-09-19 09:03:38.695 appintentsmetadataprocessor[86178:19930848] Starting appintentsmetadataprocessor export
+2026-09-19 09:03:38.709 appintentsmetadataprocessor[86178:19930848] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+CopySwiftLibs /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-profil-runner
+    builtin-swiftStdLibTool --copy --verbose --sign - --scan-executable /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest/NavRuntimeUITests --scan-folder /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest/Frameworks --scan-folder /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest/PlugIns --scan-folder /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest/SystemExtensions --scan-folder /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest/Extensions --scan-folder /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/System/Library/Frameworks/Foundation.framework --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest/Frameworks --strip-bitcode --scan-executable /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /tmp/nosfy-profil-runner-dd/Build/Intermediates.noindex/NavRuntimeUITests.build/Debug-iphonesimulator/NavRuntimeUITests.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+
+MkDir /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-profil-runner
+    /bin/mkdir -p /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app
+
+CopyAndPreserveArchs /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/NavRuntimeUITests-Runner (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-profil-runner
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/lipo /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Xcode/Agents/XCTRunner.app/XCTRunner -output /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/NavRuntimeUITests-Runner -extract arm64
+
+CodeSign /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-profil-runner
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --timestamp\=none --generate-entitlement-der /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest
+
+CodeSign /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-profil-runner
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --timestamp\=none --generate-entitlement-der /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app
+/tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app: replacing existing signature
+
+RegisterExecutionPolicyException /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-profil-runner
+    builtin-RegisterExecutionPolicyException /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest
+
+Touch /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest (in target 'NavRuntimeUITests' from project 'NavRuntimeUITests')
+    cd /tmp/nosfy-profil-runner
+    /usr/bin/touch -c /tmp/nosfy-profil-runner-dd/Build/Products/Debug-iphonesimulator/NavRuntimeUITests-Runner.app/PlugIns/NavRuntimeUITests.xctest
+
+2026-09-19 09:04:10.909163+0200 NavRuntimeUITests-Runner[86352:19932514] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-19 09:04:15.630.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-19 09:04:15.632.
+Test Suite 'NavRuntimeUITests' started at 2026-09-19 09:04:15.632.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testAProfilEtQuatrePagesCoffre]' started.
+    t =     0.00s Start Test at 2026-09-19 09:04:15.635
+    t =     0.40s Set Up
+    t =     0.43s Open fr.kathryn.woop
+    t =     0.43s     Launch fr.kathryn.woop
+    t =     0.44s         Terminate fr.kathryn.woop:72926
+    t =     1.68s         Wait for accessibility to load
+    t =     1.70s         Setting up automation session
+objc[86352]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x106f94310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x1063d0398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     3.40s         Wait for fr.kathryn.woop to idle
+    t =     5.04s Waiting 30.0s for "profil-booster-orange" Button to exist
+    t =     6.07s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =     6.07s         Checking existence of `"profil-booster-orange" Button`
+    t =     6.45s         Capturing element debug description
+    t =     7.09s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =     7.09s         Checking existence of `"profil-booster-orange" Button`
+    t =     9.76s Checking existence of `"▶ Nosfy" Button`
+    t =     9.87s Checking existence of `"Nosfy Start" Button`
+    t =     9.94s Find the "Une Lune" StaticText
+    t =    10.12s Find the "Une Lune" StaticText
+    t =    10.35s Find the "profil-registre-common" StaticText
+    t =    10.46s Find the "Deux Lunes" StaticText
+    t =    10.59s Find the "profil-registre-rare" StaticText
+    t =    10.76s Find the "Trois Lunes" StaticText
+    t =    10.91s Find the "profil-registre-epic" StaticText
+    t =    11.00s Find the "Quatre Lunes" StaticText
+    t =    11.13s Swipe up Application 'fr.kathryn.woop'
+    t =    11.13s     Wait for fr.kathryn.woop to idle
+    t =    11.15s     Find the Application 'fr.kathryn.woop'
+    t =    11.35s     Check for interrupting elements affecting "Nosfy" Application
+    t =    11.45s     Synthesize event
+    t =    12.01s     Wait for fr.kathryn.woop to idle
+    t =    12.86s Find the "profil-registre-legendary" StaticText
+    t =    12.95s Find the Application 'fr.kathryn.woop'
+    t =    13.31s Added attachment named 'profil-aligne-fr'
+    t =    13.31s Terminate fr.kathryn.woop:86456
+    t =    14.35s Open fr.kathryn.woop
+    t =    14.35s     Launch fr.kathryn.woop
+    t =    14.75s         Wait for accessibility to load
+    t =    14.76s         Setting up automation session
+    t =    16.18s         Wait for fr.kathryn.woop to idle
+    t =    17.90s Waiting 30.0s for "profil-booster-orange" Button to exist
+    t =    18.94s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    18.94s         Checking existence of `"profil-booster-orange" Button`
+    t =    19.06s         Capturing element debug description
+    t =    19.93s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    19.94s         Checking existence of `"profil-booster-orange" Button`
+    t =    19.95s         Capturing element debug description
+    t =    20.91s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    20.91s         Checking existence of `"profil-booster-orange" Button`
+    t =    20.95s         Capturing element debug description
+    t =    21.96s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    21.96s         Checking existence of `"profil-booster-orange" Button`
+    t =    23.71s Tap "profil-booster-orange" Button
+    t =    23.71s     Wait for fr.kathryn.woop to idle
+    t =    23.74s     Find the "profil-booster-orange" Button
+    t =    23.90s     Check for interrupting elements affecting "profil-booster-orange" Button
+    t =    24.22s     Synthesize event
+    t =    24.67s     Wait for fr.kathryn.woop to idle
+    t =    25.72s Waiting 12.0s for "Booster Lune" StaticText to exist
+    t =    26.79s     Checking `Expect predicate `existsNoRetry == 1` for object "Booster Lune" StaticText`
+    t =    26.79s         Checking existence of `"Booster Lune" StaticText`
+    t =    31.90s Find the Application 'fr.kathryn.woop'
+    t =    32.45s Added attachment named 'coffre-profil-booster-orange-fr'
+    t =    32.46s Terminate fr.kathryn.woop:86694
+    t =    33.52s Open fr.kathryn.woop
+    t =    33.52s     Launch fr.kathryn.woop
+    t =    34.32s         Setting up automation session
+    t =    35.61s         Wait for fr.kathryn.woop to idle
+    t =    37.35s Waiting 30.0s for "profil-booster-orange" Button to exist
+    t =    38.39s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    38.39s         Checking existence of `"profil-booster-orange" Button`
+    t =    39.35s Tap "profil-booster-noir" Button
+    t =    39.36s     Wait for fr.kathryn.woop to idle
+    t =    39.37s     Find the "profil-booster-noir" Button
+    t =    39.45s     Check for interrupting elements affecting "profil-booster-noir" Button
+    t =    39.64s     Synthesize event
+    t =    39.98s     Wait for fr.kathryn.woop to idle
+    t =    40.94s Waiting 12.0s for "Booster légendaire" StaticText to exist
+    t =    41.94s     Checking `Expect predicate `existsNoRetry == 1` for object "Booster légendaire" StaticText`
+    t =    41.94s         Checking existence of `"Booster légendaire" StaticText`
+    t =    47.00s Find the Application 'fr.kathryn.woop'
+    t =    47.16s Added attachment named 'coffre-profil-booster-noir-fr'
+    t =    47.16s Terminate fr.kathryn.woop:87008
+    t =    48.22s Open fr.kathryn.woop
+    t =    48.22s     Launch fr.kathryn.woop
+    t =    48.30s         Setting up automation session
+    t =    48.73s         Wait for fr.kathryn.woop to idle
+    t =    49.95s Waiting 30.0s for "profil-booster-orange" Button to exist
+    t =    51.03s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    51.04s         Checking existence of `"profil-booster-orange" Button`
+    t =    51.38s Tap Button (First Match)
+    t =    51.38s     Wait for fr.kathryn.woop to idle
+    t =    51.43s     Find the Button (First Match)
+    t =    51.48s     Check for interrupting elements affecting "0 pièces d'argent — ouvrir le coffre" Button
+    t =    51.52s     Synthesize event
+    t =    51.93s     Wait for fr.kathryn.woop to idle
+    t =    53.17s Waiting 12.0s for "Pièce d'argent" StaticText to exist
+    t =    54.20s     Checking `Expect predicate `existsNoRetry == 1` for object "Pièce d'argent" StaticText`
+    t =    54.20s         Checking existence of `"Pièce d'argent" StaticText`
+    t =    59.24s Find the Application 'fr.kathryn.woop'
+    t =    59.60s Added attachment named 'coffre-argent-fr'
+    t =    59.60s Terminate fr.kathryn.woop:87043
+    t =    60.68s Open fr.kathryn.woop
+    t =    60.68s     Launch fr.kathryn.woop
+    t =    60.81s         Setting up automation session
+    t =    61.60s         Wait for fr.kathryn.woop to idle
+    t =    62.93s Waiting 30.0s for "profil-booster-orange" Button to exist
+    t =    63.96s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    63.96s         Checking existence of `"profil-booster-orange" Button`
+    t =    64.27s Get number of matches for: Elements matching predicate 'label CONTAINS "pièces —" AND (NOT label CONTAINS "silver")'
+    t =    64.34s Tap Button (First Match)
+    t =    64.34s     Wait for fr.kathryn.woop to idle
+    t =    64.36s     Find the Button (First Match)
+    t =    64.41s     Check for interrupting elements affecting "0 pièces — ouvrir le coffre" Button
+    t =    64.69s     Synthesize event
+    t =    65.00s     Wait for fr.kathryn.woop to idle
+    t =    66.07s Waiting 12.0s for "Pièce d'or" StaticText to exist
+    t =    67.12s     Checking `Expect predicate `existsNoRetry == 1` for object "Pièce d'or" StaticText`
+    t =    67.12s         Checking existence of `"Pièce d'or" StaticText`
+    t =    72.20s Find the Application 'fr.kathryn.woop'
+    t =    73.18s Added attachment named 'coffre-or-fr'
+    t =    73.19s Terminate fr.kathryn.woop:87117
+    t =    74.29s Open fr.kathryn.woop
+    t =    74.29s     Launch fr.kathryn.woop
+    t =    74.44s         Wait for accessibility to load
+    t =    74.44s         Setting up automation session
+    t =    75.23s         Wait for fr.kathryn.woop to idle
+    t =    76.54s Waiting 30.0s for "profil-booster-orange" Button to exist
+    t =    77.58s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    77.58s         Checking existence of `"profil-booster-orange" Button`
+    t =    78.23s Checking existence of `"▶ Nosfy" Button`
+    t =    78.33s Checking existence of `"Nosfy Start" Button`
+    t =    78.42s Find the "Une Lune" StaticText
+    t =    78.55s Find the "Une Lune" StaticText
+    t =    78.88s Find the "profil-registre-common" StaticText
+    t =    78.99s Find the "Deux Lunes" StaticText
+    t =    79.14s Find the "profil-registre-rare" StaticText
+    t =    79.25s Find the "Trois Lunes" StaticText
+    t =    79.40s Find the "profil-registre-epic" StaticText
+    t =    79.49s Find the "Quatre Lunes" StaticText
+    t =    79.66s Swipe up Application 'fr.kathryn.woop'
+    t =    79.66s     Wait for fr.kathryn.woop to idle
+    t =    79.67s     Find the Application 'fr.kathryn.woop'
+    t =    79.73s     Check for interrupting elements affecting "Nosfy" Application
+    t =    79.81s     Synthesize event
+    t =    80.26s     Wait for fr.kathryn.woop to idle
+    t =    81.09s Find the "profil-registre-legendary" StaticText
+    t =    81.16s Find the Application 'fr.kathryn.woop'
+    t =    81.47s Added attachment named 'profil-aligne-en'
+    t =    81.47s Terminate fr.kathryn.woop:87171
+    t =    82.53s Open fr.kathryn.woop
+    t =    82.53s     Launch fr.kathryn.woop
+    t =    82.71s         Setting up automation session
+    t =    84.00s         Wait for fr.kathryn.woop to idle
+    t =    85.58s Waiting 30.0s for "profil-booster-orange" Button to exist
+    t =    86.61s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =    86.62s         Checking existence of `"profil-booster-orange" Button`
+    t =    88.31s Tap "profil-booster-orange" Button
+    t =    88.31s     Wait for fr.kathryn.woop to idle
+    t =    88.37s     Find the "profil-booster-orange" Button
+    t =    88.54s     Check for interrupting elements affecting "profil-booster-orange" Button
+    t =    88.85s     Synthesize event
+    t =    89.27s     Wait for fr.kathryn.woop to idle
+    t =    90.58s Waiting 12.0s for "Lune Booster" StaticText to exist
+    t =    91.63s     Checking `Expect predicate `existsNoRetry == 1` for object "Lune Booster" StaticText`
+    t =    91.63s         Checking existence of `"Lune Booster" StaticText`
+    t =    96.74s Find the Application 'fr.kathryn.woop'
+    t =    97.41s Added attachment named 'coffre-profil-booster-orange-en'
+    t =    97.42s Terminate fr.kathryn.woop:87219
+    t =    98.48s Open fr.kathryn.woop
+    t =    98.48s     Launch fr.kathryn.woop
+    t =    98.78s         Setting up automation session
+    t =   100.23s         Wait for fr.kathryn.woop to idle
+    t =   101.71s Waiting 30.0s for "profil-booster-orange" Button to exist
+    t =   102.74s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =   102.74s         Checking existence of `"profil-booster-orange" Button`
+    t =   103.02s Tap "profil-booster-noir" Button
+    t =   103.02s     Wait for fr.kathryn.woop to idle
+    t =   103.05s     Find the "profil-booster-noir" Button
+    t =   103.15s     Check for interrupting elements affecting "profil-booster-noir" Button
+    t =   103.45s     Synthesize event
+    t =   103.77s     Wait for fr.kathryn.woop to idle
+    t =   104.77s Waiting 12.0s for "Legendary Booster" StaticText to exist
+    t =   105.81s     Checking `Expect predicate `existsNoRetry == 1` for object "Legendary Booster" StaticText`
+    t =   105.81s         Checking existence of `"Legendary Booster" StaticText`
+    t =   110.92s Find the Application 'fr.kathryn.woop'
+    t =   111.33s Added attachment named 'coffre-profil-booster-noir-en'
+    t =   111.33s Terminate fr.kathryn.woop:87297
+    t =   112.42s Open fr.kathryn.woop
+    t =   112.42s     Launch fr.kathryn.woop
+    t =   112.66s         Setting up automation session
+    t =   113.82s         Wait for fr.kathryn.woop to idle
+    t =   115.20s Waiting 30.0s for "profil-booster-orange" Button to exist
+    t =   116.23s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =   116.23s         Checking existence of `"profil-booster-orange" Button`
+    t =   116.59s Tap Button (First Match)
+    t =   116.59s     Wait for fr.kathryn.woop to idle
+    t =   116.63s     Find the Button (First Match)
+    t =   116.69s     Check for interrupting elements affecting "0 silver coins — open the vault" Button
+    t =   116.76s     Synthesize event
+    t =   117.08s     Wait for fr.kathryn.woop to idle
+    t =   118.25s Waiting 12.0s for "Silver Coin" StaticText to exist
+    t =   119.27s     Checking `Expect predicate `existsNoRetry == 1` for object "Silver Coin" StaticText`
+    t =   119.27s         Checking existence of `"Silver Coin" StaticText`
+    t =   124.35s Find the Application 'fr.kathryn.woop'
+    t =   124.78s Added attachment named 'coffre-argent-en'
+    t =   124.78s Terminate fr.kathryn.woop:87452
+    t =   125.85s Open fr.kathryn.woop
+    t =   125.85s     Launch fr.kathryn.woop
+    t =   126.00s         Setting up automation session
+    t =   127.17s         Wait for fr.kathryn.woop to idle
+    t =   128.76s Waiting 30.0s for "profil-booster-orange" Button to exist
+    t =   129.83s     Checking `Expect predicate `existsNoRetry == 1` for object "profil-booster-orange" Button`
+    t =   129.88s         Checking existence of `"profil-booster-orange" Button`
+    t =   131.80s Get number of matches for: Elements matching predicate 'label CONTAINS "coins —" AND (NOT label CONTAINS "silver")'
+    t =   131.96s Tap Button (First Match)
+    t =   131.96s     Wait for fr.kathryn.woop to idle
+    t =   132.09s     Find the Button (First Match)
+    t =   132.39s     Check for interrupting elements affecting "0 coins — open the vault" Button
+    t =   132.98s     Synthesize event
+    t =   133.82s     Wait for fr.kathryn.woop to idle
+    t =   135.15s Waiting 12.0s for "Gold Coin" StaticText to exist
+    t =   136.18s     Checking `Expect predicate `existsNoRetry == 1` for object "Gold Coin" StaticText`
+    t =   136.19s         Checking existence of `"Gold Coin" StaticText`
+    t =   141.31s Find the Application 'fr.kathryn.woop'
+    t =   142.75s Added attachment named 'coffre-or-en'
+    t =   142.75s Terminate fr.kathryn.woop:87479
+    t =   144.82s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testAProfilEtQuatrePagesCoffre]' passed (152.949 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-19 09:06:48.586.
+	 Executed 1 test, with 0 failures (0 unexpected) in 152.949 (152.954) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-19 09:06:48.587.
+	 Executed 1 test, with 0 failures (0 unexpected) in 152.949 (152.955) seconds
+Test Suite 'Selected tests' passed at 2026-09-19 09:06:48.587.
+	 Executed 1 test, with 0 failures (0 unexpected) in 152.949 (152.957) seconds
+2026-09-19 09:06:49.171 xcodebuild[86025:19929453] [MT] IDETestOperationsObserverDebug: 190.120 elapsed -- Testing started completed.
+2026-09-19 09:06:49.171 xcodebuild[86025:19929453] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-19 09:06:49.171 xcodebuild[86025:19929453] [MT] IDETestOperationsObserverDebug: 190.120 sec, +190.120 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/nosfy-profil-ui80b.xcresult
+
+** TEST SUCCEEDED **
+
+Testing started

@@ -1,0 +1,11 @@
+{
+  "instant": "2026-09-19T06:46:39.738393+00:00",
+  "note": "Empreintes pendant le lancement du build 80 ; arbre partag\u00e9 non commit\u00e9.",
+  "sha256": {
+    "Nosfy/NosfyApp.swift": "27a5f1afcc37c5147f43b045f83f9702413aaa9d9c8f1830cfe6f6b212659f28",
+    "Nosfy/Views/ProfilLune.swift": "5628d05f8aed623f76034e8abceaaf83e23f562c771b79803ee0bfc2a9e63d6d",
+    "Nosfy/Services/CartesQABanc.swift": "703e908804210019bcc41d979dcec4c1a41a5703a623c78383a494c6194c98d6",
+    "Nosfy/Services/ForgeServeur.swift": "d216c6994a74b77397ee4c5ae51772968e2af91d937354d4e795ea92f3e3a2d6",
+    "Nosfy/Views/CalLab.swift": "9066c4acddd001eb9c847fd4825007f52c088406f3478a1877f2bbc2f9228b11"
+  }
+}

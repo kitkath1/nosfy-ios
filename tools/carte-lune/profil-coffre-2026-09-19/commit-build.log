@@ -1,0 +1,1352 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project Nosfy.xcodeproj -scheme Nosfy -configuration Debug -destination "generic/platform=iOS Simulator" -derivedDataPath /tmp/nosfy-profil-commit-dd CODE_SIGNING_ALLOWED=NO build
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (2 targets)
+    Target 'Nosfy' in project 'Nosfy'
+        ➜ Explicit dependency on target 'NosfyWidgets' in project 'Nosfy'
+    Target 'NosfyWidgets' in project 'Nosfy' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /tmp/nosfy-profil-commit-20260919/NosfyShared/LiveAssets.xcassets /tmp/nosfy-profil-commit-20260919/Nosfy/AppIcon.icon /tmp/nosfy-profil-commit-20260919/Nosfy/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: 405bed614ad4d2bc234575550764ea46
+Build description path: /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/XCBuildData/405bed614ad4d2bc234575550764ea46.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk /tmp/nosfy-profil-commit-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+    cd /tmp/nosfy-profil-commit-20260919/Nosfy.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -o /tmp/nosfy-profil-commit-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+
+ProcessInfoPlistFile /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/NosfyWidgets.appex/Info.plist /tmp/nosfy-profil-commit-20260919/NosfyWidgets/Info.plist (in target 'NosfyWidgets' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    builtin-infoPlistUtility /tmp/nosfy-profil-commit-20260919/NosfyWidgets/Info.plist -producttype com.apple.product-type.app-extension -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyWidgets.build/assetcatalog_generated_info.plist -o /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/NosfyWidgets.appex/Info.plist
+
+SwiftDriver Nosfy normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/nosfy-profil-commit-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/nosfy-profil-commit-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator -F /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/nosfy-profil-commit-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/nosfy-profil-commit-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/nosfy-profil-commit-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/nosfy-profil-commit-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-generated-files.hmap -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-own-target-headers.hmap -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-project-headers.hmap -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources-normal/arm64 -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/arm64 -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop-Swift.h -working-directory /tmp/nosfy-profil-commit-20260919 -experimental-emit-module-separately -disable-cmo
+
+SwiftDriver Nosfy normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Nosfy.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target x86_64-apple-ios26.0-simulator -g -module-cache-path /tmp/nosfy-profil-commit-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/nosfy-profil-commit-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator -F /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/nosfy-profil-commit-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Nosfy-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/nosfy-profil-commit-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/nosfy-profil-commit-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/nosfy-profil-commit-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Nosfy_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-generated-files.hmap -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-own-target-headers.hmap -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-project-headers.hmap -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources-normal/x86_64 -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/x86_64 -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Woop-Swift.h -working-directory /tmp/nosfy-profil-commit-20260919 -experimental-emit-module-separately -disable-cmo
+
+LinkAssetCatalog /tmp/nosfy-profil-commit-20260919/NosfyShared/LiveAssets.xcassets /tmp/nosfy-profil-commit-20260919/Nosfy/AppIcon.icon /tmp/nosfy-profil-commit-20260919/Nosfy/Assets.xcassets (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    builtin-linkAssetCatalog --thinned /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/assetcatalog_output/thinned --thinned-dependencies /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/assetcatalog_dependencies_thinned --thinned-info-plist-content /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/assetcatalog_generated_info.plist_thinned --unthinned /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/assetcatalog_output/unthinned --unthinned-dependencies /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/assetcatalog_dependencies_unthinned --unthinned-info-plist-content /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/assetcatalog_generated_info.plist_unthinned --output /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/Nosfy.app --plist-output /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/assetcatalog_generated_info.plist
+note: Emplaced /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Assets.car (in target 'Nosfy' from project 'Nosfy')
+note: Emplaced /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/AppIcon76x76@2x~ipad.png (in target 'Nosfy' from project 'Nosfy')
+note: Emplaced /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/AppIcon60x60@2x.png (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal x86_64 Compiling\ ErreurNosfy.swift,\ ForgeServeur.swift,\ HomeTextes.swift,\ InscriptionCompte.swift,\ Langue.swift,\ LuneForge.swift,\ OutboxGains.swift,\ OuvertureSeanceServeur.swift,\ ProfilServeur.swift,\ SacreServeur.swift,\ Supabase.swift,\ SupabaseSync.swift,\ SynthesisService.swift,\ WorkoutActivityController.swift,\ ActiveWorkoutView.swift,\ AppelChapitre.swift,\ AppelProfilVisite.swift,\ AuroraBgLab.swift,\ AuthView.swift,\ BancCoutHome.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/ErreurNosfy.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/ForgeServeur.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/HomeTextes.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/InscriptionCompte.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/Langue.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/LuneForge.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/OutboxGains.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/OuvertureSeanceServeur.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/ProfilServeur.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/SacreServeur.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/Supabase.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/SupabaseSync.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/SynthesisService.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/WorkoutActivityController.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ActiveWorkoutView.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/AppelChapitre.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/AppelProfilVisite.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/AuroraBgLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/AuthView.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/BancCoutHome.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/ErreurNosfy.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/ForgeServeur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/HomeTextes.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/InscriptionCompte.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/Langue.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/LuneForge.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+/tmp/nosfy-profil-commit-20260919/Nosfy/Services/LuneForge.swift:274:19: warning: value 'cadre' was defined but never used; consider replacing with boolean test
+        guard let cadre = UIImage(named: "carte-cadre")
+              ~~~~^~~~~~~~
+              (
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/OutboxGains.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/OuvertureSeanceServeur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/ProfilServeur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/SacreServeur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/Supabase.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/SupabaseSync.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/SynthesisService.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/WorkoutActivityController.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ActiveWorkoutView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/AppelChapitre.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/AppelProfilVisite.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/AuroraBgLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/AuthView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/BancCoutHome.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 Compiling\ BottleSplash.swift,\ CoinChime.swift,\ DiamondGlints.swift,\ Ink.swift,\ LightDial.swift,\ LuneDust.swift,\ MonolithChime.swift,\ NightBirds.swift,\ RocketHaptics.swift,\ SparkleBurst.swift,\ SplashBackground.swift,\ SplashWisp.swift,\ Annonces.swift,\ AppleAuth.swift,\ CartesQABanc.swift,\ CartesServeur.swift,\ ChambreServeur.swift,\ CoachServeur.swift,\ Compte.swift,\ EconomieNosfy.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/BottleSplash.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/CoinChime.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/DiamondGlints.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/Ink.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/LightDial.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/LuneDust.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/MonolithChime.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/NightBirds.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/RocketHaptics.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/SparkleBurst.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/SplashBackground.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/SplashWisp.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/Annonces.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/AppleAuth.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/CartesQABanc.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/CartesServeur.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/ChambreServeur.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/CoachServeur.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/Compte.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/EconomieNosfy.swift (in target 'Nosfy' from project 'Nosfy')
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/BottleSplash.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/CoinChime.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/DiamondGlints.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/Ink.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/LightDial.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/LuneDust.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/MonolithChime.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/NightBirds.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/RocketHaptics.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/SparkleBurst.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/SplashBackground.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/SplashWisp.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/Annonces.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+/tmp/nosfy-profil-commit-20260919/Nosfy/Services/Annonces.swift:236:13: error: cannot find 'ToasterGain' in scope
+            ToasterGain(gain: n, fraction: fraction, libelle: "COINS EARNED")
+            ^~~~~~~~~~~
+/tmp/nosfy-profil-commit-20260919/Nosfy/Services/Annonces.swift:238:13: error: cannot find 'ToasterGain' in scope
+            ToasterGain(gain: n, fraction: fraction, libelle: "CARDIO COINS")
+            ^~~~~~~~~~~
+/tmp/nosfy-profil-commit-20260919/Nosfy/Services/Annonces.swift:240:13: error: cannot find 'ToasterGain' in scope
+            ToasterGain(gain: n, fraction: fraction, libelle: "DAILY BONUS")
+            ^~~~~~~~~~~
+/tmp/nosfy-profil-commit-20260919/Nosfy/Services/Annonces.swift:244:13: error: cannot find 'ToasterGain' in scope
+            ToasterGain(gain: n, fraction: fraction, libelle: "SILVER COINS")
+            ^~~~~~~~~~~
+/tmp/nosfy-profil-commit-20260919/Nosfy/Services/Annonces.swift:246:13: error: cannot find 'ToasterGain' in scope
+            ToasterGain(gain: n, fraction: fraction, robe: .booster,
+            ^~~~~~~~~~~
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/AppleAuth.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+/tmp/nosfy-profil-commit-20260919/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/CartesQABanc.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/CartesServeur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/ChambreServeur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/CoachServeur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/Compte.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/EconomieNosfy.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+Failed frontend command:
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend -frontend -c -filelist /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/sources-1 -primary-file /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/BottleSplash.swift -primary-file /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/CoinChime.swift -primary-file /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/DiamondGlints.swift -primary-file /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/Ink.swift -primary-file /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/LightDial.swift -primary-file /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/LuneDust.swift -primary-file /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/MonolithChime.swift -primary-file /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/NightBirds.swift -primary-file /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/RocketHaptics.swift -primary-file /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/SparkleBurst.swift -primary-file /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/SplashBackground.swift -primary-file /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/SplashWisp.swift -primary-file /tmp/nosfy-profil-commit-20260919/Nosfy/Services/Annonces.swift -primary-file /tmp/nosfy-profil-commit-20260919/Nosfy/Services/AppleAuth.swift -primary-file /tmp/nosfy-profil-commit-20260919/Nosfy/Services/CartesQABanc.swift -primary-file /tmp/nosfy-profil-commit-20260919/Nosfy/Services/CartesServeur.swift -primary-file /tmp/nosfy-profil-commit-20260919/Nosfy/Services/ChambreServeur.swift -primary-file /tmp/nosfy-profil-commit-20260919/Nosfy/Services/CoachServeur.swift -primary-file /tmp/nosfy-profil-commit-20260919/Nosfy/Services/Compte.swift -primary-file /tmp/nosfy-profil-commit-20260919/Nosfy/Services/EconomieNosfy.swift -supplementary-output-file-map /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/supplementaryOutputs-1 -emit-localized-strings -emit-localized-strings-path /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64 -target x86_64-apple-ios26.0-simulator -module-can-import-version DeveloperToolsSupport 23.40.26 23.40.26 -disable-cross-import-overlay-search -swift-module-cross-import AuthenticationServices /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Cryptexes/OS/System/Library/Frameworks/AuthenticationServices.framework/Modules/AuthenticationServices.swiftcrossimport/SwiftUI.swiftoverlay -swift-module-cross-import AuthenticationServices /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/System/Library/Frameworks/AuthenticationServices.framework/Modules/AuthenticationServices.swiftcrossimport/SwiftUI.swiftoverlay -swift-module-cross-import SceneKit /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/SceneKit.framework/Modules/SceneKit.swiftcrossimport/SwiftUI.swiftoverlay -swift-module-cross-import SwiftData /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/System/Library/Frameworks/SwiftData.framework/Modules/SwiftData.swiftcrossimport/CoreData.swiftoverlay -swift-module-cross-import SwiftData /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/System/Library/Frameworks/SwiftData.framework/Modules/SwiftData.swiftcrossimport/SwiftUI.swiftoverlay -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libAppIntentsMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#AppIntentsMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libFoundationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#FoundationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libObservationMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#ObservationMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libPreviewsMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#PreviewsMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libSwiftDataMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#SwiftDataMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libSwiftMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#SwiftMacros -load-resolved-plugin /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib/swift/host/plugins/libSwiftUIMacros.dylib\#/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/swift-plugin-server\#SwiftUIMacros -disable-implicit-swift-modules -Xcc -fno-implicit-modules -Xcc -fno-implicit-module-maps -explicit-swift-module-map-file /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Woop-dependencies-1.json -debug-module-path /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Woop.swiftmodule -enable-objc-interop -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -I /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator -F /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator -no-color-diagnostics -Xcc -fno-color-diagnostics -enable-testing -g -debug-info-format\=dwarf -dwarf-version\=5 -module-cache-path /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -swift-version 5 -Onone -D DEBUG -serialize-debugging-options -const-gather-protocols-file /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Nosfy_const_extract_protocols.json -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -empty-abi-descriptor -validate-clang-modules-once -clang-build-session-file /tmp/nosfy-profil-commit-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -working-directory -Xcc /tmp/nosfy-profil-commit-20260919 -enable-anonymous-context-mangled-names -file-compilation-dir /tmp/nosfy-profil-commit-20260919 -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -Xcc -ivfsstatcache -Xcc /tmp/nosfy-profil-commit-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/swift-overrides.hmap -Xcc -iquote -Xcc /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-generated-files.hmap -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-own-target-headers.hmap -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-project-headers.hmap -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources-normal/x86_64 -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/x86_64 -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources -Xcc -DDEBUG\=1 -no-auto-bridging-header-chaining -module-name Woop -frontend-parseable-output -disable-clang-spi -clang-target x86_64-apple-ios26.5-simulator -target-sdk-version 26.5 -target-sdk-name iphonesimulator26.5 -in-process-plugin-server-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/libSwiftInProcPluginServer.dylib -o /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/BottleSplash.o -o /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/CoinChime.o -o /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/DiamondGlints.o -o /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Ink.o -o /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/LightDial.o -o /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/LuneDust.o -o /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/MonolithChime.o -o /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/NightBirds.o -o /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/RocketHaptics.o -o /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/SparkleBurst.o -o /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/SplashBackground.o -o /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/SplashWisp.o -o /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Annonces.o -o /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/AppleAuth.o -o /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/CartesQABanc.o -o /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/CartesServeur.o -o /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/ChambreServeur.o -o /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/CoachServeur.o -o /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Compte.o -o /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/EconomieNosfy.o -index-unit-output-path /Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/BottleSplash.o -index-unit-output-path /Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/CoinChime.o -index-unit-output-path /Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/DiamondGlints.o -index-unit-output-path /Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Ink.o -index-unit-output-path /Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/LightDial.o -index-unit-output-path /Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/LuneDust.o -index-unit-output-path /Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/MonolithChime.o -index-unit-output-path /Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/NightBirds.o -index-unit-output-path /Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/RocketHaptics.o -index-unit-output-path /Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/SparkleBurst.o -index-unit-output-path /Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/SplashBackground.o -index-unit-output-path /Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/SplashWisp.o -index-unit-output-path /Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Annonces.o -index-unit-output-path /Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/AppleAuth.o -index-unit-output-path /Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/CartesQABanc.o -index-unit-output-path /Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/CartesServeur.o -index-unit-output-path /Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/ChambreServeur.o -index-unit-output-path /Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/CoachServeur.o -index-unit-output-path /Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Compte.o -index-unit-output-path /Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/EconomieNosfy.o -index-store-path /tmp/nosfy-profil-commit-dd/Index.noindex/DataStore -index-system-modules
+SwiftCompile normal x86_64 Compiling\ PanBande.swift,\ ParoleLigne.swift,\ PerleSemaineNative.swift,\ PiluleVagabonde.swift,\ PlayerMonde.swift,\ PorteApple.swift,\ PorteEntree.swift,\ PremiereArrivee.swift,\ ProfilLune.swift,\ ProgressionView.swift,\ ProgressPage.swift,\ RecentWorkoutCard.swift,\ RestartSheet.swift,\ RewardCard.swift,\ RewardChemin.swift,\ RewardCheminCard.swift,\ RewardCheminVariants.swift,\ RewardLab.swift,\ RythmeEcran.swift,\ SacreAccueil.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/PanBande.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ParoleLigne.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/PerleSemaineNative.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/PiluleVagabonde.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/PlayerMonde.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/PorteApple.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/PorteEntree.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/PremiereArrivee.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ProfilLune.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ProgressionView.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ProgressPage.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/RecentWorkoutCard.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/RestartSheet.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/RewardCard.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/RewardChemin.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/RewardCheminCard.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/RewardCheminVariants.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/RewardLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/RythmeEcran.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/SacreAccueil.swift (in target 'Nosfy' from project 'Nosfy')
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/PanBande.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ParoleLigne.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/PerleSemaineNative.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/PiluleVagabonde.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/PlayerMonde.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/PorteApple.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/PorteEntree.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/PremiereArrivee.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ProfilLune.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ProgressionView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ProgressPage.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/RecentWorkoutCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/RestartSheet.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/RewardCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/RewardChemin.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/RewardCheminCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/RewardCheminVariants.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/RewardLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/RythmeEcran.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/SacreAccueil.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 Compiling\ FumeeInviteMetal.swift,\ GaletEtape.swift,\ GaletLab.swift,\ GaletSlide.swift,\ HaloDawnLab.swift,\ HarmonieLab.swift,\ HomeAuroraView.swift,\ HomeNuit.swift,\ HomeView.swift,\ JewelTabBar.swift,\ LaunchPebble.swift,\ LensParticles.swift,\ LiquidLensLab.swift,\ LisereCoreAnimation.swift,\ LisereImages.swift,\ LisereRespirant.swift,\ LiveExerciseView.swift,\ LivingNebulaBackground.swift,\ LoginLab.swift,\ LogoLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FumeeInviteMetal.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/GaletEtape.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/GaletLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/GaletSlide.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/HaloDawnLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/HarmonieLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/HomeAuroraView.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/HomeNuit.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/HomeView.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/JewelTabBar.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LaunchPebble.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LensParticles.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LiquidLensLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LisereCoreAnimation.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LisereImages.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LisereRespirant.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LiveExerciseView.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LivingNebulaBackground.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LoginLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LogoLab.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FumeeInviteMetal.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/GaletEtape.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/GaletLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/GaletSlide.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/HaloDawnLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/HarmonieLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/HomeAuroraView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/HomeNuit.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/HomeView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/JewelTabBar.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LaunchPebble.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LensParticles.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LiquidLensLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LisereCoreAnimation.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LisereImages.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LisereRespirant.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LiveExerciseView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LivingNebulaBackground.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LoginLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LogoLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 Compiling\ BoosterCard.swift,\ BoosterLab.swift,\ BoosterPack.swift,\ BoosterPopup.swift,\ BordSeance.swift,\ BoutonPrimaire.swift,\ BravoLab.swift,\ CalendarView.swift,\ CalLab.swift,\ CardioFiche.swift,\ CardRoute.swift,\ CarnetLab.swift,\ CarnetScene.swift,\ CarteLuneLab.swift,\ CGUPage.swift,\ ChambreDonnees.swift,\ ChambreHiit.swift,\ ChambreLongue.swift,\ ChambrePeak.swift,\ ChambreRegularite.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/BoosterCard.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/BoosterLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/BoosterPack.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/BoosterPopup.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/BordSeance.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/BoutonPrimaire.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/BravoLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CalendarView.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CalLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CardioFiche.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CardRoute.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CarnetLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CarnetScene.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CarteLuneLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CGUPage.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambreDonnees.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambreHiit.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambreLongue.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambrePeak.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambreRegularite.swift (in target 'Nosfy' from project 'Nosfy')
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/BoosterCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/BoosterLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/BoosterPack.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/BoosterPopup.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/BordSeance.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/BoutonPrimaire.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/BravoLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CalendarView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CalLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CardioFiche.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CardRoute.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CarnetLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CarnetScene.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CarteLuneLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CGUPage.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambreDonnees.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambreHiit.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambreLongue.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambrePeak.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambreRegularite.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 Compiling\ LuneDeSang.swift,\ MenuCouronne.swift,\ MenuNappe.swift,\ MoonCoinLab.swift,\ MoonSplash.swift,\ NavDiagnostic.swift,\ NavEncre.swift,\ NavLab.swift,\ NeonPrimaryButton.swift,\ NeonPrimaryLab.swift,\ NosfyOnboarding.swift,\ NotchedCard.swift,\ NotifCard.swift,\ NotifChasse.swift,\ NotifLab.swift,\ ObjectiveCard.swift,\ ObjectiveCardLab.swift,\ ObsidianCard.swift,\ ObsidianCardLab.swift,\ PageCard.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LuneDeSang.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/MenuCouronne.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/MenuNappe.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/MoonCoinLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/MoonSplash.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/NavDiagnostic.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/NavEncre.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/NavLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/NeonPrimaryButton.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/NeonPrimaryLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/NosfyOnboarding.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/NotchedCard.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/NotifCard.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/NotifChasse.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/NotifLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ObjectiveCard.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ObjectiveCardLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ObsidianCard.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ObsidianCardLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/PageCard.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/LuneDeSang.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/MenuCouronne.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/MenuNappe.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/MenuNappe.swift:1837:34: warning: call to main actor-isolated instance method 'dragLevel' in a synchronous nonisolated context
+            RocketHaptics.shared.dragLevel(x * 0.55)
+                                 ^
+/tmp/nosfy-profil-commit-20260919/Nosfy/Figures/RocketHaptics.swift:343:10: note: calls to instance method 'dragLevel' from outside of its actor context are implicitly asynchronous
+    func dragLevel(_ climb: Double) {
+         ^
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/MenuNappe.swift:1837:27: warning: main actor-isolated static property 'shared' can not be referenced from a Sendable closure
+            RocketHaptics.shared.dragLevel(x * 0.55)
+                          ^
+/tmp/nosfy-profil-commit-20260919/Nosfy/Figures/RocketHaptics.swift:25:16: note: static property declared here
+    static let shared = RocketHaptics()
+               ^
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/MoonCoinLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/MoonSplash.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/MoonSplash.swift:883:60: warning: main actor-isolated property 'start' cannot be accessed from outside of the actor; this is an error in the Swift 6 language mode
+                let left = when - Date().timeIntervalSince(start)
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+                           await 
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/NavDiagnostic.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/NavEncre.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/NavLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/NeonPrimaryButton.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/NeonPrimaryLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/NosfyOnboarding.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/NosfyOnboarding.swift:501:65: warning: backward matching of the unlabeled trailing closure is deprecated; label the argument with 'onTap' to suppress this warning
+                SemaineTapable(choisis: reponses.jours, en: en) { i in
+                                                              ~ ^
+                                                              , onTap: 
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/NosfyOnboarding.swift:1868:16: note: 'init(choisis:onTap:en:)' declared here
+private struct SemaineTapable: View {
+               ^
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/NosfyOnboarding.swift:755:23: warning: main actor-isolated property 'etape' cannot be accessed from outside of the actor; this is an error in the Swift 6 language mode
+                while etape != e {
+                      ^~~~~~~~~~
+                      await 
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/NosfyOnboarding.swift:761:24: warning: main actor-isolated property 'etape' cannot be accessed from outside of the actor; this is an error in the Swift 6 language mode
+                return etape == e
+                       ^~~~~~~~~~
+                       await 
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/NotchedCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/NotifCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/NotifChasse.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/NotifLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ObjectiveCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ObjectiveCardLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ObsidianCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ObsidianCardLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/PageCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftEmitModule normal x86_64 Emitting\ module\ for\ Woop (in target 'Nosfy' from project 'Nosfy')
+
+EmitSwiftModule normal x86_64 (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 Compiling\ ChambreVolume.swift,\ ChargeFiche.swift,\ ChevronAppelNatif.swift,\ ChipVerre.swift,\ CinematicPlayer.swift,\ ClavierBraise.swift,\ CoffreFlipLab.swift,\ CoffreFortCoin.swift,\ CoffreFortPurse.swift,\ CoffreFortView.swift,\ CoffreV2.swift,\ ConnexionButtonLab.swift,\ ConnexionCinematic.swift,\ CorpsNacre.swift,\ CounterLab.swift,\ DemonVideo.swift,\ DepartCine.swift,\ DepartSeance.swift,\ DevilAuraOverlay.swift,\ DuolinguoPage.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambreVolume.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChargeFiche.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChevronAppelNatif.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChipVerre.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CinematicPlayer.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ClavierBraise.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreFlipLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreFortCoin.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreFortPurse.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreFortView.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreV2.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ConnexionButtonLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ConnexionCinematic.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CorpsNacre.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CounterLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/DemonVideo.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/DepartCine.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/DepartSeance.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/DevilAuraOverlay.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/DuolinguoPage.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambreVolume.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChargeFiche.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChevronAppelNatif.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChipVerre.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CinematicPlayer.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ClavierBraise.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreFlipLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreFlipLab.swift:246:43: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+                    .position(x: UIScreen.main.bounds.width / 2,
+                                          ^
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreFlipLab.swift:248:45: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+                                 ? UIScreen.main.bounds.height * 0.63
+                                            ^
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreFlipLab.swift:249:45: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+                                 : UIScreen.main.bounds.height * 0.46)
+                                            ^
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreFortCoin.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreFortPurse.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreFortView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreV2.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ConnexionButtonLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ConnexionCinematic.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CorpsNacre.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CounterLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/DemonVideo.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/DepartCine.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/DepartSeance.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/DevilAuraOverlay.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/DuolinguoPage.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/DuolinguoPage.swift:1363:9: warning: result of call to 'withAnimation' is unused
+        withAnimation(.easeInOut(duration: 0.45)) { etat.reclamees.insert(e.id) }
+        ^            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/DuolinguoPage.swift:1372:17: warning: result of call to 'withAnimation' is unused
+                withAnimation(.easeInOut(duration: 0.30)) { etat.reclamees.remove(e.id) }
+                ^            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+SwiftCompile normal x86_64 Compiling\ EcranErreur.swift,\ EmberFlameLab.swift,\ ExerciseDetailView.swift,\ ExerciseEditor.swift,\ ImpGlyph.swift,\ MoonGlyph.swift,\ ProgressComet.swift,\ WorkoutActivity.swift,\ WorkoutLiveCard.swift,\ WorkoutLiveFocus.swift,\ ExercisePhoto.swift,\ ExerciseSetupCard.swift,\ ExercisesView.swift,\ ExosFond.swift,\ FilmDepartSeance.swift,\ FlameLab.swift,\ FlammeJauge.swift,\ FlammeJaugeLab.swift,\ FondVideoMetal.swift,\ Foyer.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/EcranErreur.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/EmberFlameLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExerciseDetailView.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExerciseEditor.swift /tmp/nosfy-profil-commit-20260919/NosfyShared/ImpGlyph.swift /tmp/nosfy-profil-commit-20260919/NosfyShared/MoonGlyph.swift /tmp/nosfy-profil-commit-20260919/NosfyShared/ProgressComet.swift /tmp/nosfy-profil-commit-20260919/NosfyShared/WorkoutActivity.swift /tmp/nosfy-profil-commit-20260919/NosfyShared/WorkoutLiveCard.swift /tmp/nosfy-profil-commit-20260919/NosfyShared/WorkoutLiveFocus.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExercisePhoto.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExerciseSetupCard.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExercisesView.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExosFond.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FilmDepartSeance.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FlameLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FlammeJauge.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FlammeJaugeLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FondVideoMetal.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/Foyer.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/EcranErreur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/EmberFlameLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExerciseDetailView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExerciseDetailView.swift:2092:13: warning: initialization of immutable value 'naissance' was never used; consider replacing with assignment to '_' or removing it
+        let naissance = Self.sstep(0.45, 0.92, u)
+        ~~~~^~~~~~~~~
+        _
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExerciseEditor.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/NosfyShared/ImpGlyph.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/NosfyShared/MoonGlyph.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/NosfyShared/ProgressComet.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/NosfyShared/WorkoutActivity.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/NosfyShared/WorkoutLiveCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/NosfyShared/WorkoutLiveFocus.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExercisePhoto.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExerciseSetupCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExercisesView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExercisesView.swift:2023:49: warning: call to main actor-isolated static method 'voileBas' in a synchronous nonisolated context
+                    let bas = min(1, GrilleExos.voileBas(vh - f.maxY - 60) * 1.5)
+                                                ^
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExercisesView.swift:1786:17: note: calls to static method 'voileBas' from outside of its actor context are implicitly asynchronous
+    static func voileBas(_ d: CGFloat) -> Double {
+                ^
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExercisesView.swift:1786:17: note: main actor isolation inferred from conformance to protocol 'View'
+    static func voileBas(_ d: CGFloat) -> Double {
+                ^
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExercisesView.swift:2024:43: warning: call to main actor-isolated static method 'voileHaut' in a synchronous nonisolated context
+                    let haut = GrilleExos.voileHaut(reserve - f.minY)
+                                          ^
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExercisesView.swift:1795:17: note: calls to static method 'voileHaut' from outside of its actor context are implicitly asynchronous
+    static func voileHaut(_ d: CGFloat) -> Double {
+                ^
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExercisesView.swift:1795:17: note: main actor isolation inferred from conformance to protocol 'View'
+    static func voileHaut(_ d: CGFloat) -> Double {
+                ^
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExercisesView.swift:2113:42: warning: call to main actor-isolated static method 'voileBas' in a synchronous nonisolated context
+                    let bas = GrilleExos.voileBas(vh - f.maxY)
+                                         ^
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExercisesView.swift:1786:17: note: calls to static method 'voileBas' from outside of its actor context are implicitly asynchronous
+    static func voileBas(_ d: CGFloat) -> Double {
+                ^
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExercisesView.swift:1786:17: note: main actor isolation inferred from conformance to protocol 'View'
+    static func voileBas(_ d: CGFloat) -> Double {
+                ^
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExercisesView.swift:2114:43: warning: call to main actor-isolated static method 'voileHaut' in a synchronous nonisolated context
+                    let haut = GrilleExos.voileHaut(reserve - f.minY)
+                                          ^
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExercisesView.swift:1795:17: note: calls to static method 'voileHaut' from outside of its actor context are implicitly asynchronous
+    static func voileHaut(_ d: CGFloat) -> Double {
+                ^
+/tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExercisesView.swift:1795:17: note: main actor isolation inferred from conformance to protocol 'View'
+    static func voileHaut(_ d: CGFloat) -> Double {
+                ^
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExosFond.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FilmDepartSeance.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FlameLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FlammeJauge.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FlammeJaugeLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FondVideoMetal.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/Foyer.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 Compiling\ VerificationCompte.swift,\ VerreCoulant.swift,\ VisiteExercice.swift,\ VisiteHome.swift,\ WahouReveal.swift,\ WidgetEdition.swift,\ WidgetsCards.swift,\ WorkoutPill.swift,\ WorkoutsListView.swift,\ Atmosphere.swift,\ DemonSky.swift,\ Models.swift,\ MoonPath.swift,\ MoonSDF.swift,\ NebulaConfiguration.swift,\ NebulaNoise.swift,\ NebulaStrip.swift,\ NosfyApp.swift,\ Theme.swift,\ GeneratedAssetSymbols.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/VerificationCompte.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/VerreCoulant.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/VisiteExercice.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/VisiteHome.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/WahouReveal.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/WidgetEdition.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/WidgetsCards.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/WorkoutPill.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/WorkoutsListView.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Atmosphere.swift /tmp/nosfy-profil-commit-20260919/Nosfy/DemonSky.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Models.swift /tmp/nosfy-profil-commit-20260919/Nosfy/MoonPath.swift /tmp/nosfy-profil-commit-20260919/Nosfy/MoonSDF.swift /tmp/nosfy-profil-commit-20260919/Nosfy/NebulaConfiguration.swift /tmp/nosfy-profil-commit-20260919/Nosfy/NebulaNoise.swift /tmp/nosfy-profil-commit-20260919/Nosfy/NebulaStrip.swift /tmp/nosfy-profil-commit-20260919/Nosfy/NosfyApp.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Theme.swift /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Nosfy' from project 'Nosfy')
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/VerificationCompte.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/VerreCoulant.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/VisiteExercice.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/VisiteHome.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/WahouReveal.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/WidgetEdition.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/WidgetsCards.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/WorkoutPill.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/WorkoutsListView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Atmosphere.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/DemonSky.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Models.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/MoonPath.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/MoonSDF.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/NebulaConfiguration.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/NebulaNoise.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/NebulaStrip.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/NosfyApp.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Theme.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ Woop (in target 'Nosfy' from project 'Nosfy')
+
+EmitSwiftModule normal arm64 (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftDriverJobDiscovery normal x86_64 Emitting module for Woop (in target 'Nosfy' from project 'Nosfy')
+
+SwiftDriver\ Compilation\ Requirements Nosfy normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Nosfy.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target x86_64-apple-ios26.0-simulator -g -module-cache-path /tmp/nosfy-profil-commit-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/nosfy-profil-commit-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator -F /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/nosfy-profil-commit-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Nosfy-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/nosfy-profil-commit-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/nosfy-profil-commit-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/nosfy-profil-commit-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Nosfy_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-generated-files.hmap -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-own-target-headers.hmap -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-project-headers.hmap -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources-normal/x86_64 -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/x86_64 -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Woop-Swift.h -working-directory /tmp/nosfy-profil-commit-20260919 -experimental-emit-module-separately -disable-cmo
+
+SwiftDriverJobDiscovery normal x86_64 Compiling ErreurNosfy.swift, ForgeServeur.swift, HomeTextes.swift, InscriptionCompte.swift, Langue.swift, LuneForge.swift, OutboxGains.swift, OuvertureSeanceServeur.swift, ProfilServeur.swift, SacreServeur.swift, Supabase.swift, SupabaseSync.swift, SynthesisService.swift, WorkoutActivityController.swift, ActiveWorkoutView.swift, AppelChapitre.swift, AppelProfilVisite.swift, AuroraBgLab.swift, AuthView.swift, BancCoutHome.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 Compiling\ SliderObsidienne.swift,\ SondeCadence.swift,\ SondeVol.swift,\ StopCard.swift,\ StopLab.swift,\ StopSessionSheet.swift,\ StoryEnded.swift,\ StoryFlow.swift,\ StorySuite.swift,\ StoryVideo.swift,\ SuccessLab.swift,\ SwapCardSurface.swift,\ SwapEmptyCard.swift,\ SynthesisCard.swift,\ TapisLab.swift,\ TapisScene.swift,\ VerificationCompte.swift,\ VerreCoulant.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/SliderObsidienne.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/SondeCadence.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/SondeVol.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/StopCard.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/StopLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/StopSessionSheet.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/StoryEnded.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/StoryFlow.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/StorySuite.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/StoryVideo.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/SuccessLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/SwapCardSurface.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/SwapEmptyCard.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/SynthesisCard.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/TapisLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/TapisScene.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/VerificationCompte.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/VerreCoulant.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/SliderObsidienne.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/SondeCadence.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/SondeVol.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/StopCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/StopLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/StopSessionSheet.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/StoryEnded.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/StoryFlow.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/StorySuite.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/StoryVideo.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/SuccessLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/SwapCardSurface.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/SwapEmptyCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/SynthesisCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/TapisLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/TapisScene.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/VerificationCompte.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/VerreCoulant.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+Copy /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/x86_64-apple-ios-simulator.swiftmodule /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Woop.swiftmodule (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Woop.swiftmodule /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/x86_64-apple-ios-simulator.swiftmodule
+
+SwiftDriverJobDiscovery normal x86_64 Compiling LuneDeSang.swift, MenuCouronne.swift, MenuNappe.swift, MoonCoinLab.swift, MoonSplash.swift, NavDiagnostic.swift, NavEncre.swift, NavLab.swift, NeonPrimaryButton.swift, NeonPrimaryLab.swift, NosfyOnboarding.swift, NotchedCard.swift, NotifCard.swift, NotifChasse.swift, NotifLab.swift, ObjectiveCard.swift, ObjectiveCardLab.swift, ObsidianCard.swift, ObsidianCardLab.swift, PageCard.swift (in target 'Nosfy' from project 'Nosfy')
+
+Copy /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/x86_64-apple-ios-simulator.swiftdoc /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Woop.swiftdoc (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Woop.swiftdoc /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/x86_64-apple-ios-simulator.swiftdoc
+
+Copy /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/x86_64-apple-ios-simulator.abi.json /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Woop.abi.json (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Woop.abi.json /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/x86_64-apple-ios-simulator.abi.json
+
+Copy /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/Project/x86_64-apple-ios-simulator.swiftsourceinfo /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Woop.swiftsourceinfo (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Woop.swiftsourceinfo /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/Project/x86_64-apple-ios-simulator.swiftsourceinfo
+
+SwiftCompile normal arm64 Compiling\ ExercisesView.swift,\ ExosFond.swift,\ FilmDepartSeance.swift,\ FlameLab.swift,\ FlammeJauge.swift,\ FlammeJaugeLab.swift,\ FondVideoMetal.swift,\ Foyer.swift,\ FumeeInviteMetal.swift,\ GaletEtape.swift,\ GaletLab.swift,\ GaletSlide.swift,\ HaloDawnLab.swift,\ HarmonieLab.swift,\ HomeAuroraView.swift,\ HomeNuit.swift,\ HomeView.swift,\ JewelTabBar.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExercisesView.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExosFond.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FilmDepartSeance.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FlameLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FlammeJauge.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FlammeJaugeLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FondVideoMetal.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/Foyer.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FumeeInviteMetal.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/GaletEtape.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/GaletLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/GaletSlide.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/HaloDawnLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/HarmonieLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/HomeAuroraView.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/HomeNuit.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/HomeView.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/JewelTabBar.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExercisesView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExosFond.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FilmDepartSeance.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FlameLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FlammeJauge.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FlammeJaugeLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FondVideoMetal.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/Foyer.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/FumeeInviteMetal.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/GaletEtape.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/GaletLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/GaletSlide.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/HaloDawnLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/HarmonieLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/HomeAuroraView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/HomeNuit.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/HomeView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/JewelTabBar.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 Compiling\ CounterLab.swift,\ DemonVideo.swift,\ DepartCine.swift,\ DepartSeance.swift,\ DevilAuraOverlay.swift,\ DuolinguoPage.swift,\ EcranErreur.swift,\ EmberFlameLab.swift,\ ExerciseDetailView.swift,\ ExerciseEditor.swift,\ ImpGlyph.swift,\ MoonGlyph.swift,\ ProgressComet.swift,\ WorkoutActivity.swift,\ WorkoutLiveCard.swift,\ WorkoutLiveFocus.swift,\ ExercisePhoto.swift,\ ExerciseSetupCard.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CounterLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/DemonVideo.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/DepartCine.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/DepartSeance.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/DevilAuraOverlay.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/DuolinguoPage.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/EcranErreur.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/EmberFlameLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExerciseDetailView.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExerciseEditor.swift /tmp/nosfy-profil-commit-20260919/NosfyShared/ImpGlyph.swift /tmp/nosfy-profil-commit-20260919/NosfyShared/MoonGlyph.swift /tmp/nosfy-profil-commit-20260919/NosfyShared/ProgressComet.swift /tmp/nosfy-profil-commit-20260919/NosfyShared/WorkoutActivity.swift /tmp/nosfy-profil-commit-20260919/NosfyShared/WorkoutLiveCard.swift /tmp/nosfy-profil-commit-20260919/NosfyShared/WorkoutLiveFocus.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExercisePhoto.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExerciseSetupCard.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CounterLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/DemonVideo.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/DepartCine.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/DepartSeance.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/DevilAuraOverlay.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/DuolinguoPage.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/EcranErreur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/EmberFlameLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExerciseDetailView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExerciseEditor.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/NosfyShared/ImpGlyph.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/NosfyShared/MoonGlyph.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/NosfyShared/ProgressComet.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/NosfyShared/WorkoutActivity.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/NosfyShared/WorkoutLiveCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/NosfyShared/WorkoutLiveFocus.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExercisePhoto.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ExerciseSetupCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for Woop (in target 'Nosfy' from project 'Nosfy')
+
+SwiftDriver\ Compilation\ Requirements Nosfy normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/nosfy-profil-commit-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/nosfy-profil-commit-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator -F /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/nosfy-profil-commit-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/nosfy-profil-commit-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/nosfy-profil-commit-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/nosfy-profil-commit-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-generated-files.hmap -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-own-target-headers.hmap -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-project-headers.hmap -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources-normal/arm64 -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/arm64 -Xcc -I/tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop-Swift.h -working-directory /tmp/nosfy-profil-commit-20260919 -experimental-emit-module-separately -disable-cmo
+
+SwiftDriverJobDiscovery normal x86_64 Compiling ChambreVolume.swift, ChargeFiche.swift, ChevronAppelNatif.swift, ChipVerre.swift, CinematicPlayer.swift, ClavierBraise.swift, CoffreFlipLab.swift, CoffreFortCoin.swift, CoffreFortPurse.swift, CoffreFortView.swift, CoffreV2.swift, ConnexionButtonLab.swift, ConnexionCinematic.swift, CorpsNacre.swift, CounterLab.swift, DemonVideo.swift, DepartCine.swift, DepartSeance.swift, DevilAuraOverlay.swift, DuolinguoPage.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 Compiling\ VisiteExercice.swift,\ VisiteHome.swift,\ WahouReveal.swift,\ WidgetEdition.swift,\ WidgetsCards.swift,\ WorkoutPill.swift,\ WorkoutsListView.swift,\ Atmosphere.swift,\ DemonSky.swift,\ Models.swift,\ MoonPath.swift,\ MoonSDF.swift,\ NebulaConfiguration.swift,\ NebulaNoise.swift,\ NebulaStrip.swift,\ NosfyApp.swift,\ Theme.swift,\ GeneratedAssetSymbols.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/VisiteExercice.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/VisiteHome.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/WahouReveal.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/WidgetEdition.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/WidgetsCards.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/WorkoutPill.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/WorkoutsListView.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Atmosphere.swift /tmp/nosfy-profil-commit-20260919/Nosfy/DemonSky.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Models.swift /tmp/nosfy-profil-commit-20260919/Nosfy/MoonPath.swift /tmp/nosfy-profil-commit-20260919/Nosfy/MoonSDF.swift /tmp/nosfy-profil-commit-20260919/Nosfy/NebulaConfiguration.swift /tmp/nosfy-profil-commit-20260919/Nosfy/NebulaNoise.swift /tmp/nosfy-profil-commit-20260919/Nosfy/NebulaStrip.swift /tmp/nosfy-profil-commit-20260919/Nosfy/NosfyApp.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Theme.swift /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/VisiteExercice.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/VisiteHome.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/WahouReveal.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/WidgetEdition.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/WidgetsCards.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/WorkoutPill.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/WorkoutsListView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Atmosphere.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/DemonSky.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Models.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/MoonPath.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/MoonSDF.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/NebulaConfiguration.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/NebulaNoise.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/NebulaStrip.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/NosfyApp.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Theme.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftMergeGeneratedHeaders /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/Woop-Swift.h /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop-Swift.h /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Woop-Swift.h (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    builtin-swiftHeaderTool -arch arm64 /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop-Swift.h -arch x86_64 /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/x86_64/Woop-Swift.h -o /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/Woop-Swift.h
+
+SwiftDriverJobDiscovery normal x86_64 Compiling EcranErreur.swift, EmberFlameLab.swift, ExerciseDetailView.swift, ExerciseEditor.swift, ImpGlyph.swift, MoonGlyph.swift, ProgressComet.swift, WorkoutActivity.swift, WorkoutLiveCard.swift, WorkoutLiveFocus.swift, ExercisePhoto.swift, ExerciseSetupCard.swift, ExercisesView.swift, ExosFond.swift, FilmDepartSeance.swift, FlameLab.swift, FlammeJauge.swift, FlammeJaugeLab.swift, FondVideoMetal.swift, Foyer.swift (in target 'Nosfy' from project 'Nosfy')
+
+Copy /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.swiftmodule /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftmodule (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftmodule /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.swiftdoc /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftdoc (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftdoc /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.abi.json /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.abi.json (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.abi.json /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftsourceinfo (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/nosfy-profil-commit-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftsourceinfo /tmp/nosfy-profil-commit-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+SwiftCompile normal arm64 Compiling\ ChambreHiit.swift,\ ChambreLongue.swift,\ ChambrePeak.swift,\ ChambreRegularite.swift,\ ChambreVolume.swift,\ ChargeFiche.swift,\ ChevronAppelNatif.swift,\ ChipVerre.swift,\ CinematicPlayer.swift,\ ClavierBraise.swift,\ CoffreFlipLab.swift,\ CoffreFortCoin.swift,\ CoffreFortPurse.swift,\ CoffreFortView.swift,\ CoffreV2.swift,\ ConnexionButtonLab.swift,\ ConnexionCinematic.swift,\ CorpsNacre.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambreHiit.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambreLongue.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambrePeak.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambreRegularite.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambreVolume.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChargeFiche.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChevronAppelNatif.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChipVerre.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CinematicPlayer.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ClavierBraise.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreFlipLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreFortCoin.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreFortPurse.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreFortView.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreV2.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ConnexionButtonLab.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ConnexionCinematic.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CorpsNacre.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambreHiit.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambreLongue.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambrePeak.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambreRegularite.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChambreVolume.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChargeFiche.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChevronAppelNatif.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ChipVerre.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CinematicPlayer.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ClavierBraise.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreFlipLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreFortCoin.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreFortPurse.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreFortView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CoffreV2.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ConnexionButtonLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/ConnexionCinematic.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-profil-commit-20260919/Nosfy/Views/CorpsNacre.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-profil-commit-20260919
+    
+
+** BUILD FAILED **
+
+
+The following build commands failed:
+	SwiftCompile normal x86_64 /tmp/nosfy-profil-commit-20260919/Nosfy/Services/Annonces.swift (in target 'Nosfy' from project 'Nosfy')
+	SwiftCompile normal x86_64 Compiling\ BottleSplash.swift,\ CoinChime.swift,\ DiamondGlints.swift,\ Ink.swift,\ LightDial.swift,\ LuneDust.swift,\ MonolithChime.swift,\ NightBirds.swift,\ RocketHaptics.swift,\ SparkleBurst.swift,\ SplashBackground.swift,\ SplashWisp.swift,\ Annonces.swift,\ AppleAuth.swift,\ CartesQABanc.swift,\ CartesServeur.swift,\ ChambreServeur.swift,\ CoachServeur.swift,\ Compte.swift,\ EconomieNosfy.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/BottleSplash.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/CoinChime.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/DiamondGlints.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/Ink.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/LightDial.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/LuneDust.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/MonolithChime.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/NightBirds.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/RocketHaptics.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/SparkleBurst.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/SplashBackground.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Figures/SplashWisp.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/Annonces.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/AppleAuth.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/CartesQABanc.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/CartesServeur.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/ChambreServeur.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/CoachServeur.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/Compte.swift /tmp/nosfy-profil-commit-20260919/Nosfy/Services/EconomieNosfy.swift (in target 'Nosfy' from project 'Nosfy')
+	Building project Nosfy with scheme Nosfy and configuration Debug
+(3 failures)

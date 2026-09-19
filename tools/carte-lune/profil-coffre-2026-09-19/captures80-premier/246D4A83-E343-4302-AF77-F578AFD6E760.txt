@@ -1,0 +1,200 @@
+Application, 0x117832940, pid: 72926, label: 'Nosfy' <App element pid: 72926>
+  Window (Main), 0x117832a80, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 72926, elementOrHash.elementID: 4331588608.3>
+    Other, 0x117832bc0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 72926, elementOrHash.elementID: 4384843264.4>
+      Other, 0x117832d00, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 72926, elementOrHash.elementID: 4384618240.5>
+        Other, 0x117832e40, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 72926, elementOrHash.elementID: 4331589632.6>
+          Other, 0x117832f80, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 72926, elementOrHash.elementID: 4384230464.7>
+            Other, 0x1178330c0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 72926, elementOrHash.elementID: 4383619968.8>
+              Other, 0x1178335c0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 72926, elementOrHash.elementID: 4520380928.10>
+                Other, 0x117833700, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 72926, elementOrHash.elementID: 4384162240.12>
+                  Other, 0x117833840, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 72926, elementOrHash.elementID: 4331597824.15>
+                    Other, 0x117833980, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 72926, elementOrHash.elementID: 4384389568.18>
+                      Other, 0x117833ac0, {{-125.0, 0.0}, {652.0, 1260.6}} <AX element pid: 72926, elementOrHash.elementID: 4384389120.21>
+                        ScrollView, 0x117833c00, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 72926, elementOrHash.elementID: 4796203008.27>
+                          Other, 0x117833d40, {{0.0, 0.0}, {402.0, 1250.7}} <AX element pid: 72926, elementOrHash.elementID: 4794248704.42>
+                            Button, 0x117833e80, {{123.7, 192.3}, {34.0, 26.0}}, identifier: 'profil-booster-noir', label: '2 booster noir — ouvrir le manège des légendaires' <AX element pid: 72926, elementOrHash.elementID: 4384231360.56>
+                              Image, 0x107622e40, {{123.7, 192.3}, {15.0, 26.0}} <AX element pid: 72926, elementOrHash.elementID: 4384227776.89>
+                              StaticText, 0x107622f80, {{148.0, 196.2}, {9.7, 18.3}}, label: '2' <AX element pid: 72926, elementOrHash.elementID: 4384230912.90>
+                            Button, 0x1076230c0, {{190.3, 192.3}, {34.0, 26.0}}, identifier: 'profil-booster-orange', label: '2 booster — ouvrir le manège' <AX element pid: 72926, elementOrHash.elementID: 4384234496.57>
+                              Image, 0x107623200, {{190.3, 192.3}, {15.0, 26.0}} <AX element pid: 72926, elementOrHash.elementID: 4384233600.91>
+                              StaticText, 0x107623340, {{214.7, 196.2}, {9.7, 18.3}}, label: '2' <AX element pid: 72926, elementOrHash.elementID: 4384234048.92>
+                            Button, 0x107623480, {{256.3, 194.3}, {40.3, 22.0}}, label: '0 silver coins — open the vault' <AX element pid: 72926, elementOrHash.elementID: 4384235840.58>
+                              Image, 0x1076235c0, {{256.3, 194.3}, {22.0, 22.0}}, label: 'piece-argent-mini' <AX element pid: 72926, elementOrHash.elementID: 4384234944.93>
+                              StaticText, 0x107623700, {{286.3, 196.2}, {10.3, 18.3}}, label: '0' <AX element pid: 72926, elementOrHash.elementID: 4384235392.94>
+                            Button, 0x107623840, {{329.0, 193.7}, {41.0, 23.3}}, label: '0 coins — open the vault' <AX element pid: 72926, elementOrHash.elementID: 4384237184.59>
+                              Button, 0x107623980, {{329.0, 193.7}, {23.3, 23.3}}, label: 'Ton trésor' <AX element pid: 72926, elementOrHash.elementID: 4384236288.95>
+                              StaticText, 0x107623ac0, {{359.7, 196.2}, {10.3, 18.3}}, label: '0' <AX element pid: 72926, elementOrHash.elementID: 4384236736.96>
+                            StaticText, 0x107623c00, {{20.0, 282.4}, {17.0, 20.7}}, label: '—' <AX element pid: 72926, elementOrHash.elementID: 4384237632.60>
+                            StaticText, 0x107623d40, {{20.0, 306.1}, {24.7, 14.7}}, label: '@—' <AX element pid: 72926, elementOrHash.elementID: 4384238080.61>
+                            StaticText, 0x107623e80, {{20.0, 346.7}, {179.0, 29.3}}, label: 'Cards collected' <AX element pid: 72926, elementOrHash.elementID: 4384238976.62>
+                            StaticText, 0x117c48000, {{74.0, 392.0}, {68.7, 18.3}}, identifier: 'profil-registre-common', label: 'Une Lune' <AX element pid: 72926, elementOrHash.elementID: 4384239424.63>
+                            StaticText, 0x117c48140, {{334.7, 400.3}, {29.0, 16.0}}, identifier: 'profil-registre-common', label: '0 / 5' <AX element pid: 72926, elementOrHash.elementID: 4384240320.64>
+                            Image, 0x117c48280, {{375.7, 403.7}, {5.7, 9.7}}, identifier: 'profil-registre-common', label: 'Suivant' <AX element pid: 72926, elementOrHash.elementID: 4384240768.65>
+                            StaticText, 0x117c483c0, {{74.0, 411.3}, {40.3, 13.3}}, identifier: 'profil-registre-common', label: 'Normal' <AX element pid: 72926, elementOrHash.elementID: 4384239872.66>
+                            ScrollView, 0x117c48500, {{0.0, 436.7}, {402.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4383820800.67>
+                              Other, 0x117c48640, {{0.0, 436.7}, {488.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4794239488.97>
+                                Button, 0x117c48780, {{20.0, 436.7}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 72926, elementOrHash.elementID: 4384170304.106>
+                                  Image, 0x117c488c0, {{20.0, 436.7}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384241216.121>
+                                  Image, 0x117c48a00, {{20.0, 436.7}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384242112.122>
+                                  Image, 0x117c48b40, {{20.0, 436.7}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384242560.123>
+                                  Image, 0x117c48c80, {{20.0, 436.7}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384243008.124>
+                                Button, 0x117c48dc0, {{112.0, 436.7}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 72926, elementOrHash.elementID: 4384262784.107>
+                                  Image, 0x117c48f00, {{112.0, 436.7}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384260096.125>
+                                  Image, 0x117c49040, {{112.0, 436.7}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384260544.126>
+                                  Image, 0x117c49180, {{112.0, 436.7}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384261440.127>
+                                  Image, 0x117c492c0, {{112.0, 436.7}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384262336.128>
+                                Button, 0x117c49400, {{204.0, 436.7}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 72926, elementOrHash.elementID: 4384265472.108>
+                                  Image, 0x117c49540, {{204.0, 436.7}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384263232.129>
+                                  Image, 0x117c49680, {{204.0, 436.7}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384263680.130>
+                                  Image, 0x117c497c0, {{204.0, 436.7}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384264576.131>
+                                  Image, 0x117c49900, {{204.0, 436.7}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384265024.132>
+                                Button, 0x117c49a40, {{296.0, 436.7}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 72926, elementOrHash.elementID: 4384268160.109>
+                                  Image, 0x117c49b80, {{296.0, 436.7}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384265920.133>
+                                  Image, 0x117c49cc0, {{296.0, 436.7}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384266368.134>
+                                  Image, 0x117c49e00, {{296.0, 436.7}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384266816.135>
+                                  Image, 0x117c49f40, {{296.0, 436.7}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384267712.136>
+                                Button, 0x117c4a080, {{388.0, 436.7}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 72926, elementOrHash.elementID: 4384270848.110>
+                                  Image, 0x117c4a1c0, {{388.0, 436.7}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384269056.137>
+                                  Image, 0x117c4a300, {{388.0, 436.7}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384269504.138>
+                                  Image, 0x117c4a440, {{388.0, 436.7}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384269952.139>
+                                  Image, 0x117c4a580, {{388.0, 436.7}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384270400.140>
+                            StaticText, 0x117c4a6c0, {{74.0, 582.3}, {85.3, 18.3}}, identifier: 'profil-registre-rare', label: 'Deux Lunes' <AX element pid: 72926, elementOrHash.elementID: 4384271744.68>
+                            StaticText, 0x117c4a800, {{334.7, 590.7}, {29.0, 16.0}}, identifier: 'profil-registre-rare', label: '1 / 3' <AX element pid: 72926, elementOrHash.elementID: 4384273088.69>
+                            Image, 0x117c4a940, {{375.7, 594.0}, {5.7, 9.7}}, identifier: 'profil-registre-rare', label: 'Suivant' <AX element pid: 72926, elementOrHash.elementID: 4384273536.70>
+                            StaticText, 0x117c4aa80, {{74.0, 601.7}, {49.7, 13.3}}, identifier: 'profil-registre-rare', label: 'Plus rare' <AX element pid: 72926, elementOrHash.elementID: 4384272192.71>
+                            ScrollView, 0x117c4abc0, {{0.0, 627.0}, {402.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4383823872.72>
+                              Other, 0x117c4ad00, {{0.0, 627.0}, {304.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4794244096.98>
+                                Image, 0x117c4ae40, {{20.0, 627.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384273984.111>
+                                Button, 0x117c4af80, {{112.0, 627.0}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 72926, elementOrHash.elementID: 4384342464.112>
+                                  Image, 0x117c4b0c0, {{112.0, 627.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384274432.141>
+                                  Image, 0x117c4b200, {{112.0, 627.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384275328.142>
+                                  Image, 0x117c4b340, {{112.0, 627.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384275776.143>
+                                  Image, 0x117c4b480, {{112.0, 627.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384342016.144>
+                                Button, 0x117c4b5c0, {{204.0, 627.0}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 72926, elementOrHash.elementID: 4384344704.113>
+                                  Image, 0x117c4b700, {{204.0, 627.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384342912.145>
+                                  Image, 0x117c4b840, {{204.0, 627.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384343360.146>
+                                  Image, 0x117c4b980, {{204.0, 627.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384343808.147>
+                                  Image, 0x117c4bac0, {{204.0, 627.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384344256.148>
+                            StaticText, 0x117c4bc00, {{74.0, 772.3}, {84.0, 18.3}}, identifier: 'profil-registre-epic', label: 'Trois Lunes' <AX element pid: 72926, elementOrHash.elementID: 4384346048.73>
+                            StaticText, 0x117c4bd40, {{334.7, 780.7}, {29.0, 16.0}}, identifier: 'profil-registre-epic', label: '0 / 3' <AX element pid: 72926, elementOrHash.elementID: 4384346944.74>
+                            Image, 0x117c4be80, {{375.7, 784.0}, {5.7, 9.7}}, identifier: 'profil-registre-epic', label: 'Suivant' <AX element pid: 72926, elementOrHash.elementID: 4384347392.75>
+                            StaticText, 0x117c54000, {{74.0, 791.7}, {50.3, 13.3}}, identifier: 'profil-registre-epic', label: 'Très rare' <AX element pid: 72926, elementOrHash.elementID: 4384346496.76>
+                            ScrollView, 0x117c54140, {{0.0, 817.0}, {402.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4383826944.77>
+                              Other, 0x117c54280, {{0.0, 817.0}, {304.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4794245632.99>
+                                Button, 0x117c543c0, {{20.0, 817.0}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 72926, elementOrHash.elementID: 4384350080.114>
+                                  Image, 0x117c54500, {{20.0, 817.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384424384.209>
+                                  Image, 0x117c54640, {{20.0, 817.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384425280.210>
+                                  Image, 0x117c54780, {{20.0, 817.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384425728.211>
+                                  Image, 0x117c548c0, {{20.0, 817.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384426176.212>
+                                Button, 0x117c54a00, {{112.0, 817.0}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 72926, elementOrHash.elementID: 4384353216.115>
+                                  Image, 0x117c54b40, {{112.0, 817.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384426624.213>
+                                  Image, 0x117c54c80, {{112.0, 817.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384427520.214>
+                                  Image, 0x117c54dc0, {{112.0, 817.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384427968.215>
+                                  Image, 0x117c54f00, {{112.0, 817.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384428416.216>
+                                Button, 0x117c55040, {{204.0, 817.0}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 72926, elementOrHash.elementID: 4384355904.116>
+                                  Image, 0x117c55180, {{204.0, 817.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384428864.217>
+                                  Image, 0x117c552c0, {{204.0, 817.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384429312.218>
+                                  Image, 0x117c55400, {{204.0, 817.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384429760.219>
+                                  Image, 0x117c55540, {{204.0, 817.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384430208.220>
+                            StaticText, 0x117c55680, {{74.0, 962.3}, {97.0, 18.3}}, identifier: 'profil-registre-legendary', label: 'Quatre Lunes' <AX element pid: 72926, elementOrHash.elementID: 4384357696.78>
+                            StaticText, 0x117c557c0, {{334.7, 970.7}, {29.0, 16.0}}, identifier: 'profil-registre-legendary', label: '1 / 3' <AX element pid: 72926, elementOrHash.elementID: 4384375680.79>
+                            Image, 0x117c55900, {{375.7, 974.0}, {5.7, 9.7}}, identifier: 'profil-registre-legendary', label: 'Suivant' <AX element pid: 72926, elementOrHash.elementID: 4384376128.80>
+                            StaticText, 0x117c55a40, {{74.0, 981.7}, {62.3, 13.3}}, identifier: 'profil-registre-legendary', label: 'Légendaire' <AX element pid: 72926, elementOrHash.elementID: 4384374784.81>
+                            ScrollView, 0x117c55b80, {{0.0, 1007.0}, {402.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4383830016.82>
+                              Other, 0x117c55cc0, {{0.0, 1007.0}, {304.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4794247168.100>
+                                Image, 0x117c55e00, {{20.0, 1007.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384376576.117>
+                                Button, 0x117c55f40, {{112.0, 1007.0}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 72926, elementOrHash.elementID: 4384379712.118>
+                                  Image, 0x117c56080, {{112.0, 1007.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384377024.161>
+                                  Image, 0x117c561c0, {{112.0, 1007.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384377472.162>
+                                  Image, 0x117c56300, {{112.0, 1007.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384378368.163>
+                                  Image, 0x117c56440, {{112.0, 1007.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384379264.164>
+                                Button, 0x117c56580, {{204.0, 1007.0}, {80.0, 123.3}}, label: 'Emplacement de carte vide' <AX element pid: 72926, elementOrHash.elementID: 4384381952.119>
+                                  Image, 0x117c566c0, {{204.0, 1007.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384380160.165>
+                                  Image, 0x117c56800, {{204.0, 1007.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384380608.166>
+                                  Image, 0x117c56940, {{204.0, 1007.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384381056.167>
+                                  Image, 0x117c56a80, {{204.0, 1007.0}, {80.0, 123.3}} <AX element pid: 72926, elementOrHash.elementID: 4384381504.168>
+                          Other, 0x117c56bc0, {{369.0, 62.0}, {30.0, 750.0}}, label: 'Barre de défilement verticale, 2 pages', value: 0 % <AX element pid: 72926, elementOrHash.elementID: 4796727808.43>
+                            Other, 0x117c56d00, {{396.0, 65.0}, {3.0, 506.3}} <AX element pid: 72926, elementOrHash.elementID: 4384168960.83>
+                          Other, 0x117c56e40, {{369.0, 62.0}, {30.0, 750.0}}, label: 'Barre de défilement verticale, 2 pages', value: 0 % <AX element pid: 72926, elementOrHash.elementID: 4796727808.43>
+                            Other, 0x117c56f80, {{396.0, 65.0}, {3.0, 506.3}} <AX element pid: 72926, elementOrHash.elementID: 4384168960.83>
+                        StaticText, 0x117c570c0, {{179.8, 82.7}, {42.3, 20.7}}, label: 'Profil' <AX element pid: 72926, elementOrHash.elementID: 4384383296.28>
+                        Button, 0x117c57200, {{20.0, 66.0}, {44.0, 44.0}}, label: 'Retour' <AX element pid: 72926, elementOrHash.elementID: 4384384640.29>
+                          Image, 0x117c57340, {{20.0, 66.0}, {44.0, 44.0}}, identifier: 'chevron.left', label: 'Retour' <AX element pid: 72926, elementOrHash.elementID: 4384383744.44>
+                          Image, 0x117c57480, {{37.0, 81.3}, {7.7, 13.3}}, identifier: 'chevron.left', label: 'Retour' <AX element pid: 72926, elementOrHash.elementID: 4384384192.45>
+                        Button, 0x117c575c0, {{338.0, 66.0}, {44.0, 44.0}}, label: 'Réglages' <AX element pid: 72926, elementOrHash.elementID: 4384386432.30>
+                          Image, 0x117c57700, {{338.0, 66.0}, {44.0, 44.0}}, identifier: 'gearshape', label: 'gearshape' <AX element pid: 72926, elementOrHash.elementID: 4384385536.46>
+                          Image, 0x117c57840, {{352.0, 80.0}, {16.3, 16.3}}, identifier: 'gearshape', label: 'gearshape' <AX element pid: 72926, elementOrHash.elementID: 4384385984.47>
+                        Other, 0x117c57980, {{-125.0, 489.4}, {652.0, 771.1}} <AX element pid: 72926, elementOrHash.elementID: 4387051776.31>
+                          Other, 0x117c57ac0, {{-125.0, 489.4}, {652.0, 771.1}} <AX element pid: 72926, elementOrHash.elementID: 4575953472.170>
+                            Other, 0x117c57c00, {{91.4, 720.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4572423232.171>
+                              Other, 0x117c57d40, {{91.4, 720.2}, {220.9, 321.5}}, identifier: 'berceau' <AX element pid: 72926, elementOrHash.elementID: 4572425792.172>
+                                Other, 0x117c57e80, {{91.4, 720.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4572425472.187>
+                                  Other, 0x117c5c000, {{91.4, 720.2}, {220.9, 321.5}}, identifier: 'corps' <AX element pid: 72926, elementOrHash.elementID: 4572428032.221>
+                                  Other, 0x117c5c140, {{91.4, 720.2}, {220.9, 321.5}}, identifier: 'bande' <AX element pid: 72926, elementOrHash.elementID: 4386378432.222>
+                                  Other, 0x117c5c280, {{91.4, 720.2}, {220.9, 321.5}}, identifier: 'lune' <AX element pid: 72926, elementOrHash.elementID: 4572362176.223>
+                                  Other, 0x117c5c3c0, {{91.4, 720.2}, {220.9, 321.5}}, identifier: 'carte' <AX element pid: 72926, elementOrHash.elementID: 4572355776.224>
+                                    Other, 0x117c5c500, {{121.5, 765.5}, {163.6, 251.1}} <AX element pid: 72926, elementOrHash.elementID: 4572303424.226>
+                                  Other, 0x117c5c640, {{91.4, 720.2}, {220.9, 321.5}}, identifier: 'poudre' <AX element pid: 72926, elementOrHash.elementID: 4572426112.225>
+                                    Other, 0x117c5c780, {{91.4, 720.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794810368.227>
+                              Other, 0x117c5c8c0, {{91.4, 720.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794811008.173>
+                                Other, 0x117c5ca00, {{90.5, 714.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794811328.188>
+                                Other, 0x117c5cb40, {{90.5, 714.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794811968.189>
+                              Other, 0x117c5cc80, {{91.4, 720.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794812608.174>
+                                Other, 0x117c5cdc0, {{90.5, 714.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794812928.190>
+                                Other, 0x117c5cf00, {{90.5, 714.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794813568.191>
+                              Other, 0x117c5d040, {{91.4, 720.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794814208.175>
+                                Other, 0x117c5d180, {{90.5, 714.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794814528.192>
+                                Other, 0x117c5d2c0, {{90.5, 714.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794815168.193>
+                              Other, 0x117c5d400, {{91.4, 720.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794815808.176>
+                                Other, 0x117c5d540, {{90.5, 714.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794816128.194>
+                                Other, 0x117c5d680, {{90.5, 714.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794816768.195>
+                              Other, 0x117c5d7c0, {{91.4, 720.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794817408.177>
+                                Other, 0x117c5d900, {{90.5, 714.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794817728.196>
+                                Other, 0x117c5da40, {{90.5, 714.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794818368.197>
+                              Other, 0x117c5db80, {{91.4, 720.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794819008.178>
+                                Other, 0x117c5dcc0, {{90.5, 714.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794819328.198>
+                                Other, 0x117c5de00, {{90.5, 714.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794819968.199>
+                              Other, 0x117c5df40, {{91.4, 720.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794820608.179>
+                                Other, 0x117c5e080, {{90.5, 714.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794820928.200>
+                                Other, 0x117c5e1c0, {{90.5, 714.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794821568.201>
+                              Other, 0x117c5e300, {{91.4, 720.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794822208.180>
+                                Other, 0x117c5e440, {{90.5, 714.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794822528.202>
+                                Other, 0x117c5e580, {{90.5, 714.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794823168.203>
+                              Other, 0x117c5e6c0, {{91.4, 720.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794823808.181>
+                                Other, 0x117c5e800, {{90.5, 714.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794824128.204>
+                                Other, 0x117c5e940, {{90.5, 714.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794824768.205>
+                              Other, 0x117c5ea80, {{91.4, 720.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794825408.182>
+                                Other, 0x117c5ebc0, {{90.5, 714.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794825728.206>
+                                Other, 0x117c5ed00, {{90.5, 714.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794826368.207>
+                              Other, 0x117c5ee40, {{91.4, 720.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794974848.183>
+                                Other, 0x117c5ef80, {{-1966.7, 890.2}, {4459.5, 739.8}} <AX element pid: 72926, elementOrHash.elementID: 4572426752.208>
+                              Other, 0x117c5f0c0, {{91.4, 720.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4572426432.184>
+                              Other, 0x117c5f200, {{91.4, 720.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794975488.185>
+                              Other, 0x117c5f340, {{91.4, 720.2}, {220.9, 321.5}} <AX element pid: 72926, elementOrHash.elementID: 4794975808.186>
+                        Image, 0x117c5f480, {{194.7, 673.7}, {13.0, 7.7}}, identifier: 'chevron.up', label: 'Monter' <AX element pid: 72926, elementOrHash.elementID: 4384387776.32>
+                        Image, 0x117c5f5c0, {{194.7, 679.0}, {13.0, 7.7}}, identifier: 'chevron.up', label: 'Monter' <AX element pid: 72926, elementOrHash.elementID: 4384388224.33>
+              Other, 0x117c5f700, {{0.0, 791.0}, {402.0, 83.0}} <AX element pid: 72926, elementOrHash.elementID: 4383469376.11>
+                Other, 0x117c5f840, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 72926, elementOrHash.elementID: 4384152576.13>
+                Other, 0x117c5f980, {{0.0, 791.0}, {402.0, 83.0}} <AX element pid: 72926, elementOrHash.elementID: 4520378880.14>
+            StaticText, 0x117c5fac0, {{189.3, 838.7}, {23.3, 1.3}}, identifier: 'cartes-qa-collection', label: 'orange=2;noir=2;references=2;exemplaires=2' <AX element pid: 72926, elementOrHash.elementID: 4384230016.9>
+    Other, 0x117c5fc00, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 72926, elementOrHash.elementID: 4796733440.228>
+      Other, 0x117c5fd40, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 72926, elementOrHash.elementID: 4331600896.229>
+        Other, 0x117c5fe80, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 72926, elementOrHash.elementID: 4384442112.230>
+          Image, 0x117c6c000, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 72926, elementOrHash.elementID: 4384507648.231>
+          Image, 0x117c6c140, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 72926, elementOrHash.elementID: 4384513920.232>
+          Image, 0x117c6c280, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 72926, elementOrHash.elementID: 4384514368.233>
+          Button, 0x117c6c3c0, {{22.0, 63.0}, {44.0, 44.0}}, label: 'Close' <AX element pid: 72926, elementOrHash.elementID: 4384516160.234>
+            Image, 0x117c6c500, {{22.0, 63.0}, {44.0, 44.0}}, identifier: 'chevron.left', label: 'Retour' <AX element pid: 72926, elementOrHash.elementID: 4384514816.247>
+            Image, 0x117c6c640, {{39.0, 78.3}, {7.7, 13.3}}, identifier: 'chevron.left', label: 'Retour' <AX element pid: 72926, elementOrHash.elementID: 4384515712.248>
+          StaticText, 0x117c6c780, {{80.0, 66.8}, {124.3, 36.3}}, label: 'Rewards' <AX element pid: 72926, elementOrHash.elementID: 4384516608.235>
+          Image, 0x117c6c8c0, {{-199.9, 446.7}, {134.6, 134.6}} <AX element pid: 72926, elementOrHash.elementID: 4384517056.236>
+          Image, 0x117c6ca00, {{-17.0, 394.5}, {102.4, 176.7}} <AX element pid: 72926, elementOrHash.elementID: 4384517504.237>
+          Image, 0x117c6cb40, {{112.5, 307.8}, {177.0, 176.8}} <AX element pid: 72926, elementOrHash.elementID: 4384518400.238>
+          Image, 0x117c6cc80, {{316.6, 394.5}, {102.4, 176.7}} <AX element pid: 72926, elementOrHash.elementID: 4384519296.239>
+          StaticText, 0x117c6cdc0, {{164.5, 173.9}, {73.0, 17.0}}, label: 'Silver Coin' <AX element pid: 72926, elementOrHash.elementID: 4384519744.240>
+          StaticText, 0x117c6cf00, {{99.3, 195.9}, {203.3, 18.3}}, label: 'Opens a Legendary Booster.' <AX element pid: 72926, elementOrHash.elementID: 4384520192.241>
+          Image, 0x117c6d040, {{176.0, 639.0}, {26.0, 26.0}} <AX element pid: 72926, elementOrHash.elementID: 4384520640.242>
+          StaticText, 0x117c6d180, {{211.0, 641.7}, {11.0, 20.7}}, label: '0' <AX element pid: 72926, elementOrHash.elementID: 4384521088.243>
+          StaticText, 0x117c6d2c0, {{114.3, 683.9}, {173.3, 17.0}}, label: 'A rare drop from the path.' <AX element pid: 72926, elementOrHash.elementID: 4384521536.244>
+          StaticText, 0x117c6d400, {{41.0, 780.0}, {320.0, 58.0}}, label: 'Discover history' <AX element pid: 72926, elementOrHash.elementID: 4384440768.249>
+          Image, 0x117c6d540, {{336.0, 63.0}, {44.0, 44.0}}, identifier: 'list.bullet', label: 'Rewards history' <AX element pid: 72926, elementOrHash.elementID: 4384441216.245>

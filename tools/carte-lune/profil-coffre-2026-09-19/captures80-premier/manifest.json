@@ -1,0 +1,332 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "246D4A83-E343-4302-AF77-F578AFD6E760.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "App UI hierarchy for fr.kathryn_0_7AC821AC-7936-4C24-92A1-127A1859A2AD.woop",
+        "timestamp" : 1789800793.083
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "787B4056-3EFF-41A7-A260-F680EF225B27",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-09-19 at 08.53.13 AM",
+        "timestamp" : 1789800793.083
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "9A33911D-0F96-44E8-9208-826A576F02D1.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"Gold Coin\" StaticText`_0_E4C09231-3304-49EA-A742-CC0A7A7AB40C.txt",
+        "timestamp" : 1789800792.762
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "38603CC2-6A1B-4E0C-BCBB-E171099D8E5A.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"Gold Coin\" StaticText`_0_9B308F2C-F31D-40FA-BF81-BAE20F6403F6.txt",
+        "timestamp" : 1789800791.77
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "BB4A056F-B210-4270-B426-F52422E69B5B.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"Gold Coin\" StaticText`_0_3CB37ADD-CCDE-4980-8363-38B833D59B9D.txt",
+        "timestamp" : 1789800790.821
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "0BA250C2-EEF3-4B43-AB61-DB3F3295D8CB.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"Gold Coin\" StaticText`_0_56B9D5EA-8731-412E-A5BB-750D964679BB.txt",
+        "timestamp" : 1789800789.791
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "629EDD1B-1F64-499A-BB6C-9B2C246DE349.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"Gold Coin\" StaticText`_0_5CEA0B25-1204-45B7-9013-84ACFABE58E2.txt",
+        "timestamp" : 1789800788.762
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "EE9A2C1E-11FC-467E-8A4D-ECC686ED0C18.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"Gold Coin\" StaticText`_0_E6BE9A34-FBD1-4288-AD62-DD3D82B9042C.txt",
+        "timestamp" : 1789800787.824
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "8A51D6B1-AA94-4F48-BE27-B9430EB50CEF.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"Gold Coin\" StaticText`_0_553FF516-7895-4E06-BB74-5D0F339CDAD8.txt",
+        "timestamp" : 1789800786.753
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "BB85F94A-2875-4C62-8807-E1D51745F956.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"Gold Coin\" StaticText`_0_88E890F1-ACD8-4BE9-ACA3-4158C48EA88C.txt",
+        "timestamp" : 1789800785.819
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "61740F9D-F6E7-44AF-9854-3C671FE4B70F.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"Gold Coin\" StaticText`_0_B6F3B9AF-5EBD-498A-A79E-05CF40F22B12.txt",
+        "timestamp" : 1789800784.862
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "8708D33E-8F58-419D-9893-771F19DB60E4.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"Gold Coin\" StaticText`_0_DF6F90D1-7139-4EEC-917E-B3EA2F4817B9.txt",
+        "timestamp" : 1789800783.773
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "CA1B2365-CD41-47AB-9AAC-3C32E36C5007.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"Gold Coin\" StaticText`_0_C782FC9C-DE55-4799-977E-821F96F11A70.txt",
+        "timestamp" : 1789800782.762
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "A397E7A1-26AE-4818-91F6-C49E29A2674F.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"Gold Coin\" StaticText`_0_43E2A2AA-4E7A-41DA-A416-58BA52CF1718.txt",
+        "timestamp" : 1789800781.826
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "5FF5781E-5DB6-4904-830C-E5CD79E72392",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-09-19 at 08.52.59 AM",
+        "timestamp" : 1789800779.387
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "33F6846F-1E91-413B-87E9-44A851203A81.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "coffre-argent-en_0_C08B57F8-A38A-4826-8AFC-A92C5ABCF8DB.png",
+        "timestamp" : 1789800771.787
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "5EA824EB-8857-4BA5-A6D4-CEDECDBFAD63",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-09-19 at 08.52.43 AM",
+        "timestamp" : 1789800763.922
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "6703D55D-7F07-42BC-AC26-5908AD0983ED.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "coffre-profil-booster-noir-en_0_7700B14D-69BA-46B5-AF41-9E71129940AA.png",
+        "timestamp" : 1789800755.904
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "D02EB302-5969-4105-8F22-EB4C66FD5A06",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-09-19 at 08.52.27 AM",
+        "timestamp" : 1789800747.966
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "F5E9FC6B-D470-41FB-A649-2AC48BA3B4B1.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "coffre-profil-booster-orange-en_0_A602F531-076C-46EF-9E69-F4B7BAAC96AA.png",
+        "timestamp" : 1789800741.202
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "0F0DE6AF-7763-4083-A3DF-1DAF66211E8B",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-09-19 at 08.52.13 AM",
+        "timestamp" : 1789800733.423
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "0DCD41B8-934B-457A-A635-72AD911B5314.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "profil-aligne-en_0_C6967169-5DE4-48A9-AFAD-C3BC75CDE21D.png",
+        "timestamp" : 1789800726.802
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "CB4516B2-0F1A-4B83-8FB0-1ED7EE160CBC",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-09-19 at 08.52.05 AM",
+        "timestamp" : 1789800725.103
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "21F30310-0242-4E71-8E22-8824F29EDBE7",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-09-19 at 08.52.05 AM",
+        "timestamp" : 1789800725.642
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "66C51BE0-37A0-43BB-A111-3BE31912EBFA.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "coffre-or-fr_0_EBB2EE1C-B0E2-4CF6-B2DA-78AA5377D330.png",
+        "timestamp" : 1789800717.944
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "73836000-7906-4169-B0CC-FD2A6E67F889",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-09-19 at 08.51.49 AM",
+        "timestamp" : 1789800709.894
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "E6916809-2502-49BC-95DB-725C0F2FBC78.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "coffre-argent-fr_0_4A538EAC-CDF7-49BC-9D8C-CADD619AB3D2.png",
+        "timestamp" : 1789800703.568
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "CA66A6E5-2677-40A7-9DB8-3C61FF7F1587",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-09-19 at 08.51.35 AM",
+        "timestamp" : 1789800695.916
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "824A26AA-9D8F-493D-9FBF-D97934AE85C0.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "coffre-profil-booster-noir-fr_0_102F2F10-432B-4919-9B4C-DD7298B1EE96.png",
+        "timestamp" : 1789800690.95
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "7D8A2EE7-E795-47AC-88BE-BBD5783C3334",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-09-19 at 08.51.23 AM",
+        "timestamp" : 1789800683.384
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "B8DEBC3F-74C6-4BDF-A44D-D55BE80B3574.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "coffre-profil-booster-orange-fr_0_B29BBF82-904D-471E-9C0C-C2544A6B518F.png",
+        "timestamp" : 1789800677.198
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "BA3BF5C1-FD9E-4961-8447-1F161DC8EF1F",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-09-19 at 08.51.09 AM",
+        "timestamp" : 1789800669.315
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "C0C5D0A8-F4FF-4159-80D8-EE7E81502024.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "profil-aligne-fr_0_8258C710-CEF5-4736-97E9-57BBD7C12E28.png",
+        "timestamp" : 1789800664.453
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "8F5F0648-0AA7-43E5-A1D9-A689BFF64266",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-09-19 at 08.51.02 AM",
+        "timestamp" : 1789800662.975
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "D4063F66-2721-48DB-8C4E-4750F45F859A",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-09-19 at 08.51.03 AM",
+        "timestamp" : 1789800663.507
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "1C1D80CC-91BF-4AD5-8D95-1F5E84043CA1.mp4",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Screen Recording 2026-09-19 at 08.50.54 AM.mp4",
+        "timestamp" : 1789800654.569
+      }
+    ],
+    "testIdentifier" : "NavRuntimeUITests/testAProfilEtQuatrePagesCoffre()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavRuntimeUITests/NavRuntimeUITests/NavRuntimeUITests/testAProfilEtQuatrePagesCoffre"
+  }
+]

@@ -1,5 +1,27 @@
 # Règle multi-session (Nosfy)
 
+## Profil / Coffre — 19-09, tests terminés ; iPhone rendu à Erreur
+
+Bouton de rejeu Nosfy retiré, quatre titres alignés ; toucher de la pastille
+or corrigé sur son décor MoonCoin. Build 80 simulateur + iPhone réussis.
+Huit accès Coffre FR/EN et alignement PASS au simulateur dédié ; deux reprises
+après réponse perdue PASS (orange Réessayer, noir relance). 28 API Cartes et
+53 Coffre PASS. Comptes temporaires seulement, aucun gain personnel consommé.
+
+Cible de 50 scènes préparée : 14 publiées, 36 propositions sans génération,
+shiny très marqué et personnages récurrents dans des poses distinctes.
+
+Le runner physique 79 a attendu le verrou iOS puis été arrêté ; aucune nouvelle
+mesure thermique. L’iPhone reste à Erreur, sans réinstallation de notre 80.
+Deux propriétés DemoSession de CalLab ont reçu @MainActor pour suivre
+StorySession.init. Les autres corrections de compilation sont de Parcours.
+Preuves : tools/carte-lune/profil-coffre-2026-09-19/. Commit ciblé autorisé par Kathryn (« commit que ça »), préparé dans un worktree
+isolé. Index partagé conservé ; relire et restager vos versions avant votre
+prochain commit pour éviter de reprendre les anciennes lignes de ce chantier.
+Compilation isolée : deux déplacements de compilation CoffreV2 inclus ; puis
+blocage préexistant Annonces → ToasterGain absent de HEAD, laissé à sa session.
+Documentation isolée : 23 tests PASS. Le build 80 partagé reste distinct.
+
 ## Cartes — iPhone RÉSERVÉ (18-09 18:40) : le chevron pendant le manège, sur son « vas-y »
 
 Un sachet orange de TEST posé sur son compte (origine cadeau, id dans

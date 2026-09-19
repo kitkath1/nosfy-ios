@@ -1,0 +1,31 @@
+PASS compte neuf vide
+PASS 14 références, totaux sans spoiler
+PASS catalogue inconnu non dévoilé par REST
+PASS attribuer_carte refuse sans session
+PASS preparer_booster refuse sans session
+PASS 10 séries :200pièces,3boosters,solde0
+PASS IDs des conversions et forfaitaire dans le reçu
+PASS rejeu : mêmes reçu, événements et stock
+PASS première ouverture ordinaire rare ou mieux
+PASS provenance réelle du serveur, paramètre client ignoré
+PASS image non confirmée : reprise de la même carte
+PASS noir offert repris après2jours sans argent
+PASS 20appels simultanés :1exemplaire légendaire
+PASS attribution et collection atomiques
+PASS opération rejouée après révélation ne consomme pas le suivant
+PASS noir gratuit : argent et stock orange préservés
+PASS autre compte sans accès à la carte
+PASS écriture directe d’une acquisition interdite
+PASS deux comptes découvrent les mêmes3légendaires
+PASS mêmes pixels canoniques, SHA256 vérifié
+PASS reconnexion : collection et vrais exemplaires restaurés
+PASS annonces durables, identités distinctes
+PASS un autre compte ne peut acquitter les annonces
+PASS annonces acquittées non rejouées
+PASS reçu relu après acquittement sans nouvelle annonce
+PASS galet futur reste verrouillé par la progression
+PASS argent→noir :8appels,un seul débit et sachet
+PASS noir acheté toujours légendaire
+28 contrôles API PASS
+Nettoyage identité QA : 200
+Nettoyage identité QA : 200

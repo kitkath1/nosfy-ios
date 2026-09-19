@@ -1,0 +1,98 @@
+auth : 200 (jeton reçu)
+aujourd'hui à Paris : 2026-09-19 · heure Paris : 08:13
+
+[0] etat_coffre — les quatre clés nouvelles, et le stock d'avant converti
+    {"jour": "2026-09-19", "reste": 0, "flamme": {"jours": 0, "aujourdhui_fait": false}, "boosters": [], "solde_or": 0, "boosters_or": 0, "prix_booster": 100, "solde_argent": 0, "noirs_ouverts": 0, "boosters_noirs": 0, "retour_prochain": "2026-09-19T22:00:00+00:00", "pieces_par_serie": 20, "inventory_version": 0, "retour_disponible": false, "cardio_piscine_max": 300, "pieces_par_longueur": 20, "pieces_retour_quotidien": 10, "prix_booster_legendaire": 1}
+  ✓ la clé jour existe (témoin : absente = KeyError)
+  ✓ la clé retour_disponible existe (témoin : absente = KeyError)
+  ✓ la clé retour_prochain existe (témoin : absente = KeyError)
+  ✓ la clé flamme existe (témoin : absente = KeyError)
+  ✓ la clé pieces_retour_quotidien existe (témoin : absente = KeyError)
+  ✓ jour = 2026-09-19 = aujourd'hui à Paris (2026-09-19)
+  ✓ pieces_retour_quotidien = 10 — le montant vient de la règle, plus d'une constante Swift (20260830220000)
+  ✓ flamme est un objet {jours, aujourdhui_fait}
+  ✓ AVANT tout crédit : 0 ≤ solde_or = 0 < 100 et reste = solde_or — le stock d'avant a été converti à la pose
+  ✓ retour_prochain = 2026-09-19T22:00:00+00:00 = le prochain minuit de PARIS (2026-09-20T00:00:00+02:00)
+    sachets `conversion` sur le compte : 0
+
+[1] cloturer_seance — un uuid neuf, assez de séries pour CONVERTIR, puis le REJEU
+    solde 0 + 5 × 20 = 100 → 1 conversion(s) attendue(s)
+   synchroniser_seance : 200 {"ok": true, "phases": 0, "series": 5, "workout_id": "4a5fb115-7b47-463f-b8e9-58510938aec8"}
+  ✓ la séance est synchronisée avant la clôture (083033)
+   #1 : 200 {"faits": [], "rejeu": false, "reste": 0, "solde": 0, "argent": false, "coffre": {"jour": "2026-09-19", "reste": 0, "flamme": {"jours": 1, "aujourdhui_fait": true}, "boosters": [{"id": "23622334-5ab5-4d00-94cd-a4bda1717c11", "noir": false, "origine": "conversion", "reprise": false}, {"id": "f42fed50-20a8-4cf4-acc0-c118
+  ✓ 200
+  ✓ pièces = 5 × 20 = 100, créditées
+  ✓ rejeu = false la première fois
+  ✓ sachet forfaitaire neuf
+  ✓ sachets_convertis = 1 = 1 attendu
+  ✓ solde APRÈS conversion = 0 < 100
+  ✓ solde_argent (0) et argent_seance (False) portés
+  ✓ à la première clôture, argent = argent_seance
+    dernière ligne conversion_booster : 200 [{"delta":-100,"booster_id":"23622334-5ab5-4d00-94cd-a4bda1717c11","currency":"yellow"}]
+  ✓ la ligne -100 `conversion_booster` est LUE dans le carnet, liée à son sachet
+  ✓ sachets `conversion` comptés par REST : 0 → 1 (+1)
+  ✓ boosters_or monte de 2 (0 → 2) — second témoin
+  ✓ 0 ≤ solde_or = 0 < 100 et reste = solde_or
+   #2 : 200 {"faits": [], "rejeu": true, "reste": 0, "solde": 0, "argent": false, "coffre": {"jour": "2026-09-19", "reste": 0, "flamme": {"jours": 1, "aujourdhui_fait": true}, "boosters": [{"id": "23622334-5ab5-4d00-94cd-a4bda1717c11", "noir": false, "origine": "conversion", "reprise": false}, {"id": "f42fed50-20a8-4cf4-acc0-c1189
+  ✓ rejeu → 200
+  ✓ rejouée → rejeu:true, rien de crédité
+  ✓ rejouée → les MÊMES pièces stockées (100)
+  ✓ rejouée → le MÊME sachet, pas neuf
+  ✓ rejouée → argent = false (jamais « tombée à cet appel » sur un rejeu)
+  ✓ rejouée → argent_seance stocké = False
+  ✓ rejouée → 0 converti
+  ✓ rejouée → le coffre n'a pas bougé
+
+[2] claim_retour_quotidien ×2 — le jour de Paris, lu dans le CARNET
+   #1 : 200 {"jour": "2026-09-19", "solde": 10, "coffre": {"jour": "2026-09-19", "reste": 10, "flamme": {"jours": 1, "aujourdhui_fait": true}, "boosters": [{"id": "23622334-5ab5-4d00-94cd-a4bda1717c11", "noir": f
+   #2 : 200 {"jour": "2026-09-19", "solde": 10, "coffre": {"jour": "2026-09-19", "reste": 10, "flamme": {"jours": 1, "aujourdhui_fait": true}, "boosters": [{"id": "23622334-5ab5-4d00-94cd-a4bda1717c11", "noir": f
+  ✓ deux 200
+  ✓ le 1er claim crédite (True) EXACTEMENT quand retour_disponible le promettait (True)
+  ✓ réponse : jour = 2026-09-19 (Paris : 2026-09-19)
+  ✓ le second ne crédite pas (index (user, jour))
+  ✓ sachets_convertis porté (0)
+    dernière ligne retour_quotidien : 200 [{"jour":"2026-09-19","delta":10,"created_at":"2026-09-19T06:13:51.477164+00:00"}]
+  ✓ la ligne du CARNET porte jour = 2026-09-19 (Paris 2026-09-19)
+  ✓ retour_disponible = false après le claim du jour
+   ⚠️ hors 00:00–02:00 Paris : date Paris = date UTC ici — c'est la fixture de [3] qui départage le fuseau
+
+[3] flamme — une fixture de séances (J-3 · J-1 · J0 à 00:30 PARIS = la veille en UTC)
+   fixture : 201 
+  ✓ fixture semée (201)
+    flamme serveur : {'jours': 2, 'aujourdhui_fait': True} · J0 à 00:30 Paris = 2026-09-18T22:30:00+00:00 en UTC
+  ✓ flamme = {'jours': 2, 'aujourdhui_fait': True} — attendu {jours ≥ 2, aujourdhui_fait: true} (J-1 + J0 ; en UTC, J0 serait HIER → aujourdhui_fait: false)
+  ✓ des séances LUES (4) — sinon la flamme n'est pas prouvée
+  ✓ second témoin : le calcul local rend 2 / True
+   retrait : 204 
+  ✓ fixture retirée
+   retrait séance [1] : 204 
+  ✓ séance de [1] retirée
+
+[4] claim_booster — fermée par le DROIT
+   : 403 {"code":"42501","details":null,"hint":null,"message":"permission denied for function claim_booster"}
+  ✓ claim_booster refusée par le droit (403 / 42501), pas absente (403)
+
+[5] le chemin — l'enveloppe convertit ; les privées ne répondent pas
+   tirer(3,True) : 409 {"code":"PT409","details":null,"hint":null,"message":"progression_insuffisante"}
+   tirer(21,True) : 409 {"code":"PT409","details":null,"hint":null,"message":"progression_insuffisante"}
+   tirer(39,True) : 409 {"code":"PT409","details":null,"hint":null,"message":"progression_insuffisante"}
+   ⚠️ aucun nœud pièces libre sur le compte de test : la conversion par le CHEMIN n'est PAS prouvée ce tour
+  ✓ nœud 3 → rejeu 0 converti, ou garde de progression motivée (409 {"code":"PT409","details":null,"hint":null,"message":"progression_insuffisante"})
+  ✓ reclamer_noeud_chemin (l'ancienne porte) passe par l'enveloppe et sa garde → 409
+   fuseau_jour : 200 "Europe/Paris"
+  ✓ fuseau_jour lisible par le client (grant du 13-09, 20260913120000) et = Europe/Paris
+   tirer_noeud_chemin_brut : 403 {"code":"42501","details":null,"hint":null,"message":"permission denied for function tirer_noeud_che
+  ✓ tirer_noeud_chemin_brut existe mais est refusée au client (403 / 42501) — un 404 voudrait dire ABSENTE
+   convertir_pieces : 403 {"code":"42501","details":null,"hint":null,"message":"permission denied for function convertir_piece
+  ✓ convertir_pieces existe mais est refusée au client (403 / 42501) — un 404 voudrait dire ABSENTE
+   jour_courant : 403 {"code":"42501","details":null,"hint":null,"message":"permission denied for function jour_courant"}
+  ✓ jour_courant existe mais est refusée au client (403 / 42501) — un 404 voudrait dire ABSENTE
+   convertis_transaction : 403 {"code":"42501","details":null,"hint":null,"message":"permission denied for function convertis_trans
+  ✓ convertis_transaction existe mais est refusée au client (403 / 42501) — un 404 voudrait dire ABSENTE
+
+[6] le témoin
+   : 404 {"code":"PGRST202","details":"Searched for the function public.fonction_inventee_temoin without parameters or with a sin
+  ✓ la fonction inventée rend 404 / PGRST202 : les 403 ci-dessus sont bien des refus, pas des absences
+
+53 ✓ · 0 ✗ — TOUT EST VERT
+Nettoyage compte Coffre QA : 200

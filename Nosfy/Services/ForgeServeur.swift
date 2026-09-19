@@ -56,6 +56,9 @@ enum ForgeServeur {
                 .flatMap { $0["error"] as? String } ?? ""
             throw Erreur.http(code, détail)
         }
+        #if DEBUG
+        try await CoupureCartesQA.shared.apresAttribution()
+        #endif
         guard let json = try JSONSerialization.jsonObject(with: data)
                 as? [String: Any],
               let carte = json["card"] as? [String: Any],

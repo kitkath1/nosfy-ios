@@ -1475,11 +1475,6 @@ struct PiedCoffre: View {
     let v: PiedVariante
     /// 0 → 1 : l'arrivée de la barre (le ressort de l'ancienne pill).
     var remplie: Double = 1
-    /// Ouvrir le manège de CETTE page — nil sur une page de pièce.
-    var onOuvrir: (() -> Void)?
-    /// Ouvrir l'histoire d'une robe (la vidéo, puis la page).
-    var onHistoire: ((RobeBooster) -> Void)?
-
     /// ⚠️ **LE BOUTON N'EXISTE QU'UNE FOIS LE PROJECTEUR ALLUMÉ** (18-09, le
     /// 🔴 « Ouvrir » des Cartes). Pendant le film d'arrivée la page est à
     /// opacité 0 — mais un bouton monté est un bouton que l'arbre
@@ -1489,6 +1484,11 @@ struct PiedCoffre: View {
     /// (XCUITest l'ignore, mesuré). Éteint, le pied garde la place du bouton,
     /// vide : la grille des quatre pages ne bouge pas.
     var allume: Bool = true
+    /// Ouvrir le manège de CETTE page — nil sur une page de pièce.
+    var onOuvrir: (() -> Void)?
+    /// Ouvrir l'histoire d'une robe (la vidéo, puis la page).
+    var onHistoire: ((RobeBooster) -> Void)?
+
     /// ⚠️⚠️ **LA PLAQUE EST MORTE, ET C'EST LA LEÇON D'OPAL (28-08).**
     /// 128 → 104 → **plus de plaque du tout**. Verdict : *« ça fait cheap »*,
     /// trois fois, sur trois mises en page différentes. La cause n'était
@@ -2750,6 +2750,9 @@ struct CoffreV2Page: View {
     /// d'une pièce d'argent qui tombe (`claim_booster_legendaire`), et cette
     /// porte-là est déjà tenue par le solde d'argent.
     private func ouvrirManege(_ robe: RobeBooster) {
+        #if DEBUG
+        traceQA("coffre : ouvrirManege(\(robe)) boosters=\(economie.boosters) noirs=\(economie.boostersNoirs)")
+        #endif
         if robe == .noire || economie.boosters > 0 {
             onClose()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
@@ -2783,9 +2786,6 @@ struct CoffreV2Page: View {
                 }
 
                 carte(sc).offset(y: bas)
-        #if DEBUG
-        traceQA("coffre : ouvrirManege(\(robe)) boosters=\(economie.boosters) noirs=\(economie.boostersNoirs)")
-        #endif
                 // ⚠️ **LES NÉONS SONT LA MÊME IMAGE QUE L'ARCHE** : ils
                 // prennent le mouvement du décor au pixel près, sur-cadrage
                 // compris. Un point d'écart et les anneaux allumés sortent de

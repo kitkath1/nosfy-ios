@@ -1,0 +1,98 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "35661F83-9946-4E75-BED3-B268EC695766.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "coffre-or-en_0_8A38973C-6226-40C2-BDF6-11C3AC9A683F.png",
+        "timestamp" : 1789801598.377
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "9C8FB43A-8B37-4CCC-B3F4-106E2C9A41C3.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "coffre-argent-en_0_F1F641BE-B82E-4EB5-BED7-BBD10A27EF94.png",
+        "timestamp" : 1789801580.411
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "91E7AB8B-7352-47CC-ADCC-C51825D0CB04.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "coffre-profil-booster-noir-en_0_6D5C6CF9-0561-412B-A31F-6CDFD7B883C6.png",
+        "timestamp" : 1789801566.96
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "8DD02C95-CE55-41D2-A4E5-3D16E2EA1836.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "coffre-profil-booster-orange-en_0_A8F99824-C808-4E8A-924E-68D9326A5FF7.png",
+        "timestamp" : 1789801553.041
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "3DC2A5EA-C710-4BF3-BBD1-A0E656AC9519.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "profil-aligne-en_0_21D565C5-2B9E-4880-888B-6106965FAFC0.png",
+        "timestamp" : 1789801537.103
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "911974E2-47BD-4910-BB55-424D5CB1F0B9.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "coffre-or-fr_0_2B74A8DA-FC42-4BCA-964A-0820B829D4E0.png",
+        "timestamp" : 1789801528.815
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "5F1B3229-C911-4787-BBE8-83E2A31AD629.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "coffre-argent-fr_0_0A0DF4F2-C7D2-40CF-A249-CA191ECD879A.png",
+        "timestamp" : 1789801515.235
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "BCF55B23-AEC8-4931-996C-3B236553B522.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "coffre-profil-booster-noir-fr_0_0FB2B729-AFB5-42A7-B3AE-CB2CE24746C3.png",
+        "timestamp" : 1789801502.792
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "4B7A34A6-D102-4FAE-AC58-E203C0D36EBF.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "coffre-profil-booster-orange-fr_0_C0F8CC8B-5F50-450E-BED1-BEF69233D785.png",
+        "timestamp" : 1789801488.087
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "79DA23F2-3A53-4BCB-9410-E5D88E6342B1",
+        "deviceName" : "nosfy-profil-coffre-20260919",
+        "exportedFileName" : "EA30CA43-73FA-4575-917B-AB2D8A1A8B2C.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "profil-aligne-fr_0_F2968CB5-BA56-4EA5-B0F3-5F7B3644D218.png",
+        "timestamp" : 1789801468.938
+      }
+    ],
+    "testIdentifier" : "NavRuntimeUITests/testAProfilEtQuatrePagesCoffre()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavRuntimeUITests/NavRuntimeUITests/NavRuntimeUITests/testAProfilEtQuatrePagesCoffre"
+  }
+]

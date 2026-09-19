@@ -1,0 +1,17 @@
+{
+  "scenes": 50,
+  "publiees": 14,
+  "non_generees": 36,
+  "raretes_cibles": {
+    "common": 20,
+    "rare": 15,
+    "epic": 9,
+    "legendary": 6
+  },
+  "arts_publies_SHA256": "14 identiques",
+  "univers": {
+    "foret-des-veilles": 16,
+    "cimes-eteintes": 18,
+    "bois-sans-lune": 16
+  }
+}
