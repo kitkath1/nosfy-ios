@@ -1,0 +1,140 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -project Nosfy.xcodeproj -scheme NosfyUITests -destination "platform=iOS Simulator,id=5716542B-3FE4-4A92-ABB4-32BC31886F7C" -derivedDataPath /var/folders/sk/1y78dckn1fbdyvwtdtdy76680000gn/T/nosfy-historique-ui-5y439cdr/dd -resultBundlePath /Users/kathryn/Desktop/Nosfy/tools/production/stories-historique-2026-09-19/historique-verifie.xcresult CODE_SIGNING_ALLOWED=NO -parallel-testing-enabled NO
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Writing result bundle at path:
+	/Users/kathryn/Desktop/Nosfy/tools/production/stories-historique-2026-09-19/historique-verifie.xcresult
+
+2026-09-19 09:59:02.305346+0200 NosfyUITests-Runner[14410:20120461] [Default] Running tests...
+2026-09-19 09:59:02.495471+0200 NosfyUITests-Runner[14410:20120610] [General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric
+2026-09-19 09:59:02.537213+0200 NosfyUITests-Runner[14410:20120620] [General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics
+objc[14410]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x106cec310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x102e84398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'All tests' started at 2026-09-19 09:59:04.255.
+Test Suite 'NosfyUITests.xctest' started at 2026-09-19 09:59:04.256.
+Test Suite 'HistoriqueUITests' started at 2026-09-19 09:59:04.256.
+Test Case '-[NosfyUITests.HistoriqueUITests testChambreJourVidePuisDeuxSeances]' started.
+    t =     0.00s Start Test at 2026-09-19 09:59:04.256
+    t =     0.27s Set Up
+    t =     0.27s Open fr.kathryn.woop
+    t =     0.27s     Launch fr.kathryn.woop
+2026-09-19 09:59:04.901 xcodebuild[13687:20114832] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-19 09:59:04.901 xcodebuild[13687:20114832] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     2.78s         Setting up automation session
+    t =     4.12s         Wait for fr.kathryn.woop to idle
+    t =     5.51s Waiting 30.0s for "regularite-jour-2" Any to exist
+    t =     6.57s     Checking `Expect predicate `existsNoRetry == 1` for object "regularite-jour-2" Any`
+    t =     6.57s         Checking existence of `"regularite-jour-2" Any`
+    t =     6.65s Tap "regularite-jour-2" Any
+    t =     6.66s     Wait for fr.kathryn.woop to idle
+    t =     6.66s     Find the "regularite-jour-2" Any
+    t =     6.69s     Check for interrupting elements affecting "regularite-jour-2" StaticText
+    t =     6.75s     Synthesize event
+    t =     7.16s     Wait for fr.kathryn.woop to idle
+    t =     7.16s Checking existence of `"qa.historique" StaticText`
+    t =     7.18s Checking existence of `"regularite-jour-0" Any`
+    t =     7.20s Tap "regularite-jour-0" Any
+    t =     7.20s     Wait for fr.kathryn.woop to idle
+    t =     7.20s     Find the "regularite-jour-0" Any
+    t =     7.22s     Check for interrupting elements affecting "regularite-jour-0" StaticText
+    t =     7.25s     Synthesize event
+    t =     7.55s     Wait for fr.kathryn.woop to idle
+    t =     7.64s Waiting 5.0s for Button (First Match) to exist
+    t =     8.68s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     8.68s         Checking existence of `Button (First Match)`
+    t =     8.74s Tap Button (First Match)
+    t =     8.74s     Wait for fr.kathryn.woop to idle
+    t =     8.75s     Find the Button (First Match)
+    t =     8.80s     Check for interrupting elements affecting "09:00 · Fessiers · 10 min" Button
+    t =     8.83s     Synthesize event
+    t =     9.14s     Wait for fr.kathryn.woop to idle
+    t =     9.49s Waiting 12.0s for "qa.historique" StaticText to exist
+    t =    10.53s     Checking `Expect predicate `existsNoRetry == 1` for object "qa.historique" StaticText`
+    t =    10.53s         Checking existence of `"qa.historique" StaticText`
+    t =    10.55s Find the "qa.historique" StaticText
+    t =    10.57s Find the Target Application 'fr.kathryn.woop'
+    t =    10.71s Added attachment named 'story-historique-20'
+    t =    10.71s Terminate fr.kathryn.woop:14534
+    t =    11.80s Tear Down
+Test Case '-[NosfyUITests.HistoriqueUITests testChambreJourVidePuisDeuxSeances]' passed (11.832 seconds).
+Test Case '-[NosfyUITests.HistoriqueUITests testWidgetDeuxSeancesChoisirLaDeuxieme]' started.
+    t =     0.00s Start Test at 2026-09-19 09:59:16.089
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+2026-09-19 09:59:16.123 xcodebuild[13687:20114832] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-19 09:59:16.123 xcodebuild[13687:20114832] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     0.29s         Setting up automation session
+    t =     1.43s         Wait for fr.kathryn.woop to idle
+    t =     2.76s Waiting 30.0s for "historique-jour-0" Button to exist
+    t =     3.80s     Checking `Expect predicate `existsNoRetry == 1` for object "historique-jour-0" Button`
+    t =     3.80s         Checking existence of `"historique-jour-0" Button`
+    t =     3.85s Tap "historique-jour-0" Button
+    t =     3.85s     Wait for fr.kathryn.woop to idle
+    t =     3.86s     Find the "historique-jour-0" Button
+    t =     3.87s     Check for interrupting elements affecting "historique-jour-0" Button
+    t =     3.88s     Synthesize event
+    t =     4.18s     Wait for fr.kathryn.woop to idle
+    t =     4.66s Waiting 5.0s for Button (First Match) to exist
+    t =     5.70s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     5.70s         Checking existence of `Button (First Match)`
+    t =     5.76s Tap Button (First Match)
+    t =     5.76s     Wait for fr.kathryn.woop to idle
+    t =     5.77s     Find the Button (First Match)
+    t =     5.79s     Check for interrupting elements affecting "18:00 · Fessiers · 10 min" Button
+    t =     5.81s     Synthesize event
+    t =     6.09s     Wait for fr.kathryn.woop to idle
+    t =     6.44s Waiting 12.0s for "qa.historique" StaticText to exist
+    t =     7.47s     Checking `Expect predicate `existsNoRetry == 1` for object "qa.historique" StaticText`
+    t =     7.47s         Checking existence of `"qa.historique" StaticText`
+    t =     7.48s Find the "qa.historique" StaticText
+    t =     7.49s Find the Target Application 'fr.kathryn.woop'
+    t =     7.57s Added attachment named 'story-historique-73'
+    t =     7.57s Terminate fr.kathryn.woop:14604
+    t =     8.61s Tear Down
+Test Case '-[NosfyUITests.HistoriqueUITests testWidgetDeuxSeancesChoisirLaDeuxieme]' passed (8.623 seconds).
+Test Case '-[NosfyUITests.HistoriqueUITests testWidgetJourUniqueOuvreSaStory]' started.
+    t =     0.00s Start Test at 2026-09-19 09:59:24.712
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+2026-09-19 09:59:24.729 xcodebuild[13687:20114832] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-19 09:59:24.729 xcodebuild[13687:20114832] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     0.23s         Setting up automation session
+    t =     0.93s         Wait for fr.kathryn.woop to idle
+    t =     2.16s Waiting 30.0s for "historique-jour-1" Button to exist
+    t =     3.20s     Checking `Expect predicate `existsNoRetry == 1` for object "historique-jour-1" Button`
+    t =     3.20s         Checking existence of `"historique-jour-1" Button`
+    t =     3.25s Tap "historique-jour-1" Button
+    t =     3.25s     Wait for fr.kathryn.woop to idle
+    t =     3.25s     Find the "historique-jour-1" Button
+    t =     3.26s     Check for interrupting elements affecting "historique-jour-1" Button
+    t =     3.27s     Synthesize event
+    t =     3.55s     Wait for fr.kathryn.woop to idle
+    t =     3.62s Waiting 12.0s for "qa.historique" StaticText to exist
+    t =     4.65s     Checking `Expect predicate `existsNoRetry == 1` for object "qa.historique" StaticText`
+    t =     4.65s         Checking existence of `"qa.historique" StaticText`
+    t =     4.66s Find the "qa.historique" StaticText
+    t =     4.67s Find the Target Application 'fr.kathryn.woop'
+    t =     4.74s Added attachment named 'story-historique-41'
+    t =     4.75s Terminate fr.kathryn.woop:14735
+    t =     5.80s Tear Down
+Test Case '-[NosfyUITests.HistoriqueUITests testWidgetJourUniqueOuvreSaStory]' passed (5.854 seconds).
+Test Suite 'HistoriqueUITests' passed at 2026-09-19 09:59:30.567.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 26.309 (26.311) seconds
+Test Suite 'NosfyUITests.xctest' passed at 2026-09-19 09:59:30.568.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 26.309 (26.312) seconds
+Test Suite 'All tests' passed at 2026-09-19 09:59:30.568.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 26.309 (26.313) seconds
+2026-09-19 09:59:30.908 xcodebuild[13687:20114832] [MT] IDETestOperationsObserverDebug: 45.883 elapsed -- Testing started completed.
+2026-09-19 09:59:30.908 xcodebuild[13687:20114832] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-19 09:59:30.908 xcodebuild[13687:20114832] [MT] IDETestOperationsObserverDebug: 45.883 sec, +45.883 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/kathryn/Desktop/Nosfy/tools/production/stories-historique-2026-09-19/historique-verifie.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

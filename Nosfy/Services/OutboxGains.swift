@@ -76,6 +76,7 @@ actor OutboxGains {
         func annuler() { verrou.withLock { valide = false } }
     }
     private var generation = GenerationCompte()
+    private(set) var identiteGeneration = UUID()
 
     private var file: [GainEnAttente] {
         get {
@@ -98,6 +99,7 @@ actor OutboxGains {
 
     /// Rend caducs les retours réseau de l'ancien compte, même s'ils arrivent tard.
     func effacer() {
+        identiteGeneration = UUID()
         generation.annuler()
         generation = GenerationCompte()
         file = []
@@ -125,10 +127,15 @@ actor OutboxGains {
     }
 
     /// Persister AVANT le réseau : un kill ou une panne laisse le gain rejouable.
-    func poster(_ gain: GainEnAttente) async {
+    func retenir(_ gain: GainEnAttente, siGeneration: UUID? = nil) {
+        guard siGeneration == nil || siGeneration == identiteGeneration else { return }
         var f = file
         if !f.contains(gain) { f.append(gain) }
         file = f
+    }
+
+    func poster(_ gain: GainEnAttente) async {
+        retenir(gain)
         await vider()
     }
 

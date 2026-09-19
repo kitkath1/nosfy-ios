@@ -1,0 +1,62 @@
+
+> nosfy-chambre-des-machines@2.0.0 verif
+> ../../tools/docsite/verifier.sh
+
+
+── 0. les prérequis
+   ✔ node v24.16.0 · Chrome présent
+
+── 1. le retard — le livrable est-il plus vieux que sa source ?
+   ✔ index.html est plus récent que content/ app/ components/ public/ fonts/ scripts/
+
+── 2. tsc --noEmit — une brique sans preuve ne compile pas
+   ✔ types
+
+── 3. la source — tests/contenu (ids, titres, preuves qui se lisent, SVG à jour)
+
+ RUN  v4.1.11 /Users/kathryn/Desktop/Nosfy/docs/site
+
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  08:43:16
+   Duration  380ms (transform 143ms, setup 0ms, import 44ms, tests 177ms, environment 0ms)
+
+
+── 4. next build (export statique → docs/site/out/)
+▲ Next.js 16.3.3 (Turbopack)
+✓ Running next.config.ts took 41ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 671ms
+  Running TypeScript ...
+  Finished TypeScript in 3.1s ...
+  Collecting page data using 5 workers ...
+  Generating static pages using 5 workers (0/4) ...
+  Generating static pages using 5 workers (1/4) 
+  Generating static pages using 5 workers (2/4) 
+  Generating static pages using 5 workers (3/4) 
+✓ Generating static pages using 5 workers (4/4) in 969ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+└ ○ /icon.svg
+
+
+○  (Static)  prerendered as static content
+
+   ✔ out/index.html
+
+── 5. l'inliner — rebâti à côté, comparé au livrable
+inliner : /Users/kathryn/Desktop/Nosfy/docs/site/out/index.html
+   retirés  : 25 <script> · 7 <link> · 0 attributs Next · 317 commentaires RSC · 1 meta
+   inlinés  : 2 feuille(s) (48538 o) · 1 url() (99780 o) · 72 média(s) (431576 o) · site.js (9066 o)
+   titre    : Documentation Nosfy
+   livrable : /Users/kathryn/Desktop/Nosfy/docs/site/out/livrable-verif.html · 1884560 o (1.88 Mo) · 1 <script>
+   ✔ écrit
+     rebâti 1884560 o · livrable 1884465 o · docs/site/out/livrable-verif.html docs/site/index.html differ: char 1362757, line 388
+   ✗ le livrable ≠ le build : il ment par retard (npm run artefact) ou le build n'est pas déterministe (deux runs de npm run artefact, puis git diff --stat)
+
+✗ refusé après 14 s

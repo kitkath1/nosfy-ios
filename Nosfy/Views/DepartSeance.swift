@@ -71,6 +71,7 @@ final class DepartEtat {
     /// page. La racine ne connaît pas les séances finies : la porte les lui
     /// donne.
     var cheminEtape = 0
+    var cheminCelebration: Int?
     var cheminFaits: Set<Int> = []
     /// Les dates de complétion des séances faites (`Workout.endedAt`) — 28-08,
     /// sa règle : « les jours apparaissent le jour où le user a terminé sa
@@ -119,6 +120,7 @@ final class DepartEtat {
         reclamees = []
         cheminOuvert = false
         cheminEtape = 0
+        cheminCelebration = nil
         cheminFaits = []
         cheminDates = [:]
         galetPorte = false
@@ -170,9 +172,10 @@ final class DepartEtat {
         }
     }
 
-    func ouvrirChemin(etape: Int, faits: Set<Int>, dates: [Int: Date] = [:]) {
+    func ouvrirChemin(etape: Int, faits: Set<Int>, dates: [Int: Date] = [:], celebration: Int? = nil) {
         print("[SONDE-CHEMIN] DepartEtat.ouvrirChemin — déjà ouvert ? \(cheminOuvert)")
         guard !cheminOuvert else { return }
+        cheminCelebration = celebration
         cheminEtape = etape
         cheminFaits = faits
         cheminDates = dates

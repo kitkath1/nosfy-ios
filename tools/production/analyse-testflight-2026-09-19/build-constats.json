@@ -1,0 +1,26 @@
+{
+  "resultat": "BUILD SUCCEEDED",
+  "configuration": "Release iphoneos arm64",
+  "signature": false,
+  "archive": false,
+  "upload": false,
+  "app": {
+    "CFBundleIdentifier": "fr.kathryn.woop",
+    "CFBundleVersion": "1",
+    "CFBundleShortVersionString": "1.0",
+    "MinimumOSVersion": "26.0",
+    "ITSAppUsesNonExemptEncryption": false
+  },
+  "widgets": [
+    {
+      "CFBundleIdentifier": "fr.kathryn.woop.WoopWidgets",
+      "CFBundleVersion": "1",
+      "CFBundleShortVersionString": "1.0",
+      "MinimumOSVersion": "26.0",
+      "ITSAppUsesNonExemptEncryption": false
+    }
+  ],
+  "manifeste_confidentialite_present": true,
+  "sources_comparees": 249,
+  "sources_differentes_depuis_tests_connectes": []
+}

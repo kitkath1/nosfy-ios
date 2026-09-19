@@ -526,7 +526,7 @@ struct StoryCard: View {
     private var faits: (exo: String, kg: Int, volume: Int) {
         var exo = L("la barre", "the bar"); var kg = 0; var volume = 0
         for g in session.groupes {
-            for r in g.rows {
+            for r in g.rows where r.done {
                 volume += r.reps * Int(r.kilos)
                 if Int(r.kilos) > kg {
                     kg = Int(r.kilos)
@@ -1286,8 +1286,8 @@ struct StoryWin: View {
     // Muscu : séries × 20. CARDIO : le barème du serveur (aucune série), lu au
     // `dernierGainCardio` — sinon la story disait « 0 pièce » au HIIT (bug
     // Kathryn 16-09). Remis à zéro à chaque fin de séance (debutFinSeance).
-    private var pieces: Int { session.series * 20 + EconomieWoop.shared.dernierGainCardio }
-    private var boosters: Int { pieces / 100 }
+    private var pieces: Int { session.recompense?.pieces ?? (session.recompenseEnAttente ? 0 : session.series * 20) }
+    private var boosters: Int { session.recompense?.boosters ?? (session.recompenseEnAttente ? 0 : pieces / 100) }
 
     private var roule: Int {
         let u = StoryCine.outLong(min(max(
@@ -1383,13 +1383,19 @@ struct StoryWin: View {
         let titreU = StoryCine.sstep(WinCine.titreAt,
                                      WinCine.titreAt + 0.4, t)
         return VStack(spacing: 2) {
-            Text("+\(roule)")
+            Text(session.recompenseEnAttente ? "—" : "+\(roule)")
                 .font(.system(size: 44, weight: .bold))
                 .monospacedDigit()
+                .accessibilityIdentifier("story.recompenses")
+                .accessibilityLabel(session.recompenseEnAttente
+                    ? L("Récompenses en attente", "Rewards pending")
+                    : L("\(pieces) pièces gagnées, \(boosters) boosters", "\(pieces) coins earned, \(boosters) boosters"))
                 .contentTransition(.identity)
                 .foregroundStyle(Color(white: 0.96))
                 .opacity(compteurU)
-            Text(L("pièces gagnées", "coins earned"))
+            Text(session.recompenseEnAttente
+                 ? L("Récompenses en attente", "Rewards pending")
+                 : L("pièces gagnées", "coins earned"))
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(Color(white: 0.55))
                 .opacity(compteurU)
@@ -1784,7 +1790,7 @@ struct StoryWin: View {
     // MARK: Les objets saisissables
 
     private var beatPlaques: Int {
-        (1...max(1, boosters)).filter { roule >= $0 * 100 + 15 }.count
+        (0..<min(boosters, 5)).filter { t >= WinCine.compteurAt + 0.4 + Double($0) * 0.22 }.count
     }
 
     /// La pièce (clé 0) + les boosters (clés 1…5) : chacun a sa place
@@ -1894,8 +1900,8 @@ struct StoryWin: View {
                      haut: -h / 2 + hb * 0.62, bas: h / 2)
         return ZStack {
             ForEach(0 ..< montres, id: \.self) { i in
-                let seuil = Double((i + 1) * 100)
-                let pose = min(max((Double(roule) - seuil) / 30.0, 0), 1)
+                let arrivee = WinCine.compteurAt + 0.4 + Double(i) * 0.22
+                let pose = StoryCine.sstep(arrivee, arrivee + 0.55, t)
                 // LA CHUTE (robe renversée) : il TOMBE du plafond et
                 // REBONDIT — une arrivée molle serait un vol, pas une
                 // chute. Sinon : la montée douce de la poche.

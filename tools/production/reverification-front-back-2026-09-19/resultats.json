@@ -1,0 +1,65 @@
+[
+  {
+    "nom": "outbox",
+    "commande": [
+      "python3",
+      "tools/serveur/verif_outbox.py"
+    ],
+    "code": 0,
+    "secondes": 3.3
+  },
+  {
+    "nom": "sync",
+    "commande": [
+      "python3",
+      "tools/serveur/verif_sync.py"
+    ],
+    "code": 0,
+    "secondes": 3.5
+  },
+  {
+    "nom": "fin-seance",
+    "commande": [
+      "python3",
+      "tools/serveur/verif_fin_seance.py"
+    ],
+    "code": 0,
+    "secondes": 6.2
+  },
+  {
+    "nom": "pull",
+    "commande": [
+      "python3",
+      "tools/serveur/verif_pull.py"
+    ],
+    "code": 0,
+    "secondes": 3.2
+  },
+  {
+    "nom": "session",
+    "commande": [
+      "python3",
+      "tools/serveur/verif_session.py"
+    ],
+    "code": 0,
+    "secondes": 3.9
+  },
+  {
+    "nom": "route",
+    "commande": [
+      "python3",
+      "tools/duolingo/verif_route_vide.py"
+    ],
+    "code": 0,
+    "secondes": 2.3
+  },
+  {
+    "nom": "parcours-api",
+    "commande": [
+      "python3",
+      "tools/serveur/verif_parcours_rewards.py"
+    ],
+    "code": 0,
+    "secondes": 19.7
+  }
+]

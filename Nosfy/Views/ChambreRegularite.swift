@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 // ════════════════════════════════════════════════════════════════════════
 // LA CHAMBRE REGULARITY — le design tranché les 05 → 07-09
@@ -10,6 +11,8 @@ import SwiftUI
 // ════════════════════════════════════════════════════════════════════════
 
 struct ChambreRegularite: View {
+    @Environment(\.modelContext) private var contexte
+    @State private var historique = HistoriqueStories()
     let f: ChambreFenetre
     let fenetre: ChambreEtat.Fenetre
     /// Le cran tapé dans la piste du défi : sa date (faite ou projetée) se dit.
@@ -21,12 +24,15 @@ struct ChambreRegularite: View {
             resume
             defi
         }
+        .modifier(HistoriqueStoriesHote(historique: historique))
     }
 
     private var calendrier: some View {
         VStack(alignment: .leading, spacing: 14) {
             BlocTitre(texte: fenetre == .semaine ? L("Cette semaine", "This week") : L("Cinq semaines", "Five weeks"), droite: f.libelle)
-            ChambreGrille(jours: f.jours, montrerPic: false, stickers: true)
+            ChambreGrille(jours: f.jours, montrerPic: false, stickers: true) { jour in
+                historique.ouvrir(jour: jour.date, contexte: contexte)
+            }
             LegendeHalo().padding(.top, 2)
         }
         .chambreVide(f.vide)

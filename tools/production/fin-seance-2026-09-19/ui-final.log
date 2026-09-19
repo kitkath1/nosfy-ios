@@ -1,0 +1,457 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project /tmp/nosfy-fin-ui/Nosfy.xcodeproj -scheme NosfyUITests -configuration Debug -destination "platform=iOS Simulator,id=68ABC079-08E4-4071-B382-3F1257AC4E18" -derivedDataPath /tmp/nosfy-fin-ui-dd -resultBundlePath /tmp/nosfy-fin-ui-result7 CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES test
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+    ONLY_ACTIVE_ARCH = YES
+
+Writing result bundle at path:
+	/tmp/nosfy-fin-ui-result7
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (3 targets)
+    Target 'NosfyUITests' in project 'Nosfy'
+        ➜ Explicit dependency on target 'Nosfy' in project 'Nosfy'
+    Target 'Nosfy' in project 'Nosfy'
+        ➜ Explicit dependency on target 'NosfyWidgets' in project 'Nosfy'
+    Target 'NosfyWidgets' in project 'Nosfy' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /tmp/nosfy-fin-ui/NosfyShared/LiveAssets.xcassets /tmp/nosfy-fin-ui/Nosfy/AppIcon.icon /tmp/nosfy-fin-ui/Nosfy/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: 57519e8a8a5e5531f1c8db8facae380a
+Build description path: /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/XCBuildData/57519e8a8a5e5531f1c8db8facae380a.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk /tmp/nosfy-fin-ui-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+    cd /tmp/nosfy-fin-ui/Nosfy.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -o /tmp/nosfy-fin-ui-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+
+ProcessInfoPlistFile /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/NosfyWidgets.appex/Info.plist /tmp/nosfy-fin-ui/NosfyWidgets/Info.plist (in target 'NosfyWidgets' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    builtin-infoPlistUtility /tmp/nosfy-fin-ui/NosfyWidgets/Info.plist -producttype com.apple.product-type.app-extension -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyWidgets.build/assetcatalog_generated_info.plist -o /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/NosfyWidgets.appex/Info.plist
+
+SwiftDriver Nosfy normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/nosfy-fin-ui-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/nosfy-fin-ui-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator -F /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/nosfy-fin-ui-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/nosfy-fin-ui-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/nosfy-fin-ui-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/nosfy-fin-ui-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-generated-files.hmap -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-own-target-headers.hmap -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-project-headers.hmap -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources-normal/arm64 -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/arm64 -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop-Swift.h -working-directory /tmp/nosfy-fin-ui -experimental-emit-module-separately -disable-cmo
+
+SwiftCompile normal arm64 Compiling\ ChambreDonnees.swift /tmp/nosfy-fin-ui/Nosfy/Views/ChambreDonnees.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /tmp/nosfy-fin-ui/Nosfy/Views/ChambreDonnees.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    
+/tmp/nosfy-fin-ui/Nosfy/Views/ChambreDonnees.swift:313:31: warning: 'flatMap' is deprecated: Please use compactMap(_:) for the case where closure returns an optional value
+            let pic = seances.flatMap { picHiit($0) }.max()
+                              ^
+/tmp/nosfy-fin-ui/Nosfy/Views/ChambreDonnees.swift:313:31: note: use 'compactMap(_:)' instead
+            let pic = seances.flatMap { picHiit($0) }.max()
+                              ^~~~~~~
+                              compactMap
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ Woop (in target 'Nosfy' from project 'Nosfy')
+EmitSwiftModule normal arm64 (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    
+
+SwiftCompile normal arm64 Compiling\ Models.swift /tmp/nosfy-fin-ui/Nosfy/Models.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /tmp/nosfy-fin-ui/Nosfy/Models.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    
+
+SwiftCompile normal arm64 Compiling\ NosfyApp.swift /tmp/nosfy-fin-ui/Nosfy/NosfyApp.swift (in target 'Nosfy' from project 'Nosfy')
+SwiftCompile normal arm64 /tmp/nosfy-fin-ui/Nosfy/NosfyApp.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    
+/tmp/nosfy-fin-ui/Nosfy/NosfyApp.swift:1356:44: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+            MiniCardJour(date: a.startedAt ?? .now,
+                               ~~~~~~~~~~~~^~~~~~~
+                                          
+/tmp/nosfy-fin-ui/Nosfy/NosfyApp.swift:1381:58: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+                TimelineView(.periodic(from: a.startedAt ?? .now,
+                                             ~~~~~~~~~~~~^~~~~~~
+                                                        
+/tmp/nosfy-fin-ui/Nosfy/NosfyApp.swift:1384:56: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+                        .timeIntervalSince(a.startedAt ?? .now)))
+                                           ~~~~~~~~~~~~^~~~~~~
+                                                      
+/tmp/nosfy-fin-ui/Nosfy/NosfyApp.swift:1778:47: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+                    departSeance: a.startedAt ?? .now,
+                                  ~~~~~~~~~~~~^~~~~~~
+                                             
+/tmp/nosfy-fin-ui/Nosfy/NosfyApp.swift:1804:41: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+                    depart: a.startedAt ?? .now,
+                            ~~~~~~~~~~~~^~~~~~~
+                                       
+/tmp/nosfy-fin-ui/Nosfy/NosfyApp.swift:1803:43: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+                    ecranTaille: UIScreen.main.bounds.size,
+                                          ^
+
+SwiftCompile normal arm64 Compiling\ StoryFlow.swift /tmp/nosfy-fin-ui/Nosfy/Views/StoryFlow.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /tmp/nosfy-fin-ui/Nosfy/Views/StoryFlow.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling Models.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftDriverJobDiscovery normal arm64 Compiling ChambreDonnees.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftDriverJobDiscovery normal arm64 Compiling StoryFlow.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftDriverJobDiscovery normal arm64 Compiling NosfyApp.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftDriver\ Compilation Nosfy normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/nosfy-fin-ui-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/nosfy-fin-ui-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator -F /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/nosfy-fin-ui-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/nosfy-fin-ui-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/nosfy-fin-ui-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/nosfy-fin-ui-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-generated-files.hmap -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-own-target-headers.hmap -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-project-headers.hmap -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources-normal/arm64 -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/arm64 -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop-Swift.h -working-directory /tmp/nosfy-fin-ui -experimental-emit-module-separately -disable-cmo
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for Woop (in target 'Nosfy' from project 'Nosfy')
+
+SwiftDriver\ Compilation\ Requirements Nosfy normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/nosfy-fin-ui-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/nosfy-fin-ui-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator -F /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/nosfy-fin-ui-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/nosfy-fin-ui-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/nosfy-fin-ui-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/nosfy-fin-ui-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-generated-files.hmap -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-own-target-headers.hmap -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-project-headers.hmap -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources-normal/arm64 -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/arm64 -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop-Swift.h -working-directory /tmp/nosfy-fin-ui -experimental-emit-module-separately -disable-cmo
+
+Copy /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.abi.json /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.abi.json (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.abi.json /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftsourceinfo (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftsourceinfo /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+Ld /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Nosfy.debug.dylib normal (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator -F/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator -filelist /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy.LinkFileList -install_name @rpath/Nosfy.debug.dylib -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftmodule @/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop-linker-args.resp -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -o /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Nosfy.debug.dylib
+
+ConstructStubExecutorLinkFileList /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-ExecutorLinkFileList-normal-arm64.txt (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    construct-stub-executor-link-file-list /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Nosfy.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'Nosfy' from project 'Nosfy')
+
+Ld /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Nosfy normal (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator -F/tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @executable_path/Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-ExecutorLinkFileList-normal-arm64.txt /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Nosfy.debug.dylib -o /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Nosfy
+
+ExtractAppIntentsMetadata (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --module-name Woop --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F42 --platform-family iOS --deployment-target 26.0 --bundle-identifier fr.kathryn.woop --output /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Nosfy.app --target-triple arm64-apple-ios26.0-simulator --binary-file /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Nosfy --dependency-file /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy_dependency_info.dat --stringsdata-file /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy.SwiftFileList --metadata-file-list /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy.DependencyMetadataFileList --static-metadata-file-list /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy.DependencyStaticMetadataFileList --swift-const-vals-list /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-09-19 08:54:57.223 appintentsmetadataprocessor[73555:19871028] Starting appintentsmetadataprocessor export
+2026-09-19 08:54:57.269 appintentsmetadataprocessor[73555:19871028] Extracted no relevant App Intents symbols, skipping writing output
+
+ProcessInfoPlistFile /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Info.plist /tmp/nosfy-fin-ui/Nosfy/Info.plist (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    builtin-infoPlistUtility /tmp/nosfy-fin-ui/Nosfy/Info.plist -producttype com.apple.product-type.application -genpkginfo /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/assetcatalog_generated_info.plist -scanforprivacyfile /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/PlugIns/NosfyWidgets.appex -o /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Info.plist
+
+SwiftDriver NosfyUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'NosfyUITests' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name NosfyUITests -Onone @/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/nosfy-fin-ui-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/nosfy-fin-ui-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -parse-as-library -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/nosfy-fin-ui-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/nosfy-fin-ui-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/nosfy-fin-ui-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/nosfy-fin-ui-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/NosfyUITests-generated-files.hmap -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/NosfyUITests-own-target-headers.hmap -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/NosfyUITests-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/NosfyUITests-project-headers.hmap -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/DerivedSources-normal/arm64 -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/DerivedSources/arm64 -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests-Swift.h -working-directory /tmp/nosfy-fin-ui -experimental-emit-module-separately -disable-cmo
+
+CopySwiftLibs /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Nosfy.app (in target 'Nosfy' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Nosfy.debug.dylib --scan-folder /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Frameworks --scan-folder /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/PlugIns --scan-folder /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/SystemExtensions --scan-folder /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+ProcessInfoPlistFile /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/NosfyUITests-Runner.app/PlugIns/NosfyUITests.xctest/Info.plist /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/empty-NosfyUITests.plist (in target 'NosfyUITests' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    builtin-infoPlistUtility /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/empty-NosfyUITests.plist -producttype com.apple.product-type.bundle.ui-testing -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/ProductTypeInfoPlistAdditions.plist -o /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/NosfyUITests-Runner.app/PlugIns/NosfyUITests.xctest/Info.plist
+
+SwiftCompile normal arm64 Compiling\ FinSeanceUITests.swift /tmp/nosfy-fin-ui/NosfyUITests/FinSeanceUITests.swift (in target 'NosfyUITests' from project 'Nosfy')
+
+SwiftCompile normal arm64 /tmp/nosfy-fin-ui/NosfyUITests/FinSeanceUITests.swift (in target 'NosfyUITests' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ NosfyUITests (in target 'NosfyUITests' from project 'Nosfy')
+
+SwiftCompile normal arm64 /tmp/nosfy-fin-ui/NosfyUITests/FinSeanceUITests.swift (in target 'NosfyUITests' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for NosfyUITests (in target 'NosfyUITests' from project 'Nosfy')
+
+SwiftDriver\ Compilation\ Requirements NosfyUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'NosfyUITests' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name NosfyUITests -Onone @/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/nosfy-fin-ui-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/nosfy-fin-ui-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -parse-as-library -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/nosfy-fin-ui-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/nosfy-fin-ui-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/nosfy-fin-ui-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/nosfy-fin-ui-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/NosfyUITests-generated-files.hmap -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/NosfyUITests-own-target-headers.hmap -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/NosfyUITests-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/NosfyUITests-project-headers.hmap -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/DerivedSources-normal/arm64 -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/DerivedSources/arm64 -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests-Swift.h -working-directory /tmp/nosfy-fin-ui -experimental-emit-module-separately -disable-cmo
+
+Copy /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/NosfyUITests.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests.swiftsourceinfo (in target 'NosfyUITests' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests.swiftsourceinfo /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/NosfyUITests.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+Copy /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/NosfyUITests.swiftmodule/arm64-apple-ios-simulator.abi.json /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests.abi.json (in target 'NosfyUITests' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests.abi.json /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/NosfyUITests.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+SwiftDriverJobDiscovery normal arm64 Compiling FinSeanceUITests.swift (in target 'NosfyUITests' from project 'Nosfy')
+
+SwiftDriver\ Compilation NosfyUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'NosfyUITests' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name NosfyUITests -Onone @/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/nosfy-fin-ui-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/nosfy-fin-ui-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -parse-as-library -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/nosfy-fin-ui-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/nosfy-fin-ui-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/nosfy-fin-ui-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/nosfy-fin-ui-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/NosfyUITests-generated-files.hmap -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/NosfyUITests-own-target-headers.hmap -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/NosfyUITests-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/NosfyUITests-project-headers.hmap -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/DerivedSources-normal/arm64 -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/DerivedSources/arm64 -Xcc -I/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests-Swift.h -working-directory /tmp/nosfy-fin-ui -experimental-emit-module-separately -disable-cmo
+
+Ld /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/NosfyUITests-Runner.app/PlugIns/NosfyUITests.xctest/NosfyUITests normal (in target 'NosfyUITests' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -bundle -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator -L/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -filelist /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests.LinkFileList -Xlinker -rpath -Xlinker @loader_path/Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests.swiftmodule @/tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests-linker-args.resp -Xlinker -needed_framework -Xlinker XCTest -framework XCTest -Xlinker -needed-lXCTestSwiftSupport -lXCTestSwiftSupport -o /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/NosfyUITests-Runner.app/PlugIns/NosfyUITests.xctest/NosfyUITests
+
+CopySwiftLibs /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/NosfyUITests-Runner.app/PlugIns/NosfyUITests.xctest (in target 'NosfyUITests' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/NosfyUITests-Runner.app/PlugIns/NosfyUITests.xctest/NosfyUITests --scan-folder /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/NosfyUITests-Runner.app/PlugIns/NosfyUITests.xctest/Frameworks --scan-folder /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/NosfyUITests-Runner.app/PlugIns/NosfyUITests.xctest/PlugIns --scan-folder /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/NosfyUITests-Runner.app/PlugIns/NosfyUITests.xctest/SystemExtensions --scan-folder /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/NosfyUITests-Runner.app/PlugIns/NosfyUITests.xctest/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/NosfyUITests-Runner.app/PlugIns/NosfyUITests.xctest/Frameworks --strip-bitcode --scan-executable /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+ExtractAppIntentsMetadata (in target 'NosfyUITests' from project 'Nosfy')
+    cd /tmp/nosfy-fin-ui
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --module-name NosfyUITests --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F42 --platform-family iOS --deployment-target 26.0 --bundle-identifier fr.kathryn.woop.WoopUITests --output /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/NosfyUITests-Runner.app/PlugIns/NosfyUITests.xctest --target-triple arm64-apple-ios26.0-simulator --binary-file /tmp/nosfy-fin-ui-dd/Build/Products/Debug-iphonesimulator/NosfyUITests-Runner.app/PlugIns/NosfyUITests.xctest/NosfyUITests --dependency-file /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests_dependency_info.dat --stringsdata-file /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests.SwiftFileList --metadata-file-list /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/NosfyUITests.DependencyMetadataFileList --static-metadata-file-list /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/NosfyUITests.DependencyStaticMetadataFileList --swift-const-vals-list /tmp/nosfy-fin-ui-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyUITests.build/Objects-normal/arm64/NosfyUITests.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-09-19 08:54:58.047 appintentsmetadataprocessor[73560:19871072] Starting appintentsmetadataprocessor export
+2026-09-19 08:54:58.049 appintentsmetadataprocessor[73560:19871072] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+2026-09-19 08:55:32.555278+0200 NosfyUITests-Runner[73864:19874109] [Default] Running tests...
+objc[73864]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x109318310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x1087a8398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'All tests' started at 2026-09-19 08:55:41.342.
+Test Suite 'NosfyUITests.xctest' started at 2026-09-19 08:55:41.343.
+Test Suite 'FinSeanceUITests' started at 2026-09-19 08:55:41.344.
+Test Case '-[NosfyUITests.FinSeanceUITests testPremiereSeance]' started.
+    t =     0.00s Start Test at 2026-09-19 08:55:41.346
+    t =     0.50s Set Up
+    t =     0.53s Open fr.kathryn.woop
+    t =     0.53s     Launch fr.kathryn.woop
+2026-09-19 08:55:42.248 xcodebuild[73471:19870116] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-19 08:55:42.248 xcodebuild[73471:19870116] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     4.53s         Setting up automation session
+    t =     6.92s         Wait for fr.kathryn.woop to idle
+    t =    10.61s Waiting 40.0s for "qa.fin" Button to exist
+    t =    11.65s     Checking `Expect predicate `existsNoRetry == 1` for object "qa.fin" Button`
+    t =    11.65s         Checking existence of `"qa.fin" Button`
+    t =    21.92s Tap "qa.fin" Button
+    t =    21.92s     Wait for fr.kathryn.woop to idle
+    t =    21.93s     Find the "qa.fin" Button
+    t =    22.11s     Check for interrupting elements affecting "qa.fin" Button
+    t =    22.20s     Synthesize event
+    t =    22.64s     Wait for fr.kathryn.woop to idle
+    t =    23.84s Waiting 25.0s for "story-etat" StaticText to exist
+    t =    24.87s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    24.87s         Checking existence of `"story-etat" StaticText`
+    t =    24.94s         Capturing element debug description
+    t =    25.89s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    25.89s         Checking existence of `"story-etat" StaticText`
+    t =    25.94s         Capturing element debug description
+    t =    26.88s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    26.88s         Checking existence of `"story-etat" StaticText`
+    t =    26.93s         Capturing element debug description
+    t =    27.86s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    27.86s         Checking existence of `"story-etat" StaticText`
+    t =    27.91s         Capturing element debug description
+    t =    28.94s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    28.94s         Checking existence of `"story-etat" StaticText`
+    t =    28.98s         Capturing element debug description
+    t =    29.90s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    29.90s         Checking existence of `"story-etat" StaticText`
+    t =    29.95s         Capturing element debug description
+    t =    30.87s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    30.87s         Checking existence of `"story-etat" StaticText`
+    t =    30.95s Tap Target Application 'fr.kathryn.woop'[0.85, 0.09]
+    t =    30.95s     Wait for fr.kathryn.woop to idle
+    t =    30.96s     Find the Target Application 'fr.kathryn.woop'
+    t =    31.02s     Check for interrupting elements affecting "Nosfy" Application
+    t =    31.08s     Synthesize event
+    t =    31.09s         Find the Target Application 'fr.kathryn.woop'
+    t =    31.14s         Find the Target Application 'fr.kathryn.woop'
+    t =    31.20s         Find the Target Application 'fr.kathryn.woop'
+    t =    31.56s     Wait for fr.kathryn.woop to idle
+    t =    32.62s Checking `Expect predicate `label CONTAINS "page=1"` for object "story-etat" StaticText`
+    t =    32.62s     Find the "story-etat" StaticText
+    t =    32.71s Tap Target Application 'fr.kathryn.woop'[0.85, 0.09]
+    t =    32.71s     Wait for fr.kathryn.woop to idle
+    t =    32.72s     Find the Target Application 'fr.kathryn.woop'
+    t =    32.79s     Check for interrupting elements affecting "Nosfy" Application
+    t =    32.86s     Synthesize event
+    t =    32.87s         Find the Target Application 'fr.kathryn.woop'
+    t =    32.93s         Find the Target Application 'fr.kathryn.woop'
+    t =    33.10s         Find the Target Application 'fr.kathryn.woop'
+    t =    33.52s     Wait for fr.kathryn.woop to idle
+    t =    34.62s Checking `Expect predicate `label CONTAINS "page=2"` for object "story-etat" StaticText`
+    t =    34.62s     Find the "story-etat" StaticText
+    t =    34.71s Tap Target Application 'fr.kathryn.woop'[0.85, 0.09]
+    t =    34.71s     Wait for fr.kathryn.woop to idle
+    t =    34.74s     Find the Target Application 'fr.kathryn.woop'
+    t =    34.80s     Check for interrupting elements affecting "Nosfy" Application
+    t =    34.88s     Synthesize event
+    t =    34.88s         Find the Target Application 'fr.kathryn.woop'
+    t =    34.95s         Find the Target Application 'fr.kathryn.woop'
+    t =    35.03s         Find the Target Application 'fr.kathryn.woop'
+    t =    35.39s     Wait for fr.kathryn.woop to idle
+    t =    36.51s Checking `Expect predicate `label CONTAINS "page=3"` for object "story-etat" StaticText`
+    t =    36.52s     Find the "story-etat" StaticText
+    t =    36.62s Waiting 8.0s for "story.recompenses" StaticText to exist
+    t =    37.65s     Checking `Expect predicate `existsNoRetry == 1` for object "story.recompenses" StaticText`
+    t =    37.65s         Checking existence of `"story.recompenses" StaticText`
+    t =    37.79s         Capturing element debug description
+    t =    38.63s     Checking `Expect predicate `existsNoRetry == 1` for object "story.recompenses" StaticText`
+    t =    38.63s         Checking existence of `"story.recompenses" StaticText`
+    t =    38.71s         Capturing element debug description
+    t =    39.65s     Checking `Expect predicate `existsNoRetry == 1` for object "story.recompenses" StaticText`
+    t =    39.65s         Checking existence of `"story.recompenses" StaticText`
+    t =    39.76s         Capturing element debug description
+    t =    40.70s     Checking `Expect predicate `existsNoRetry == 1` for object "story.recompenses" StaticText`
+    t =    40.70s         Checking existence of `"story.recompenses" StaticText`
+    t =    40.79s         Capturing element debug description
+    t =    41.64s     Checking `Expect predicate `existsNoRetry == 1` for object "story.recompenses" StaticText`
+    t =    41.64s         Checking existence of `"story.recompenses" StaticText`
+    t =    41.72s         Capturing element debug description
+    t =    42.69s     Checking `Expect predicate `existsNoRetry == 1` for object "story.recompenses" StaticText`
+    t =    42.69s         Checking existence of `"story.recompenses" StaticText`
+    t =    42.77s         Capturing element debug description
+    t =    43.63s     Checking `Expect predicate `existsNoRetry == 1` for object "story.recompenses" StaticText`
+    t =    43.64s         Checking existence of `"story.recompenses" StaticText`
+    t =    44.44s         Capturing element debug description
+    t =    44.62s     Checking `Expect predicate `existsNoRetry == 1` for object "story.recompenses" StaticText`
+    t =    44.62s         Checking existence of `"story.recompenses" StaticText`
+    t =    44.97s         Capturing element debug description
+    t =    44.98s     Checking existence of `"story.recompenses" StaticText`
+    t =    45.11s Collecting debug information to assist test failure triage
+    t =    45.11s     Requesting snapshot of accessibility hierarchy for app with pid 73959
+/tmp/nosfy-fin-ui/NosfyUITests/FinSeanceUITests.swift:24: error: -[NosfyUITests.FinSeanceUITests testPremiereSeance] : XCTAssertTrue failed
+    t =    45.73s Tear Down
+Test Case '-[NosfyUITests.FinSeanceUITests testPremiereSeance]' failed (46.104 seconds).
+Test Case '-[NosfyUITests.FinSeanceUITests testSeptiemeReduceMotion]' started.
+    t =     0.00s Start Test at 2026-09-19 08:56:27.451
+    t =     0.03s Set Up
+    t =     0.03s Open fr.kathryn.woop
+    t =     0.03s     Launch fr.kathryn.woop
+    t =     0.03s         Terminate fr.kathryn.woop:73959
+2026-09-19 08:56:28.495 xcodebuild[73471:19870116] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-19 08:56:28.495 xcodebuild[73471:19870116] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.46s         Setting up automation session
+    t =     3.30s         Wait for fr.kathryn.woop to idle
+    t =     6.74s Waiting 40.0s for "qa.fin" Button to exist
+    t =     7.78s     Checking `Expect predicate `existsNoRetry == 1` for object "qa.fin" Button`
+    t =     7.78s         Checking existence of `"qa.fin" Button`
+    t =    18.00s Tap "qa.fin" Button
+    t =    18.00s     Wait for fr.kathryn.woop to idle
+    t =    18.01s     Find the "qa.fin" Button
+    t =    18.06s     Check for interrupting elements affecting "qa.fin" Button
+    t =    18.11s     Synthesize event
+    t =    18.43s     Wait for fr.kathryn.woop to idle
+    t =    19.24s Waiting 25.0s for "story-etat" StaticText to exist
+    t =    20.29s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    20.29s         Checking existence of `"story-etat" StaticText`
+    t =    20.35s         Capturing element debug description
+    t =    21.28s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    21.28s         Checking existence of `"story-etat" StaticText`
+    t =    21.40s         Capturing element debug description
+    t =    22.33s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    22.33s         Checking existence of `"story-etat" StaticText`
+    t =    22.36s         Capturing element debug description
+    t =    23.30s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    23.30s         Checking existence of `"story-etat" StaticText`
+    t =    23.36s         Capturing element debug description
+    t =    24.28s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    24.28s         Checking existence of `"story-etat" StaticText`
+    t =    24.33s         Capturing element debug description
+    t =    25.26s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    25.26s         Checking existence of `"story-etat" StaticText`
+    t =    25.31s         Capturing element debug description
+    t =    26.34s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    26.34s         Checking existence of `"story-etat" StaticText`
+    t =    26.38s Tap Target Application 'fr.kathryn.woop'[0.85, 0.09]
+    t =    26.38s     Wait for fr.kathryn.woop to idle
+    t =    26.39s     Find the Target Application 'fr.kathryn.woop'
+    t =    26.44s     Check for interrupting elements affecting "Nosfy" Application
+    t =    26.49s     Synthesize event
+    t =    26.50s         Find the Target Application 'fr.kathryn.woop'
+    t =    26.54s         Find the Target Application 'fr.kathryn.woop'
+    t =    26.59s         Find the Target Application 'fr.kathryn.woop'
+    t =    26.94s     Wait for fr.kathryn.woop to idle
+    t =    27.96s Checking `Expect predicate `label CONTAINS "page=1"` for object "story-etat" StaticText`
+    t =    27.96s     Find the "story-etat" StaticText
+    t =    28.09s Tap Target Application 'fr.kathryn.woop'[0.85, 0.09]
+    t =    28.09s     Wait for fr.kathryn.woop to idle
+    t =    28.14s     Find the Target Application 'fr.kathryn.woop'
+    t =    28.26s     Check for interrupting elements affecting "Nosfy" Application
+    t =    28.37s     Synthesize event
+    t =    28.42s         Find the Target Application 'fr.kathryn.woop'
+    t =    28.49s         Find the Target Application 'fr.kathryn.woop'
+    t =    28.57s         Find the Target Application 'fr.kathryn.woop'
+    t =    28.96s     Wait for fr.kathryn.woop to idle
+    t =    30.05s Checking `Expect predicate `label CONTAINS "page=2"` for object "story-etat" StaticText`
+    t =    30.06s     Find the "story-etat" StaticText
+    t =    30.14s Tap Target Application 'fr.kathryn.woop'[0.85, 0.09]
+    t =    30.14s     Wait for fr.kathryn.woop to idle
+    t =    30.15s     Find the Target Application 'fr.kathryn.woop'
+    t =    30.22s     Check for interrupting elements affecting "Nosfy" Application
+    t =    30.32s     Synthesize event
+    t =    30.32s         Find the Target Application 'fr.kathryn.woop'
+    t =    30.39s         Find the Target Application 'fr.kathryn.woop'
+    t =    30.46s         Find the Target Application 'fr.kathryn.woop'
+    t =    30.82s     Wait for fr.kathryn.woop to idle
+    t =    31.98s Checking `Expect predicate `label CONTAINS "page=3"` for object "story-etat" StaticText`
+    t =    31.99s     Find the "story-etat" StaticText
+    t =    32.08s Waiting 8.0s for "story.recompenses" StaticText to exist
+    t =    33.11s     Checking `Expect predicate `existsNoRetry == 1` for object "story.recompenses" StaticText`
+    t =    33.11s         Checking existence of `"story.recompenses" StaticText`
+    t =    33.19s         Capturing element debug description
+    t =    34.11s     Checking `Expect predicate `existsNoRetry == 1` for object "story.recompenses" StaticText`
+    t =    34.12s         Checking existence of `"story.recompenses" StaticText`
+    t =    34.19s         Capturing element debug description
+    t =    35.16s     Checking `Expect predicate `existsNoRetry == 1` for object "story.recompenses" StaticText`
+    t =    35.17s         Checking existence of `"story.recompenses" StaticText`
+    t =    35.25s         Capturing element debug description
+    t =    36.10s     Checking `Expect predicate `existsNoRetry == 1` for object "story.recompenses" StaticText`
+    t =    36.10s         Checking existence of `"story.recompenses" StaticText`
+    t =    36.20s         Capturing element debug description
+    t =    37.17s     Checking `Expect predicate `existsNoRetry == 1` for object "story.recompenses" StaticText`
+    t =    37.17s         Checking existence of `"story.recompenses" StaticText`
+    t =    37.27s         Capturing element debug description
+    t =    38.10s     Checking `Expect predicate `existsNoRetry == 1` for object "story.recompenses" StaticText`
+    t =    38.10s         Checking existence of `"story.recompenses" StaticText`
+    t =    38.17s         Capturing element debug description
+    t =    39.11s     Checking `Expect predicate `existsNoRetry == 1` for object "story.recompenses" StaticText`
+    t =    39.11s         Checking existence of `"story.recompenses" StaticText`
+    t =    39.99s         Capturing element debug description
+    t =    40.09s     Checking `Expect predicate `existsNoRetry == 1` for object "story.recompenses" StaticText`
+    t =    40.15s         Checking existence of `"story.recompenses" StaticText`
+    t =    40.30s         Capturing element debug description
+    t =    40.30s     Checking existence of `"story.recompenses" StaticText`
+    t =    40.45s Collecting debug information to assist test failure triage
+    t =    40.45s     Requesting snapshot of accessibility hierarchy for app with pid 74033
+/tmp/nosfy-fin-ui/NosfyUITests/FinSeanceUITests.swift:24: error: -[NosfyUITests.FinSeanceUITests testSeptiemeReduceMotion] : XCTAssertTrue failed
+    t =    40.60s Tear Down
+Test Case '-[NosfyUITests.FinSeanceUITests testSeptiemeReduceMotion]' failed (41.001 seconds).
+Test Suite 'FinSeanceUITests' failed at 2026-09-19 08:57:08.452.
+	 Executed 2 tests, with 2 failures (0 unexpected) in 87.105 (87.109) seconds
+Test Suite 'NosfyUITests.xctest' failed at 2026-09-19 08:57:08.453.
+	 Executed 2 tests, with 2 failures (0 unexpected) in 87.105 (87.110) seconds
+Test Suite 'All tests' failed at 2026-09-19 08:57:08.454.
+	 Executed 2 tests, with 2 failures (0 unexpected) in 87.105 (87.112) seconds
+2026-09-19 08:57:32.835 xcodebuild[73471:19870116] [MT] IDETestOperationsObserverDebug: 154.770 elapsed -- Testing started completed.
+2026-09-19 08:57:32.835 xcodebuild[73471:19870116] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-19 08:57:32.835 xcodebuild[73471:19870116] [MT] IDETestOperationsObserverDebug: 154.770 sec, +154.770 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/nosfy-fin-ui-result7
+
+Failing tests:
+	FinSeanceUITests.testPremiereSeance()
+	FinSeanceUITests.testSeptiemeReduceMotion()
+
+** TEST FAILED **
+
+Testing started

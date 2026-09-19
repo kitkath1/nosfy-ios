@@ -321,6 +321,7 @@ enum SacreServeur {
         let bonusProgres: Int
         var recu: RecuRecompense? = nil
         var workoutId: String? = nil
+        var boostersGagnes: Int? = nil
     }
 
     /// Un fait de séance, tel que le serveur le range (`workout_facts`).
@@ -373,7 +374,8 @@ enum SacreServeur {
                              cardioDetail: j["cardio_detail"] as? [String: Any] ?? [:],
                              cardioRejeu: (j["cardio_rejeu"] as? Bool) ?? false,
                              bonusProgres: (j["bonus_progres"] as? Int) ?? 0,
-                             recu: RecuRecompense(j), workoutId: workout.uuidString.lowercased())
+                             recu: RecuRecompense(j), workoutId: workout.uuidString.lowercased(),
+                             boostersGagnes: (j["booster_ids"] as? [String])?.count)
     }
 
     /// ⚠️⚠️ **L'ÉTAPE 1 DU BRANCHEMENT, ET LA SEULE QUI NE RISQUE RIEN :

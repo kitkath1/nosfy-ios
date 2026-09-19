@@ -1,0 +1,47 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "5716542B-3FE4-4A92-ABB4-32BC31886F7C",
+        "deviceName" : "Nosfy Stories Historique QA",
+        "exportedFileName" : "5B100B63-0E0C-4F53-99C5-452540482B5D.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "story-historique-20_0_6CA0E11C-F4A7-4936-8BDA-A9FBB4F261FA.png",
+        "timestamp" : 1789804754.966
+      }
+    ],
+    "testIdentifier" : "HistoriqueUITests/testChambreJourVidePuisDeuxSeances()",
+    "testIdentifierURL" : "test://com.apple.xcode/Nosfy/NosfyUITests/HistoriqueUITests/testChambreJourVidePuisDeuxSeances"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "5716542B-3FE4-4A92-ABB4-32BC31886F7C",
+        "deviceName" : "Nosfy Stories Historique QA",
+        "exportedFileName" : "75C42120-0847-4A1D-B483-28958432A6E9.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "story-historique-73_0_65D114F9-7759-4A91-B71A-48311BED740C.png",
+        "timestamp" : 1789804763.657
+      }
+    ],
+    "testIdentifier" : "HistoriqueUITests/testWidgetDeuxSeancesChoisirLaDeuxieme()",
+    "testIdentifierURL" : "test://com.apple.xcode/Nosfy/NosfyUITests/HistoriqueUITests/testWidgetDeuxSeancesChoisirLaDeuxieme"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "5716542B-3FE4-4A92-ABB4-32BC31886F7C",
+        "deviceName" : "Nosfy Stories Historique QA",
+        "exportedFileName" : "8D482952-5072-45C2-9A73-960663C7B28F.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "story-historique-41_0_DE44A342-9420-40CB-9883-92AE9A004AD3.png",
+        "timestamp" : 1789804769.457
+      }
+    ],
+    "testIdentifier" : "HistoriqueUITests/testWidgetJourUniqueOuvreSaStory()",
+    "testIdentifierURL" : "test://com.apple.xcode/Nosfy/NosfyUITests/HistoriqueUITests/testWidgetJourUniqueOuvreSaStory"
+  }
+]

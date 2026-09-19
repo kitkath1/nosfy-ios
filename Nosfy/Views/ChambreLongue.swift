@@ -969,6 +969,7 @@ struct ChambreGrille: View {
                                 ChambreCase(jour: j, taille: s,
                                             selectionne: selection.map { Calendar.current.isDate($0, inSameDayAs: j.date) } ?? false,
                                             montrerPic: montrerPic, stickers: stickers)
+                                    .accessibilityIdentifier("regularite-jour-\(i)")
                                     .onTapGesture {
                                         let actif = montrerPic ? j.picHiit != nil : j.fait
                                         guard actif else { return }

@@ -1,0 +1,9 @@
+{
+  "Nosfy/Models.swift": "0e5643e4c303d62f18666c2c6617214372b0544996fc0aa0e0b1e19f17ba2707",
+  "Nosfy/Services/SupabaseSync.swift": "63bf432461ea1ed91e1c2b1f210b2d18546b9e132f894fda2e6e9b2fb6f08a21",
+  "Nosfy/Views/HistoriqueStories.swift": "46dc7a2f047bf6dbc769421ecb215479fbb7d26b9483faa4322b150ccb300e4f",
+  "Nosfy/Views/ChambreRegularite.swift": "a54ff288fae951fda48c006fb44e1ec8d30dedf96698850ce1661e251f6e7fed",
+  "Nosfy/Views/ChambreLongue.swift": "edb4af71c74a3216e79cc23e18f60352e7a7c66de8bc91fe09178774f0a927e8",
+  "Nosfy/Views/WidgetsCards.swift": "949dc8e5b9639462fd9cd8398c42e8e684ffa641d3e02903c093ef7b4c3ae026",
+  "supabase/migrations/20260919073635_recus_seances_lecture.sql": "f23ab99bc9d75ed2e2ebb24610cb3cbf93d61a5b2bae549b63386d5540e5a76a"
+}

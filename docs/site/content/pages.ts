@@ -52,7 +52,7 @@ export const PAGES: PageInfo[] = [
   },
   {
     id: 'histoire', libelle: 'Stories', glyphe: 'book',
-    phrase: 'Le serveur calcule les records à la clôture ; les pages attendent de les lire.',
+    phrase: 'Les stories lisent les faits et les gains du serveur, même après restauration.',
     hero: { capture: null },
   },
   {

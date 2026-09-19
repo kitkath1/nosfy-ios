@@ -87,6 +87,13 @@ final class Transport: URLProtocol {
         Transport.reponse = #"{"ok":true}"#
         await sync.push([snap])
         check(await OutboxGains.shared.vidages == 1,"sauvegarde confirmée relance les gains")
+        let avantAutreCompte = Transport.requetes.count
+        do {
+            try await sync.pousser([snap], proprietaire: "ancien-compte")
+            preconditionFailure("ancien propriétaire accepté")
+        } catch is CancellationError {
+            check(Transport.requetes.count == avantAutreCompte, "changement de compte : aucun ancien instantané envoyé")
+        }
         print("\(nombre) contrôles PASS")
     }
 }

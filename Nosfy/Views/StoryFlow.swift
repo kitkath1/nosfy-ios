@@ -62,6 +62,8 @@ struct StorySession {
     var series: Int
     var kcal: Int
     var sets: [StorySet]
+    var recompense: BilanRecompenseSeance? = nil
+    var recompenseEnAttente = false
     /// La partition par exercice (la grammaire de l'ardoise) : quand elle
     /// est là, la story 2 pose `SlateListe` — la liste dépliable, ses
     /// petites flammes — à la place des cinq lignes plates.
@@ -116,18 +118,26 @@ struct StorySession {
         dateLabel = L("Séance du ", "Session on ") + f.string(from: workout.startedAt)
         minutes = max(1, Int(workout.duration / 60))
         exos = workout.orderedExercises.count
-        let all = workout.orderedExercises.flatMap { $0.sets ?? [] }
-        series = all.count
+        let all = workout.orderedExercises.flatMap { $0.orderedSets.filter(\.isDone) }
+        series = workout.seriesPayantes
+        recompense = workout.bilanRecompense.flatMap { try? JSONDecoder().decode(BilanRecompenseSeance.self, from: $0) }
+        recompenseEnAttente = recompense == nil
+        if let bilan = recompense {
+            if bilan.top == "top_muscu" { top = .muscu }
+            else if bilan.top == "top_cardio" { top = .cardio }
+            if let heures = bilan.heuresDouble {
+                double = DoubleFait(heures: heures, minutes: bilan.minutesDouble ?? minutes)
+            }
+        }
         // Une estimation franche tant qu'il n'y a pas de calcul de dépense :
         // sept kilocalories par minute d'effort.
         kcal = minutes * 7
-        // Les mêmes gains que la maquette, tant que l'économie n'existe pas.
-        let purse = [20, 15, 12, 18, 18]
+        // Les pièces de musculation sont confirmées dans le reçu de cette séance.
+        let taux = (recompense?.piecesMuscu ?? 0) / max(series, 1)
         sets = all.prefix(5).enumerated().map { i, s in
             StorySet(rank: i + 1, reps: s.reps, kilos: s.weight,
-                     coins: purse[i % purse.count])
+                     coins: taux)
         }
-        if sets.isEmpty { sets = StorySession.demo.sets }
         // La partition : les mêmes groupes que l'ardoise (le barème de
         // `SessionSlate.buildGroupes`, côté séance persistée).
         groupes = workout.orderedExercises.compactMap { le in

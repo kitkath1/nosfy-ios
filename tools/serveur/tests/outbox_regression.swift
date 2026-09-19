@@ -67,6 +67,13 @@ enum SacreServeur {
         let o = OutboxGains()
         await o.effacer()
         let id = UUID(); let gain = GainEnAttente.finDeSeance(seance:id,series:1)
+        await o.retenir(gain)
+        let appelsAvant = await Reseau.shared.appels
+        check(await o.enAttente == 1 && appelsAvant == 0, "retenir persiste sans réseau")
+        let ancienneGeneration = await o.identiteGeneration
+        await o.effacer()
+        await o.retenir(gain, siGeneration: ancienneGeneration)
+        check(await o.enAttente == 0, "ancien travail ne remplit pas le nouveau compte")
         await o.poster(gain)
         check(await Reseau.shared.persisteAvantReseau,"gain persiste avant le réseau")
         check(await o.enAttente == 1,"503 conserve le gain")
@@ -98,6 +105,6 @@ enum SacreServeur {
         check(await o.enAttente == 0,"refus définitif ne bouche pas la file")
         await Reseau.shared.configurer(401);await o.poster(gain)
         check(await o.enAttente == 1,"session à renouveler conserve le gain")
-        print("13 contrôles PASS")
+        print("15 contrôles PASS")
     }
 }

@@ -1,0 +1,14 @@
+[pull] seances_depuis(tout) → total 1, rendues 1 · insérées 1, ignorées 0 · local 1
+PASS historique serveur réinséré avec son identité
+PASS séries faites restaurées pour la Route
+PASS cardio et piscine restaurés
+PASS curseur posé après lecture
+[pull] seances_depuis(2026-09-18T10:00:00Z) → total 1, rendues 1 · insérées 0, ignorées 1 · local 1
+PASS relecture sans doublons
+PASS réponse du compte précédent écartée
+PASS ancien compte ne pose aucun curseur
+[pull] seances_depuis ✗ The operation couldn’t be completed. (NSURLErrorDomain error -1011.)
+PASS échec réseau : données et curseur inchangés
+[pull] seances_depuis(tout) → total 1, rendues 1 · insérées 1, ignorées 0 · local 1
+PASS nouvelle lecture après reconnexion récupère les séances
+9 contrôles pull PASS — transport et stockage isolés

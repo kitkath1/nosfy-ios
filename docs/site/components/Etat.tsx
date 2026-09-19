@@ -98,6 +98,12 @@ export function Etat() {
         </p>
       </div>
 
+      <p className="legende-pied">
+        Vérification du 19 septembre : clients Swift et Supabase, séances, annonces, coffre, stories et cartes.
+        {' '}<a href="#qa" data-saut="qa">Voir les résultats et les points encore ouverts</a>.
+        {' '}Les états ci-dessous suivent les preuves de chaque section.
+      </p>
+
       {/* LES GROSSES CARDS : une par PAGE (le même nom, le même nombre et la même destination que le rail),
           le badge dit la famille en toutes lettres dans sa couleur, la barre dit la part de bon. */}
       <div className="doms">

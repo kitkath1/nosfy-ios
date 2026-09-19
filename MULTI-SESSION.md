@@ -1,5 +1,76 @@
 # Règle multi-session (Nosfy)
 
+## Parcours — nouvelle vérification sans téléphone, 19-09
+
+Sur demande de Kathryn : relancer les tests front/backend en arrière-plan,
+mettre les preuves à jour dans toutes les sections concernées, pas seulement QA.
+Aucun accès iPhone ; comptes QA et clients Swift isolés. Sources de production
+laissées aux sessions en cours, documentation partagée modifiée par lignes.
+Preuves : tools/production/reverification-front-back-2026-09-19/.
+Résultats : 20 contrôles Swift connectés, 44 API, 35 fin de séance, 15 outbox,
+13 sync, 9 pull, 15 session, 2 × 1 277 Route PASS ; build Debug réussi.
+Le pull sans reçu historique est reproduit, puis corrigé dans la passe Stories ci-dessus. Briques et pages
+Annonces/Serveur/Flow/Coffre/Cartes/Stories mises à jour ; notes périmées de
+retour Route, déclenchement story et confirmation de règle corrigées.
+Livrable documentaire régénéré puis vérifié : 23 tests PASS, dix pages sans
+débordement à 390 px ; captures État, Serveur et Stories regardées.
+Aucun code produit modifié, aucun commit demandé.
+
+
+## Parcours TestFlight — 19-09 : fin de séance et Route
+
+Sur « oui très bien enchaîne » : clôture persistée avant réseau, story aux gains
+confirmés, compte neuf sans booster fictif, Welcome Back retenu pendant séance
+et story, puis animation finie du galet accompli après la story. Fichiers :
+Models, NosfyApp, OutboxGains, EconomieNosfy, Compte, StoryFlow/StorySuite,
+DepartSeance, DuolinguoPage, ChambreDonnees, SupabaseSync, SacreServeur et nouveau
+ReglementSeance. Hunks des autres
+sessions conservés ; catalogue et dessins Cartes hors périmètre. Tests isolés,
+aucun usage de l’iPhone réservé par Erreur. Pas de commit ni upload demandé.
+Validation : 35 assertions SwiftData/story/Welcome, 15 outbox, 13 sync,
+1277 Route, 45 API Supabase et 2 parcours UI simulateur PASS ; build Debug final
+réussi. Preuves : tools/production/fin-seance-2026-09-19/README.md.
+Le reçu après pull/reconnexion est corrigé dans la passe Stories ci-dessus. Restent Apple natif,
+chaîne intégrée et chauffe iPhone, archive et distribution. Mise à jour de la
+doc terminée : artefact puis verif PASS (23 tests, dix pages à 390 px),
+vert limité à la preuve nommée.
+
+
+
+## Stories restaurées et jours du widget — correction mesurée, 19-09
+
+Kathryn demande de corriger les reçus après reconnexion et de revoir les
+séances en touchant leurs jours dans le widget. Périmètre : lecture seule des
+bilans côté Supabase, pull Swift, accès aux jours Regularity, tests et doc.
+Les 50 cartes sont explicitement requises pour le lancement et restent à la
+session Cartes. Aucun asset/catalogue touché ici ; aucun téléphone utilisé.
+RPC recus_seances déployée, lecture seule et propriétaire contrôlé : 24 Swift
+connectés, 17 API, 17 pull, 35 fin de séance et 5 dates PASS. Trois gestes UI
+simulateur PASS : jour unique, choix entre deux séances et jour vide. Les
+reçus restent identiques après ouverture du booster et acquittement. Sources
+partagées par lignes ; pas de commit/push demandé. Preuves :
+tools/production/stories-historique-2026-09-19/README.md.
+Sources finales : build Debug réussi, 3 gestes UI repassés sans échec ;
+documentation artefact puis verif PASS (23 tests, dix pages à 390 px), captures
+relues. Simulateur dédié libéré ; pas de changement des sources ProgressPage.
+
+
+## Analyse TestFlight — premier vrai compte, 19-09
+
+Configuration Supabase relue sans écriture : Apple actif, inscriptions ouvertes,
+quatre secrets présents. Compte --flow 50 PASS et inscription Swift 12 PASS ;
+deux comptes QA nettoyés. Analyse des seuils du pilote et de l’expérience
+complète : tools/production/analyse-testflight-2026-09-19/README.md.
+Entrée Apple du binaire final, distribution et J+1 encore non mesurés ; reçu
+des stories alors absent, corrigé dans la passe Stories ci-dessus. Aucun téléphone utilisé,
+aucun code produit modifié, aucun envoi TestFlight ou commit demandé.
+Documentation Compte/QA et mesure de distribution actualisées ; ancien KO
+Cartes de QA19 rapproché des preuves simulateur du 19-09, sans nouveau test UI.
+Release iPhone arm64 sans signature réussie, 249 sources identiques à la passe
+connectée ; iOS 26 minimum, manifeste présent. Documentation artefact/verif
+PASS (23 tests). Archive actuelle et App Store Connect restent à traiter.
+
+
 ## Coffre / Cartes — vert backend et tirage commun, 19-09
 
 Sur sa demande : documentation backend explicitement validée (53 Coffre,

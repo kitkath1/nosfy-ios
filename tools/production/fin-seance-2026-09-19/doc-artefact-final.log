@@ -1,0 +1,33 @@
+
+> nosfy-chambre-des-machines@2.0.0 artefact
+> next build && node scripts/inliner.mjs
+
+▲ Next.js 16.3.3 (Turbopack)
+✓ Running next.config.ts took 88ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1319ms
+  Running TypeScript ...
+  Finished TypeScript in 4.9s ...
+  Collecting page data using 5 workers ...
+  Generating static pages using 5 workers (0/4) ...
+  Generating static pages using 5 workers (1/4) 
+  Generating static pages using 5 workers (2/4) 
+  Generating static pages using 5 workers (3/4) 
+✓ Generating static pages using 5 workers (4/4) in 1037ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+└ ○ /icon.svg
+
+
+○  (Static)  prerendered as static content
+
+inliner : /Users/kathryn/Desktop/Nosfy/docs/site/out/index.html
+   retirés  : 25 <script> · 7 <link> · 0 attributs Next · 317 commentaires RSC · 1 meta
+   inlinés  : 2 feuille(s) (48538 o) · 1 url() (99780 o) · 72 média(s) (431576 o) · site.js (9066 o)
+   titre    : Documentation Nosfy
+   livrable : /Users/kathryn/Desktop/Nosfy/docs/site/index.html · 1887362 o (1.89 Mo) · 1 <script>
+   ✔ écrit

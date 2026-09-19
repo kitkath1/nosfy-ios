@@ -1,0 +1,19 @@
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/ProfilServeur.swift:250:19: warning: no calls to throwing functions occur within 'try' expression
+248 | 
+249 |     private static func objet(_ nom: String, corps: [String: Any] = [:]) async throws -> [String: Any] {
+250 |         let jwt = try await SupabaseSession.shared.token()
+    |                   `- warning: no calls to throwing functions occur within 'try' expression
+251 |         var req = URLRequest(url: WoopConfig.supabaseURL.appending(path: "rest/v1/rpc/\(nom)"))
+252 |         req.httpMethod = "POST"
+PASS profil hors ligne : décision différée, aucune home ni nouvel onboarding inventé
+PASS profil illisible : vérification toujours due
+PASS compte neuf : Nosfy reste dû après relance
+PASS réponses persistées et relues avec langue et objectif
+PASS échec réseau : réponses gardées pour réessayer
+PASS HTTP 200 ok:false est un refus, pas une inscription réussie
+PASS refus métier : brouillon et reprise conservés
+PASS réponse incomplète : la home attend encore
+PASS confirmation serveur : inscription terminée, brouillon effacé
+PASS prénom confirmé disponible pour la home et le profil
+PASS compte connu : accès direct après lecture
+PASS déconnexion : aucune réponse transmise au prochain compte

@@ -1,0 +1,19 @@
+PASS lecture interdite sans session
+PASS liste vide : aucun bilan
+PASS séance absente : aucun bilan inventé
+PASS séance non réglée : aucun paiement déclenché
+PASS autre compte : reçus inaccessibles
+PASS liste mélangée : uniquement les deux séances du compte, sans doublon
+PASS première séance : montant et sachets du vrai reçu
+PASS record historique conservé
+PASS deux séances : heures et durée du fait serveur conservées
+PASS lecture répétée : mêmes bilans
+PASS lecture répétée : mêmes bilans
+PASS lecture répétée : mêmes bilans
+PASS lectures seules : coffre et annonces inchangés
+PASS acquittement des annonces : bilans intacts
+PASS requête au-delà de 500 UUID refusée
+PASS séance antérieure aux reçus : gains retrouvés dans les écritures conservées
+PASS ancien carnet également isolé entre comptes
+17 contrôles reçus historiques PASS
+Comptes QA supprimés : 2 ; aucun compte personnel modifié

@@ -89,7 +89,7 @@ actor SupabaseSync {
 
     // MARK: Envoi
 
-    func push(_ snapshots: [Snapshot]) async {
+    func push(_ snapshots: [Snapshot], proprietaire: String? = nil) async {
         // Les données de démonstration ne quittent jamais l'appareil : un run
         // Xcode avec `-demoData` ne doit pas polluer un vrai compte.
         // `-syncNow` lève le garde-fou (tests de bout en bout uniquement).
@@ -97,7 +97,7 @@ actor SupabaseSync {
            !CommandLine.arguments.contains("-syncNow") { return }
         guard WoopConfig.isConfigured, !snapshots.isEmpty, !inFlight else { return }
         do {
-            try await pousser(snapshots)
+            try await pousser(snapshots, proprietaire: proprietaire)
             await OutboxGains.shared.vider()
         } catch {
             // La séance est déjà enregistrée localement : on réessaiera au prochain envoi.
@@ -111,7 +111,7 @@ actor SupabaseSync {
     /// l'envoi échoue — `push` avale ses pannes, elle ne peut pas le savoir.
     /// Même corps, même ordre (les clés étrangères pointent vers la table
     /// précédente), sans le garde-fou de la démo : c'est l'appelant qui décide.
-    func pousser(_ snapshots: [Snapshot]) async throws {
+    func pousser(_ snapshots: [Snapshot], proprietaire: String? = nil) async throws {
         guard WoopConfig.isConfigured, !snapshots.isEmpty else { return }
         while inFlight { try await Task.sleep(for: .milliseconds(100)) }
         inFlight = true
@@ -120,6 +120,9 @@ actor SupabaseSync {
         do {
             let token = try await SupabaseSession.shared.token()
             let userID = try await SupabaseSession.shared.currentUserID()
+            guard proprietaire == nil || proprietaire?.lowercased() == userID.lowercased() else {
+                throw CancellationError()
+            }
             let iso = ISO8601DateFormatter()
 
             // Une séance et son arbre dans UNE transaction, avant toute clôture.
@@ -279,11 +282,73 @@ extension SupabaseSync {
             }
             r.inserees += 1
         }
-        if r.inserees > 0 { try? contexte.save() }
+        if r.inserees > 0 {
+            do { try contexte.save() }
+            catch {
+                print("[pull] sauvegarde différée : \(error.localizedDescription)")
+                return nil
+            }
+        }
+        // Aussi pour les séances déjà importées avant ce raccord : le curseur
+        // des séances ne doit pas empêcher de retrouver leur reçu manquant.
+        await restaurerBilans(dans: contexte)
+        guard generation == CompteEtat.shared.generationDonnees,
+              !Task.isCancelled else { return nil }
         r.local = (try? contexte.fetchCount(FetchDescriptor<Workout>())) ?? 0
         if let at = o["serveur_at"] as? String { UserDefaults.standard.set(at, forKey: cleDepuis) }
         print("[pull] seances_depuis(\(depuis ?? "tout")) → total \(r.total), rendues \(r.rendues) · insérées \(r.inserees), ignorées \(r.ignorees) · local \(r.local)")
         return r
+    }
+
+    /// Lecture seule. Revoir une story ne poste jamais de clôture dans l'outbox.
+    /// Une panne garde les bilans manquants éligibles au prochain passage.
+    @MainActor
+    static func restaurerBilans(dans contexte: ModelContext, pour seances: [Workout]? = nil) async {
+        let generation = CompteEtat.shared.generationDonnees
+        let toutes = seances ?? ((try? contexte.fetch(FetchDescriptor<Workout>())) ?? [])
+        let manquantes = toutes.filter { $0.endedAt != nil && $0.bilanRecompense == nil && !$0.recompenseARegler }
+        guard !manquantes.isEmpty else { return }
+        do {
+            let jwt = try await SupabaseSession.shared.token()
+            let owner = try await SupabaseSession.shared.currentUserID().lowercased()
+            for debut in stride(from: 0, to: manquantes.count, by: 100) {
+                guard generation == CompteEtat.shared.generationDonnees, !Task.isCancelled else { return }
+                let lot = Array(manquantes[debut..<min(debut + 100, manquantes.count)])
+                var req = URLRequest(url: WoopConfig.supabaseURL.appending(path: "rest/v1/rpc/recus_seances"))
+                req.httpMethod = "POST"
+                req.timeoutInterval = 15
+                req.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
+                req.setValue(WoopConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
+                req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                req.httpBody = try JSONEncoder().encode(["p_workouts": lot.map { $0.remoteID.uuidString.lowercased() }])
+                let (data, rep) = try await URLSession.shared.data(for: req)
+                try SupabaseSession.check(rep, data)
+                struct Recu: Decodable {
+                    let workout_id: UUID
+                    let user_id: String
+                    let bilan: BilanRecompenseSeance
+                }
+                let recus = try JSONDecoder().decode([Recu].self, from: data)
+                guard generation == CompteEtat.shared.generationDonnees, !Task.isCancelled else { return }
+                var changes: [Workout] = []
+                do {
+                    for recu in recus where recu.user_id.lowercased() == owner {
+                        guard let w = lot.first(where: { $0.remoteID == recu.workout_id }),
+                              w.bilanRecompense == nil, !w.recompenseARegler else { continue }
+                        w.bilanRecompense = try JSONEncoder().encode(recu.bilan)
+                        changes.append(w)
+                    }
+                    if !changes.isEmpty { try contexte.save() }
+                } catch {
+                    // Ne pas annuler les autres modifications du contexte partagé.
+                    for w in changes { w.bilanRecompense = nil }
+                    throw error
+                }
+                print("[pull] bilans historiques : \(changes.count) retrouvés")
+            }
+        } catch {
+            print("[pull] bilans historiques différés : \(error.localizedDescription)")
+        }
     }
 
     /// L'appel nu — la forme de `ChambreServeur.rpc`, avec la session courante.

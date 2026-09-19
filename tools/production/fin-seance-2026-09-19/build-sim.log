@@ -1,0 +1,1237 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project Nosfy.xcodeproj -scheme Nosfy -configuration Debug -sdk iphonesimulator -destination "generic/platform=iOS Simulator" -derivedDataPath /tmp/nosfy-fin-seance-dd CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES ARCHS=arm64 build
+
+Build settings from command line:
+    ARCHS = arm64
+    CODE_SIGNING_ALLOWED = NO
+    ONLY_ACTIVE_ARCH = YES
+    SDKROOT = iphonesimulator26.5
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (2 targets)
+    Target 'Nosfy' in project 'Nosfy'
+        ➜ Explicit dependency on target 'NosfyWidgets' in project 'Nosfy'
+    Target 'NosfyWidgets' in project 'Nosfy' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/kathryn/Desktop/Nosfy/NosfyShared/LiveAssets.xcassets /Users/kathryn/Desktop/Nosfy/Nosfy/AppIcon.icon /Users/kathryn/Desktop/Nosfy/Nosfy/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: ebdf75ecfc6eda8ad56b930341ed5339
+Build description path: /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/XCBuildData/ebdf75ecfc6eda8ad56b930341ed5339.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk /tmp/nosfy-fin-seance-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+    cd /Users/kathryn/Desktop/Nosfy/Nosfy.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -o /tmp/nosfy-fin-seance-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+
+ProcessInfoPlistFile /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/NosfyWidgets.appex/Info.plist /Users/kathryn/Desktop/Nosfy/NosfyWidgets/Info.plist (in target 'NosfyWidgets' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    builtin-infoPlistUtility /Users/kathryn/Desktop/Nosfy/NosfyWidgets/Info.plist -producttype com.apple.product-type.app-extension -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/NosfyWidgets.build/assetcatalog_generated_info.plist -o /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/NosfyWidgets.appex/Info.plist
+
+SwiftDriver Nosfy normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/nosfy-fin-seance-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/nosfy-fin-seance-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator -F /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/nosfy-fin-seance-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/nosfy-fin-seance-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/nosfy-fin-seance-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/nosfy-fin-seance-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-generated-files.hmap -Xcc -I/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-own-target-headers.hmap -Xcc -I/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-project-headers.hmap -Xcc -I/tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources-normal/arm64 -Xcc -I/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/arm64 -Xcc -I/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop-Swift.h -working-directory /Users/kathryn/Desktop/Nosfy -experimental-emit-module-separately -disable-cmo
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ Woop (in target 'Nosfy' from project 'Nosfy')
+
+EmitSwiftModule normal arm64 (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 Compiling\ VerificationCompte.swift,\ VerreCoulant.swift,\ VisiteExercice.swift,\ VisiteHome.swift,\ WahouReveal.swift,\ WidgetEdition.swift,\ WidgetsCards.swift,\ WorkoutPill.swift,\ WorkoutsListView.swift,\ Atmosphere.swift,\ DemonSky.swift,\ Models.swift,\ MoonPath.swift,\ MoonSDF.swift,\ NebulaConfiguration.swift,\ NebulaNoise.swift,\ NebulaStrip.swift,\ NosfyApp.swift,\ Theme.swift,\ GeneratedAssetSymbols.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/VerificationCompte.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/VerreCoulant.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/VisiteExercice.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/VisiteHome.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/WahouReveal.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/WidgetEdition.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/WidgetsCards.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/WorkoutPill.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/WorkoutsListView.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Atmosphere.swift /Users/kathryn/Desktop/Nosfy/Nosfy/DemonSky.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Models.swift /Users/kathryn/Desktop/Nosfy/Nosfy/MoonPath.swift /Users/kathryn/Desktop/Nosfy/Nosfy/MoonSDF.swift /Users/kathryn/Desktop/Nosfy/Nosfy/NebulaConfiguration.swift /Users/kathryn/Desktop/Nosfy/Nosfy/NebulaNoise.swift /Users/kathryn/Desktop/Nosfy/Nosfy/NebulaStrip.swift /Users/kathryn/Desktop/Nosfy/Nosfy/NosfyApp.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Theme.swift /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Nosfy' from project 'Nosfy')
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/VerificationCompte.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/VerreCoulant.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/VisiteExercice.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/VisiteHome.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/WahouReveal.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/WidgetEdition.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/WidgetsCards.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/WorkoutPill.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/WorkoutsListView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Atmosphere.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/DemonSky.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Models.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/MoonPath.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/MoonSDF.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/NebulaConfiguration.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/NebulaNoise.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/NebulaStrip.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/NosfyApp.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/NosfyApp.swift:1318:44: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+            MiniCardJour(date: a.startedAt ?? .now,
+                               ~~~~~~~~~~~~^~~~~~~
+                                          
+/Users/kathryn/Desktop/Nosfy/Nosfy/NosfyApp.swift:1343:58: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+                TimelineView(.periodic(from: a.startedAt ?? .now,
+                                             ~~~~~~~~~~~~^~~~~~~
+                                                        
+/Users/kathryn/Desktop/Nosfy/Nosfy/NosfyApp.swift:1346:56: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+                        .timeIntervalSince(a.startedAt ?? .now)))
+                                           ~~~~~~~~~~~~^~~~~~~
+                                                      
+/Users/kathryn/Desktop/Nosfy/Nosfy/NosfyApp.swift:1740:47: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+                    departSeance: a.startedAt ?? .now,
+                                  ~~~~~~~~~~~~^~~~~~~
+                                             
+/Users/kathryn/Desktop/Nosfy/Nosfy/NosfyApp.swift:1766:41: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+                    depart: a.startedAt ?? .now,
+                            ~~~~~~~~~~~~^~~~~~~
+                                       
+/Users/kathryn/Desktop/Nosfy/Nosfy/NosfyApp.swift:1765:43: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+                    ecranTaille: UIScreen.main.bounds.size,
+                                          ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Theme.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 Compiling\ PorteEntree.swift,\ PremiereArrivee.swift,\ ProfilLune.swift,\ ProgressionView.swift,\ ProgressPage.swift,\ RecentWorkoutCard.swift,\ RestartSheet.swift,\ ImpGlyph.swift,\ MoonGlyph.swift,\ ProgressComet.swift,\ WorkoutActivity.swift,\ WorkoutLiveCard.swift,\ WorkoutLiveFocus.swift,\ RewardCard.swift,\ RewardChemin.swift,\ RewardCheminCard.swift,\ RewardCheminVariants.swift,\ RewardLab.swift,\ RythmeEcran.swift,\ SacreAccueil.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/PorteEntree.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/PremiereArrivee.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ProfilLune.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ProgressionView.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ProgressPage.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/RecentWorkoutCard.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/RestartSheet.swift /Users/kathryn/Desktop/Nosfy/NosfyShared/ImpGlyph.swift /Users/kathryn/Desktop/Nosfy/NosfyShared/MoonGlyph.swift /Users/kathryn/Desktop/Nosfy/NosfyShared/ProgressComet.swift /Users/kathryn/Desktop/Nosfy/NosfyShared/WorkoutActivity.swift /Users/kathryn/Desktop/Nosfy/NosfyShared/WorkoutLiveCard.swift /Users/kathryn/Desktop/Nosfy/NosfyShared/WorkoutLiveFocus.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/RewardCard.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/RewardChemin.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/RewardCheminCard.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/RewardCheminVariants.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/RewardLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/RythmeEcran.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SacreAccueil.swift (in target 'Nosfy' from project 'Nosfy')
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/PorteEntree.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/PremiereArrivee.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ProfilLune.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ProgressionView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ProgressPage.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/RecentWorkoutCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/RestartSheet.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/NosfyShared/ImpGlyph.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/NosfyShared/MoonGlyph.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/NosfyShared/ProgressComet.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/NosfyShared/WorkoutActivity.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/NosfyShared/WorkoutLiveCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/NosfyShared/WorkoutLiveFocus.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/RewardCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/RewardCard.swift:1550:17: warning: initialization of immutable value 'tilt' was never used; consider replacing with assignment to '_' or removing it
+            let tilt = SkyMotion.shared.tilt
+            ~~~~^~~~
+            _
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/RewardChemin.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/RewardCheminCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/RewardCheminVariants.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/RewardLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/RythmeEcran.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SacreAccueil.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 Compiling\ BoosterLab.swift,\ BoosterPack.swift,\ BoosterPopup.swift,\ BordSeance.swift,\ BoutonPrimaire.swift,\ BravoLab.swift,\ CalendarView.swift,\ CalLab.swift,\ CardioFiche.swift,\ CardRoute.swift,\ CarnetLab.swift,\ CarnetScene.swift,\ CarteLuneLab.swift,\ CGUPage.swift,\ ChambreDonnees.swift,\ ChambreHiit.swift,\ ChambreLongue.swift,\ ChambrePeak.swift,\ ChambreRegularite.swift,\ ChambreVolume.swift,\ ChargeFiche.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/BoosterLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/BoosterPack.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/BoosterPopup.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/BordSeance.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/BoutonPrimaire.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/BravoLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CalendarView.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CalLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CardioFiche.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CardRoute.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CarnetLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CarnetScene.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CarteLuneLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CGUPage.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ChambreDonnees.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ChambreHiit.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ChambreLongue.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ChambrePeak.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ChambreRegularite.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ChambreVolume.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ChargeFiche.swift (in target 'Nosfy' from project 'Nosfy')
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/BoosterLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/BoosterLab.swift:896:51: warning: 'appendInterpolation' is deprecated: Localized string interpolation produces an unlocalized, debug description for this type of value. Use a type supported by LocalizedStringKey.StringInterpolation or initialize a LocalizedStringResource instead with an interpolated value that conforms to CustomLocalizedStringResourceConvertible.
+                VStack { Spacer(); Text("revelee=\(handle.revealed);carte=\(handle.cardId ?? "");rarete=\(handle.rarete);attente=\(handle.attenteReseau)")
+                                                  ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/BoosterLab.swift:896:131: warning: 'appendInterpolation' is deprecated: Localized string interpolation produces an unlocalized, debug description for this type of value. Use a type supported by LocalizedStringKey.StringInterpolation or initialize a LocalizedStringResource instead with an interpolated value that conforms to CustomLocalizedStringResourceConvertible.
+                VStack { Spacer(); Text("revelee=\(handle.revealed);carte=\(handle.cardId ?? "");rarete=\(handle.rarete);attente=\(handle.attenteReseau)")
+                                                                                                                                  ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/BoosterPack.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/BoosterPopup.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/BordSeance.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/BoutonPrimaire.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/BravoLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/BravoLab.swift:332:21: warning: initialization of immutable value 'bornU' was never used; consider replacing with assignment to '_' or removing it
+                let bornU = BravoCine.sstep(BravoCine.contentAt,
+                ~~~~^~~~~
+                _
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CalendarView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CalLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CardioFiche.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CardRoute.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CarnetLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CarnetScene.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CarteLuneLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/CarteLuneLab.swift:580:52: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+                            .frame(width: UIScreen.main.bounds.width * 2.4,
+                                                   ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/CarteLuneLab.swift:581:53: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+                                   height: UIScreen.main.bounds.height * 2.4)
+                                                    ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CGUPage.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ChambreDonnees.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/ChambreDonnees.swift:313:31: warning: 'flatMap' is deprecated: Please use compactMap(_:) for the case where closure returns an optional value
+            let pic = seances.flatMap { picHiit($0) }.max()
+                              ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/ChambreDonnees.swift:313:31: note: use 'compactMap(_:)' instead
+            let pic = seances.flatMap { picHiit($0) }.max()
+                              ^~~~~~~
+                              compactMap
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ChambreHiit.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ChambreLongue.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ChambrePeak.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ChambreRegularite.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ChambreVolume.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ChargeFiche.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 Compiling\ BottleSplash.swift,\ CoinChime.swift,\ DiamondGlints.swift,\ Ink.swift,\ LightDial.swift,\ LuneDust.swift,\ MonolithChime.swift,\ NightBirds.swift,\ RocketHaptics.swift,\ SparkleBurst.swift,\ SplashBackground.swift,\ SplashWisp.swift,\ Annonces.swift,\ AppleAuth.swift,\ CartesQABanc.swift,\ CartesServeur.swift,\ ChambreServeur.swift,\ CoachServeur.swift,\ Compte.swift,\ EconomieNosfy.swift,\ ErreurNosfy.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/BottleSplash.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/CoinChime.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/DiamondGlints.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/Ink.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/LightDial.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/LuneDust.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/MonolithChime.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/NightBirds.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/RocketHaptics.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/SparkleBurst.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/SplashBackground.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/SplashWisp.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/Annonces.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/CartesQABanc.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/CartesServeur.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/ChambreServeur.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/CoachServeur.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/Compte.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/EconomieNosfy.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/ErreurNosfy.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/BottleSplash.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/CoinChime.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/DiamondGlints.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/Ink.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/LightDial.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/LuneDust.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/MonolithChime.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/NightBirds.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/RocketHaptics.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/SparkleBurst.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/SplashBackground.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Figures/SplashWisp.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/Annonces.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/CartesQABanc.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/CartesServeur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/ChambreServeur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/CoachServeur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/Compte.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/EconomieNosfy.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/ErreurNosfy.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/AppleAuth.swift:303:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 Compiling\ SessionSlate.swift,\ SetEntrySheet.swift,\ SetHistoryRow.swift,\ SliderLab.swift,\ SliderObsidienne.swift,\ SondeCadence.swift,\ SondeVol.swift,\ StopCard.swift,\ StopLab.swift,\ StopSessionSheet.swift,\ StoryEnded.swift,\ StoryFlow.swift,\ StorySuite.swift,\ StoryVideo.swift,\ SuccessLab.swift,\ SwapCardSurface.swift,\ SwapEmptyCard.swift,\ SynthesisCard.swift,\ TapisLab.swift,\ TapisScene.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SessionSlate.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SetEntrySheet.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SetHistoryRow.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SliderLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SliderObsidienne.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SondeCadence.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SondeVol.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/StopCard.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/StopLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/StopSessionSheet.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/StoryEnded.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/StoryFlow.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/StorySuite.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/StoryVideo.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SuccessLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SwapCardSurface.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SwapEmptyCard.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SynthesisCard.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/TapisLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/TapisScene.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SessionSlate.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SetEntrySheet.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SetHistoryRow.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SliderLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SliderObsidienne.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SondeCadence.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SondeVol.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/StopCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/StopLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/StopSessionSheet.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/StoryEnded.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/StoryFlow.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/StorySuite.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/StorySuite.swift:841:25: warning: '+' was deprecated in iOS 26.0: Use string interpolation on `Text` instead: `Text("Hello \(name)")`
+                    acc + Text(m.0)
+                        ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/StoryVideo.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SuccessLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SwapCardSurface.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SwapEmptyCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/SynthesisCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/TapisLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/TapisScene.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 Compiling\ ChevronAppelNatif.swift,\ ChipVerre.swift,\ CinematicPlayer.swift,\ ClavierBraise.swift,\ CoffreFlipLab.swift,\ CoffreFortCoin.swift,\ CoffreFortPurse.swift,\ CoffreFortView.swift,\ CoffreV2.swift,\ ConnexionButtonLab.swift,\ ConnexionCinematic.swift,\ CorpsNacre.swift,\ CounterLab.swift,\ DemonVideo.swift,\ DepartCine.swift,\ DepartSeance.swift,\ DevilAuraOverlay.swift,\ DuolinguoPage.swift,\ EcranErreur.swift,\ EmberFlameLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ChevronAppelNatif.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ChipVerre.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CinematicPlayer.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ClavierBraise.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CoffreFlipLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CoffreFortCoin.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CoffreFortPurse.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CoffreFortView.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CoffreV2.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ConnexionButtonLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ConnexionCinematic.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CorpsNacre.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CounterLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/DemonVideo.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/DepartCine.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/DepartSeance.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/DevilAuraOverlay.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/DuolinguoPage.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/EcranErreur.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/EmberFlameLab.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ChevronAppelNatif.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ChipVerre.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CinematicPlayer.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ClavierBraise.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CoffreFlipLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/CoffreFlipLab.swift:246:43: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+                    .position(x: UIScreen.main.bounds.width / 2,
+                                          ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/CoffreFlipLab.swift:248:45: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+                                 ? UIScreen.main.bounds.height * 0.63
+                                            ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/CoffreFlipLab.swift:249:45: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+                                 : UIScreen.main.bounds.height * 0.46)
+                                            ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CoffreFortCoin.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CoffreFortPurse.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CoffreFortView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CoffreV2.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ConnexionButtonLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ConnexionCinematic.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CorpsNacre.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/CounterLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/DemonVideo.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/DepartCine.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/DepartSeance.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/DevilAuraOverlay.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/DuolinguoPage.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/DuolinguoPage.swift:1395:9: warning: result of call to 'withAnimation' is unused
+        withAnimation(.easeInOut(duration: 0.45)) { etat.reclamees.insert(e.id) }
+        ^            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/DuolinguoPage.swift:1404:17: warning: result of call to 'withAnimation' is unused
+                withAnimation(.easeInOut(duration: 0.30)) { etat.reclamees.remove(e.id) }
+                ^            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/EcranErreur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/EmberFlameLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 Compiling\ NeonPrimaryButton.swift,\ NeonPrimaryLab.swift,\ NosfyOnboarding.swift,\ NotchedCard.swift,\ NotifCard.swift,\ NotifChasse.swift,\ NotifLab.swift,\ ObjectiveCard.swift,\ ObjectiveCardLab.swift,\ ObsidianCard.swift,\ ObsidianCardLab.swift,\ OrphanProbe.swift,\ PageCard.swift,\ PanBande.swift,\ ParoleLigne.swift,\ PerleSemaineNative.swift,\ PiluleVagabonde.swift,\ PlayerMonde.swift,\ PlayerSeance.swift,\ PorteApple.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/NeonPrimaryButton.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/NeonPrimaryLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/NosfyOnboarding.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/NotchedCard.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/NotifCard.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/NotifChasse.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/NotifLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ObjectiveCard.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ObjectiveCardLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ObsidianCard.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ObsidianCardLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/OrphanProbe.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/PageCard.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/PanBande.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ParoleLigne.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/PerleSemaineNative.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/PiluleVagabonde.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/PlayerMonde.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/PlayerSeance.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/PorteApple.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/NeonPrimaryButton.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/NeonPrimaryLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/NosfyOnboarding.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/NosfyOnboarding.swift:501:65: warning: backward matching of the unlabeled trailing closure is deprecated; label the argument with 'onTap' to suppress this warning
+                SemaineTapable(choisis: reponses.jours, en: en) { i in
+                                                              ~ ^
+                                                              , onTap: 
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/NosfyOnboarding.swift:1868:16: note: 'init(choisis:onTap:en:)' declared here
+private struct SemaineTapable: View {
+               ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/NosfyOnboarding.swift:755:23: warning: main actor-isolated property 'etape' cannot be accessed from outside of the actor; this is an error in the Swift 6 language mode
+                while etape != e {
+                      ^~~~~~~~~~
+                      await 
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/NosfyOnboarding.swift:761:24: warning: main actor-isolated property 'etape' cannot be accessed from outside of the actor; this is an error in the Swift 6 language mode
+                return etape == e
+                       ^~~~~~~~~~
+                       await 
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/NotchedCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/NotifCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/NotifChasse.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/NotifLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ObjectiveCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ObjectiveCardLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ObsidianCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ObsidianCardLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/OrphanProbe.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/PageCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/PanBande.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ParoleLigne.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/PerleSemaineNative.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/PiluleVagabonde.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/PiluleVagabonde.swift:377:25: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        130...(UIScreen.main.bounds.height - 138)
+                        ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/PiluleVagabonde.swift:390:26: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        let W = UIScreen.main.bounds.width
+                         ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/PiluleVagabonde.swift:443:26: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        let W = UIScreen.main.bounds.width
+                         ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/PiluleVagabonde.swift:920:35: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+            .position(x: UIScreen.main.bounds.width / 2,
+                                  ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/PiluleVagabonde.swift:1092:31: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        .position(x: UIScreen.main.bounds.width / 2, y: IleGeo.centreY)
+                              ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/PiluleVagabonde.swift:1181:31: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        .position(x: UIScreen.main.bounds.width / 2,
+                              ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/PiluleVagabonde.swift:1431:36: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+            .frame(width: UIScreen.main.bounds.width - NotifGeo.margeH * 2,
+                                   ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/PiluleVagabonde.swift:1502:35: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+            .position(x: UIScreen.main.bounds.width / 2, y: y)
+                                  ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/PlayerMonde.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/PlayerSeance.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/PorteApple.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 Compiling\ HomeView.swift,\ JewelTabBar.swift,\ LaunchPebble.swift,\ LensParticles.swift,\ LiquidLensLab.swift,\ LisereCoreAnimation.swift,\ LisereImages.swift,\ LisereRespirant.swift,\ LiveExerciseView.swift,\ LivingNebulaBackground.swift,\ LoginLab.swift,\ LogoLab.swift,\ LuneDeSang.swift,\ MenuCouronne.swift,\ MenuNappe.swift,\ MoonCoinLab.swift,\ MoonSplash.swift,\ NavDiagnostic.swift,\ NavEncre.swift,\ NavLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/HomeView.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/JewelTabBar.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LaunchPebble.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LensParticles.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LiquidLensLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LisereCoreAnimation.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LisereImages.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LisereRespirant.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LiveExerciseView.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LivingNebulaBackground.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LoginLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LogoLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LuneDeSang.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/MenuCouronne.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/MenuNappe.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/MoonCoinLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/MoonSplash.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/NavDiagnostic.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/NavEncre.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/NavLab.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/HomeView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/JewelTabBar.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LaunchPebble.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LensParticles.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/LensParticles.swift:46:17: warning: initialization of immutable value 'ce' was never used; consider replacing with assignment to '_' or removing it
+            let ce = ceStart.map { now.timeIntervalSince($0) } ?? -1
+            ~~~~^~
+            _
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LiquidLensLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/LiquidLensLab.swift:1221:13: warning: immutable value 'veil' was never used; consider replacing with '_' or removing it
+        let veil: Double = entering ? 1 : 0
+            ^~~~
+            _
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LisereCoreAnimation.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LisereImages.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LisereRespirant.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LiveExerciseView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LivingNebulaBackground.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LoginLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LogoLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/LuneDeSang.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/MenuCouronne.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/MenuNappe.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/MenuNappe.swift:1959:34: warning: call to main actor-isolated instance method 'dragLevel' in a synchronous nonisolated context
+            RocketHaptics.shared.dragLevel(x * 0.55)
+                                 ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Figures/RocketHaptics.swift:343:10: note: calls to instance method 'dragLevel' from outside of its actor context are implicitly asynchronous
+    func dragLevel(_ climb: Double) {
+         ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/MenuNappe.swift:1959:27: warning: main actor-isolated static property 'shared' can not be referenced from a Sendable closure
+            RocketHaptics.shared.dragLevel(x * 0.55)
+                          ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Figures/RocketHaptics.swift:25:16: note: static property declared here
+    static let shared = RocketHaptics()
+               ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/MoonCoinLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/MoonSplash.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/MoonSplash.swift:883:60: warning: main actor-isolated property 'start' cannot be accessed from outside of the actor; this is an error in the Swift 6 language mode
+                let left = when - Date().timeIntervalSince(start)
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+                           await 
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/NavDiagnostic.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/NavEncre.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/NavLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 Compiling\ ForgeServeur.swift,\ HomeTextes.swift,\ InscriptionCompte.swift,\ Langue.swift,\ LuneForge.swift,\ OutboxGains.swift,\ OuvertureSeanceServeur.swift,\ ProfilServeur.swift,\ ReglementSeance.swift,\ SacreServeur.swift,\ Supabase.swift,\ SupabaseSync.swift,\ SynthesisService.swift,\ WorkoutActivityController.swift,\ ActiveWorkoutView.swift,\ AppelChapitre.swift,\ AppelProfilVisite.swift,\ AuroraBgLab.swift,\ AuthView.swift,\ BancCoutHome.swift,\ BoosterCard.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/ForgeServeur.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/HomeTextes.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/InscriptionCompte.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/Langue.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/LuneForge.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/OutboxGains.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/OuvertureSeanceServeur.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/ProfilServeur.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/ReglementSeance.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/SacreServeur.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/Supabase.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/SupabaseSync.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/SynthesisService.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Services/WorkoutActivityController.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ActiveWorkoutView.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/AppelChapitre.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/AppelProfilVisite.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/AuroraBgLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/AuthView.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/BancCoutHome.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/BoosterCard.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/ForgeServeur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/HomeTextes.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/InscriptionCompte.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/Langue.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/LuneForge.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/LuneForge.swift:274:19: warning: value 'cadre' was defined but never used; consider replacing with boolean test
+        guard let cadre = UIImage(named: "carte-cadre")
+              ~~~~^~~~~~~~
+              (
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/OutboxGains.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/OuvertureSeanceServeur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/ProfilServeur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/ReglementSeance.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/SacreServeur.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/Supabase.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/SupabaseSync.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/SynthesisService.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Services/WorkoutActivityController.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ActiveWorkoutView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/AppelChapitre.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/AppelProfilVisite.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/AuroraBgLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/AuthView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/BancCoutHome.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/BoosterCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 Compiling\ ExerciseDetailView.swift,\ ExerciseEditor.swift,\ ExercisePhoto.swift,\ ExerciseSetupCard.swift,\ ExercisesView.swift,\ ExosFond.swift,\ FilmDepartSeance.swift,\ FlameLab.swift,\ FlammeJauge.swift,\ FlammeJaugeLab.swift,\ FondVideoMetal.swift,\ Foyer.swift,\ FumeeInviteMetal.swift,\ GaletEtape.swift,\ GaletLab.swift,\ GaletSlide.swift,\ HaloDawnLab.swift,\ HarmonieLab.swift,\ HomeAuroraView.swift,\ HomeNuit.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExerciseDetailView.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExerciseEditor.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExercisePhoto.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExerciseSetupCard.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExercisesView.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExosFond.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/FilmDepartSeance.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/FlameLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/FlammeJauge.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/FlammeJaugeLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/FondVideoMetal.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/Foyer.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/FumeeInviteMetal.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/GaletEtape.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/GaletLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/GaletSlide.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/HaloDawnLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/HarmonieLab.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/HomeAuroraView.swift /Users/kathryn/Desktop/Nosfy/Nosfy/Views/HomeNuit.swift (in target 'Nosfy' from project 'Nosfy')
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExerciseDetailView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExerciseDetailView.swift:2103:13: warning: initialization of immutable value 'naissance' was never used; consider replacing with assignment to '_' or removing it
+        let naissance = Self.sstep(0.45, 0.92, u)
+        ~~~~^~~~~~~~~
+        _
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExerciseEditor.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExercisePhoto.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExerciseSetupCard.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExercisesView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExercisesView.swift:2023:49: warning: call to main actor-isolated static method 'voileBas' in a synchronous nonisolated context
+                    let bas = min(1, GrilleExos.voileBas(vh - f.maxY - 60) * 1.5)
+                                                ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExercisesView.swift:1786:17: note: calls to static method 'voileBas' from outside of its actor context are implicitly asynchronous
+    static func voileBas(_ d: CGFloat) -> Double {
+                ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExercisesView.swift:1786:17: note: main actor isolation inferred from conformance to protocol 'View'
+    static func voileBas(_ d: CGFloat) -> Double {
+                ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExercisesView.swift:2024:43: warning: call to main actor-isolated static method 'voileHaut' in a synchronous nonisolated context
+                    let haut = GrilleExos.voileHaut(reserve - f.minY)
+                                          ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExercisesView.swift:1795:17: note: calls to static method 'voileHaut' from outside of its actor context are implicitly asynchronous
+    static func voileHaut(_ d: CGFloat) -> Double {
+                ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExercisesView.swift:1795:17: note: main actor isolation inferred from conformance to protocol 'View'
+    static func voileHaut(_ d: CGFloat) -> Double {
+                ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExercisesView.swift:2113:42: warning: call to main actor-isolated static method 'voileBas' in a synchronous nonisolated context
+                    let bas = GrilleExos.voileBas(vh - f.maxY)
+                                         ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExercisesView.swift:1786:17: note: calls to static method 'voileBas' from outside of its actor context are implicitly asynchronous
+    static func voileBas(_ d: CGFloat) -> Double {
+                ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExercisesView.swift:1786:17: note: main actor isolation inferred from conformance to protocol 'View'
+    static func voileBas(_ d: CGFloat) -> Double {
+                ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExercisesView.swift:2114:43: warning: call to main actor-isolated static method 'voileHaut' in a synchronous nonisolated context
+                    let haut = GrilleExos.voileHaut(reserve - f.minY)
+                                          ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExercisesView.swift:1795:17: note: calls to static method 'voileHaut' from outside of its actor context are implicitly asynchronous
+    static func voileHaut(_ d: CGFloat) -> Double {
+                ^
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExercisesView.swift:1795:17: note: main actor isolation inferred from conformance to protocol 'View'
+    static func voileHaut(_ d: CGFloat) -> Double {
+                ^
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/ExosFond.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/FilmDepartSeance.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/FlameLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/FlammeJauge.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/FlammeJaugeLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/FondVideoMetal.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/Foyer.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/FumeeInviteMetal.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/GaletEtape.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/GaletEtape.swift:88:13: warning: initialization of immutable value 's' was never used; consider replacing with assignment to '_' or removing it
+        let s = graine
+        ~~~~^
+        _
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/GaletLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/GaletSlide.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/HaloDawnLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/HarmonieLab.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/HomeAuroraView.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+
+SwiftCompile normal arm64 /Users/kathryn/Desktop/Nosfy/Nosfy/Views/HomeNuit.swift (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/HomeNuit.swift:3418:13: warning: initialization of immutable value 'flou' was never used; consider replacing with assignment to '_' or removing it
+        let flou = DepartCine.sstep(DepartCine.flouAt,
+        ~~~~^~~~
+        _
+/Users/kathryn/Desktop/Nosfy/Nosfy/Views/HomeNuit.swift:3420:13: warning: initialization of immutable value 'mort' was never used; consider replacing with assignment to '_' or removing it
+        let mort = DepartCine.sstep(DepartCine.fadeAt,
+        ~~~~^~~~
+        _
+
+SwiftDriverJobDiscovery normal arm64 Compiling ForgeServeur.swift, HomeTextes.swift, InscriptionCompte.swift, Langue.swift, LuneForge.swift, OutboxGains.swift, OuvertureSeanceServeur.swift, ProfilServeur.swift, ReglementSeance.swift, SacreServeur.swift, Supabase.swift, SupabaseSync.swift, SynthesisService.swift, WorkoutActivityController.swift, ActiveWorkoutView.swift, AppelChapitre.swift, AppelProfilVisite.swift, AuroraBgLab.swift, AuthView.swift, BancCoutHome.swift, BoosterCard.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for Woop (in target 'Nosfy' from project 'Nosfy')
+
+SwiftDriver\ Compilation\ Requirements Nosfy normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/nosfy-fin-seance-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/nosfy-fin-seance-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator -F /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/nosfy-fin-seance-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/nosfy-fin-seance-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/nosfy-fin-seance-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/nosfy-fin-seance-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-generated-files.hmap -Xcc -I/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-own-target-headers.hmap -Xcc -I/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-project-headers.hmap -Xcc -I/tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources-normal/arm64 -Xcc -I/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/arm64 -Xcc -I/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop-Swift.h -working-directory /Users/kathryn/Desktop/Nosfy -experimental-emit-module-separately -disable-cmo
+
+Copy /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.swiftmodule /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftmodule (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftmodule /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.abi.json /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.abi.json (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.abi.json /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftsourceinfo (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftsourceinfo /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+SwiftDriverJobDiscovery normal arm64 Compiling NeonPrimaryButton.swift, NeonPrimaryLab.swift, NosfyOnboarding.swift, NotchedCard.swift, NotifCard.swift, NotifChasse.swift, NotifLab.swift, ObjectiveCard.swift, ObjectiveCardLab.swift, ObsidianCard.swift, ObsidianCardLab.swift, OrphanProbe.swift, PageCard.swift, PanBande.swift, ParoleLigne.swift, PerleSemaineNative.swift, PiluleVagabonde.swift, PlayerMonde.swift, PlayerSeance.swift, PorteApple.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftDriverJobDiscovery normal arm64 Compiling ChevronAppelNatif.swift, ChipVerre.swift, CinematicPlayer.swift, ClavierBraise.swift, CoffreFlipLab.swift, CoffreFortCoin.swift, CoffreFortPurse.swift, CoffreFortView.swift, CoffreV2.swift, ConnexionButtonLab.swift, ConnexionCinematic.swift, CorpsNacre.swift, CounterLab.swift, DemonVideo.swift, DepartCine.swift, DepartSeance.swift, DevilAuraOverlay.swift, DuolinguoPage.swift, EcranErreur.swift, EmberFlameLab.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftDriverJobDiscovery normal arm64 Compiling HomeView.swift, JewelTabBar.swift, LaunchPebble.swift, LensParticles.swift, LiquidLensLab.swift, LisereCoreAnimation.swift, LisereImages.swift, LisereRespirant.swift, LiveExerciseView.swift, LivingNebulaBackground.swift, LoginLab.swift, LogoLab.swift, LuneDeSang.swift, MenuCouronne.swift, MenuNappe.swift, MoonCoinLab.swift, MoonSplash.swift, NavDiagnostic.swift, NavEncre.swift, NavLab.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftDriverJobDiscovery normal arm64 Compiling BottleSplash.swift, CoinChime.swift, DiamondGlints.swift, Ink.swift, LightDial.swift, LuneDust.swift, MonolithChime.swift, NightBirds.swift, RocketHaptics.swift, SparkleBurst.swift, SplashBackground.swift, SplashWisp.swift, Annonces.swift, AppleAuth.swift, CartesQABanc.swift, CartesServeur.swift, ChambreServeur.swift, CoachServeur.swift, Compte.swift, EconomieNosfy.swift, ErreurNosfy.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftDriverJobDiscovery normal arm64 Compiling SessionSlate.swift, SetEntrySheet.swift, SetHistoryRow.swift, SliderLab.swift, SliderObsidienne.swift, SondeCadence.swift, SondeVol.swift, StopCard.swift, StopLab.swift, StopSessionSheet.swift, StoryEnded.swift, StoryFlow.swift, StorySuite.swift, StoryVideo.swift, SuccessLab.swift, SwapCardSurface.swift, SwapEmptyCard.swift, SynthesisCard.swift, TapisLab.swift, TapisScene.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftDriverJobDiscovery normal arm64 Compiling VerificationCompte.swift, VerreCoulant.swift, VisiteExercice.swift, VisiteHome.swift, WahouReveal.swift, WidgetEdition.swift, WidgetsCards.swift, WorkoutPill.swift, WorkoutsListView.swift, Atmosphere.swift, DemonSky.swift, Models.swift, MoonPath.swift, MoonSDF.swift, NebulaConfiguration.swift, NebulaNoise.swift, NebulaStrip.swift, NosfyApp.swift, Theme.swift, GeneratedAssetSymbols.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftDriverJobDiscovery normal arm64 Compiling PorteEntree.swift, PremiereArrivee.swift, ProfilLune.swift, ProgressionView.swift, ProgressPage.swift, RecentWorkoutCard.swift, RestartSheet.swift, ImpGlyph.swift, MoonGlyph.swift, ProgressComet.swift, WorkoutActivity.swift, WorkoutLiveCard.swift, WorkoutLiveFocus.swift, RewardCard.swift, RewardChemin.swift, RewardCheminCard.swift, RewardCheminVariants.swift, RewardLab.swift, RythmeEcran.swift, SacreAccueil.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftDriverJobDiscovery normal arm64 Compiling BoosterLab.swift, BoosterPack.swift, BoosterPopup.swift, BordSeance.swift, BoutonPrimaire.swift, BravoLab.swift, CalendarView.swift, CalLab.swift, CardioFiche.swift, CardRoute.swift, CarnetLab.swift, CarnetScene.swift, CarteLuneLab.swift, CGUPage.swift, ChambreDonnees.swift, ChambreHiit.swift, ChambreLongue.swift, ChambrePeak.swift, ChambreRegularite.swift, ChambreVolume.swift, ChargeFiche.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftDriverJobDiscovery normal arm64 Compiling ExerciseDetailView.swift, ExerciseEditor.swift, ExercisePhoto.swift, ExerciseSetupCard.swift, ExercisesView.swift, ExosFond.swift, FilmDepartSeance.swift, FlameLab.swift, FlammeJauge.swift, FlammeJaugeLab.swift, FondVideoMetal.swift, Foyer.swift, FumeeInviteMetal.swift, GaletEtape.swift, GaletLab.swift, GaletSlide.swift, HaloDawnLab.swift, HarmonieLab.swift, HomeAuroraView.swift, HomeNuit.swift (in target 'Nosfy' from project 'Nosfy')
+
+SwiftDriver\ Compilation Nosfy normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/nosfy-fin-seance-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/nosfy-fin-seance-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator -F /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/nosfy-fin-seance-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/nosfy-fin-seance-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/nosfy-fin-seance-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/nosfy-fin-seance-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-generated-files.hmap -Xcc -I/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-own-target-headers.hmap -Xcc -I/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-project-headers.hmap -Xcc -I/tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources-normal/arm64 -Xcc -I/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources/arm64 -Xcc -I/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop-Swift.h -working-directory /Users/kathryn/Desktop/Nosfy -experimental-emit-module-separately -disable-cmo
+
+Ld /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Nosfy.debug.dylib normal (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator -F/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator -filelist /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy.LinkFileList -install_name @rpath/Nosfy.debug.dylib -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop.swiftmodule @/tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Woop-linker-args.resp -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -o /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Nosfy.debug.dylib
+
+ConstructStubExecutorLinkFileList /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-ExecutorLinkFileList-normal-arm64.txt (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    construct-stub-executor-link-file-list /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Nosfy.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'Nosfy' from project 'Nosfy')
+
+Ld /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Nosfy normal (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator -F/tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @executable_path/Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy-ExecutorLinkFileList-normal-arm64.txt /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Nosfy.debug.dylib -o /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Nosfy
+
+Copy /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/PlugIns/NosfyWidgets.appex /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/NosfyWidgets.appex (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks -remove-static-executable /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/NosfyWidgets.appex /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/PlugIns
+
+ProcessInfoPlistFile /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Info.plist /Users/kathryn/Desktop/Nosfy/Nosfy/Info.plist (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    builtin-infoPlistUtility /Users/kathryn/Desktop/Nosfy/Nosfy/Info.plist -producttype com.apple.product-type.application -genpkginfo /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/assetcatalog_generated_info.plist -scanforprivacyfile /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/PlugIns/NosfyWidgets.appex -o /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Info.plist
+
+ExtractAppIntentsMetadata (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --module-name Woop --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F42 --platform-family iOS --deployment-target 26.0 --bundle-identifier fr.kathryn.woop --output /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app --target-triple arm64-apple-ios26.0-simulator --binary-file /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Nosfy --dependency-file /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy_dependency_info.dat --stringsdata-file /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy.SwiftFileList --metadata-file-list /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy.DependencyMetadataFileList --static-metadata-file-list /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy.DependencyStaticMetadataFileList --swift-const-vals-list /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Objects-normal/arm64/Nosfy.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-09-19 08:49:14.567 appintentsmetadataprocessor[71576:19833566] Starting appintentsmetadataprocessor export
+2026-09-19 08:49:14.634 appintentsmetadataprocessor[71576:19833566] Extracted no relevant App Intents symbols, skipping writing output
+
+CopySwiftLibs /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Nosfy.debug.dylib --scan-folder /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Frameworks --scan-folder /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/PlugIns --scan-folder /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/SystemExtensions --scan-folder /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+ValidateEmbeddedBinary /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/PlugIns/NosfyWidgets.appex (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    /Applications/Xcode.app/Contents/Developer/usr/bin/embeddedBinaryValidationUtility /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/PlugIns/NosfyWidgets.appex -info-plist-path /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Info.plist
+
+AppIntentsSSUTraining (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Info.plist --temp-dir-path /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/ssu --bundle-id fr.kathryn.woop --product-path /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app --extracted-metadata-path /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Metadata.appintents --metadata-file-list /tmp/nosfy-fin-seance-dd/Build/Intermediates.noindex/Nosfy.build/Debug-iphonesimulator/Nosfy.build/Nosfy.DependencyMetadataFileList --source-file /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app/Info.plist --archive-ssu-assets
+2026-09-19 08:49:14.694 appintentsnltrainingprocessor[71578:19833581] Parsing options for appintentsnltrainingprocessor
+2026-09-19 08:49:14.695 appintentsnltrainingprocessor[71578:19833581] Starting AppIntents SSU YAML Generation
+2026-09-19 08:49:14.696 appintentsnltrainingprocessor[71578:19833581] No AppShortcuts found - Skipping.
+
+RegisterExecutionPolicyException /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    builtin-RegisterExecutionPolicyException /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app
+
+Validate /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    builtin-validationUtility /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app -shallow-bundle -infoplist-subpath Info.plist
+
+Touch /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app (in target 'Nosfy' from project 'Nosfy')
+    cd /Users/kathryn/Desktop/Nosfy
+    /usr/bin/touch -c /tmp/nosfy-fin-seance-dd/Build/Products/Debug-iphonesimulator/Nosfy.app
+
+** BUILD SUCCEEDED **
+

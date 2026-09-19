@@ -8,6 +8,7 @@ enum WoopConfig {
 actor SupabaseSession {
  static let shared = SupabaseSession()
  func token() async throws -> String { "test" }
+ func currentUserID() async throws -> String { "11111111-1111-1111-1111-111111111111" }
  static func check(_ r:URLResponse,_ d:Data)throws {
   guard (r as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
  }
@@ -27,10 +28,13 @@ final class ModelContext {
   if let x=item as? StrengthSet {sets.append(x)}
   if let x=item as? CardioPhase {phases.append(x)}
  }
- func save()throws{}
+ var echecSauvegarde = false
+ func save()throws{if echecSauvegarde {throw URLError(.cannotWriteToFile)}}
 }
+struct BilanRecompenseSeance: Codable { let pieces: Int }
 final class Workout {
  var remoteID=UUID();var startedAt:Date;var endedAt:Date?;var notes=""
+ var bilanRecompense:Data?;var recompenseARegler=false
  init(startedAt:Date,endedAt:Date?){self.startedAt=startedAt;self.endedAt=endedAt}
 }
 final class LoggedExercise {
@@ -48,9 +52,15 @@ final class CardioPhase {
 }
 final class Transport:URLProtocol {
  static let lock=NSLock();static var pending:Transport?
+ static var recus=Data("[]".utf8);static var codeRecus=200;static var attendreRecus=false
  override class func canInit(with r:URLRequest)->Bool{r.url?.host=="nosfy.invalid"}
  override class func canonicalRequest(for r:URLRequest)->URLRequest{r}
- override func startLoading(){Self.lock.lock();Self.pending=self;Self.lock.unlock()}
+ override func startLoading(){
+  if request.url?.lastPathComponent == "recus_seances", !Self.attendreRecus {
+   reply(Self.recus,code:Self.codeRecus);return
+  }
+  Self.lock.lock();Self.pending=self;Self.lock.unlock()
+ }
  override func stopLoading(){}
  static func take()->Transport? {lock.lock();defer{lock.unlock()};let p=pending;pending=nil;return p}
  func reply(_ body:Data,code:Int=200){
@@ -93,6 +103,32 @@ final class Transport:URLProtocol {
   let reconnect=Task{@MainActor in await SupabaseSync.relire(dans:suivant)}
   let p5=try await waiting();p5.reply(body);_ = await reconnect.value
   check(suivant.workouts.count==1,"nouvelle lecture après reconnexion récupère les séances")
+  let recu=try JSONSerialization.data(withJSONObject:[["workout_id":id.uuidString,"user_id":"11111111-1111-1111-1111-111111111111","bilan":["pieces":73]]])
+  Transport.recus=recu
+  await SupabaseSync.restaurerBilans(dans:suivant)
+  check(suivant.workouts.first?.bilanRecompense != nil,"reçu manquant retrouvé pour une séance déjà locale")
+  let bilan=try JSONDecoder().decode(BilanRecompenseSeance.self,from:suivant.workouts[0].bilanRecompense!)
+  check(bilan.pieces==73,"montant historique lu sans recalcul")
+  suivant.workouts[0].bilanRecompense=nil;Transport.codeRecus=503
+  await SupabaseSync.restaurerBilans(dans:suivant)
+  check(suivant.workouts[0].bilanRecompense==nil,"panne de reçu : reste manquant, aucune valeur inventée")
+  Transport.codeRecus=200;suivant.echecSauvegarde=true
+  await SupabaseSync.restaurerBilans(dans:suivant)
+  check(suivant.workouts[0].bilanRecompense==nil,"échec disque : reçu reste à récupérer")
+  suivant.echecSauvegarde=false
+  Transport.recus=try JSONSerialization.data(withJSONObject:[["workout_id":id.uuidString,"user_id":UUID().uuidString,"bilan":["pieces":999]]])
+  await SupabaseSync.restaurerBilans(dans:suivant)
+  check(suivant.workouts[0].bilanRecompense==nil,"reçu d'un autre propriétaire ignoré")
+  Transport.recus=recu;suivant.workouts[0].recompenseARegler=true
+  await SupabaseSync.restaurerBilans(dans:suivant)
+  check(suivant.workouts[0].bilanRecompense==nil,"séance en règlement laissée à son outbox")
+  suivant.workouts[0].recompenseARegler=false;Transport.attendreRecus=true
+  let tardif=Task{@MainActor in await SupabaseSync.restaurerBilans(dans:suivant)}
+  let p6=try await waiting();CompteEtat.shared.generationDonnees=UUID();p6.reply(recu);await tardif.value
+  check(suivant.workouts[0].bilanRecompense==nil,"reçu tardif après changement de compte ignoré")
+  Transport.attendreRecus=false
+  await SupabaseSync.restaurerBilans(dans:suivant)
+  check(suivant.workouts[0].bilanRecompense != nil,"reprise après les pannes retrouve le reçu")
   print("\(n) contrôles pull PASS — transport et stockage isolés")
  }
 }

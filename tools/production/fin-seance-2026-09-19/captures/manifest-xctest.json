@@ -1,0 +1,50 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "68ABC079-08E4-4071-B382-3F1257AC4E18",
+        "deviceName" : "nosfy-fin-seance-20260919",
+        "exportedFileName" : "7C2C3821-ED22-411D-A0EF-381F8770E4AF.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "route-premier-accompli_0_880EB62A-C100-4740-A0EB-0DE996EB4119.png",
+        "timestamp" : 1789801188.646
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "68ABC079-08E4-4071-B382-3F1257AC4E18",
+        "deviceName" : "nosfy-fin-seance-20260919",
+        "exportedFileName" : "BC0B50A8-ABDF-4558-B50A-923062A432FC.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "story-20-un-sachet_0_396D9B81-0D83-46E7-9F6A-292D3F30B546.png",
+        "timestamp" : 1789801178.866
+      }
+    ],
+    "testIdentifier" : "FinSeanceUITests/testPremiereSeance()",
+    "testIdentifierURL" : "test://com.apple.xcode/Nosfy/NosfyUITests/FinSeanceUITests/testPremiereSeance"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "68ABC079-08E4-4071-B382-3F1257AC4E18",
+        "deviceName" : "nosfy-fin-seance-20260919",
+        "exportedFileName" : "2AE3C306-7BA3-4941-8888-A85DBFC23213.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "route-sept-reduce_0_81202828-07CF-4437-BE2E-1314082C2D12.png",
+        "timestamp" : 1789801237.26
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "68ABC079-08E4-4071-B382-3F1257AC4E18",
+        "deviceName" : "nosfy-fin-seance-20260919",
+        "exportedFileName" : "F5B03AB2-E990-4AE1-A69D-A7F99983092E.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "story-20-un-sachet_0_399CD686-6E18-4A69-8816-FA158747BE56.png",
+        "timestamp" : 1789801230.719
+      }
+    ],
+    "testIdentifier" : "FinSeanceUITests/testSeptiemeReduceMotion()",
+    "testIdentifierURL" : "test://com.apple.xcode/Nosfy/NosfyUITests/FinSeanceUITests/testSeptiemeReduceMotion"
+  }
+]

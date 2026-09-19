@@ -1,0 +1,30 @@
+[pull] bilans historiques : 0 retrouvés
+[pull] seances_depuis(tout) → total 1, rendues 1 · insérées 1, ignorées 0 · local 1
+PASS historique serveur réinséré avec son identité
+PASS séries faites restaurées pour la Route
+PASS cardio et piscine restaurés
+PASS curseur posé après lecture
+[pull] bilans historiques : 0 retrouvés
+[pull] seances_depuis(2026-09-18T10:00:00Z) → total 1, rendues 1 · insérées 0, ignorées 1 · local 1
+PASS relecture sans doublons
+PASS réponse du compte précédent écartée
+PASS ancien compte ne pose aucun curseur
+[pull] seances_depuis ✗ The operation couldn’t be completed. (NSURLErrorDomain error -1011.)
+PASS échec réseau : données et curseur inchangés
+[pull] bilans historiques : 0 retrouvés
+[pull] seances_depuis(tout) → total 1, rendues 1 · insérées 1, ignorées 0 · local 1
+PASS nouvelle lecture après reconnexion récupère les séances
+[pull] bilans historiques : 1 retrouvés
+PASS reçu manquant retrouvé pour une séance déjà locale
+PASS montant historique lu sans recalcul
+[pull] bilans historiques différés : The operation couldn’t be completed. (NSURLErrorDomain error -1011.)
+PASS panne de reçu : reste manquant, aucune valeur inventée
+[pull] bilans historiques différés : The operation couldn’t be completed. (NSURLErrorDomain error -3003.)
+PASS échec disque : reçu reste à récupérer
+[pull] bilans historiques : 0 retrouvés
+PASS reçu d'un autre propriétaire ignoré
+PASS séance en règlement laissée à son outbox
+PASS reçu tardif après changement de compte ignoré
+[pull] bilans historiques : 1 retrouvés
+PASS reprise après les pannes retrouve le reçu
+17 contrôles pull PASS — transport et stockage isolés

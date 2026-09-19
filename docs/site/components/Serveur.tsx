@@ -17,6 +17,7 @@ export function Serveur() {
       <p className="phrase">{p.phrase}</p>
       <p className="verdict-nu"><i className="pt" data-fam={familleDe(f)} /><b>{verdict(f)}</b><span>{ligneFamilles(f).join(' · ')}</span></p>
       <MenuSupabase />
+      <Decision titre="Serveur — nouvelle passe réelle sans téléphone — 19 septembre"><p>44 contrôles API et 20 contrôles avec les sources Swift réelles passent : compte neuf, séance, reçu, annonces, quotidien, boosters, collection, reconnexion et pull. Trois identités temporaires supprimées ; aucun gain personnel modifié.</p><p>Les alertes d’exploitation, la restauration de sauvegarde et le parcours Apple natif restent des vérifications distinctes. Le reçu des stories après pull est désormais restauré par recus_seances, sans nouvelle écriture économique.</p><p>Preuves : <code>tools/production/reverification-front-back-2026-09-19/README.md</code> et <code>tools/production/stories-historique-2026-09-19/README.md</code>.</p></Decision>
 
       <div className="reveal">
         <h2>Les tables</h2>

@@ -1,0 +1,6 @@
+PASS jour local : deux séances classées, minuit UTC respecté, vide et séance ouverte exclus
+PASS jour sans séance : aucune story inventée
+PASS jour voisin : sa propre séance seulement
+PASS jours du widget : lundi à dimanche, changements d'heure compris
+PASS index hors semaine ignoré
+5 contrôles historique des jours PASS

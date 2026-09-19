@@ -1,0 +1,7 @@
+
+> nosfy-chambre-des-machines@2.0.0 typecheck
+> tsc --noEmit
+
+content/briques.ts(88,555): error TS1005: ',' expected.
+content/briques.ts(88,566): error TS1005: ',' expected.
+content/briques.ts(88,837): error TS1005: ',' expected.

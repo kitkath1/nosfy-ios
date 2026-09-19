@@ -1,0 +1,13 @@
+{
+  "migration": "20260919073635_recus_seances_lecture",
+  "droits": [
+    {
+      "provolatile": "s",
+      "prosecdef": true,
+      "anon": false,
+      "authenticated": true
+    }
+  ],
+  "paiement_appele": false,
+  "autres_migrations_appliquees": false
+}

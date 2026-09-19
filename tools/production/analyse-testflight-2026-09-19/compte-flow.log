@@ -1,0 +1,52 @@
+PASS nouveau compte : profil incomplet, zéro séance
+PASS avant Nosfy : première arrivée non déclenchée
+PASS profil interdit sans session
+PASS definir_profil interdit sans session
+PASS marquer_visite_home interdit sans session
+PASS prénom vide refusé
+PASS prénom refusé : aucune inscription partielle
+PASS objectif invalide refusé par definir_profil
+PASS objectif refusé : aucune inscription partielle
+PASS Nosfy : profil et objectif confirmés
+PASS rejeu idempotent : date, prénom, langue et objectif conservés
+PASS home neuve dans la langue et au prénom du profil
+PASS compte neuf : zéro pièce, aucun Welcome Back
+PASS compte neuf : collection vide
+PASS compte neuf : aucun argent ni sachet
+PASS nouveau compte : règles des annonces accessibles
+PASS Welcome Back refusé avant la première séance
+PASS visite mémorisée une seule fois
+PASS séance QA écrite avec la session du nouveau compte
+PASS première séance : le compte quitte l’état nouveau
+PASS première séance : exercice écrit
+PASS première séance : série écrite
+PASS première clôture : pièces créditées
+PASS première clôture : sachet personnel attribué
+PASS première séance seule : aucun record ni double inventé pour les stories
+PASS coffre du nouveau compte : gains retrouvés
+PASS rejeu de clôture : aucun gain doublé
+PASS isolation : le second compte ne reçoit aucun gain du premier
+PASS isolation : le second compte ne lit pas le premier
+PASS isolation : le second compte ne modifie pas le premier
+PASS déconnexion serveur
+PASS refresh révoqué après déconnexion
+PASS reconnexion du compte existant
+PASS reconnexion : profil et visite retrouvés, Nosfy déjà terminé
+PASS reconnexion : séance retrouvée
+PASS reconnexion : pièces et sachets retrouvés
+PASS suppression par la fonction utilisée dans l’app
+PASS compte absent après suppression
+PASS cascade : profils vide après suppression
+PASS cascade : user_prefs vide après suppression
+PASS cascade : exercices_choisis vide après suppression
+PASS cascade : workouts vide après suppression
+PASS cascade : apple_jetons vide après suppression
+PASS cascade : logged_exercises vide après suppression
+PASS cascade : strength_sets vide après suppression
+PASS cascade : coin_ledger vide après suppression
+PASS cascade : user_boosters vide après suppression
+PASS cascade : user_cards vide après suppression
+PASS cascade : workout_facts vide après suppression
+PASS compte supprimé : impossible de renouveler la session
+Comptes QA nettoyés : 2. Aucun compte existant ni carte modifié.
+Compte : 50 PASS, 0 FAIL

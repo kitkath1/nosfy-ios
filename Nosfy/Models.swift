@@ -1,6 +1,24 @@
 import Foundation
 import SwiftData
 
+enum SeancesHistorique {
+    static func jourDeSemaine(_ index: Int, maintenant: Date = .now, calendrier: Calendar = .current) -> Date? {
+        guard (0..<7).contains(index) else { return nil }
+        var c = calendrier
+        c.firstWeekday = 2
+        guard let lundi = c.dateInterval(of: .weekOfYear, for: maintenant)?.start else { return nil }
+        return c.date(byAdding: .day, value: index, to: lundi)
+    }
+    @MainActor
+    static func duJour(_ jour: Date, parmi seances: [Workout], calendrier: Calendar = .current) -> [Workout] {
+        seances.filter { $0.endedAt != nil && $0.faitPourRoute && calendrier.isDate($0.startedAt, inSameDayAs: jour) }
+            .sorted {
+                if $0.startedAt == $1.startedAt { return $0.remoteID.uuidString < $1.remoteID.uuidString }
+                return $0.startedAt < $1.startedAt
+            }
+    }
+}
+
 // MARK: - Catalogue
 
 /// L'ordre des cas est celui de la molette et des sections de la page exos :
@@ -325,6 +343,9 @@ final class Workout {
     var startedAt: Date = Date.now
     var endedAt: Date?
     var notes: String = ""
+    /// Sauvé avec endedAt : une fermeture avant le premier appel reste rejouable.
+    var recompenseARegler: Bool = false
+    var bilanRecompense: Data?
 
     @Relationship(deleteRule: .cascade, inverse: \LoggedExercise.workout)
     var exercises: [LoggedExercise]? = []
@@ -375,6 +396,12 @@ final class Workout {
     /// la clôture (les gardes « séries > 0 ») quand la muscu est à zéro.
     var cardioFait: Bool {
         orderedExercises.contains { $0.intervallesFaits > 0 || $0.longueurs > 0 }
+    }
+
+    var faitPourRoute: Bool {
+        seriesPayantes > 0 || orderedExercises.contains { exo in
+            exo.longueurs > 0 || exo.phasesFaites.contains { $0.isEffort && $0.seconds > 0 }
+        }
     }
 
     /// Volume total (charge × répétitions) de la séance.
@@ -496,10 +523,10 @@ final class LoggedExercise {
     var metresNages: Int { longueurs * metresParLongueur }
 
     var volume: Double {
-        orderedSets.reduce(0) { $0 + $1.weight * Double($1.reps) }
+        orderedSets.filter(\.isDone).reduce(0) { $0 + $1.weight * Double($1.reps) }
     }
 
-    var maxWeight: Double { orderedSets.map(\.weight).max() ?? 0 }
+    var maxWeight: Double { orderedSets.filter(\.isDone).map(\.weight).max() ?? 0 }
 
     var totalSeconds: Int { orderedPhases.reduce(0) { $0 + $1.seconds } }
 

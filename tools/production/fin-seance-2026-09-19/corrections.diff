@@ -1,0 +1,1307 @@
+--- avant/Nosfy/Models.swift
++++ apres/Nosfy/Models.swift
+@@ -325,6 +325,9 @@
+     var startedAt: Date = Date.now
+     var endedAt: Date?
+     var notes: String = ""
++    /// Sauvé avec endedAt : une fermeture avant le premier appel reste rejouable.
++    var recompenseARegler: Bool = false
++    var bilanRecompense: Data?
+ 
+     @Relationship(deleteRule: .cascade, inverse: \LoggedExercise.workout)
+     var exercises: [LoggedExercise]? = []
+@@ -377,6 +380,12 @@
+         orderedExercises.contains { $0.intervallesFaits > 0 || $0.longueurs > 0 }
+     }
+ 
++    var faitPourRoute: Bool {
++        seriesPayantes > 0 || orderedExercises.contains { exo in
++            exo.longueurs > 0 || exo.phasesFaites.contains { $0.isEffort && $0.seconds > 0 }
++        }
++    }
++
+     /// Volume total (charge × répétitions) de la séance.
+     var totalVolume: Double {
+         orderedExercises.reduce(0) { $0 + $1.volume }
+@@ -496,10 +505,10 @@
+     var metresNages: Int { longueurs * metresParLongueur }
+ 
+     var volume: Double {
+-        orderedSets.reduce(0) { $0 + $1.weight * Double($1.reps) }
+-    }
+-
+-    var maxWeight: Double { orderedSets.map(\.weight).max() ?? 0 }
++        orderedSets.filter(\.isDone).reduce(0) { $0 + $1.weight * Double($1.reps) }
++    }
++
++    var maxWeight: Double { orderedSets.filter(\.isDone).map(\.weight).max() ?? 0 }
+ 
+     var totalSeconds: Int { orderedPhases.reduce(0) { $0 + $1.seconds } }
+ 
+--- avant/Nosfy/NosfyApp.swift
++++ apres/Nosfy/NosfyApp.swift
+@@ -21,6 +21,7 @@
+         } catch {
+             fatalError("Impossible d'initialiser la base : \(error)")
+         }
++        ReglementSeance.shared.contexte = container.mainContext
+         if CommandLine.arguments.contains("-demoData") {
+             DemoData.seedIfEmpty(in: container)
+         }
+@@ -110,16 +111,7 @@
+             NavDiagnostic.noter("scene-\(nouvelle)")
+             guard nouvelle == .active else { return }
+             Task {
+-                // Un gain hors ligne attend d'abord la sauvegarde complète de sa séance.
+-                let ids = await OutboxGains.shared.seancesARejouer
+-                if !ids.isEmpty {
+-                    let snapshots = await MainActor.run {
+-                        ((try? container.mainContext.fetch(FetchDescriptor<Workout>())) ?? [])
+-                            .filter { $0.endedAt != nil && ids.contains($0.remoteID) }
+-                            .map { $0.snapshot() }
+-                    }
+-                    await SupabaseSync.shared.push(snapshots)
+-                }
++                await ReglementSeance.shared.reprendre()
+                 await OutboxGains.semer()          // banc `-outboxSemer`
+                 // ⚠️ LE +10 NE PART PLUS D'ICI (30-08 soir) : il part AU TAP
+                 // du bouton Claim de la card Welcome Back, qui s'ouvre plus
+@@ -507,6 +499,8 @@
+         verificationCompte = false
+         sheetWorkout = nil
+         storyFin = nil
++        recompensesApresRoute = false
++        compte.finSeancePresentee = false
+         homeEclipsee = false
+         selection = .home
+         cineStart = nil
+@@ -584,6 +578,9 @@
+     /// (le onChange existant s'en charge via WoopCelebration), la notif
+     /// des pièces (+20/série), et la pop-up booster qui propose le
+     /// sachet gagné.
++    @State private var erreurFinSeance = false
++    @State private var recompensesApresRoute = false
++
+     private func terminerSeance() {
+         guard let a = active else {
+             WorkoutActivityController.end()
+@@ -612,11 +609,17 @@
+         let ouvre = gain > 0 || cardio
+         print("[flow] terminerSeance : exos=\(a.exerciseCount) "
+               + "séries=\(series) gain=\(gain) cardio=\(cardio)")
+-        withAnimation(.easeOut(duration: 0.22)) {
+-            depart.pauseOuverte = false
+-        }
+         a.endedAt = .now
+-        try? modelContext.save()
++        a.recompenseARegler = ouvre && EconomieWoop.possible
++        do { try modelContext.save() }
++        catch {
++            a.endedAt = nil
++            a.recompenseARegler = false
++            erreurFinSeance = true
++            return
++        }
++        withAnimation(.easeOut(duration: 0.22)) { depart.pauseOuverte = false }
++        compte.finSeancePresentee = ouvre
+         WorkoutActivityController.end()
+         // LE TROPHÉE ET LE BOOSTER SE MÉRITENT : une séance sans une
+         // seule série ni un intervalle ne remplit rien et ne propose rien
+@@ -627,44 +630,11 @@
+         // de la célébration (« il ne se passe rien » payé : Terminer
+         // doit RAMENER À LA HOME, d'où qu'on vienne).
+         withAnimation(.easeOut(duration: 0.3)) { selection = .home }
+-        // L'envoi part en fond — jamais le droit de bloquer la chaîne.
+         let snapshot = a.snapshot()
+-        // ⚠️ **ÉTAPE 1 DU BRANCHEMENT DU COFFRE : ON ÉCRIT, PERSONNE NE LIT.**
+-        // `cloturer_seance` inscrit les pièces (séries × 20, le taux venant
+-        // du serveur) ET le sachet de fin de séance — forfaitaire, un par
+-        // session complète quel que soit le nombre de séries (28-08).
+-        //
+-        // ⚠️ **RIEN NE CHANGE À L'ÉCRAN**, et c'est le but : la notif « +240 »
+-        // et la proposition du sachet, juste en dessous, restent locales. On
+-        // remplit le journal avant de s'en servir — si c'est faux, rien ne
+-        // casse visiblement, et les écritures sont idempotentes.
+-        //
+-        // ⚠️ **APRÈS la synchro de la séance, dans la MÊME tâche** : l'ordre
+-        // n'est pas indifférent le jour où `workout_id` prendra une clé
+-        // étrangère. Deux `Task.detached` ne garantiraient aucun ordre.
+-        // ⚠️ **LE MÊME `series` QUE L'ANNONCE**, et c'est le fond du sujet :
+-        // le serveur ne doit pas recevoir une définition du gain que l'écran
+-        // n'a pas dite. Il lisait `setCount` (les prévues) pendant que le
+-        // solde comptait les faites.
+-        let seance = a.remoteID
+-        // La réponse de `cloturer_seance` (les pièces CARDIO, le sachet, l'argent)
+-        // doit se dire APRÈS la story — sinon elle passe sous elle, invisible
+-        // (bug Kathryn 16-09). On lève le drapeau AVANT de déclencher la clôture ;
+-        // `enchainerApresStory` videra la pile.
+-        if ouvre { EconomieWoop.shared.debutFinSeance(workoutId: seance) }
+-        Task.detached {
+-            await SupabaseSync.shared.push([snapshot])
+-            // Banc `-cardioLent <s>` : simule la latence réseau d'un VRAI
+-            // téléphone (le simulateur répond en millisecondes) — c'est ce qui
+-            // rend le bug de la story invisible au sim. Sert à PROUVER que la
+-            // story attend bien la réponse cardio.
+-            if let i = CommandLine.arguments.firstIndex(of: "-cardioLent"),
+-               i + 1 < CommandLine.arguments.count,
+-               let s = Double(CommandLine.arguments[i + 1]) {
+-                try? await Task.sleep(nanoseconds: UInt64(s * 1_000_000_000))
+-            }
+-            await SacreServeur.reglerFinDeSeance(seance, series: series,
+-                                                 cardio: cardio)
++        if ouvre { EconomieWoop.shared.debutFinSeance(workoutId: a.remoteID) }
++        Task { @MainActor in
++            if ouvre { await ReglementSeance.shared.reprendre() }
++            else { await SupabaseSync.shared.push([snapshot]) }
+         }
+         guard ouvre else { return }
+         storyCardio = cardio
+@@ -677,7 +647,7 @@
+         // est invisible. Ce n'est PAS une écriture d'argent : un affichage.
+         // ⚠️ Avant : `maquetteBoosters` naissait à 1 et n'était incrémenté
+         // par PERSONNE — « Later » n'ajoutait rien (analyse 30-08, §3.6).
+-        EconomieWoop.shared.maquetteBoosters += 1
++        if !EconomieWoop.possible { EconomieWoop.shared.maquetteBoosters += 1 }
+         // LA STORY DE FIN DE SÉANCE — « deux secondes après Terminer »
+         // (tools/story/ANALYSE-VARIANTS-ET-FAITS.md §6 bis), le temps que la
+         // home et le trophée (~+0,5 s) soient posés. La notif des pièces et
+@@ -699,6 +669,7 @@
+         // serveur). Hors ligne, le plafond de 6s tombe et la story s'ouvre sur
+         // sa page ordinaire — elle ne peut pas savoir seule qu'une séance fut
+         // un record.
++        let generationFin = compte.generationDonnees
+         Task { @MainActor in
+             let debut = Date()
+             try? await Task.sleep(nanoseconds: 2_000_000_000)
+@@ -706,6 +677,8 @@
+                   Date().timeIntervalSince(debut) < 6.0 {
+                 try? await Task.sleep(nanoseconds: 100_000_000)
+             }
++            guard generationFin == compte.generationDonnees, !compte.enPorte,
++                  !Task.isCancelled else { return }
+             storyGain = gain
+             storyFin = StoryLaunch(workout: a, rect: .zero)
+         }
+@@ -717,34 +690,39 @@
+     /// du serveur (`EconomieWoop.appliquer` pousse la dalle), pas d'ici.
+     @State private var storyCardio = false
+ 
+-    /// APRÈS LA STORY : LA PILE (30-08 soir) — les pièces, puis le sachet
+-    /// forfaitaire, l'une sous l'autre (+0,3 s, puis +0,45 s d'écart), et la
+-    /// pièce d'argent / les sachets convertis quand `cloturer_seance` répond
+-    /// (`EconomieWoop.appliquer`) ; puis la card booster « Ouvrir » (+3,4 s).
+-    /// ⚠️ Le J3 du plan remplace ce chaînage par la page noire qui ATTEND la
+-    /// réponse, puis le chemin animé, puis « Ouvrir » — ici, l'empilement seul.
+-    private func enchainerApresStory() {
++    /// La story rend le chemin accompli. Les annonces restent retenues
++    /// jusqu'au chevron de retour, pour être réellement vues sur l'accueil.
++    private func enchainerApresStory(_ workout: Workout) {
++        guard !compte.enPorte else { return }
+         let gain = storyGain
+         let cardio = storyCardio
+         storyGain = 0
+         storyCardio = false
+-        guard gain > 0 || cardio else { return }
+-        // Les pièces de muscu et le sachet : le téléphone les connaît, il
+-        // les dit tout de suite. Les pièces CARDIO, seul le serveur les
+-        // connaît (le barème) : leur dalle arrive avec sa réponse.
+-        if gain > 0, !EconomieWoop.possible {
+-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+-                FileAnnonces.shared.pousser([.pieces(gain), .sachet(1)])
+-            }
+-        }
+-        // Les dalles gardées pendant la story (pièces CARDIO, sachet, argent de
+-        // la réponse serveur) se disent maintenant, sur la home, l'une après
+-        // l'autre. Cardio pur : c'est LA dalle finale que Kathryn ne voyait pas.
+-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+-            EconomieWoop.shared.viderFinSeance()
+-        }
+-        // Le sachet est forfaitaire — une séance finie, muscu ou cardio.
+-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.4) {
++        guard gain > 0 || cardio else { compte.finSeancePresentee = false; return }
++        let finies = ((try? modelContext.fetch(FetchDescriptor<Workout>())) ?? [])
++            .filter { $0.endedAt != nil && $0.faitPourRoute }
++            .sorted { ($0.endedAt!, $0.remoteID.uuidString) < ($1.endedAt!, $1.remoteID.uuidString) }
++        let route = EcranSpec.etapeEtFaits(seancesFinies: finies.compactMap(\.endedAt))
++        if let rang = finies.firstIndex(where: { $0.remoteID == workout.remoteID }),
++           rang < EcranSpec.seances.count {
++            recompensesApresRoute = true
++            depart.ouvrirChemin(etape: route.etape, faits: route.faits, dates: route.dates,
++                                celebration: EcranSpec.seances[rang].id)
++        } else {
++            libererFinSeance()
++        }
++    }
++
++    private func libererFinSeance() {
++        recompensesApresRoute = false
++        compte.finSeancePresentee = false
++        EconomieWoop.shared.viderFinSeance()
++        let generation = compte.generationDonnees
++        Task { @MainActor in
++            try? await Task.sleep(for: .seconds(3.4))
++            guard !Task.isCancelled, generation == compte.generationDonnees,
++                  !compte.enPorte, active == nil, !depart.cheminOuvert,
++                  storyFin == nil else { return }
+             SacreEtat.shared.proposer()
+         }
+     }
+@@ -763,31 +741,15 @@
+                 var tx = Transaction()
+                 tx.disablesAnimations = true
+                 withTransaction(tx) { storyFin = nil }
+-                enchainerApresStory()
++                enchainerApresStory(s.workout)
+             }
+             .zIndex(15)
+         }
+     }
+ 
+-    /// LA STORY OUVRE LA BONNE PAGE (17-09, b-st-top) : plus un drapeau de banc.
+-    /// La session lit les faits estampillés par le serveur à la clôture
+-    /// (`EconomieWoop.dernierFaits`) — `top_muscu`/`top_cardio` → la robe TOP du
+-    /// sport, `double_jour` → la page ×2 (StoryFlow.exception tranche : ×2 d'abord,
+-    /// sinon TOP). Vide, c'est la page ordinaire. La story attend déjà
+-    /// `clotureRepondue`, donc les faits sont là quand elle s'ouvre.
++    /// Montants et faits sont relus sur cette séance persistée.
+     private func sessionAvecFaits(_ workout: Workout) -> StorySession {
+-        var s = StorySession(workout: workout)
+-        let faits = EconomieWoop.shared.dernierFaits
+-        if faits.contains(where: { $0.kind == "top_muscu" }) { s.top = .muscu }
+-        else if faits.contains(where: { $0.kind == "top_cardio" }) { s.top = .cardio }
+-        if let d = faits.first(where: { $0.kind == "double_jour" }) {
+-            s.double = DoubleFait(
+-                heures: (d.detail["heures"] as? [String]) ?? [],
+-                minutes: (d.detail["minutes"] as? NSNumber)?.intValue ?? s.minutes)
+-        }
+-        print("[flow] story variant : top=\(String(describing: s.top)) "
+-              + "double=\(s.double != nil) · \(faits.count) fait(s)")
+-        return s
++        StorySession(workout: workout)
+     }
+ 
+     /// « COMMENCER » DEPUIS LE CHEMIN (jalon 1) — la séance s'ouvre en base
+@@ -859,6 +821,7 @@
+                               faits: depart.cheminFaits,
+                               dates: depart.cheminDates,
+                               reclamees: depart.reclamees,
++                              celebration: depart.cheminCelebration,
+                               onLune: cheminLune,
+                               onPiece: cheminPiece,
+                               onRetour: { depart.fermerChemin() },
+@@ -1566,6 +1529,8 @@
+                 PlayerEtat.shared.couvre = m > 0.98
+             }
+             .onChange(of: active != nil, initial: true) { _, enSeance in
++                compte.seanceEnCours = enSeance
++                if enSeance { depart.welcomeOuverte = false }
+                 SondeVol.shared.enSeance = enSeance
+                 // Chaque séance retrouve son repère tactile dans l'app.
+                 // WidgetKit assure séparément le suivi en arrière-plan.
+@@ -2217,9 +2182,22 @@
+                   initial: true) { _, tient in
+             compte.enPorte = tient
+         }
++        .alert(L("Séance non enregistrée", "Session not saved"), isPresented: $erreurFinSeance) {
++            Button(L("Réessayer", "Try again")) { terminerSeance() }
++            Button(L("Fermer", "Close"), role: .cancel) {}
++        } message: {
++            Text(L("Ta séance reste ouverte. Réessaie de la terminer.", "Your session is still open. Try finishing it again."))
++        }
++        .onChange(of: depart.cheminOuvert) { _, ouverte in
++            if !ouverte, recompensesApresRoute { libererFinSeance() }
++        }
++        .onChange(of: Reseau.shared.enLigne) { _, enLigne in
++            if enLigne, !compte.enPorte { Task { await ReglementSeance.shared.reprendre() } }
++        }
+         .task(id: compte.enPorte) {
+             guard !compte.enPorte else { return }
+             let generation = compte.generationDonnees
++            await ReglementSeance.shared.reprendre()
+             await SupabaseSync.relire(dans: modelContext)
+             guard generation == compte.generationDonnees,
+                   !compte.enPorte, !Task.isCancelled else { return }
+@@ -2403,191 +2381,194 @@
+             }
+         }
+         .onChange(of: sheetWorkout == nil) { _, _ in celebrateFinishedWorkout() }
+-        .task {
+-            // `-openActiveSheet` ouvre la feuille de séance dès le lancement
+-            // (captures d'écran automatisées uniquement).
+-            if CommandLine.arguments.contains("-openActiveSheet"), sheetWorkout == nil {
+-                sheetWorkout = active
+-            }
+-            // `-grandPlayerOuvert` (15-09, banc cardio) : le grand player
+-            // s'ouvre seul sur la séance en cours, 2 s après la home — le
+-            // simulateur n'a pas de doigt pour la pastille. Captures
+-            // d'écran automatisées uniquement.
+-            if CommandLine.arguments.contains("-grandPlayerOuvert") {
+-                // 6 s : le temps que la @Query rende la séance et que la
+-                // pastille ait fini son vol vers l'île (0,55 s après).
+-                try? await Task.sleep(for: .seconds(6.0))
+-                print("[banc] -grandPlayerOuvert : séance=\(active != nil) morph=\(morphPlayer)")
+-                ouvrirGrandPlayer()
+-            }
+-            // `-terminerSeanceAuto <s>` (15-09, banc cardio) : la séance en
+-            // cours se termine seule après s secondes — le chemin EXACT du
+-            // « Terminer » du panneau (poussée, clôture, story, pile). Le
+-            // simulateur n'a pas de doigt pour le médaillon.
+-            let auto = UserDefaults.standard.integer(forKey: "terminerSeanceAuto")
+-            if auto > 0 {
+-                try? await Task.sleep(for: .seconds(Double(auto)))
+-                print("[banc] -terminerSeanceAuto : séance=\(active != nil) cardio=\(active?.cardioFait ?? false)")
+-                if active != nil { terminerSeance() }
+-            }
+-            // La cuisson du studio HDR du booster (1024×512 pixel par
+-            // pixel, CPU + écriture disque) se paie ICI, en fond de cale —
+-            // jamais sur le fil principal à l'instant où le manège se
+-            // monte (`static let` = dispatch_once : le premier toucheur
+-            // paie, les suivants lisent).
+-            DispatchQueue.global(qos: .utility).async {
+-                _ = BoosterScene.hdrStudio
+-            }
+-            // LE FOUR : les pipelines Metal du manège se compilent en début
+-            // de session — une scène jetable rendue quelques frames au fond
+-            // de la fenêtre, invisible. Sans lui, la première ouverture
+-            // payait ~1,5 s de NOIR entre le tap et le rideau.
++        .task { await preparerAuLancement() }
++    }
++
++    @MainActor
++    private func preparerAuLancement() async {
++        // `-openActiveSheet` ouvre la feuille de séance dès le lancement
++        // (captures d'écran automatisées uniquement).
++        if CommandLine.arguments.contains("-openActiveSheet"), sheetWorkout == nil {
++            sheetWorkout = active
++        }
++        // `-grandPlayerOuvert` (15-09, banc cardio) : le grand player
++        // s'ouvre seul sur la séance en cours, 2 s après la home — le
++        // simulateur n'a pas de doigt pour la pastille. Captures
++        // d'écran automatisées uniquement.
++        if CommandLine.arguments.contains("-grandPlayerOuvert") {
++            // 6 s : le temps que la @Query rende la séance et que la
++            // pastille ait fini son vol vers l'île (0,55 s après).
++            try? await Task.sleep(for: .seconds(6.0))
++            print("[banc] -grandPlayerOuvert : séance=\(active != nil) morph=\(morphPlayer)")
++            ouvrirGrandPlayer()
++        }
++        // `-terminerSeanceAuto <s>` (15-09, banc cardio) : la séance en
++        // cours se termine seule après s secondes — le chemin EXACT du
++        // « Terminer » du panneau (poussée, clôture, story, pile). Le
++        // simulateur n'a pas de doigt pour le médaillon.
++        let auto = UserDefaults.standard.integer(forKey: "terminerSeanceAuto")
++        if auto > 0 {
++            try? await Task.sleep(for: .seconds(Double(auto)))
++            print("[banc] -terminerSeanceAuto : séance=\(active != nil) cardio=\(active?.cardioFait ?? false)")
++            if active != nil { terminerSeance() }
++        }
++        // La cuisson du studio HDR du booster (1024×512 pixel par
++        // pixel, CPU + écriture disque) se paie ICI, en fond de cale —
++        // jamais sur le fil principal à l'instant où le manège se
++        // monte (`static let` = dispatch_once : le premier toucheur
++        // paie, les suivants lisent).
++        DispatchQueue.global(qos: .utility).async {
++            _ = BoosterScene.hdrStudio
++        }
++        // LE FOUR : les pipelines Metal du manège se compilent en début
++        // de session — une scène jetable rendue quelques frames au fond
++        // de la fenêtre, invisible. Sans lui, la première ouverture
++        // payait ~1,5 s de NOIR entre le tap et le rideau.
++        //
++        // ⚠️ IL ATTEND LA FIN DU FILM D'ENTRÉE (22-08, la porte). À
++        // +2,5 s fixes, il tombait en plein deuxième palier de la lune
++        // de sang : 143-204 ms de trou MESURÉS à la sonde (l'ancien
++        // splash de 13,95 s absorbait l'à-coup dans son travelling à
++        // demi-résolution ; la lune, elle, est courte et plein cadre).
++        // Le manège est à des minutes d'ici — le four peut cuire tard.
++        // (Un Task à part : la purge et la poussée Supabase, plus bas,
++        // n'ont pas à attendre le film.)
++        Task { @MainActor in
++            while showSplash {
++                try? await Task.sleep(nanoseconds: 200_000_000)
++            }
++            // ⚠️ **LE FOUR NE CUIT PAS SI LA PORTE EST LÀ (26-08), ET
++            // C'EST 129 ms RENDUS.** Mesuré à `-porteNeuve -fps` : le
++            // journal imprimait DEUX fois `[booster-bench] lune`, et deux
++            // trous derrière — 129 ms pour le four, 127 pour le manège.
+             //
+-            // ⚠️ IL ATTEND LA FIN DU FILM D'ENTRÉE (22-08, la porte). À
+-            // +2,5 s fixes, il tombait en plein deuxième palier de la lune
+-            // de sang : 143-204 ms de trou MESURÉS à la sonde (l'ancien
+-            // splash de 13,95 s absorbait l'à-coup dans son travelling à
+-            // demi-résolution ; la lune, elle, est courte et plein cadre).
+-            // Le manège est à des minutes d'ici — le four peut cuire tard.
+-            // (Un Task à part : la purge et la poussée Supabase, plus bas,
+-            // n'ont pas à attendre le film.)
+-            Task { @MainActor in
+-                while showSplash {
+-                    try? await Task.sleep(nanoseconds: 200_000_000)
+-                }
+-                // ⚠️ **LE FOUR NE CUIT PAS SI LA PORTE EST LÀ (26-08), ET
+-                // C'EST 129 ms RENDUS.** Mesuré à `-porteNeuve -fps` : le
+-                // journal imprimait DEUX fois `[booster-bench] lune`, et deux
+-                // trous derrière — 129 ms pour le four, 127 pour le manège.
+-                //
+-                // C'est du travail fait deux fois. `BoosterScene.init` décode
+-                // ~36 Mo de textures (booster-color et booster-emiss en
+-                // 2048², booster-normal en 1024²) SANS CACHE, à chaque
+-                // construction ; et quand la porte est à l'écran, elle monte
+-                // de toute façon un manège RÉEL qu'elle garde vivant toute la
+-                // session (`PorteDecors`). Le four réchauffait donc pour un
+-                // convive déjà servi.
+-                //
+-                // Hors porte (session déjà ouverte, `-skipAuth`), il reste
+-                // seul à chauffer et il garde tout son sens : sans lui, la
+-                // première ouverture du booster payait ~1,5 s de NOIR.
+-                guard !showAuth else { return }
+-                // ⚠️ **LE FOUR NE SE CALE PLUS SUR UNE HORLOGE MURALE**
+-                // (26-08). Il attendait « splash + 9,2 s » avec, en
+-                // commentaire, « L'arrivée V2 (8,23 s) » — un chiffre périmé :
+-                // le film d'arrivée dure 9,133 s depuis. Le four s'allumait
+-                // donc **67 ms après la fin du film**, c'est-à-dire PILE sur
+-                // l'habillage de la porte et la montée des flammes. Et ce
+-                // qu'il allume n'est pas rien : une `BoosterScene` complète et
+-                // un `SCNView` en `rendersContinuously` inséré dans la
+-                // fenêtre pendant 1,8 seconde.
+-                //
+-                // C'est la faute C9 de l'audit — « la partition par horloge
+-                // murale : 211 asyncAfter » — appliquée à elle-même. Il lit
+-                // maintenant LA constante du film (`PorteEntree.arriveeT`, la
+-                // seule source de cette durée) et prend une vraie marge
+-                // derrière : le manège est à des minutes d'ici, le four peut
+-                // cuire tard.
+-                try? await Task.sleep(nanoseconds:
+-                    UInt64((PorteEntree.arriveeT + 3.5) * 1_000_000_000))
+-                guard let stage = BoosterScene(still: true, mylar: false,
+-                                               gallery: true),
+-                      let fenetre = UIApplication.shared.connectedScenes
+-                          .compactMap({ ($0 as? UIWindowScene)?.keyWindow })
+-                          .first else { return }
+-                let four = SCNView(frame: CGRect(x: 0, y: 0,
+-                                                 width: 2, height: 2))
+-                NavDiagnostic.enregistrer(four, role: "four")
+-                four.alpha = 0.001
+-                four.isUserInteractionEnabled = false
+-                four.scene = stage.scene
+-                four.pointOfView = stage.cameraNode
+-                four.isPlaying = true
+-                four.rendersContinuously = true
+-                fenetre.insertSubview(four, at: 0)
+-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+-                    four.isPlaying = false
+-                    four.rendersContinuously = false
+-                    four.removeFromSuperview()
+-                }
+-            }
+-            // Rattrapage : toutes les séances terminées repartent à chaque
+-            // lancement. Une séance finie hors ligne (salle en mode avion)
+-            // monte donc au premier lancement avec du réseau — l'upsert
+-            // merge-duplicates rend l'envoi répété inoffensif.
+-            let workouts = (try? modelContext.fetch(FetchDescriptor<Workout>())) ?? []
+-            // LES SÉANCES FANTÔMES : une séance restée OUVERTE tient le
+-            // galet en « en cours » pour toujours (le play rouvrait un
+-            // vieux écran au lieu du panneau de départ). Meurt au
+-            // lancement : ouverte depuis 12 h (personne ne s'entraîne
+-            // une nuit entière), ou VIDE et vieille de 30 min (le tap
+-            // abandonné). SUPPRIMÉE, jamais terminée — pas une ligne
+-            // d'historique ni une célébration pour un fantôme. Une
+-            // vraie séance en cours, elle, survit au relancement.
+-            // `-fermeSeances` (dev) : TOUTES les séances ouvertes
+-            // meurent — le remède des états de test qui tiennent le
+-            // galet en « en cours » (une séance testée AVEC séries
+-            // échappe à la règle des fantômes, par design).
+-            let purgeTout = CommandLine.arguments.contains("-fermeSeances")
+-            let fantomes = workouts.filter {
+-                $0.endedAt == nil && (purgeTout
+-                    || $0.startedAt < Date.now.addingTimeInterval(-12 * 3600)
+-                    // 3 h, pas 30 min : un rebuild au milieu d'un test
+-                    // effaçait la séance en cours et cassait le flow.
+-                    || ($0.setCount == 0 && $0.startedAt
+-                        < Date.now.addingTimeInterval(-3 * 3600)))
+-            }
+-            if !fantomes.isEmpty {
+-                fantomes.forEach {
+-                    let id = $0.remoteID
+-                    modelContext.delete($0)
+-                    Task { await OuvertureSeanceServeur.shared.annuler(id: id) }
+-                }
+-                try? modelContext.save()
+-            }
+-            // LES ABANDONNÉES : une séance AVEC contenu laissée ouverte
+-            // plus de 3 h s'ENREGISTRE en silence (une heure au compteur,
+-            // pas de célébration) — elle ne tient plus le galet en
+-            // « en cours » au retour du lendemain.
+-            let abandonnees = workouts.filter {
+-                $0.endedAt == nil && $0.setCount > 0
+-                    && $0.startedAt < Date.now.addingTimeInterval(-3 * 3600)
+-            }
+-            if !abandonnees.isEmpty {
+-                abandonnees.forEach {
+-                    $0.endedAt = $0.startedAt.addingTimeInterval(3600)
+-                }
+-                try? modelContext.save()
+-            }
+-            let snapshots = workouts.filter { $0.endedAt != nil }.map { $0.snapshot() }
+-            Task.detached { await SupabaseSync.shared.push(snapshots) }
+-            // LE PULL (14-09, tools/sync/PLAN-PULL-SEANCES.md) : ce que le serveur
+-            // sait et que ce téléphone n'a pas — un téléphone neuf retrouve ses
+-            // séances. N'insère que ce qui manque, dans le contexte principal.
+-            await SupabaseSync.relire(dans: modelContext)
+-            // `-cineTest` : la cinématique de connexion se déclenche seule,
+-            // 1,5 s après l'arrivée sur la page (captures automatisées — le
+-            // simulateur ne sait pas taper sur CONNEXION).
+-            if CommandLine.arguments.contains("-cineTest") {
+-                while showSplash {
+-                    try? await Task.sleep(nanoseconds: 200_000_000)
+-                }
+-                // Le marqueur : l'app signale ELLE-MÊME l'arrivée sur la
+-                // connexion (un détecteur d'image se fait berner par le
+-                // splash, qui a lui aussi son bas lumineux). La capture lit
+-                // ce fichier via le conteneur et sait que le tap tombe
+-                // exactement six secondes plus tard.
+-                let marker = URL.documentsDirectory.appending(path: "cine-armed")
+-                try? Date.now.ISO8601Format().write(to: marker, atomically: true,
+-                                                    encoding: .utf8)
+-                // ⚠️ DOUZE secondes, plus six : depuis la porte (22-08), le
+-                // FILM D'ARRIVÉE joue APRÈS le splash — et la V2 l'a rallongé
+-                // à 8,23 s (+ la cascade). À six, la cérémonie partait en
+-                // plein film et posait `showAuth = false` derrière lui
+-                // (l'angle mort relevé par la contre-expertise du plan, § 8).
+-                try? await Task.sleep(nanoseconds: 12_000_000_000)
+-                startConnexionCinematic()
+-            }
++            // C'est du travail fait deux fois. `BoosterScene.init` décode
++            // ~36 Mo de textures (booster-color et booster-emiss en
++            // 2048², booster-normal en 1024²) SANS CACHE, à chaque
++            // construction ; et quand la porte est à l'écran, elle monte
++            // de toute façon un manège RÉEL qu'elle garde vivant toute la
++            // session (`PorteDecors`). Le four réchauffait donc pour un
++            // convive déjà servi.
++            //
++            // Hors porte (session déjà ouverte, `-skipAuth`), il reste
++            // seul à chauffer et il garde tout son sens : sans lui, la
++            // première ouverture du booster payait ~1,5 s de NOIR.
++            guard !showAuth else { return }
++            // ⚠️ **LE FOUR NE SE CALE PLUS SUR UNE HORLOGE MURALE**
++            // (26-08). Il attendait « splash + 9,2 s » avec, en
++            // commentaire, « L'arrivée V2 (8,23 s) » — un chiffre périmé :
++            // le film d'arrivée dure 9,133 s depuis. Le four s'allumait
++            // donc **67 ms après la fin du film**, c'est-à-dire PILE sur
++            // l'habillage de la porte et la montée des flammes. Et ce
++            // qu'il allume n'est pas rien : une `BoosterScene` complète et
++            // un `SCNView` en `rendersContinuously` inséré dans la
++            // fenêtre pendant 1,8 seconde.
++            //
++            // C'est la faute C9 de l'audit — « la partition par horloge
++            // murale : 211 asyncAfter » — appliquée à elle-même. Il lit
++            // maintenant LA constante du film (`PorteEntree.arriveeT`, la
++            // seule source de cette durée) et prend une vraie marge
++            // derrière : le manège est à des minutes d'ici, le four peut
++            // cuire tard.
++            try? await Task.sleep(nanoseconds:
++                UInt64((PorteEntree.arriveeT + 3.5) * 1_000_000_000))
++            guard let stage = BoosterScene(still: true, mylar: false,
++                                           gallery: true),
++                  let fenetre = UIApplication.shared.connectedScenes
++                      .compactMap({ ($0 as? UIWindowScene)?.keyWindow })
++                      .first else { return }
++            let four = SCNView(frame: CGRect(x: 0, y: 0,
++                                             width: 2, height: 2))
++            NavDiagnostic.enregistrer(four, role: "four")
++            four.alpha = 0.001
++            four.isUserInteractionEnabled = false
++            four.scene = stage.scene
++            four.pointOfView = stage.cameraNode
++            four.isPlaying = true
++            four.rendersContinuously = true
++            fenetre.insertSubview(four, at: 0)
++            DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
++                four.isPlaying = false
++                four.rendersContinuously = false
++                four.removeFromSuperview()
++            }
++        }
++        // Rattrapage : toutes les séances terminées repartent à chaque
++        // lancement. Une séance finie hors ligne (salle en mode avion)
++        // monte donc au premier lancement avec du réseau — l'upsert
++        // merge-duplicates rend l'envoi répété inoffensif.
++        let workouts: [Workout] = (try? modelContext.fetch(FetchDescriptor<Workout>())) ?? []
++        // LES SÉANCES FANTÔMES : une séance restée OUVERTE tient le
++        // galet en « en cours » pour toujours (le play rouvrait un
++        // vieux écran au lieu du panneau de départ). Meurt au
++        // lancement : ouverte depuis 12 h (personne ne s'entraîne
++        // une nuit entière), ou VIDE et vieille de 30 min (le tap
++        // abandonné). SUPPRIMÉE, jamais terminée — pas une ligne
++        // d'historique ni une célébration pour un fantôme. Une
++        // vraie séance en cours, elle, survit au relancement.
++        // `-fermeSeances` (dev) : TOUTES les séances ouvertes
++        // meurent — le remède des états de test qui tiennent le
++        // galet en « en cours » (une séance testée AVEC séries
++        // échappe à la règle des fantômes, par design).
++        let purgeTout = CommandLine.arguments.contains("-fermeSeances")
++        let borneDouzeHeures: Date = Date.now.addingTimeInterval(-43_200)
++        let borneTroisHeures: Date = Date.now.addingTimeInterval(-10_800)
++        let fantomes: [Workout] = workouts.filter { workout in
++            guard workout.endedAt == nil else { return false }
++            if purgeTout || workout.startedAt < borneDouzeHeures { return true }
++            return workout.setCount == 0 && workout.startedAt < borneTroisHeures
++        }
++        if !fantomes.isEmpty {
++            fantomes.forEach {
++                let id = $0.remoteID
++                modelContext.delete($0)
++                Task { await OuvertureSeanceServeur.shared.annuler(id: id) }
++            }
++            try? modelContext.save()
++        }
++        // LES ABANDONNÉES : une séance AVEC contenu laissée ouverte
++        // plus de 3 h s'ENREGISTRE en silence (une heure au compteur,
++        // pas de célébration) — elle ne tient plus le galet en
++        // « en cours » au retour du lendemain.
++        let abandonnees = workouts.filter {
++            $0.endedAt == nil && $0.setCount > 0
++                && $0.startedAt < Date.now.addingTimeInterval(-3 * 3600)
++        }
++        if !abandonnees.isEmpty {
++            abandonnees.forEach {
++                $0.endedAt = $0.startedAt.addingTimeInterval(3600)
++            }
++            try? modelContext.save()
++        }
++        await ReglementSeance.shared.reprendre()
++        let snapshots = workouts.filter { $0.endedAt != nil }.map { $0.snapshot() }
++        Task.detached { await SupabaseSync.shared.push(snapshots) }
++        // LE PULL (14-09, tools/sync/PLAN-PULL-SEANCES.md) : ce que le serveur
++        // sait et que ce téléphone n'a pas — un téléphone neuf retrouve ses
++        // séances. N'insère que ce qui manque, dans le contexte principal.
++        await SupabaseSync.relire(dans: modelContext)
++        // `-cineTest` : la cinématique de connexion se déclenche seule,
++        // 1,5 s après l'arrivée sur la page (captures automatisées — le
++        // simulateur ne sait pas taper sur CONNEXION).
++        if CommandLine.arguments.contains("-cineTest") {
++            while showSplash {
++                try? await Task.sleep(nanoseconds: 200_000_000)
++            }
++            // Le marqueur : l'app signale ELLE-MÊME l'arrivée sur la
++            // connexion (un détecteur d'image se fait berner par le
++            // splash, qui a lui aussi son bas lumineux). La capture lit
++            // ce fichier via le conteneur et sait que le tap tombe
++            // exactement six secondes plus tard.
++            let marker = URL.documentsDirectory.appending(path: "cine-armed")
++            try? Date.now.ISO8601Format().write(to: marker, atomically: true,
++                                                encoding: .utf8)
++            // ⚠️ DOUZE secondes, plus six : depuis la porte (22-08), le
++            // FILM D'ARRIVÉE joue APRÈS le splash — et la V2 l'a rallongé
++            // à 8,23 s (+ la cascade). À six, la cérémonie partait en
++            // plein film et posait `showAuth = false` derrière lui
++            // (l'angle mort relevé par la contre-expertise du plan, § 8).
++            try? await Task.sleep(nanoseconds: 12_000_000_000)
++            startConnexionCinematic()
+         }
+     }
+ 
+--- avant/Nosfy/Services/Compte.swift
++++ apres/Nosfy/Services/Compte.swift
+@@ -35,6 +35,8 @@
+     var porteDemandee = false
+     /// Invalide les retours réseau de la personne précédente.
+     var generationDonnees = UUID()
++    var seanceEnCours = false
++    var finSeancePresentee = false
+     var raisonPorte: String?
+     /// La porte, le film de Nosfy ou le splash tiennent l'écran — le Welcome
+     /// Back (et tout ce qui parle à une personne entrée) attend. Vrai au
+@@ -84,6 +86,7 @@
+                 return .refusee(m)
+             }
+         }
++        await ReglementSeance.shared.reprendre()
+         await OutboxGains.shared.vider()
+         let gainsRestants = await OutboxGains.shared.enAttente
+         if gainsRestants > 0 {
+@@ -151,6 +154,8 @@
+     @MainActor
+     static func effacerToutCeQuiEstAElle(contexte: ModelContext) async {
+         CompteEtat.shared.generationDonnees = UUID()
++        CompteEtat.shared.seanceEnCours = false
++        CompteEtat.shared.finSeancePresentee = false
+         DepartEtat.shared.oublierCompte()
+         RewardCheminEtat.shared.oublierCompte()
+         await OutboxGains.shared.effacer()
+@@ -233,6 +238,7 @@
+         let depart = DepartEtat.shared
+         let retenue: String? =
+             etat.enPorte ? "la porte, le film ou le splash tient l'écran"
++            : (etat.seanceEnCours || etat.finSeancePresentee || depart.cheminOuvert || depart.panneauOuvert || depart.pauseOuverte) ? "séance, story ou route à l’écran"
+             : PremiereArrivee.premiereFois ? "première arrivée (c'est Nosfy qui parle)"
+             : !eco.serveur ? "le serveur n'a pas répondu"
+             : !eco.retourDisponible ? "retour_disponible faux (rien à prendre, ou aucune séance finie — S4)"
+--- avant/Nosfy/Services/EconomieNosfy.swift
++++ apres/Nosfy/Services/EconomieNosfy.swift
+@@ -80,12 +80,12 @@
+     /// pièces, parce que `EconomieWoop` n'avait pas de repli pour CE
+     /// nombre-là. Deux replis, deux vérités : exactement le défaut qu'on
+     /// répare. L'arbitre en tient UN, et `SacreEtat` lui délègue.
+-    var boosters: Int { serveur ? boostersServeur : maquetteBoosters }
++    var boosters: Int { serveur ? boostersServeur : (Self.maquetteActive ? maquetteBoosters : 0) }
+     private(set) var boostersServeur = 0
+     /// `-sansSachet` : la maquette naît SANS sachet — le barreau du panneau
+     /// du géant à vide (la jauge, « Verrouillé »), 15-09.
+     var maquetteBoosters =
+-        CommandLine.arguments.contains("-sansSachet") ? 0 : 1
++        EconomieWoop.maquetteActive && !CommandLine.arguments.contains("-sansSachet") ? 1 : 0
+ 
+     /// Les sachets NOIRS ouvrables. ⚠️ Côté serveur, c'est le solde d'argent
+     /// (le sachet noir naît au claim) PLUS le noir déjà payé, ouvert et pas
+@@ -94,7 +94,7 @@
+     /// pas (app tuée pendant la peinture, 500, timeout), le compte à 0, la
+     /// porte du manège FERMÉE — et la reprise que le serveur sait faire
+     /// n'était plus jamais déclenchée. Le sachet payé restait dans le vide.
+-    var boostersNoirs: Int { serveur ? noirsPossedes + argent / max(prixNoir, 1) : maquetteNoirs }
++    var boostersNoirs: Int { serveur ? noirsPossedes + argent / max(prixNoir, 1) : (Self.maquetteActive ? maquetteNoirs : 0) }
+     private(set) var noirsPossedes = 0
+     private(set) var prixNoir = 1
+     private var versionInventaire: Int64 = -1
+@@ -223,6 +223,10 @@
+     /// démonstration ne touchent jamais un vrai compte, et sans configuration
+     /// on ne tente rien (« aucun 404 dans les logs d'une app dont le backend
+     /// n'est pas encore là »). Une seule règle d'accès au serveur, pas deux.
++    private static var maquetteActive: Bool {
++        CommandLine.arguments.contains { ["-demoData", "-boosterLab", "-coffreLab", "-sacreLab", "-sacreNoir"].contains($0) }
++    }
++
+     static var possible: Bool {
+         if CommandLine.arguments.contains("-demoData"),
+            !CommandLine.arguments.contains("-syncNow") { return false }
+@@ -283,6 +287,12 @@
+         or = 0
+         argent = 0
+         boostersServeur = 0
++        maquetteBoosters = 0
++        maquetteNoirs = 0
++        seanceStory = nil
++        clotureRepondue = false
++        dernierFaits = []
++        dernierGainCardio = 0
+         noirsOuverts = 0
+         reste = 0
+         journal = []
+@@ -332,6 +342,9 @@
+     /// plusieurs sources. Refaire un aller-retour ici, ce serait recréer le
+     /// défaut que cette réponse a été élargie pour supprimer.
+     func appliquer(_ c: SacreServeur.ClotureSeance) {
++        if let recu = c.recu, let owner = proprietaireCartes,
++           owner != recu.userId.lowercased() { return }
++        ReglementSeance.shared.recevoir(c)
+         if let recu = c.recu {
+             recevoir(recu)
+             if seanceStory == nil || seanceStory == c.workoutId {
+--- avant/Nosfy/Services/OutboxGains.swift
++++ apres/Nosfy/Services/OutboxGains.swift
+@@ -76,6 +76,7 @@
+         func annuler() { verrou.withLock { valide = false } }
+     }
+     private var generation = GenerationCompte()
++    private(set) var identiteGeneration = UUID()
+ 
+     private var file: [GainEnAttente] {
+         get {
+@@ -98,6 +99,7 @@
+ 
+     /// Rend caducs les retours réseau de l'ancien compte, même s'ils arrivent tard.
+     func effacer() {
++        identiteGeneration = UUID()
+         generation.annuler()
+         generation = GenerationCompte()
+         file = []
+@@ -125,10 +127,15 @@
+     }
+ 
+     /// Persister AVANT le réseau : un kill ou une panne laisse le gain rejouable.
+-    func poster(_ gain: GainEnAttente) async {
++    func retenir(_ gain: GainEnAttente, siGeneration: UUID? = nil) {
++        guard siGeneration == nil || siGeneration == identiteGeneration else { return }
+         var f = file
+         if !f.contains(gain) { f.append(gain) }
+         file = f
++    }
++
++    func poster(_ gain: GainEnAttente) async {
++        retenir(gain)
+         await vider()
+     }
+ 
+--- avant/Nosfy/Services/SacreServeur.swift
++++ apres/Nosfy/Services/SacreServeur.swift
+@@ -321,6 +321,7 @@
+         let bonusProgres: Int
+         var recu: RecuRecompense? = nil
+         var workoutId: String? = nil
++        var boostersGagnes: Int? = nil
+     }
+ 
+     /// Un fait de séance, tel que le serveur le range (`workout_facts`).
+@@ -373,7 +374,8 @@
+                              cardioDetail: j["cardio_detail"] as? [String: Any] ?? [:],
+                              cardioRejeu: (j["cardio_rejeu"] as? Bool) ?? false,
+                              bonusProgres: (j["bonus_progres"] as? Int) ?? 0,
+-                             recu: RecuRecompense(j), workoutId: workout.uuidString.lowercased())
++                             recu: RecuRecompense(j), workoutId: workout.uuidString.lowercased(),
++                             boostersGagnes: (j["booster_ids"] as? [String])?.count)
+     }
+ 
+     /// ⚠️⚠️ **L'ÉTAPE 1 DU BRANCHEMENT, ET LA SEULE QUI NE RISQUE RIEN :
+--- avant/Nosfy/Services/SupabaseSync.swift
++++ apres/Nosfy/Services/SupabaseSync.swift
+@@ -89,7 +89,7 @@
+ 
+     // MARK: Envoi
+ 
+-    func push(_ snapshots: [Snapshot]) async {
++    func push(_ snapshots: [Snapshot], proprietaire: String? = nil) async {
+         // Les données de démonstration ne quittent jamais l'appareil : un run
+         // Xcode avec `-demoData` ne doit pas polluer un vrai compte.
+         // `-syncNow` lève le garde-fou (tests de bout en bout uniquement).
+@@ -97,7 +97,7 @@
+            !CommandLine.arguments.contains("-syncNow") { return }
+         guard WoopConfig.isConfigured, !snapshots.isEmpty, !inFlight else { return }
+         do {
+-            try await pousser(snapshots)
++            try await pousser(snapshots, proprietaire: proprietaire)
+             await OutboxGains.shared.vider()
+         } catch {
+             // La séance est déjà enregistrée localement : on réessaiera au prochain envoi.
+@@ -111,7 +111,7 @@
+     /// l'envoi échoue — `push` avale ses pannes, elle ne peut pas le savoir.
+     /// Même corps, même ordre (les clés étrangères pointent vers la table
+     /// précédente), sans le garde-fou de la démo : c'est l'appelant qui décide.
+-    func pousser(_ snapshots: [Snapshot]) async throws {
++    func pousser(_ snapshots: [Snapshot], proprietaire: String? = nil) async throws {
+         guard WoopConfig.isConfigured, !snapshots.isEmpty else { return }
+         while inFlight { try await Task.sleep(for: .milliseconds(100)) }
+         inFlight = true
+@@ -120,6 +120,9 @@
+         do {
+             let token = try await SupabaseSession.shared.token()
+             let userID = try await SupabaseSession.shared.currentUserID()
++            guard proprietaire == nil || proprietaire?.lowercased() == userID.lowercased() else {
++                throw CancellationError()
++            }
+             let iso = ISO8601DateFormatter()
+ 
+             // Une séance et son arbre dans UNE transaction, avant toute clôture.
+--- avant/Nosfy/Views/ChambreDonnees.swift
++++ apres/Nosfy/Views/ChambreDonnees.swift
+@@ -398,7 +398,7 @@
+             for ex in w.orderedExercises where ex.volume > 0 {
+                 var e = parExo[ex.exerciseID] ?? (ex.name, ex.exercise?.category, 0, 0, 0)
+                 e.vol += ex.volume
+-                e.reps += ex.orderedSets.reduce(0) { $0 + $1.reps }
++                e.reps += ex.orderedSets.filter(\.isDone).reduce(0) { $0 + $1.reps }
+                 e.charge = max(e.charge, ex.maxWeight)
+                 parExo[ex.exerciseID] = e
+             }
+@@ -515,7 +515,7 @@
+                                                    cat: ex.exercise?.category, charge: 0,
+                                                    reps: 0, precedent: maxAvant[ex.exerciseID])
+                 if ex.maxWeight >= p.charge {
+-                    let reps = ex.orderedSets.filter { $0.weight == ex.maxWeight }.map(\.reps).max() ?? 0
++                    let reps = ex.orderedSets.filter { $0.isDone && $0.weight == ex.maxWeight }.map(\.reps).max() ?? 0
+                     if ex.maxWeight > p.charge { p.charge = ex.maxWeight; p.reps = reps }
+                     else { p.reps = max(p.reps, reps) }
+                 }
+--- avant/Nosfy/Views/DepartSeance.swift
++++ apres/Nosfy/Views/DepartSeance.swift
+@@ -71,6 +71,7 @@
+     /// page. La racine ne connaît pas les séances finies : la porte les lui
+     /// donne.
+     var cheminEtape = 0
++    var cheminCelebration: Int?
+     var cheminFaits: Set<Int> = []
+     /// Les dates de complétion des séances faites (`Workout.endedAt`) — 28-08,
+     /// sa règle : « les jours apparaissent le jour où le user a terminé sa
+@@ -119,6 +120,7 @@
+         reclamees = []
+         cheminOuvert = false
+         cheminEtape = 0
++        cheminCelebration = nil
+         cheminFaits = []
+         cheminDates = [:]
+         galetPorte = false
+@@ -170,9 +172,10 @@
+         }
+     }
+ 
+-    func ouvrirChemin(etape: Int, faits: Set<Int>, dates: [Int: Date] = [:]) {
++    func ouvrirChemin(etape: Int, faits: Set<Int>, dates: [Int: Date] = [:], celebration: Int? = nil) {
+         print("[SONDE-CHEMIN] DepartEtat.ouvrirChemin — déjà ouvert ? \(cheminOuvert)")
+         guard !cheminOuvert else { return }
++        cheminCelebration = celebration
+         cheminEtape = etape
+         cheminFaits = faits
+         cheminDates = dates
+--- avant/Nosfy/Views/DuolinguoPage.swift
++++ apres/Nosfy/Views/DuolinguoPage.swift
+@@ -537,6 +537,9 @@
+     var gel = false
+     /// L'étape ACTIVE du chemin (0-based). Session UI : reset au relaunch.
+     var etape = 0
++    var celebration: Int?
++    var celebrationValidee = false
++    var celebrationOnde = false
+     /// L'écran posé (pour le titre de la dalle) et le geste en cours
+     /// (la dalle s'efface pendant le scroll).
+     var ecranCourant = 0
+@@ -1107,6 +1110,30 @@
+ /// LE SERPENTIN — une seule couche pour toute la colonne, posée au-dessus
+ /// du verre vidéo. Pas de fil : dans le noir OLED, le chemin se lit par
+ /// les galets seuls (le pointillé board-game est interdit, LOI 4).
++/// Deux transitions bornées, uniquement sur le galet accompli. Aucun timer.
++private struct SceauFinSeance: ViewModifier {
++    let concerne: Bool
++    let valide: Bool
++    let onde: Bool
++    @Environment(\.accessibilityReduceMotion) private var reduceMotion
++
++    func body(content: Content) -> some View {
++        content
++            .scaleEffect(concerne && valide && !onde && !reduceMotion ? 1.14 : 1)
++            .overlay {
++                if concerne {
++                    Circle()
++                        .stroke(Color(red: 1, green: 0.86, blue: 0.60), lineWidth: 2)
++                        .frame(width: 76, height: 76)
++                        .scaleEffect(onde && !reduceMotion ? 1.75 : 1)
++                        .opacity(valide && !onde ? 0.9 : 0)
++                        .allowsHitTesting(false)
++                        .accessibilityHidden(true)
++                }
++            }
++    }
++}
++
+ private struct CheminDuo: View {
+     let etat: EtatDuo
+     let hauteur: CGFloat
+@@ -1221,6 +1248,11 @@
+                                    etat.panneauSur = nil
+                                }
+                            })
++                    .modifier(SceauFinSeance(
++                        concerne: etat.celebration == e.id,
++                        valide: etat.celebrationValidee,
++                        onde: etat.celebrationOnde))
++                    .allowsHitTesting(etat.celebration == nil || etat.celebrationValidee)
+                     .scaleEffect(nee ? 1 : 0.92)
+                     // LE PROJECTEUR : panneau ouvert, la route s'éteint
+                     // autour du couple galet + panneau (0,45).
+@@ -1628,6 +1660,10 @@
+     var dates: [Int: Date]? = nil
+     /// Les nœuds spéciaux déjà réclamés (l'hôte les persiste).
+     var reclamees: Set<Int>? = nil
++    /// Uniquement la séance qui vient de se terminer, jamais un nœud cadeau.
++    var celebration: Int? = nil
++    @Environment(\.scenePhase) private var scenePhase
++    @State private var celebrationJouee = false
+     /// Jalon 1 : les nœuds spéciaux disponibles, tapés — l'hôte ouvre le
+     /// booster (lune) ou fait descendre les pièces (pièce). nil = le banc.
+     /// ⚠️ Elles RENDENT le verdict du serveur (30-08) : `false` = le nœud
+@@ -1833,9 +1869,11 @@
+             .onAppear {
+                 etat.branchee = onDemarrer != nil
+                 etat.gel = gel || reduceMotion
+-                etat.etape = min(max(etapeInitiale, 0),
++                etat.celebration = celebration
++                etat.etape = min(max(celebration ?? etapeInitiale, 0),
+                                  EcranSpec.etapes.count - 1)
+                 if let faits { etat.faits = faits }
++                if let celebration { etat.faits.remove(celebration) }
+                 if let dates { etat.datesFaites = dates }
+                 if let reclamees { etat.reclamees = reclamees }
+                 // La page NAÎT POSÉE sur l'écran de l'actif : `piloter`
+@@ -1850,7 +1888,43 @@
+                     ordre.scrollTo(y: CGFloat(ecranDepart) * hauteur)
+                 }
+                 if auto { lancerAuto(hauteur: hauteur) }
+-                naissance(ecran: ecranDepart)
++                if celebration != nil {
++                    etat.nees = Set(EcranSpec.etapes.map(\.id))
++                } else {
++                    naissance(ecran: ecranDepart)
++                }
++            }
++            .task(id: scenePhase) {
++                guard let celebration, !celebrationJouee else { return }
++                // En arrière-plan, on pose directement l'état final. La reprise
++                // ne rejoue jamais une récompense ou une fausse deuxième fête.
++                guard scenePhase == .active, !reduceMotion,
++                      !CommandLine.arguments.contains("-sansFeteRoute"),
++                      ProcessInfo.processInfo.thermalState != .serious,
++                      ProcessInfo.processInfo.thermalState != .critical else {
++                    validerCelebration(celebration)
++                    etat.celebrationOnde = true
++                    ordre.scrollTo(y: CGFloat(EcranSpec.etapes[etat.etape].ecran) * hauteur)
++                    celebrationJouee = true
++                    return
++                }
++                do {
++                    try await Task.sleep(for: .milliseconds(550))
++                    withAnimation(.spring(response: 0.32, dampingFraction: 0.72)) {
++                        validerCelebration(celebration)
++                    }
++                    UINotificationFeedbackGenerator().notificationOccurred(.success)
++                    try await Task.sleep(for: .milliseconds(180))
++                    withAnimation(.easeOut(duration: 0.85)) { etat.celebrationOnde = true }
++                    try await Task.sleep(for: .milliseconds(1050))
++                    let suivant = EcranSpec.etapes[etat.etape].ecran
++                    if suivant != EcranSpec.etapes[celebration].ecran {
++                        withAnimation(.easeInOut(duration: 0.65)) {
++                            ordre.scrollTo(y: CGFloat(suivant) * hauteur)
++                        }
++                    }
++                    celebrationJouee = true
++                } catch { /* Le démontage ou le passage en arrière-plan annule la partition. */ }
+             }
+         }
+         .background(Color.black.ignoresSafeArea())
+@@ -1860,9 +1934,30 @@
+             DalleChapitre(etat: etat, onRetour: onRetour)
+                 .padding(.top, 8)
+         }
++        .overlay(alignment: .bottom) {
++            if celebration != nil, etat.celebrationValidee {
++                Label(L("Séance accomplie", "Session complete"), systemImage: "checkmark.circle.fill")
++                    .font(.system(size: 16, weight: .semibold))
++                    .foregroundStyle(Color(red: 1, green: 0.86, blue: 0.60))
++                    .padding(.horizontal, 22).padding(.vertical, 14)
++                    .background(.black.opacity(0.88), in: Capsule())
++                    .padding(.bottom, 26)
++                    .allowsHitTesting(false)
++                    .accessibilityIdentifier("route.seance-accomplie")
++                    .transition(.opacity)
++            }
++        }
+         .statusBarHidden()
+         .persistentSystemOverlays(.hidden)
+         .sondeCadence("duo")
++    }
++
++    private func validerCelebration(_ id: Int) {
++        if let faits { etat.faits = faits } else { etat.faits.insert(id) }
++        etat.etape = min(max(etapeInitiale, 0), EcranSpec.etapes.count - 1)
++        etat.celebrationValidee = true
++        if reduceMotion || scenePhase != .active { etat.celebrationOnde = true }
++        etat.panneauSur = nil
+     }
+ 
+     /// L'OUVERTURE (partition §7, version J3) : les étapes naissent en
+--- avant/Nosfy/Views/HomeNuit.swift
++++ apres/Nosfy/Views/HomeNuit.swift
+@@ -4572,11 +4572,7 @@
+     /// avec panneau) — c'est LE banc qui manquait pour juger les états
+     /// ensemble (audit §0) ; les jours d'avant suivent le motif démo.
+     private var cheminEtat: (etape: Int, faits: Set<Int>, dates: [Int: Date]) {
+-        let finies = workoutsBruts.filter { workout in
+-            workout.seriesPayantes > 0 || workout.orderedExercises.contains { exo in
+-                exo.longueurs > 0 || exo.phasesFaites.contains { $0.isEffort && $0.seconds > 0 }
+-            }
+-        }.compactMap(\.endedAt)
++        let finies = workoutsBruts.filter(\.faitPourRoute).compactMap(\.endedAt)
+         var r = EcranSpec.etapeEtFaits(seancesFinies: finies)
+         let a = CommandLine.arguments
+         if let i = a.firstIndex(of: "-duoEtape"), i + 1 < a.count,
+--- avant/Nosfy/Views/StoryFlow.swift
++++ apres/Nosfy/Views/StoryFlow.swift
+@@ -73,6 +73,8 @@
+     var series: Int
+     var kcal: Int
+     var sets: [StorySet]
++    var recompense: BilanRecompenseSeance? = nil
++    var recompenseEnAttente = false
+     /// La partition par exercice (la grammaire de l'ardoise) : quand elle
+     /// est là, la story 2 pose `SlateListe` — la liste dépliable, ses
+     /// petites flammes — à la place des cinq lignes plates.
+@@ -127,18 +129,26 @@
+         dateLabel = L("Séance du ", "Session on ") + f.string(from: workout.startedAt)
+         minutes = max(1, Int(workout.duration / 60))
+         exos = workout.orderedExercises.count
+-        let all = workout.orderedExercises.flatMap { $0.sets ?? [] }
+-        series = all.count
++        let all = workout.orderedExercises.flatMap { $0.orderedSets.filter(\.isDone) }
++        series = workout.seriesPayantes
++        recompense = workout.bilanRecompense.flatMap { try? JSONDecoder().decode(BilanRecompenseSeance.self, from: $0) }
++        recompenseEnAttente = recompense == nil
++        if let bilan = recompense {
++            if bilan.top == "top_muscu" { top = .muscu }
++            else if bilan.top == "top_cardio" { top = .cardio }
++            if let heures = bilan.heuresDouble {
++                double = DoubleFait(heures: heures, minutes: bilan.minutesDouble ?? minutes)
++            }
++        }
+         // Une estimation franche tant qu'il n'y a pas de calcul de dépense :
+         // sept kilocalories par minute d'effort.
+         kcal = minutes * 7
+-        // Les mêmes gains que la maquette, tant que l'économie n'existe pas.
+-        let purse = [20, 15, 12, 18, 18]
++        // Les pièces de musculation sont confirmées dans le reçu de cette séance.
++        let taux = (recompense?.piecesMuscu ?? 0) / max(series, 1)
+         sets = all.prefix(5).enumerated().map { i, s in
+             StorySet(rank: i + 1, reps: s.reps, kilos: s.weight,
+-                     coins: purse[i % purse.count])
+-        }
+-        if sets.isEmpty { sets = StorySession.demo.sets }
++                     coins: taux)
++        }
+         // La partition : les mêmes groupes que l'ardoise (le barème de
+         // `SessionSlate.buildGroupes`, côté séance persistée).
+         groupes = workout.orderedExercises.compactMap { le in
+--- avant/Nosfy/Views/StorySuite.swift
++++ apres/Nosfy/Views/StorySuite.swift
+@@ -699,7 +699,7 @@
+     private var faits: (exo: String, kg: Int, volume: Int) {
+         var exo = L("la barre", "the bar"); var kg = 0; var volume = 0
+         for g in session.groupes {
+-            for r in g.rows {
++            for r in g.rows where r.done {
+                 volume += r.reps * Int(r.kilos)
+                 if Int(r.kilos) > kg {
+                     kg = Int(r.kilos)
+@@ -1497,8 +1497,8 @@
+     // Muscu : séries × 20. CARDIO : le barème du serveur (aucune série), lu au
+     // `dernierGainCardio` — sinon la story disait « 0 pièce » au HIIT (bug
+     // Kathryn 16-09). Remis à zéro à chaque fin de séance (debutFinSeance).
+-    private var pieces: Int { session.series * 20 + EconomieWoop.shared.dernierGainCardio }
+-    private var boosters: Int { pieces / 100 }
++    private var pieces: Int { session.recompense?.pieces ?? (session.recompenseEnAttente ? 0 : session.series * 20) }
++    private var boosters: Int { session.recompense?.boosters ?? (session.recompenseEnAttente ? 0 : pieces / 100) }
+ 
+     private var roule: Int {
+         let u = StoryCine.outLong(min(max(
+@@ -1594,13 +1594,19 @@
+         let titreU = StoryCine.sstep(WinCine.titreAt,
+                                      WinCine.titreAt + 0.4, t)
+         return VStack(spacing: 2) {
+-            Text("+\(roule)")
++            Text(session.recompenseEnAttente ? "—" : "+\(roule)")
+                 .font(.system(size: 44, weight: .bold))
+                 .monospacedDigit()
++                .accessibilityIdentifier("story.recompenses")
++                .accessibilityLabel(session.recompenseEnAttente
++                    ? L("Récompenses en attente", "Rewards pending")
++                    : L("\(pieces) pièces gagnées, \(boosters) boosters", "\(pieces) coins earned, \(boosters) boosters"))
+                 .contentTransition(.identity)
+                 .foregroundStyle(Color(white: 0.96))
+                 .opacity(compteurU)
+-            Text(L("pièces gagnées", "coins earned"))
++            Text(session.recompenseEnAttente
++                 ? L("Récompenses en attente", "Rewards pending")
++                 : L("pièces gagnées", "coins earned"))
+                 .font(.system(size: 15, weight: .semibold))
+                 .foregroundStyle(Color(white: 0.55))
+                 .opacity(compteurU)
+@@ -1995,7 +2001,7 @@
+     // MARK: Les objets saisissables
+ 
+     private var beatPlaques: Int {
+-        (1...max(1, boosters)).filter { roule >= $0 * 100 + 15 }.count
++        (0..<min(boosters, 5)).filter { t >= WinCine.compteurAt + 0.4 + Double($0) * 0.22 }.count
+     }
+ 
+     /// La pièce (clé 0) + les boosters (clés 1…5) : chacun a sa place
+@@ -2105,8 +2111,8 @@
+                      haut: -h / 2 + hb * 0.62, bas: h / 2)
+         return ZStack {
+             ForEach(0 ..< montres, id: \.self) { i in
+-                let seuil = Double((i + 1) * 100)
+-                let pose = min(max((Double(roule) - seuil) / 30.0, 0), 1)
++                let arrivee = WinCine.compteurAt + 0.4 + Double(i) * 0.22
++                let pose = StoryCine.sstep(arrivee, arrivee + 0.55, t)
+                 // LA CHUTE (robe renversée) : il TOMBE du plafond et
+                 // REBONDIT — une arrivée molle serait un vol, pas une
+                 // chute. Sinon : la montée douce de la poche.
+--- /dev/null
++++ apres/Nosfy/Services/ReglementSeance.swift
+@@ -0,0 +1,83 @@
++import Foundation
++import SwiftData
++
++/// Le bilan appartient à une séance, jamais au dernier solde global.
++struct BilanRecompenseSeance: Codable, Equatable {
++    let pieces: Int
++    let piecesMuscu: Int?
++    let boosters: Int
++    let argent: Int
++    let top: String?
++    let heuresDouble: [String]?
++    let minutesDouble: Int?
++
++    init(_ cloture: SacreServeur.ClotureSeance) {
++        // booster_ids reste complet après acquittement des annonces, contrairement
++        // aux événements visibles et au drapeau booster_neuf du rejeu.
++        let events = cloture.recu?.evenements ?? []
++        pieces = cloture.piecesTotal
++        piecesMuscu = cloture.pieces
++        boosters = cloture.boostersGagnes ?? events.filter { $0.genre == "sachet" }.reduce(0) { $0 + $1.montant }
++        argent = cloture.argentSeance ? 1 : 0
++        top = cloture.faits.first { $0.kind == "top_muscu" || $0.kind == "top_cardio" }?.kind
++        let double = cloture.faits.first { $0.kind == "double_jour" }
++        heuresDouble = double.map { $0.detail["heures"] as? [String] ?? [] }
++        minutesDouble = (double?.detail["minutes"] as? NSNumber)?.intValue
++    }
++}
++
++@MainActor
++final class ReglementSeance {
++    static let shared = ReglementSeance()
++    var contexte: ModelContext?
++    private var repriseEnCours: UUID?
++    private var attentes: [UUID: [CheckedContinuation<Void, Never>]] = [:]
++
++    /// Le marqueur et la séance ont déjà été sauvés ensemble. On alimente
++    /// l'outbox AVANT la synchro, qui pourra ensuite régler sans perdre le gain.
++    func reprendre() async {
++        guard EconomieWoop.possible, let contexte else { return }
++        let generation = CompteEtat.shared.generationDonnees
++        while repriseEnCours == generation {
++            await withCheckedContinuation { attentes[generation, default: []].append($0) }
++            guard generation == CompteEtat.shared.generationDonnees, !Task.isCancelled else { return }
++        }
++        repriseEnCours = generation
++        defer {
++            if repriseEnCours == generation { repriseEnCours = nil }
++            attentes.removeValue(forKey: generation)?.forEach { $0.resume() }
++        }
++        let ticket = await OutboxGains.shared.identiteGeneration
++        guard let owner = try? await SupabaseSession.shared.currentUserID(),
++              generation == CompteEtat.shared.generationDonnees else { return }
++        let workouts = (try? contexte.fetch(FetchDescriptor<Workout>())) ?? []
++        let ids = await OutboxGains.shared.seancesARejouer
++        guard generation == CompteEtat.shared.generationDonnees else { return }
++        let finies = workouts.filter { $0.endedAt != nil && ($0.recompenseARegler || ids.contains($0.remoteID)) }
++        let snapshots = finies.map { $0.snapshot() }
++        for workout in finies where workout.recompenseARegler {
++            await OutboxGains.shared.retenir(.finDeSeance(seance: workout.remoteID, series: workout.seriesPayantes), siGeneration: ticket)
++            guard generation == CompteEtat.shared.generationDonnees else { return }
++        }
++        await SupabaseSync.shared.push(snapshots, proprietaire: owner)
++        guard generation == CompteEtat.shared.generationDonnees else { return }
++        await OutboxGains.shared.vider()
++    }
++
++    /// Appelé sous la garde de génération de l'outbox, avant son acquittement.
++    func recevoir(_ cloture: SacreServeur.ClotureSeance) {
++        guard let contexte, let id = cloture.workoutId.flatMap(UUID.init(uuidString:)),
++              let workout = try? contexte.fetch(FetchDescriptor<Workout>(predicate: #Predicate { $0.remoteID == id })).first
++        else { return }
++        do {
++            workout.bilanRecompense = try JSONEncoder().encode(BilanRecompenseSeance(cloture))
++            workout.recompenseARegler = false
++            try contexte.save()
++        } catch {
++            // Le marqueur persiste encore sur disque : prochain lancement,
++            // même UUID, même reçu, aucun second versement.
++            workout.recompenseARegler = true
++            print("[fin-seance] reçu non sauvegardé : \(error)")
++        }
++    }
++}

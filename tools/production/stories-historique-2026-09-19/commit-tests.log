@@ -1,0 +1,127 @@
+/private/var/folders/sk/1y78dckn1fbdyvwtdtdy76680000gn/T/nosfy-session-commit-s4q40rbr/travail/Nosfy/Services/ReglementSeance.swift:51:27: warning: no calls to throwing functions occur within 'try' expression
+49 |         }
+50 |         let ticket = await OutboxGains.shared.identiteGeneration
+51 |         guard let owner = try? await SupabaseSession.shared.currentUserID(),
+   |                           `- warning: no calls to throwing functions occur within 'try' expression
+52 |               generation == CompteEtat.shared.generationDonnees else { return }
+53 |         let workouts = (try? contexte.fetch(FetchDescriptor<Workout>())) ?? []
+PASS une série faite parmi cinq prévues
+Arrêt du processus après sauvegarde, avant tout appel réseau
+PASS nouveau processus retrouve clôture et demande de gain
+PASS story ne compte que les séries faites
+PASS volume de la Home : séries prévues exclues
+PASS charge maximale : aucune série prévue transformée en record
+PASS aucune pièce par série inventée avant réponse
+PASS pas de faux gain avant réponse
+PASS gain mis en file avant première synchro
+PASS la reprise transmet le nombre réellement fait
+PASS échec ou absence de réponse conserve le marqueur
+PASS réponse sauvegardée acquitte la clôture locale
+PASS vingt pièces affichent le sachet forfaitaire confirmé
+PASS le bilan confirmé sort de l’attente
+PASS reçu rejoué après annonces acquittées conserve les trois sachets
+PASS bilan garde pièces totales et argent du serveur
+PASS faits TOP et double appartiennent à la même séance
+PASS séance vide : aucune série démo et aucun galet
+PASS piscine pure avance sans inventer de musculation
+PASS un autre reçu ne repeint pas la séance
+PASS deux reprises ne poussent pas en concurrence
+PASS séance terminée pendant une reprise traitée ensuite
+[welcome-back] retenue : séance, story ou route à l’écran
+PASS Welcome Back retenu garde 0
+[welcome-back] retenue : séance, story ou route à l’écran
+PASS Welcome Back retenu garde 1
+[welcome-back] retenue : séance, story ou route à l’écran
+PASS Welcome Back retenu garde 2
+[welcome-back] retenue : séance, story ou route à l’écran
+PASS Welcome Back retenu garde 3
+[welcome-back] retenue : séance, story ou route à l’écran
+PASS Welcome Back retenu garde 4
+[welcome-back] retenue : la porte, le film ou le splash tient l'écran
+PASS Welcome Back retenu garde 5
+[welcome-back] retenue : première arrivée (c'est Nosfy qui parle)
+PASS Welcome Back retenu garde 6
+[welcome-back] retenue : retour_disponible faux (rien à prendre, ou aucune séance finie — S4)
+PASS Welcome Back retenu garde 7
+[welcome-back] ouverte (le serveur dit que le jour est à prendre)
+PASS Welcome Back disponible sur accueil libre
+29 contrôles PASS dans le second processus
+PASS reçu acquitté conservé après nouveau processus
+PASS story retrouve le bilan persistant
+PASS faits persistants retrouvés
+PASS migration conserve l’historique déjà présent
+PASS nouveaux champs sans gain rétroactif sur ancienne base
+[pull] bilans historiques : 0 retrouvés
+[pull] seances_depuis(tout) → total 1, rendues 1 · insérées 1, ignorées 0 · local 1
+PASS historique serveur réinséré avec son identité
+PASS séries faites restaurées pour la Route
+PASS cardio et piscine restaurés
+PASS curseur posé après lecture
+[pull] bilans historiques : 0 retrouvés
+[pull] seances_depuis(2026-09-18T10:00:00Z) → total 1, rendues 1 · insérées 0, ignorées 1 · local 1
+PASS relecture sans doublons
+PASS réponse du compte précédent écartée
+PASS ancien compte ne pose aucun curseur
+[pull] seances_depuis ✗ The operation couldn’t be completed. (NSURLErrorDomain error -1011.)
+PASS échec réseau : données et curseur inchangés
+[pull] bilans historiques : 0 retrouvés
+[pull] seances_depuis(tout) → total 1, rendues 1 · insérées 1, ignorées 0 · local 1
+PASS nouvelle lecture après reconnexion récupère les séances
+[pull] bilans historiques : 1 retrouvés
+PASS reçu manquant retrouvé pour une séance déjà locale
+PASS montant historique lu sans recalcul
+[pull] bilans historiques différés : The operation couldn’t be completed. (NSURLErrorDomain error -1011.)
+PASS panne de reçu : reste manquant, aucune valeur inventée
+[pull] bilans historiques différés : The operation couldn’t be completed. (NSURLErrorDomain error -3003.)
+PASS échec disque : reçu reste à récupérer
+[pull] bilans historiques : 0 retrouvés
+PASS reçu d'un autre propriétaire ignoré
+PASS séance en règlement laissée à son outbox
+PASS reçu tardif après changement de compte ignoré
+[pull] bilans historiques : 1 retrouvés
+PASS reprise après les pannes retrouve le reçu
+17 contrôles pull PASS — transport et stockage isolés
+/private/var/folders/sk/1y78dckn1fbdyvwtdtdy76680000gn/T/nosfy-session-commit-s4q40rbr/travail/tools/serveur/tests/outbox_regression.swift:86:15: warning: no 'async' operations occur within 'await' expression
+ 84 |         await o.vider()
+ 85 |         check(await o.enAttente == 0,"succès retire le gain")
+ 86 |         check(await EconomieWoop.shared.applications == 1,"réponse appliquée une fois")
+    |               `- warning: no 'async' operations occur within 'await' expression
+ 87 |         await Reseau.shared.configurer(200,bloque:true)
+ 88 |         let cible = await Reseau.shared.appels + 1
+
+/private/var/folders/sk/1y78dckn1fbdyvwtdtdy76680000gn/T/nosfy-session-commit-s4q40rbr/travail/tools/serveur/tests/outbox_regression.swift:95:15: warning: no 'async' operations occur within 'await' expression
+ 93 |         await Reseau.shared.liberer();await premier.value
+ 94 |         check(await o.enAttente == 0,"ajout concurrent envoyé dans le même vidage")
+ 95 |         check(await EconomieWoop.shared.applications == 3,"deux réponses concurrentes appliquées")
+    |               `- warning: no 'async' operations occur within 'await' expression
+ 96 |         await Reseau.shared.configurer(200,bloque:true)
+ 97 |         let cible2 = await Reseau.shared.appels + 1
+
+/private/var/folders/sk/1y78dckn1fbdyvwtdtdy76680000gn/T/nosfy-session-commit-s4q40rbr/travail/tools/serveur/tests/outbox_regression.swift:103:15: warning: no 'async' operations occur within 'await' expression
+101 |         await Reseau.shared.liberer();await ancien.value
+102 |         check(await o.enAttente == 0,"changement de compte ne recrée pas la file")
+103 |         check(await EconomieWoop.shared.applications == 3,"retour tardif de l'ancien compte ignoré")
+    |               `- warning: no 'async' operations occur within 'await' expression
+104 |         await Reseau.shared.configurer(403);await o.poster(gain)
+105 |         check(await o.enAttente == 0,"refus définitif ne bouche pas la file")
+PASS retenir persiste sans réseau
+PASS ancien travail ne remplit pas le nouveau compte
+PASS gain persiste avant le réseau
+PASS 503 conserve le gain
+PASS rattrapage identifie la séance à synchroniser
+PASS doublon en attente évité
+[coffre] séance réglée : +20 pièces (créditées true) · sachet NEUF · solde 20 · reste 20
+PASS succès retire le gain
+PASS réponse appliquée une fois
+PASS ajout concurrent conservé
+[coffre] séance réglée : +20 pièces (créditées true) · sachet NEUF · solde 20 · reste 20
+[coffre] séance réglée : +20 pièces (créditées true) · sachet NEUF · solde 20 · reste 20
+PASS ajout concurrent envoyé dans le même vidage
+PASS deux réponses concurrentes appliquées
+[coffre] séance réglée : +20 pièces (créditées true) · sachet NEUF · solde 20 · reste 20
+PASS changement de compte ne recrée pas la file
+PASS retour tardif de l'ancien compte ignoré
+[outbox] refus définitif : HTTP 403 banc
+PASS refus définitif ne bouche pas la file
+PASS session à renouveler conserve le gain
+15 contrôles PASS

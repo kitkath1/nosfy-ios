@@ -1145,6 +1145,8 @@ struct CardVolume: View {
 // MARK: - LA CARD DES SÉANCES
 
 struct CardSeances: View {
+    @Environment(\.modelContext) private var contexte
+    @State private var historique = HistoriqueStories()
     @Environment(\.harmonieInter) private var interUnifie
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var faites: Int = 4
@@ -1207,6 +1209,29 @@ struct CardSeances: View {
         // ⚠️ UN SEUL GESTE : un `onLongPressGesture` volerait le tap.
         .modifier(CardTouche(mode: interaction,
                              chambre: $chambreDoigt, doigt: $doigt))
+        .overlay {
+            // Les jours faits ont leur accès direct ; le reste de la carte
+            // conserve les gestes de retournement et d'édition.
+            if case .home = interaction, chambre < 0.01, !vide, let faits = joursFaits {
+                GeometryReader { g in
+                    ForEach(0..<7, id: \.self) { i in
+                        if faits.contains(i), let jour = SeancesHistorique.jourDeSemaine(i) {
+                            Button {
+                                historique.ouvrir(jour: jour, contexte: contexte)
+                            } label: {
+                                Color.clear.contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .frame(width: g.size.width * 0.1115, height: g.size.height * 0.28)
+                            .position(x: g.size.width * (0.156 + 0.1115 * Double(i)), y: g.size.height * 0.63)
+                            .accessibilityLabel(L("Revoir les séances du ", "Review sessions on ") + jour.formatted(date: .complete, time: .omitted))
+                            .accessibilityIdentifier("historique-jour-\(i)")
+                        }
+                    }
+                }
+            }
+        }
+        .modifier(HistoriqueStoriesHote(historique: historique))
     }
 
     /// L'INTÉRIEUR — LE MOIS. Les sept pastilles de la semaine s'écartent en

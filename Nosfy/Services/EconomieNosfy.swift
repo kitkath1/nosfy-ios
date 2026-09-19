@@ -80,12 +80,12 @@ final class EconomieWoop {
     /// pièces, parce que `EconomieWoop` n'avait pas de repli pour CE
     /// nombre-là. Deux replis, deux vérités : exactement le défaut qu'on
     /// répare. L'arbitre en tient UN, et `SacreEtat` lui délègue.
-    var boosters: Int { serveur ? boostersServeur : maquetteBoosters }
+    var boosters: Int { serveur ? boostersServeur : (Self.maquetteActive ? maquetteBoosters : 0) }
     private(set) var boostersServeur = 0
     /// `-sansSachet` : la maquette naît SANS sachet — le barreau du panneau
     /// du géant à vide (la jauge, « Verrouillé »), 15-09.
     var maquetteBoosters =
-        CommandLine.arguments.contains("-sansSachet") ? 0 : 1
+        EconomieWoop.maquetteActive && !CommandLine.arguments.contains("-sansSachet") ? 1 : 0
 
     /// Les sachets NOIRS ouvrables. ⚠️ Côté serveur, c'est le solde d'argent
     /// (le sachet noir naît au claim) PLUS le noir déjà payé, ouvert et pas
@@ -94,7 +94,7 @@ final class EconomieWoop {
     /// pas (app tuée pendant la peinture, 500, timeout), le compte à 0, la
     /// porte du manège FERMÉE — et la reprise que le serveur sait faire
     /// n'était plus jamais déclenchée. Le sachet payé restait dans le vide.
-    var boostersNoirs: Int { serveur ? noirsPossedes + argent / max(prixNoir, 1) : maquetteNoirs }
+    var boostersNoirs: Int { serveur ? noirsPossedes + argent / max(prixNoir, 1) : (Self.maquetteActive ? maquetteNoirs : 0) }
     private(set) var noirsPossedes = 0
     private(set) var prixNoir = 1
     private var versionInventaire: Int64 = -1
@@ -223,6 +223,10 @@ final class EconomieWoop {
     /// démonstration ne touchent jamais un vrai compte, et sans configuration
     /// on ne tente rien (« aucun 404 dans les logs d'une app dont le backend
     /// n'est pas encore là »). Une seule règle d'accès au serveur, pas deux.
+    private static var maquetteActive: Bool {
+        CommandLine.arguments.contains { ["-demoData", "-boosterLab", "-coffreLab", "-sacreLab", "-sacreNoir"].contains($0) }
+    }
+
     static var possible: Bool {
         if CommandLine.arguments.contains("-demoData"),
            !CommandLine.arguments.contains("-syncNow") { return false }
@@ -283,6 +287,12 @@ final class EconomieWoop {
         or = 0
         argent = 0
         boostersServeur = 0
+        maquetteBoosters = 0
+        maquetteNoirs = 0
+        seanceStory = nil
+        clotureRepondue = false
+        dernierFaits = []
+        dernierGainCardio = 0
         noirsOuverts = 0
         reste = 0
         journal = []
@@ -332,6 +342,9 @@ final class EconomieWoop {
     /// plusieurs sources. Refaire un aller-retour ici, ce serait recréer le
     /// défaut que cette réponse a été élargie pour supprimer.
     func appliquer(_ c: SacreServeur.ClotureSeance) {
+        if let recu = c.recu, let owner = proprietaireCartes,
+           owner != recu.userId.lowercased() { return }
+        ReglementSeance.shared.recevoir(c)
         if let recu = c.recu {
             recevoir(recu)
             if seanceStory == nil || seanceStory == c.workoutId {

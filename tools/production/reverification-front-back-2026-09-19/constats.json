@@ -1,0 +1,22 @@
+{
+  "verdict_global": "incomplet",
+  "checks_swift_connectes_reussis": 20,
+  "checks_api_reussis": 44,
+  "compilation": "reussie",
+  "comptes_qa_nettoyes": 3,
+  "telephone_utilise": false,
+  "ecarts_confirmes": [
+    {
+      "id": "recu-story-restauree",
+      "etat": "non_corrige",
+      "preuve": "swift-live.log",
+      "description": "Le vrai pull dans une base neuve restaure séance, série et volume mais pas le reçu de récompenses."
+    }
+  ],
+  "hors_banc": [
+    "geste Apple natif",
+    "montage des vues",
+    "haptiques",
+    "thermique"
+  ]
+}

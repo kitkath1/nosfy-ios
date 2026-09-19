@@ -1,5 +1,36 @@
+<Decision titre="Premier utilisateur TestFlight — seuil du pilote, 19 septembre">
+  <p>État actualisé par la passe API ci-dessus : build 81 envoyé, fiches relues. Le premier testeur externe attend encore la réponse à la revue bêta Apple déjà soumise, puis les 50 cartes demandées.</p>
+  <p>Nouvelle passe : configuration Apple active pour le bon identifiant, inscriptions ouvertes, quatre secrets présents ; 50 contrôles Compte et 12 du client d’inscription réussis. Les comptes des bancs sont créés côté serveur : cela ne prouve pas une nouvelle création par la feuille Apple sur la version TestFlight.</p>
+  <p>Le premier essai doit couvrir Apple → inscription → home vide → séance → story et galet → booster et collection, puis retour le lendemain et reconnexion. Les reçus après restauration sont désormais récupérés en lecture seule (24 contrôles Swift connectés, 17 API). Kathryn exige les 50 cartes pour le lancement ; ce prérequis reste à la session Cartes. La vraie expérience complète du binaire TestFlight reste à qualifier.</p>
+  <p>Analyse et critères : <code>tools/production/analyse-testflight-2026-09-19/README.md</code>. Aucun téléphone utilisé, aucun code produit changé.</p>
+</Decision>
+
+<Decision titre="Nouvelle vérification — vrais clients Swift et Supabase, sans téléphone">
+  <p><b>20 contrôles Swift connectés et 44 contrôles API PASS.</b> Les tests font réellement voyager séance, reçu, annonces, quotidien, boosters et carte entre le client et Supabase. Trois comptes temporaires nettoyés. Les résultats sont reportés aussi dans Annonces, Serveur, Flow, Coffre, Cartes et Stories.</p>
+  <p><b>Autres contrôles réussis :</b> 35 SwiftData/story/Welcome, 15 outbox, 13 sync, 9 pull, 15 session et 2 × 1 277 Route. Compilation Debug réussie ; aucune source produit changée pendant cette passe.</p>
+  <ol>
+    <li><b>Défaut corrigé après cette passe :</b> le pull recharge désormais les reçus des anciennes stories ; même bilan après acquittement, sans nouveaux gains. Preuve : <code>tools/production/stories-historique-2026-09-19/README.md</code>.</li>
+    <li><b>Travaux distincts :</b> les 36 scènes futures du catalogue de 50, les diagnostics backend et la restauration de sauvegarde ne sont pas validés par ces tests.</li>
+    <li><b>Hors contrôle automatique :</b> échange Apple natif, rendu physique, haptiques et chauffe. Aucun téléphone utilisé ni demandé pour cette passe.</li>
+    <li><b>Distribution :</b> build 81 archivé, signé, envoyé et VALID ; revue externe soumise, réponse Apple puis ouverture des accès encore attendues.</li>
+  </ol>
+  <p><b>Vert = preuve réussie sur la ligne concernée.</b> Les cartes des sections sont recalculées depuis ces lignes. Deux contrôles UI simulateur de fin de séance restent acquis dans la première passe ; la nouvelle passe vérifie les échanges. Preuves : <code>tools/production/reverification-front-back-2026-09-19/README.md</code>.</p>
+</Decision>
+
 <Decision titre="Parcours Compte et récompense lunaire">
   <p>40 contrôles serveur PASS : création QA, sept séances, lune, ouverture des sachets, cartes et progression retrouvées à la reconnexion ; autre compte isolé.9 contrôles du pull Swift et2554 Route PASS. Deux séances du téléphone actuel rapprochées sans effacement. Reconnexion Apple et parcours tactile neuf restent à jouer ; ces bancs ne les remplacent pas.</p>
+</Decision>
+
+<Decision titre="Plan de la session stories / annonces — 17 septembre">
+  <p><b>Finir stories, toaster et liaison coffre / annonces / stories avec Supabase.</b> Les cartes en verre de l’accueil lisent les mêmes preuves que les pages : elles affichent « Tout est bon » quand toutes leurs lignes sont validées. Les points qui attendent un contrôle restent visibles dans le détail de la carte.</p>
+  <ol>
+    <li><b>Stories :</b> corriger le gel à la réouverture et libérer les moteurs à la fermeture. Parcours complets, retours et interruption testés sur l’iPhone, version69. Les résultats sont sur la page <a href="#histoire" data-saut="histoire">Stories</a>.</li>
+    <li><b>Toaster :</b> étirer la pilule depuis l’île à l’intérieur de Nosfy, en haut, puis enchaîner les annonces. Position, pièces → sachet et disparition testées sur l’iPhone ; morph filmé au simulateur. <a href="#annonces" data-saut="annonces">Les annonces</a> gardent le ressenti haptique à confirmer : réponse de Kathryn le17-09, « Pas encore vérifié ».</li>
+    <li><b>Connexion :</b> renouvellement de session corrigé ; le vrai client Swift a décodé les réponses Supabase du coffre et des règles d’annonces. Faits de clôture mesurés sur un compte de test et lus par la story. Relance de la session conservée et navigation testées sur l’iPhone. Ces preuves ne couvrent pas encore la première séance complète d’un nouveau compte dans l’interface.</li>
+    <li><b>Chauffe :</b> contrôle sans câble en attente à la demande de Kathryn le17-09. La campagne avec charge est conservée : thermique0 → 1 avant les stories, puis1 en récupération ; aucun gel sur69. Elle ne permet pas de conclure que la chauffe durable est résolue.</li>
+    <li><b>Clôture documentaire :</b> tenir à jour les lignes, les cartes en verre et le livrable ; vérifier le site local et ses captures. Une validation future de la chauffe ou de l’haptique mettra à jour la ligne concernée, puis la carte sera recalculée.</li>
+  </ol>
+  <p><b>Reportés à la clôture de ce périmètre :</b> Forge, Compte et Sign in with Apple, ainsi que la vraie Live Activity Apple. Une analyse seule du chapitre renommé <a href="#forge" data-saut="forge">Cartes</a> a ensuite été ouverte à la demande de Kathryn. Aucun nouveau chantier dans ces blocs pour terminer cette session. Plan détaillé et preuves : <code>tools/PASSATION-2026-09-17-story-annonces-coffre-toaster.md</code> et <code>tools/perf/campagnes/2026-09-17-story-session-ile/etat.md</code>.</p>
 </Decision>
 
 <div className="reveal">

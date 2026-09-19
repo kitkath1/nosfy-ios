@@ -398,7 +398,7 @@ struct ChambreDonnees {
             for ex in w.orderedExercises where ex.volume > 0 {
                 var e = parExo[ex.exerciseID] ?? (ex.name, ex.exercise?.category, 0, 0, 0)
                 e.vol += ex.volume
-                e.reps += ex.orderedSets.reduce(0) { $0 + $1.reps }
+                e.reps += ex.orderedSets.filter(\.isDone).reduce(0) { $0 + $1.reps }
                 e.charge = max(e.charge, ex.maxWeight)
                 parExo[ex.exerciseID] = e
             }
@@ -515,7 +515,7 @@ struct ChambreDonnees {
                                                    cat: ex.exercise?.category, charge: 0,
                                                    reps: 0, precedent: maxAvant[ex.exerciseID])
                 if ex.maxWeight >= p.charge {
-                    let reps = ex.orderedSets.filter { $0.weight == ex.maxWeight }.map(\.reps).max() ?? 0
+                    let reps = ex.orderedSets.filter { $0.isDone && $0.weight == ex.maxWeight }.map(\.reps).max() ?? 0
                     if ex.maxWeight > p.charge { p.charge = ex.maxWeight; p.reps = reps }
                     else { p.reps = max(p.reps, reps) }
                 }

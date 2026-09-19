@@ -1,3 +1,14 @@
+<Decision titre="Flow — de la séance au reçu, vérifié sans téléphone — 19 septembre">
+  <p>Le vrai règlement Swift pousse la séance, fait traiter l’outbox, décode le reçu et le sauve avant que StorySession le relise. Une série faite parmi cinq donne 20 pièces et un sachet, avec un volume de 50 kg. Les tests de reprise et de Route repassent.</p>
+  <p>Le retour à la Route après la story est déjà couvert par deux tests UI simulateur. L’ancienne ligne disant qu’il n’existait pas est corrigée. Les gestes physiques sont hors de cette passe.</p>
+  <p>Résultats et limites : <code>tools/production/reverification-front-back-2026-09-19/README.md</code>. Chaque ligne validée passe au vert ici et dans la carte récapitulative ; une section devient entièrement verte quand aucun point de son périmètre ne reste ouvert.</p>
+</Decision>
+
+<Decision titre="Parcours de fin de séance — 19 septembre">
+  <p>Finir sauvegarde la séance et sa demande de gain ensemble. Après la story, le galet se valide, le suivant devient actif ; sortir du chemin libère les annonces puis propose le booster. Une séance réellement faite vaut un galet, y compris deux le même jour. Au-delà de35, aucune remise à zéro.</p>
+  <p>Preuves et limites : <code>tools/production/fin-seance-2026-09-19/README.md</code>. Contrôles iPhone, Apple et chauffe encore ouverts dans Test QA.</p>
+</Decision>
+
 <Decision titre="Séance et galets reliés aux deux manèges">
   <p>Sauvegarde → clôture validée → reçu et stocks → stories/annonces → coffre → manège orange ou noir → collection. Les noirs de Route garantissent une légendaire gratuite. Grattage sans second paiement.28 API Cartes et35 régressions gains PASS ; QA physique distincte.</p>
   <p>Preuves : <code>tools/carte-lune/integration-2026-09-18/README.md</code>.</p>

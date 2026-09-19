@@ -12,6 +12,14 @@ Projet et schéma : `Nosfy.xcodeproj` / `Nosfy`. Sources : `Nosfy/`,
 chemins pour les nouveaux builds et commits. Les anciens chemins locaux ne
 sont que des liens de transition pour les sessions ouvertes, hors du projet.
 
+## Catalogue du lancement — règle de Kathryn, 19-09
+
+Les 50 cartes font partie du lancement demandé. Ne pas présenter les 36 cartes
+encore à produire comme reportées après TestFlight : une autre session Cartes
+travaille dessus. Ce prérequis reste ouvert jusqu’à publication et vérification
+du catalogue complet ; les sessions Parcours/Compte ne modifient pas ses assets.
+
+
 ## Compte vide et Route — règle de Kathryn,18-09
 
 Sans séance terminée, commencer tout en haut du chapitre1, au premier galet.

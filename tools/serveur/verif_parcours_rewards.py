@@ -78,6 +78,11 @@ try:
   check(len(rpc('seances_chemin',{},jwt))==n and gain['series_verifiees']==1, f'séance{n} : travail sauvegardé, gain confirmé, progression{n}')
   if n==1:
    check(gain['pieces_total']==20 and gain['coffre']['boosters_or']==1, 'première séance :20pièces et1sachet réels')
+   check(coffre(jwt)['retour_disponible'] is True, 'après première séance : retour quotidien disponible')
+   retour=rpc('claim_retour_quotidien',{},jwt);solde=coffre(jwt)
+   check(retour['credite'] and retour['montant']==solde['pieces_retour_quotidien'], 'retour quotidien paie le montant serveur')
+   bis=rpc('claim_retour_quotidien',{},jwt)
+   check(not bis['credite'] and coffre(jwt)==solde and not solde['retour_disponible'], 'deuxième Claim du jour : aucun gain doublé')
   if n==3:
    mi=rpc('tirer_noeud_chemin',{'p_noeud':3,'p_pieces':True},jwt)
    check(bool(mi['receipt_id']), 'premier galet reward réclamable au seuil3')
@@ -128,6 +133,8 @@ try:
  code,_=appel('/rest/v1/rpc/acquitter_annonces',{'p_ids':ids},s['access_token']);assert code==204
  check(rpc('annonces_en_attente',{},s['access_token'])==[], 'annonces vues : acquittement durable')
  check(rpc('tirer_noeud_chemin',{'p_noeud':8,'p_pieces':False},s['access_token'])['events']==[], 'relecture lune après annonces : aucune annonce rejouée')
+ bilan=cloturer(b,s['access_token'])
+ check(bilan['events']==[] and bilan['pieces_total']==gain['pieces_total'] and set(bilan['booster_ids'])==set(gain['booster_ids']), 'story après acquittement : pièces et sachets du reçu restent exacts')
  print(f'{ok} contrôles parcours API PASS — feuille Apple et rendu iPhone hors banc',flush=True)
 finally:
  for u in crees:

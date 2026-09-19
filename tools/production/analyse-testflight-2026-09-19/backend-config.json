@@ -1,0 +1,53 @@
+{
+  "lu_le_utc": "2026-09-19T07:23:28.294869+00:00",
+  "projet": {
+    "status": "ACTIVE_HEALTHY",
+    "region": "eu-west-2"
+  },
+  "auth": {
+    "external_apple_enabled": true,
+    "external_apple_client_id": "fr.kathryn.woop",
+    "disable_signup": false,
+    "external_anonymous_users_enabled": false,
+    "jwt_exp": 3600
+  },
+  "secrets_apple_presents": {
+    "APPLE_KEY_ID": true,
+    "APPLE_TEAM_ID": true,
+    "APPLE_CLIENT_ID": true,
+    "APPLE_PRIVATE_KEY": true
+  },
+  "fonctions": [
+    {
+      "slug": "forge-card",
+      "status": "ACTIVE",
+      "version": 8
+    },
+    {
+      "slug": "apple-jeton",
+      "status": "ACTIVE",
+      "version": 3
+    },
+    {
+      "slug": "supprimer-compte",
+      "status": "ACTIVE",
+      "version": 3
+    },
+    {
+      "slug": "rejouer-revocations",
+      "status": "ACTIVE",
+      "version": 2
+    },
+    {
+      "slug": "bilan-periode",
+      "status": "ACTIVE",
+      "version": 5
+    },
+    {
+      "slug": "home-textes",
+      "status": "ACTIVE",
+      "version": 7
+    }
+  ],
+  "limite": "Configuration en lecture seule. Aucun échange réel Apple ni état App Store Connect mesuré."
+}
