@@ -3426,7 +3426,7 @@ struct CoffreV2Page: View {
     /// **miroir noir** : mêmes arrêts, même diagonale, en encre.
     private var titre: some View {
         let p = min(max(arrivee / 0.90, 0), 1)
-        return Text("Rewards")
+        return Text(L("Coffre", "Rewards"))
             .font(.inter(30, .bold))
             .tracking(-0.4)
             // ⚠️⚠️ **LE PASSAGE AU NOIR A TUÉ SON ENCRE.** « Rewards » était
