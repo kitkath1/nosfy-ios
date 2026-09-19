@@ -1,3 +1,11 @@
+import { BilanBackend } from '@/components/BilanBackend'
+
+<BilanBackend titre="Backend Cartes" ids={["b-live-cartes-1909", "b-cartes-catalogue-melange"]}>
+  <p>Même opération d’ouverture conservée par le client Swift, même sachet à la reprise, même exemplaire après attribution rejouée et carte retrouvée par le décodeur Collection. Le banc API appelle aussi forge-card et vérifie lune, gains et reconnexion.</p>
+  <p>Les 14 références actuelles et les 36 scènes prévues appartiennent au même catalogue : chaque nouvelle référence publiée rejoint immédiatement le tirage commun. Les preuves du manège et des coupures simulées de la session Cartes sont conservées ; aucune image ni règle du catalogue modifiée ici.</p>
+  <p>Résultats et limites : <code>tools/carte-lune/catalogue-commun-2026-09-19/README.md</code>. Chaque ligne validée passe au vert ici et dans la carte récapitulative ; une section devient entièrement verte quand aucun point de son périmètre ne reste ouvert.</p>
+</BilanBackend>
+
 import { GalerieCartes } from '@/components/GalerieCartes'
 
 <Decision titre="50 scènes communes, sans génération pour cette passe">
@@ -8,6 +16,12 @@ import { GalerieCartes } from '@/components/GalerieCartes'
 <Decision titre="Cartes — backend vérifié, orange et noir joués sur iPhone">
   <p><b>Trois familles, 14 références communes.</b> Même image, nom localisé et rareté pour tous ; exemplaires personnels. Anciennes cartes conservées. 19-09 : 28 API Cartes repassées, deux comptes temporaires supprimés ; références et empreintes du catalogue distant relues. 35 régressions gains PASS le 18-09.</p>
   <p>18-09, 12:40 : le banc app franchit Ouvrir — orange jusqu'à la collection, noir offert jusqu'à la légendaire et la relance, deux manèges interrompus et repris (4 scénarios, 0 échec, simulateur). Le blocage du 18-09 à 12:03 n'était pas le bouton : le banc tapait pendant le film d'arrivée du coffre ; le pied ne monte plus son bouton avant que la page soit allumée. Puis sur son iPhone à 16:38 : deux sachets orange ouverts au doigt après le film, deux cartes envolées vers la collection, serveur cohérent, thermique 0 sur trois minutes. À 17:01, un sachet noir de test : légendaire révélée et envolée, manège noir au même coût que l'orange. À 18:40, le chevron pendant le manège : retour home, sachet intact, reprise, carte envolée. Le 19-09, deux pertes de réponse après attribution réelle passent au simulateur : Réessayer sur orange et relance sur noir, une seule carte par sachet. Restent ouverts : le mode avion sur iPhone, l’endurance, le shiny animé et le contraste — le sachet noir, « trop mat », a été refait le soir même sur son téléphone : laque sombre, lune en néon blanc, une boîte à musique et un sacre à lui, « très bien ».</p>
+</Decision>
+
+<Decision titre="Un seul tirage : les anciennes et les nouvelles ensemble">
+  <p>Il n’y a pas de série des 14 à terminer avant de découvrir les 36 suivantes. Dès sa publication, une nouvelle scène entre dans le même tirage que toutes les références déjà disponibles. Une nouvelle carte peut donc sortir alors que des cartes initiales manquent encore. Avec 50 scènes publiées, les 50 sont mélangées dès les premières ouvertures.</p>
+  <p>Le serveur choisit la rareté, puis une carte dans toutes les références publiées de cette rareté ; les légendaires inconnues restent prioritaires. Les garanties et les cartes déjà scellées sont conservées. La scène officielle est identique pour tous ; chaque joueur garde ses propres exemplaires.</p>
+  <p>Fonction déployée relue le 19-09, catalogue actif à 14 références : <code>tools/carte-lune/catalogue-commun-2026-09-19/verification.json</code>. Aucune nouvelle illustration générée ou publiée dans cette vérification.</p>
 </Decision>
 
 <Decision titre="Deux manèges : orange et noir">
@@ -45,12 +59,12 @@ Séance sauvegardée et validée → reçu unique et coffre versionné → story
 
 Deux comptes, concurrence, isolation, reconnexion et garanties testés. Preuves et limites : `tools/carte-lune/integration-2026-09-18/README.md`. Plan : `tools/carte-lune/PLAN-BRANCHEMENT-CARTES-2026-09-18.md`.
 
-## Ce qui reste
-
-<Liste page="forge" etats={['men', 'loc', 'srv', 'abs']} mesures />
-
-## Ce qui tient, avec ses limites
+## Backend et parcours validés
 
 <Liste page="forge" etats={['ok']} />
+
+## Contenu et mesures de l’app encore ouverts
+
+<Liste page="forge" etats={['men', 'loc', 'srv', 'abs']} mesures />
 
 </div>

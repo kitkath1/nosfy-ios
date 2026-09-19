@@ -1,0 +1,39 @@
+{
+  "lu_le_utc": "2026-09-19T08:02:14.067665+00:00",
+  "lecture_seule": true,
+  "conseil_exercice_present": false,
+  "fonctions": [
+    {
+      "slug": "forge-card",
+      "status": "ACTIVE",
+      "version": 8
+    },
+    {
+      "slug": "apple-jeton",
+      "status": "ACTIVE",
+      "version": 3
+    },
+    {
+      "slug": "supprimer-compte",
+      "status": "ACTIVE",
+      "version": 3
+    },
+    {
+      "slug": "rejouer-revocations",
+      "status": "ACTIVE",
+      "version": 2
+    },
+    {
+      "slug": "bilan-periode",
+      "status": "ACTIVE",
+      "version": 5
+    },
+    {
+      "slug": "home-textes",
+      "status": "ACTIVE",
+      "version": 7
+    }
+  ],
+  "historique_app": "ExerciseDetailView.rafraichirPassages lit les séries faites du même exercice dans SwiftData ; aucune nouvelle mesure UI dans cette passe.",
+  "repli_app": "CoachServeur.conseil appelle conseil-exercice ; demanderLeCoach utilise phraseLocale si aucun texte serveur."
+}

@@ -1,0 +1,28 @@
+PASS session réelle : 12 lecteurs partagent le jeton renouvelé du compte QA
+PASS vrai décodeur Coffre : compte neuf à zéro
+PASS clients Annonces et Collection : compte neuf vide
+[coffre] séance réglée : +20 pièces (créditées true) · sachet NEUF · solde 20 · reste 20
+PASS vrai règlement → sync HTTP → outbox HTTP → reçu sauvé et file vidée
+PASS front : une série faite parmi cinq prévues, volume 50 kg
+PASS story construite depuis le reçu réel : 20 pièces et un sachet
+PASS backend relu : seule la série faite a traversé le snapshot Swift
+[coffre] séance réglée : +20 pièces (créditées false) · sachet déjà acquis · solde 20 · reste 20
+PASS rejeu par la vraie outbox : ni pièce ni sachet supplémentaire
+PASS annonces réelles décodées : identifiants uniques et bon propriétaire
+PASS acquittement par le client Swift : aucune annonce restante
+PASS story après acquittement : même montant et même sachet, malgré events vide
+[coffre] retour quotidien : +10 · solde 30
+PASS Claim quotidien via outbox : montant réglé par le serveur
+[coffre] retour quotidien : déjà pris aujourd'hui · solde 30
+PASS second Claim : solde inchangé et Welcome Back indisponible
+PASS client Cartes : opération d’ouverture conservée pour la reprise
+PASS préparation rejouée : même vrai sachet
+PASS attribution RPC et reprise : un seul exemplaire
+PASS vrai décodeur Collection : une carte conservée
+PASS vrai décodeur Coffre : journal avec UUID serveur
+[pull] seances_depuis(tout) → total 1, rendues 1 · insérées 1, ignorées 0 · local 1
+PASS vrai pull HTTP → base locale neuve : séance, série et volume retrouvés
+ECART CONFIRMÉ : reçu absent après pull vers une base neuve ; ancienne story reste en attente
+PASS client Swift : jeton invalide refusé HTTP 401
+20 contrôles Swift → Supabase → SwiftData PASS ; rendu et Apple natif hors banc
+PASS identité QA Swift supprimée ; aucun compte personnel modifié

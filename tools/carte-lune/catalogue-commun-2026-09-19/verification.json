@@ -1,0 +1,17 @@
+{
+  "raretés": {
+    "epic": 3,
+    "rare": 3,
+    "common": 5,
+    "legendary": 3
+  },
+  "catalogue_actif": true,
+  "references_publiees": 14,
+  "lu_le_utc": "2026-09-19T07:53:47.768610+00:00",
+  "lecture_seule": true,
+  "identique_migration_locale": true,
+  "selection": "where publication='publiee' and rarete=rare\n     order by case when rare='legendary' and exists(select 1 from public.user_cards uc where uc.user_id=u and uc.card_id=c0.id)\n       then 1 else 0 end,random() limit 1;",
+  "fonction_sha256": "c83f642067086cc7c6c526c11eb0adc96bebba2a55df6d89ef19fb2e58493375",
+  "conclusion": "Toutes les références publiées de la rareté tirée sont candidates ; aucune phase 14 puis 36. Les légendaires non possédées sont prioritaires parmi tout le catalogue publié.",
+  "limite": "Lecture du code déployé et du catalogue actuel à 14 références ; aucune nouvelle image publiée ni ouverture utilisateur effectuée."
+}

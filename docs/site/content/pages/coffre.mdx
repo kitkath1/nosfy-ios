@@ -1,3 +1,11 @@
+import { BilanBackend } from '@/components/BilanBackend'
+
+<BilanBackend titre="Backend Coffre" ids={["b-live-coffre-1909"]}>
+  <p>Gains et reçus conservés au serveur, compte neuf à zéro, aucun double versement, quotidien à usage unique et journal avec UUID : validés. 53 contrôles Coffre, 44 API du parcours et 20 contrôles des vrais clients Swift connectés passent.</p>
+  <p>Le vert porte sur ces échanges et leurs valeurs. La chauffe du Coffre reste un sujet séparé ; aucune mesure sur téléphone effectuée.</p>
+  <p>Résultats et limites : <code>tools/carte-lune/catalogue-commun-2026-09-19/README.md</code>. Chaque ligne validée passe au vert ici et dans la carte récapitulative ; une section devient entièrement verte quand aucun point de son périmètre ne reste ouvert.</p>
+</BilanBackend>
+
 <Decision titre="Coffre — backend vérifié le 19 septembre">
   <p><b>53 contrôles Coffre et 28 API Cartes PASS</b>, sur des comptes temporaires supprimés après les essais. Conversion des pièces, versement quotidien, fuseau Paris, flamme, droits, rejouabilité et stocks orange/noir contrôlés.</p>
   <p>Les soldes, stocks, prix et reçus viennent du serveur. Les quatre pastilles ouvrent la bonne page du Coffre en français et en anglais (test UI 80 PASS). Le dessin de la pièce d’or ne capture plus le toucher. Le bouton Ouvrir attend la fin du film. Les deux manèges ont été joués sur son iPhone le 18-09. La chauffe du projecteur et l’endurance restent suivies ci-dessous : ces tests backend ne les valident pas.</p>
@@ -19,12 +27,12 @@ par série et le versement du jour sont lus au serveur, actuellement 20 et 10.
 Le retour quotidien respecte les portes du compte et minuit à Paris ; il ne
 crédite qu’une fois. Une absence ne remet pas la collection à zéro.
 
-## Ce qui reste à vérifier
-
-<Liste page="coffre" etats={['men', 'loc', 'srv', 'abs']} mesures />
-
-## Ce qui tient
+## Ce qui est validé
 
 <Liste page="coffre" etats={['ok']} />
+
+## Mesures de l’app encore ouvertes
+
+<Liste page="coffre" etats={['men', 'loc', 'srv', 'abs']} mesures />
 
 </div>

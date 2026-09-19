@@ -1,5 +1,26 @@
 # Règle multi-session (Nosfy)
 
+## Coffre / Cartes — vert backend et tirage commun, 19-09
+
+Sur sa demande : documentation backend explicitement validée (53 Coffre,
+28 Cartes, 44 API parcours et 20 Swift connectés déjà mesurés). Nouvelle
+lecture seule de la fonction déployée : les nouvelles références publiées
+rejoignent toutes les anciennes de même rareté, sans terminer les 14 avant
+les 36 suivantes. Total prévu 50 conservé. Aucun art généré ou publié,
+aucun compte ni téléphone utilisé ; pas de migration ni changement du tirage.
+Preuves : tools/carte-lune/catalogue-commun-2026-09-19/. Les lignes de chauffe,
+de rendu, de production des images et de distribution gardent leur état réel.
+Sources documentaires modifiées par lignes, index partagé intact. Commit de
+cette session demandé ensuite : sélection et livrable vérifiés dans un worktree
+isolé, puis push sur main. Les autres sessions restent hors de la sélection.
+Validation documentaire : artefact puis 23 tests PASS ; dix pages à 390 px,
+captures Coffre/Cartes relues. Le bilan backend vert suit ses briques ; les
+compteurs généraux gardent les mesures physiques encore ouvertes.
+Question complémentaire fiche exercice : historique lié aux séries faites ;
+conseil-exercice absent de la liste distante relue le 19-09. Brique IA maintenue
+absente, preuve ajoutée ; aucun déploiement IA dans cette passe.
+
+
 ## Profil / Coffre — 19-09, tests terminés ; iPhone rendu à Erreur
 
 Bouton de rejeu Nosfy retiré, quatre titres alignés ; toucher de la pastille

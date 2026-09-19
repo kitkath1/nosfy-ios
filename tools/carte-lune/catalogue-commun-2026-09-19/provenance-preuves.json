@@ -1,0 +1,14 @@
+[
+  {
+    "source": "tools/production/reverification-front-back-2026-09-19/parcours-api.log",
+    "copie": "parcours-api-reference.log",
+    "sha256": "53f620b6d986e822f552e4b830876cff8215327e75b898374bbe108b2dd36a41",
+    "portee": "Preuve antérieure du 19-09, copiée pour rendre cette documentation autonome ; aucun test backend relancé."
+  },
+  {
+    "source": "tools/production/reverification-front-back-2026-09-19/swift-live.log",
+    "copie": "swift-live-reference.log",
+    "sha256": "05194d764d2b7b2f281abdc49aec8e321cbb77cccfa8b9f4dc1c6e68ba22d198",
+    "portee": "Preuve antérieure du 19-09, copiée pour rendre cette documentation autonome ; aucun test backend relancé."
+  }
+]

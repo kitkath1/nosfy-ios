@@ -13,11 +13,12 @@
   "contrat": {
     "reference": "une scène officielle = un identifiant stable et une illustration canonique pour tous",
     "generation": "atelier uniquement, jamais au tirage et jamais par utilisateur",
-    "tirage": "le serveur peut tirer une référence existante ; il ne génère pas une scène personnelle",
+    "tirage": "un seul catalogue commun : toutes les références publiées de la rareté tirée participent ensemble, anciennes et nouvelles ; aucune phase de 14 cartes à terminer avant les 36 autres ; légendaires inconnues prioritaires",
     "doublons": "même scène = vrai doublon ; nouveau décor seul ou recoloration ne suffit pas à créer une scène",
     "finition": "shiny officiel commun ; aucune seconde loterie implicite ; matière très marquée sur rares, épiques et légendaires, communes sobres",
     "animation": "éveil bref et réaction au geste pour la seule carte visible, arrêt hors écran/arrière-plan/recouverte, Reduce Motion et protection thermique ; qualité et coût à mesurer",
-    "publication": "seules les images réalisées, approuvées et vérifiées peuvent être publiées ; les compteurs du profil restent ceux du catalogue disponible"
+    "publication": "seules les images réalisées, approuvées et vérifiées peuvent être publiées ; les compteurs du profil restent ceux du catalogue disponible",
+    "extension": "chaque nouvelle scène publiée rejoint immédiatement le même tirage pour tous ; les ouvertures déjà scellées et les cartes possédées conservent leur référence"
   },
   "families": [
     {
