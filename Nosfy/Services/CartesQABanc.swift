@@ -47,4 +47,17 @@ struct CartesQABanc: View {
         }
     }
 }
+/// Une réponse perdue APRÈS attribution réelle, réservée au compte du banc.
+/// Le rejeu doit retrouver le sachet scellé sans nouvelle acquisition.
+actor CoupureCartesQA {
+    static let shared = CoupureCartesQA()
+    private var coupee = false
+
+    func apresAttribution() throws {
+        guard CommandLine.arguments.contains("-cartesQA"),
+              CommandLine.arguments.contains("-cartesQACoupure"), !coupee else { return }
+        coupee = true
+        throw URLError(.networkConnectionLost)
+    }
+}
 #endif

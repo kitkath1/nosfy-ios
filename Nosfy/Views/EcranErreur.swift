@@ -157,11 +157,23 @@ struct EcranErreur: View {
 /// demande courante d'`ErreurNosfy` et la ferme quand le rejeu réussit.
 struct EcranErreurHote: View {
     private let erreurs = ErreurNosfy.shared
+    private let reseau = Reseau.shared
 
     var body: some View {
         if let d = erreurs.courante {
             EcranErreur(cas: d.cas, reessayer: { await rejouer(d) }, fermer: renoncer(d))
                 .id(d.id)
+                .transition(.opacity)
+                .zIndex(60)
+        } else if reseau.mesure, !reseau.enLigne {
+            // LE MODE AVION (19-09, son mot : « quand j'active le mode avion ça
+            // marche pas, c'est une règle Apple, donc t'affiches le message ») :
+            // plus de réseau → l'écran, sans attendre qu'un appel échoue. Il
+            // BLOQUE, et il tombe tout seul quand le réseau revient (la
+            // condition ci-dessus se défait) — « Réessayer » ne fait que relire
+            // le réseau, d'où le deuxième message qui nomme le mode avion.
+            EcranErreur(cas: .horsLigne, reessayer: { reseau.enLigne })
+                .id("hors-ligne")
                 .transition(.opacity)
                 .zIndex(60)
         }

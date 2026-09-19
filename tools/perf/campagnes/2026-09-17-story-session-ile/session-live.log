@@ -1,0 +1,2 @@
+PASS refresh Supabase réel : 12 appels, même jeton neuf, identité QA conservée, etat_coffre 200
+PASS seule la session QA de cet essai est fermée ; aucun gain écrit

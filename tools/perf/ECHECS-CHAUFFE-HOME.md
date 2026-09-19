@@ -30,29 +30,6 @@ la garde du runner ne couvre pas son attente bloquée. Collecte USB sans relance
 après lenteur CoreDevice. Correctif78 du décor préparé ; pas encore installé.
 [Reprise, preuves et limites](campagnes/2026-09-18-chauffe76-apres-reboot/etat.md).
 
-### Live Activity lune — 18-09 : exports du banc invalides, aucune mesure thermique
-
-Le banc partagé SwiftUI a d’abord été exporté avec ImageRenderer : jauge native
-non rendue et glyphes manquants. Le premier film réalisé pendant ces exports est
-invalide ; il est archivé et exclu des preuves. Reprise sur le seul simulateur
-créé pour cette session : captures d’écran complètes lisibles, puis film HEVC
-d’une carte unique sans export concurrent, textes et reflet de lune visibles.
-Les compilations/tests initialement refusés par l’accès Xcode/Metal et les macros
-sous bac à sable passent dans la même copie avec les outils accessibles.
-Ce banc ne prouve ni le rendu ActivityKit système, ni la chauffe sur iPhone.
-Aucun accès au téléphone ni arrêt des processus des autres sessions.
-Préparation du commit : trois appels dépendaient du helper `nomLocalise` non
-committé par la session langue. Reprise sur son commit `ed85661f`, sans prendre
-ses lignes dans notre diff ; échec initial archivé dans le rapport de commit.
-La copie du commit rencontre aussi `VolDePieces` absent dans HomeAuroraView,
-fichier identique à la base ; cette dépendance reste à son chantier. Le premier
-aperçu du portrait sans Assets.car était vide : reprise avec le catalogue du
-widget compilé, puis lecture visuelle. Aucun verdict système/iPhone déduit.
-[Rapport et preuves](../live-activity/ETAT-2026-09-18.md).
-
-Complément documentaire18-09 : le rebasage sur535d3d5e porte le livrable isolé à2000940octets, refusé par la limite2000000. Nos seules notes Live Activity sont raccourcies ; aucune capture ni limite supprimée. Journal conservé dans `tools/live-activity/proofs/commit/docs-size-refused.log`.
-
-
 ### E75 — Profil75, charge Bluetooth hors app et validation76 encore ouverte
 
 18-09 : forte chauffe après manège, carte, Profil et stories. La trace nommée
@@ -79,6 +56,83 @@ le dossier n’existe pas ; reprise sur Documents. Pas de validation TestFlight.
 
 
 
+### Live Activity lune — 18-09 : exports du banc invalides, aucune mesure thermique
+
+Le banc partagé SwiftUI a d’abord été exporté avec ImageRenderer : jauge native
+non rendue et glyphes manquants. Le premier film réalisé pendant ces exports est
+invalide ; il est archivé et exclu des preuves. Reprise sur le seul simulateur
+créé pour cette session : captures d’écran complètes lisibles, puis film HEVC
+d’une carte unique sans export concurrent, textes et reflet de lune visibles.
+Les compilations/tests initialement refusés par l’accès Xcode/Metal et les macros
+sous bac à sable passent dans la même copie avec les outils accessibles.
+Ce banc ne prouve ni le rendu ActivityKit système, ni la chauffe sur iPhone.
+Aucun accès au téléphone ni arrêt des processus des autres sessions.
+Préparation du commit : trois appels dépendaient du helper `nomLocalise` non
+committé par la session langue. Reprise sur son commit `ed85661f`, sans prendre
+ses lignes dans notre diff ; échec initial archivé dans le rapport de commit.
+La copie du commit rencontre aussi `VolDePieces` absent dans HomeAuroraView,
+fichier identique à la base ; cette dépendance reste à son chantier. Le premier
+aperçu du portrait sans Assets.car était vide : reprise avec le catalogue du
+widget compilé, puis lecture visuelle. Aucun verdict système/iPhone déduit.
+[Rapport et preuves](../live-activity/ETAT-2026-09-18.md).
+
+Complément documentaire18-09 : le rebasage sur535d3d5e porte le livrable isolé à2000940octets, refusé par la limite2000000. Nos seules notes Live Activity sont raccourcies ; aucune capture ni limite supprimée. Journal conservé dans `tools/live-activity/proofs/commit/docs-size-refused.log`.
+
+
+### E74 — Chauffe signalée après stories/booster : ne pas attribuer sans le contexte
+
+18-09 : Kathryn confirme une chauffe encore ressentie à l’accueil. Trace du
+processus70 avant relance : état thermique `serious` pendant16,19s ; scène3D
+présente dans2ms de piles seulement, SwiftUI/AttributeGraph dominants. La capture
+ultérieure montre une série active : ce n’est pas une preuve de Home dégagée.
+Arrêt du stress et mise en arrière-plan. À08:46, les deux tests UI sont SKIP
+sur thermique2, avant lancement de Woop ; aucun PASS de langue ou de chauffe.
+À08:54, thermique0 : le résumé FR passe, puis le test interroge une ligne de
+Détails avant son fondu d’entrée ; attente explicite ajoutée.
+L’export `time-profile` a terminé139 ; `time-sample` puis symbolication locale
+et nouvel export ont réussi, sans nouvel enregistrement sur le téléphone.
+La version73 installée passe ensuite les quatre tests physiques (330,764s).
+Récupération : CPU médian5 %, identique à l’avant ; thermique1 avant les stories
+et jusqu’à la fin. Vue3D sans nouveaux rendus après relais, absente après
+fermeture ; pause/reprise du carrousel sans rendu pendant l’interruption.
+Charge visible sur la capture. Cette réussite ne clôt pas la chauffe durable.
+Le durcissement de l’arrêt du booster et son détachement au relais de carte
+corrigent des portes de cycle de vie ; ils ne prouvent pas à eux seuls la
+résolution de la chauffe durable. Suivi et verdicts :
+[campagne](campagnes/2026-09-18-stories-langues-chauffe/etat.md).
+
+### E73 — Reprise stories : simulation et outillage ne valent pas mesure physique
+
+17-09 : première liaison CoreDevice indisponible, puis connexion déverrouillée
+confirmée après branchement. La version installée avant ce travail était1,
+non61 ; conserver cette distinction pour toute comparaison. Release63 installée.
+Premier parcours simulé : premier retour bon, deuxième ouverture non réactive,
+échantillon SwiftUI/AttributeGraph actif ; aucun cycle de graphe journalisé.
+Reprise instrumentée navProbe dans le même binaire63 : deux retours et
+interruption PASS21,605s. Le gel initial n’est pas attribué ni corrigé par ce
+second succès. Toaster absent du film et du sélecteur, pas seulement une
+mauvaise classe d’élément : observation de la file sortie du GeometryReader
+pour vérification64. Un build du runner avec une mauvaise équipe explicite
+échoue avant test ; reprise avec l’équipe existante du projet réussie.
+Campagne physique63 : thermique1 au départ, puis2 après trois introductions.
+Le film et nav révèlent une route ouverte au deuxième retour sans ordre du
+test ; les dernières lignes ne sont donc pas une Home dégagée. Arrêt prévu
+au seuil serious. Scénario renforcé pour imposer route0 et traverser les
+quatre pages : les introductions seules ne prennent pas le capteur.
+Gel65 confirmé sur iPhone au deuxième passage : le fil principal cesse aussi
+la sonde àt151,2 ; aucune température récente ne peut alors être déduite de
+sa dernière ligne. Processus arrêté explicitement à16:10:21. Au simulateur,
+68 reproduit le gel au deuxième passage,100 % CPU ; prélèvement dans
+StoryEnded / mises à jour SwiftUI.69 remplace les rectangles du repère sous
+zoom par les tailles locales des glyphes. La sonde principale seule ne peut
+pas servir de garde thermique pendant un gel de ce fil.
+Reprise69 sur iPhone : PASS393,377s avec trois parcours et récupération ;
+aucun gel, moteur libéré. Thermique0→1 dès72,1s AVANT les stories, puis1
+jusqu’au bout (câble/charge). Récupération CPU médian6 %, chauffe durable
+non close. Après le test, verrouillage iOS entre les deux lots : le lot
+QA attend le déverrouillage, puis passe : session réelle, interruption,
+pilule physique (trois tests62,220s). Ce verrou n’était pas un échec de Woop.
+[Campagne](campagnes/2026-09-17-story-session-ile/etat.md).
 
 ### E72 — Fermeture widgets : reproduction59 et simulateur perdu
 

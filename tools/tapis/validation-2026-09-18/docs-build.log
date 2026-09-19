@@ -1,0 +1,30 @@
+▲ Next.js 16.3.3 (webpack)
+✓ Running next.config.ts took 82ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 9.5s
+  Running TypeScript ...
+  Finished TypeScript in 9.0s ...
+  Collecting page data using 5 workers ...
+  Generating static pages using 5 workers (0/4) ...
+  Generating static pages using 5 workers (1/4) 
+  Generating static pages using 5 workers (2/4) 
+  Generating static pages using 5 workers (3/4) 
+✓ Generating static pages using 5 workers (4/4) in 3.0s
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+└ ○ /icon.svg
+
+
+○  (Static)  prerendered as static content
+
+inliner : /Users/kathryn/Desktop/woochoper-ios/docs/site/out/index.html
+   retirés  : 25 <script> · 7 <link> · 0 attributs Next · 252 commentaires RSC · 1 meta
+   inlinés  : 1 feuille(s) (49636 o) · 1 url() (99780 o) · 58 média(s) (383018 o) · site.js (9066 o)
+   titre    : Documentation Woop
+   livrable : /Users/kathryn/Desktop/woochoper-ios/docs/site/index.html · 1852513 o (1.85 Mo) · 1 <script>
+   ✔ écrit

@@ -403,7 +403,10 @@ struct VisiteHome: View {
             return
         }
         etape = premier
-        // LA MAIN (verdict : « plus d'haptique ») : la brume qui tombe se sent, douce.
+        // LA MAIN (verdict : « plus d'haptique ») : la brume qui tombe se sent —
+        // et GROS (verdict 14-09 : « c'est trop beau, rajoute un gros haptique
+        // vibration ») : une vibration lourde, puis la douce qui suit la brume.
+        Haptique.vibration()
         Haptique.doux()
         withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: d(1.1))) {
             brume = 1
@@ -470,7 +473,7 @@ struct VisiteHome: View {
     private func terminer(passe: Bool) {
         guard !sortie else { return }
         sortie = true
-        if passe { NosfySon.tic(); Haptique.leger() } else { NosfySon.paillette(); Haptique.succes() }
+        if passe { NosfySon.tic(); Haptique.leger() } else { NosfySon.paillette(); Haptique.vibration(); Haptique.succes() }
         withAnimation(.easeOut(duration: d(0.3))) { mots = false; passer = false }
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(d(0.1)))
@@ -495,5 +498,17 @@ extension Haptique {
     static func succes() {
         notification.notificationOccurred(.success)
         notification.prepare()
+    }
+    /// LA GROSSE (verdict 14-09 : « rajoute un gros haptique vibration ») : deux
+    /// coups lourds à 90 ms — un seul coup est une tape, deux font une vibration
+    /// qu'on sent dans la paume. Le simulateur n'a pas de moteur : verdict au
+    /// téléphone.
+    private static let lourdVisite = UIImpactFeedbackGenerator(style: .heavy)
+    static func vibration() {
+        lourdVisite.impactOccurred(intensity: 1.0)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.09) {
+            lourdVisite.impactOccurred(intensity: 1.0)
+            lourdVisite.prepare()
+        }
     }
 }

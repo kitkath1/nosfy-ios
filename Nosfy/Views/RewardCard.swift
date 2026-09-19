@@ -81,9 +81,11 @@ struct RewardPopup: View {
     var style: RewardStyle = .halo
     /// La robe du Welcome Back (ignorée par les autres styles).
     var robe: WelcomeRobe = .video
-    /// La vidéo du header (nom de ressource `Nosfy/Media`, sans
+    /// La vidéo du header (nom de ressource `Woop/Media`, sans
     /// extension) — le REWARD à mise en scène : elle SORT de la matière
     /// noire de la card, joue UNE fois, gèle sur sa dernière frame.
+    /// Welcome Back utilise `reward-welcome` par défaut ; une vidéo explicite
+    /// (notamment celle de la première arrivée) garde la priorité.
     var videoNom: String? = nil
     var onClose: () -> Void
     /// LE CLAIM (welcome) — ce qu'il ENCAISSE avant de fermer. Nil = le bouton
@@ -468,8 +470,11 @@ private struct RewardScene: View, Animatable {
                             // PLUS GROS (verdict) — et s'il se coupe dans
                             // les fondus des côtés et du bas, « pas
                             // grave » : ce sont eux qui le mangent, pas
-                            // le cadre.
-                            .scaleEffect(lignesGeantes.map { Self.echelleGeante($0, largeur: largeur) } ?? 0.96)
+                            // le cadre. ⚠️ 14-09, DÉFINITIF : les mots de
+                            // Nosfy à la MÊME échelle que toutes les robes,
+                            // un prénom long DÉBORDE — « ne le bouge plus
+                            // jamais, je l'ai demandé dix fois ».
+                            .scaleEffect(0.96)
                             .frame(width: largeur, height: hauteur)
                             // TOUT EN HAUT (« fais FOUR en haut ») — mais PAS les
                             // trois rangées de Nosfy : à 0,31 « ALLEZ collait trop le
@@ -996,13 +1001,9 @@ private struct RewardScene: View, Animatable {
         }
     }
 
-    /// L'échelle des mots de Nosfy : le mot le plus long doit tenir dans la card
-    /// (l'avance d'une lettre LARGE d'Inter Heavy à 112 pt ≈ 86 pt, tracking
-    /// compris — le pire cas, pas la moyenne : un prénom n'est pas « ALLEZ »).
-    static func echelleGeante(_ lignes: [String], largeur: CGFloat) -> CGFloat {
-        let plusLong = lignes.map(\.count).max() ?? 1
-        return min(0.96, (largeur - 24) / (CGFloat(plusLong) * 86))
-    }
+    // (`echelleGeante`, l'échelle de bloc au pire cas d'une lettre de 86 pt, est
+    // morte le 14-09 : « KATHRYN » ramenait les trois rangées à la moitié. Les
+    // rangées tiennent désormais chacune pour elle-même — `TexteGeant.largeurMax`.)
 
     private func sstep(_ a: Double, _ b: Double, _ x: Double) -> Double {
         let t = min(max((x - a) / (b - a), 0), 1)
@@ -1999,6 +2000,16 @@ struct TexteGeant: View {
 
     private var corps: CGFloat { lignes.count <= 2 ? 128 : 112 }
 
+    /// ⚠️⚠️ **SON VERDICT DU 14-09, DÉFINITIF : « gros texte oui, et même si le
+    /// nom est coupé pas grave, c'est le design, ne le bouge plus jamais, je l'ai
+    /// demandé dix fois ».** Les rangées de la sortie de Nosfy (« LET'S / KATHRYN
+    /// / GO ! ») gardent LEUR taille de référence — la même échelle que toutes
+    /// les robes (`echelle(n)`) — et un prénom trop long DÉBORDE de la card, coupé
+    /// par son bord. Aucune réduction par rangée (`minimumScaleFactor`, essayée
+    /// ce matin : « trop petit LET'S et KATHRYN »), aucune échelle de bloc au
+    /// pire cas (`echelleGeante`, morte le même jour : « KATHRYN » ramenait les
+    /// trois rangées à la moitié).
+
     /// ⚠️ **LE MOT LONG DÉBORDAIT** (06-09). Le garde-fou n'avait qu'UN palier —
     /// au-delà de 4 caractères, ×0,88, une fois pour toutes — avec
     /// `lineLimit(1)` et `fixedSize()` : un mot de dix lettres sortait de la
@@ -2629,7 +2640,7 @@ private final class VideoRewardUIView: UIView {
 /// (`actionAtItemEnd = .pause`) — le fondu permanent, jamais une coupe.
 /// Pièges payés appliqués : aspectFill déborde son cadre →
 /// `clipsToBounds + masksToBounds` ; `AVPlayerLayer` ne coûte rien
-/// (mesure SondeCadence du 18-08) ; ressource NUE de `Nosfy/Media`,
+/// (mesure SondeCadence du 18-08) ; ressource NUE de `Woop/Media`,
 /// chargée par le bundle.
 /// LA VIE DE LA VIDÉO GELÉE (verdict : « quand on bouge la card en
 /// gyroscopique, la vidéo bouge en arrière — on a le sentiment que

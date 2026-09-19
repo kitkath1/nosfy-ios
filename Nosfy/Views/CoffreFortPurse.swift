@@ -23,8 +23,17 @@ import Foundation
 enum CoffreFortPurse {
     /// L'ÉCONOMIE EST TRANCHÉE (13 août 2026) : chaque SÉRIE terminée
     /// rapporte 20 pièces. La fiche, BRAVO et le coffre disent le même
-    /// nombre — et si la règle bouge un jour, c'est toujours CE corps-là
-    /// qu'on remplace, pas une ligne des pages.
-    static let perSeries = 20
-    static func coins(doneSeries: Int) -> Int { doneSeries * perSeries }
+    /// nombre.
+    ///
+    /// ⚠️ **LU, PLUS CONNU (15-09).** Jusqu'ici c'était `static let perSeries
+    /// = 20` — la dernière copie Swift d'une règle qui vit en base
+    /// (`reward_rules.pieces_par_serie`, rendue par `etat_coffre()` et posée
+    /// dans `EconomieWoop.piecesParSerie`). La pill « +20 · 100 this
+    /// session » lisait déjà le serveur ; l'ardoise du player et BRAVO
+    /// lisaient ce 20-là. Deux endroits pour un nombre, c'est le jour où
+    /// l'un bouge que l'écran et la base racontent deux histoires. Le 20 ne
+    /// survit qu'en SECOURS, avant la première réponse — celui
+    /// d'`EconomieWoop`, le même que partout. Rien ne change à l'écran.
+    @MainActor static var perSeries: Int { EconomieWoop.shared.piecesParSerie }
+    @MainActor static func coins(doneSeries: Int) -> Int { doneSeries * perSeries }
 }

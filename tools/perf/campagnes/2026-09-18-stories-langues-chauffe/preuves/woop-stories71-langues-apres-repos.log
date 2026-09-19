@@ -1,0 +1,107 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-stories71-runtime-dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun -destination platform=iOS,id=00008120-001E4CDC0A85A01E -parallel-testing-enabled NO "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testAStoriesFrancaisesEtAnglaises" -resultBundlePath /tmp/woop-stories71-langues-apres-repos.xcresult
+
+2026-09-18 08:54:42.349 xcodebuild[24383:18438416] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-stories71-langues-apres-repos.xcresult
+
+2026-09-18 08:54:42.355 xcodebuild[24383:18438416] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 08:54:42.478 xcodebuild[24383:18438416] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 08:54:42.598 xcodebuild[24383:18438416] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-18 08:54:44.783 xcodebuild[24383:18438416] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 08:54:45.195 xcodebuild[24383:18438416] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 08:54:47.659106+0200 NavRuntimeUITests-Runner[47025:3586279] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-18 08:54:48.144.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-18 08:54:48.144.
+Test Suite 'NavRuntimeUITests' started at 2026-09-18 08:54:48.145.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testAStoriesFrancaisesEtAnglaises]' started.
+    t =     0.00s Start Test at 2026-09-18 08:54:48.146
+    t =     0.03s Set Up
+THERMIQUE IPHONE: 0
+    t =     0.03s Open fr.kathryn.woop
+    t =     0.03s     Launch fr.kathryn.woop
+    t =     0.03s         Terminate fr.kathryn.woop:46906
+2026-09-18 08:54:48.346 xcodebuild[24383:18438416] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     1.13s         Setting up automation session
+    t =     1.24s         Wait for fr.kathryn.woop to idle
+    t =     2.27s Waiting 12.0s for "glisse vers le haut" StaticText to exist
+    t =     3.30s     Checking `Expect predicate `existsNoRetry == 1` for object "glisse vers le haut" StaticText`
+    t =     3.30s         Checking existence of `"glisse vers le haut" StaticText`
+    t =     3.35s Press Application 'fr.kathryn.woop'[0.50, 0.58] for 0.1 seconds, then drag to Application 'fr.kathryn.woop'[0.50, 0.27] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =     3.35s     Wait for fr.kathryn.woop to idle
+    t =     3.35s     Find the Application 'fr.kathryn.woop'
+    t =     3.37s     Check for interrupting elements affecting "Woop" Application
+    t =     3.39s     Synthesize event
+    t =     3.39s         Find the Application 'fr.kathryn.woop'
+    t =     3.40s         Find the Application 'fr.kathryn.woop'
+    t =     3.41s         Find the Application 'fr.kathryn.woop'
+    t =     3.42s         Find the Application 'fr.kathryn.woop'
+    t =     3.43s         Find the Application 'fr.kathryn.woop'
+    t =     4.26s     Wait for fr.kathryn.woop to idle
+    t =     4.27s Waiting 5.0s for "story-etat" StaticText to exist
+    t =     5.31s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =     5.31s         Checking existence of `"story-etat" StaticText`
+    t =    11.33s Checking existence of `"Résumé" StaticText`
+    t =    11.36s Checking existence of `"votre séance" StaticText`
+    t =    11.38s Checking existence of `"du 12 janvier" StaticText`
+    t =    11.39s Find the Application 'fr.kathryn.woop'
+    t =    11.58s Added attachment named 'fr-resume'
+    t =    11.58s Tap Application 'fr.kathryn.woop'[0.85, 0.09]
+    t =    11.58s     Wait for fr.kathryn.woop to idle
+    t =    11.58s     Find the Application 'fr.kathryn.woop'
+    t =    11.59s     Check for interrupting elements affecting "Woop" Application
+    t =    11.61s     Synthesize event
+    t =    11.61s         Find the Application 'fr.kathryn.woop'
+    t =    11.63s         Find the Application 'fr.kathryn.woop'
+    t =    11.64s         Find the Application 'fr.kathryn.woop'
+    t =    11.92s     Wait for fr.kathryn.woop to idle
+    t =    11.92s Find the "story-etat" StaticText
+    t =    11.93s Checking existence of `"Détails" StaticText`
+    t =    11.94s Checking existence of `"Woodchopper poulie haute" StaticText`
+/tmp/woop-stories71-runtime/NavRuntimeUITests.swift:38: error: -[NavRuntimeUITests.NavRuntimeUITests testAStoriesFrancaisesEtAnglaises] : XCTAssertTrue failed
+    t =    12.00s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testAStoriesFrancaisesEtAnglaises]' failed (12.253 seconds).
+Test Suite 'NavRuntimeUITests' failed at 2026-09-18 08:55:00.399.
+	 Executed 1 test, with 1 failure (0 unexpected) in 12.253 (12.255) seconds
+Test Suite 'NavRuntimeUITests.xctest' failed at 2026-09-18 08:55:00.400.
+	 Executed 1 test, with 1 failure (0 unexpected) in 12.253 (12.256) seconds
+Test Suite 'Selected tests' failed at 2026-09-18 08:55:00.401.
+	 Executed 1 test, with 1 failure (0 unexpected) in 12.253 (12.257) seconds
+2026-09-18 08:55:02.434 xcodebuild[24383:18438416] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 08:55:19.812 xcodebuild[24383:18438936]  IDETestOperationsObserverDebug: Failure collecting diagnostics from devices: Process exited with error 1:
+ ERROR: The operation couldn?t be completed. (CoreDeviceCLISupport.DiagnoseError error 0.)
+This tool generates files that allow Apple to investigate issues with your
+computer and help improve Apple products. The files might contain personal
+information found on your device or associated with your Apple Account(s),
+including but not limited to your name, serial numbers of your device,
+your device name, your device's location over the last one to two days,
+your attached peripheral devices, your user name, your email address and
+email settings, file paths, file names, Siri suggestions, your computer's
+IP addresses, and network connection information.
+
+This information is used by Apple in accordance with its privacy policy
+(www.apple.com/privacy) and is not shared with any other company. By using
+this tool and sending the results to Apple, you consent to Apple using the
+contents of these files to improve Apple products.
+
+An error occurred while running devicectl diagnose. Will archive the diagnostics collected thus far.
+Wrote file to /tmp/woop-stories71-langues-apres-repos.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+Partial devicectl diagnose bundle located here: /tmp/woop-stories71-langues-apres-repos.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+
+2026-09-18 08:55:19.820 xcodebuild[24383:18438416] [MT] IDETestOperationsObserverDebug: 35.027 elapsed -- Testing started completed.
+2026-09-18 08:55:19.820 xcodebuild[24383:18438416] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-18 08:55:19.820 xcodebuild[24383:18438416] [MT] IDETestOperationsObserverDebug: 35.027 sec, +35.027 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-stories71-langues-apres-repos.xcresult
+
+Failing tests:
+	NavRuntimeUITests.testAStoriesFrancaisesEtAnglaises()
+
+** TEST EXECUTE FAILED **
+
+Testing started

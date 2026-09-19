@@ -98,6 +98,12 @@ export function Etat() {
         </p>
       </div>
 
+      <p className="legende-pied">
+        Session du 17 septembre : stories, annonces et connexion Supabase.
+        {' '}<a href="#qa" data-saut="qa">Voir le plan et les contrôles en attente</a>.
+        {' '}Cartes : analyse ouverte ensuite ; Compte et vraie Live Activity reportés.
+      </p>
+
       {/* LES GROSSES CARDS : une par PAGE (le même nom, le même nombre et la même destination que le rail),
           le badge dit la famille en toutes lettres dans sa couleur, la barre dit la part de bon. */}
       <div className="doms">

@@ -537,6 +537,9 @@ extension EcranSpec {
     var gel = false
     /// L'étape ACTIVE du chemin (0-based). Session UI : reset au relaunch.
     var etape = 0
+    var celebration: Int?
+    var celebrationValidee = false
+    var celebrationOnde = false
     /// L'écran posé (pour le titre de la dalle) et le geste en cours
     /// (la dalle s'efface pendant le scroll).
     var ecranCourant = 0
@@ -1107,6 +1110,30 @@ enum DuoReglages {
 /// LE SERPENTIN — une seule couche pour toute la colonne, posée au-dessus
 /// du verre vidéo. Pas de fil : dans le noir OLED, le chemin se lit par
 /// les galets seuls (le pointillé board-game est interdit, LOI 4).
+/// Deux transitions bornées, uniquement sur le galet accompli. Aucun timer.
+private struct SceauFinSeance: ViewModifier {
+    let concerne: Bool
+    let valide: Bool
+    let onde: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(concerne && valide && !onde && !reduceMotion ? 1.14 : 1)
+            .overlay {
+                if concerne {
+                    Circle()
+                        .stroke(Color(red: 1, green: 0.86, blue: 0.60), lineWidth: 2)
+                        .frame(width: 76, height: 76)
+                        .scaleEffect(onde && !reduceMotion ? 1.75 : 1)
+                        .opacity(valide && !onde ? 0.9 : 0)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+            }
+    }
+}
+
 private struct CheminDuo: View {
     let etat: EtatDuo
     let hauteur: CGFloat
@@ -1221,6 +1248,11 @@ private struct CheminDuo: View {
                                    etat.panneauSur = nil
                                }
                            })
+                    .modifier(SceauFinSeance(
+                        concerne: etat.celebration == e.id,
+                        valide: etat.celebrationValidee,
+                        onde: etat.celebrationOnde))
+                    .allowsHitTesting(etat.celebration == nil || etat.celebrationValidee)
                     .scaleEffect(nee ? 1 : 0.92)
                     // LE PROJECTEUR : panneau ouvert, la route s'éteint
                     // autour du couple galet + panneau (0,45).
@@ -1628,6 +1660,10 @@ struct DuolinguoPage: View {
     var dates: [Int: Date]? = nil
     /// Les nœuds spéciaux déjà réclamés (l'hôte les persiste).
     var reclamees: Set<Int>? = nil
+    /// Uniquement la séance qui vient de se terminer, jamais un nœud cadeau.
+    var celebration: Int? = nil
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var celebrationJouee = false
     /// Jalon 1 : les nœuds spéciaux disponibles, tapés — l'hôte ouvre le
     /// booster (lune) ou fait descendre les pièces (pièce). nil = le banc.
     /// ⚠️ Elles RENDENT le verdict du serveur (30-08) : `false` = le nœud
@@ -1833,9 +1869,11 @@ struct DuolinguoPage: View {
             .onAppear {
                 etat.branchee = onDemarrer != nil
                 etat.gel = gel || reduceMotion
-                etat.etape = min(max(etapeInitiale, 0),
+                etat.celebration = celebration
+                etat.etape = min(max(celebration ?? etapeInitiale, 0),
                                  EcranSpec.etapes.count - 1)
                 if let faits { etat.faits = faits }
+                if let celebration { etat.faits.remove(celebration) }
                 if let dates { etat.datesFaites = dates }
                 if let reclamees { etat.reclamees = reclamees }
                 // La page NAÎT POSÉE sur l'écran de l'actif : `piloter`
@@ -1850,7 +1888,43 @@ struct DuolinguoPage: View {
                     ordre.scrollTo(y: CGFloat(ecranDepart) * hauteur)
                 }
                 if auto { lancerAuto(hauteur: hauteur) }
-                naissance(ecran: ecranDepart)
+                if celebration != nil {
+                    etat.nees = Set(EcranSpec.etapes.map(\.id))
+                } else {
+                    naissance(ecran: ecranDepart)
+                }
+            }
+            .task(id: scenePhase) {
+                guard let celebration, !celebrationJouee else { return }
+                // En arrière-plan, on pose directement l'état final. La reprise
+                // ne rejoue jamais une récompense ou une fausse deuxième fête.
+                guard scenePhase == .active, !reduceMotion,
+                      !CommandLine.arguments.contains("-sansFeteRoute"),
+                      ProcessInfo.processInfo.thermalState != .serious,
+                      ProcessInfo.processInfo.thermalState != .critical else {
+                    validerCelebration(celebration)
+                    etat.celebrationOnde = true
+                    ordre.scrollTo(y: CGFloat(EcranSpec.etapes[etat.etape].ecran) * hauteur)
+                    celebrationJouee = true
+                    return
+                }
+                do {
+                    try await Task.sleep(for: .milliseconds(550))
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.72)) {
+                        validerCelebration(celebration)
+                    }
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    try await Task.sleep(for: .milliseconds(180))
+                    withAnimation(.easeOut(duration: 0.85)) { etat.celebrationOnde = true }
+                    try await Task.sleep(for: .milliseconds(1050))
+                    let suivant = EcranSpec.etapes[etat.etape].ecran
+                    if suivant != EcranSpec.etapes[celebration].ecran {
+                        withAnimation(.easeInOut(duration: 0.65)) {
+                            ordre.scrollTo(y: CGFloat(suivant) * hauteur)
+                        }
+                    }
+                    celebrationJouee = true
+                } catch { /* Le démontage ou le passage en arrière-plan annule la partition. */ }
             }
         }
         .background(Color.black.ignoresSafeArea())
@@ -1860,9 +1934,30 @@ struct DuolinguoPage: View {
             DalleChapitre(etat: etat, onRetour: onRetour)
                 .padding(.top, 8)
         }
+        .overlay(alignment: .bottom) {
+            if celebration != nil, etat.celebrationValidee {
+                Label(L("Séance accomplie", "Session complete"), systemImage: "checkmark.circle.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color(red: 1, green: 0.86, blue: 0.60))
+                    .padding(.horizontal, 22).padding(.vertical, 14)
+                    .background(.black.opacity(0.88), in: Capsule())
+                    .padding(.bottom, 26)
+                    .allowsHitTesting(false)
+                    .accessibilityIdentifier("route.seance-accomplie")
+                    .transition(.opacity)
+            }
+        }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         .sondeCadence("duo")
+    }
+
+    private func validerCelebration(_ id: Int) {
+        if let faits { etat.faits = faits } else { etat.faits.insert(id) }
+        etat.etape = min(max(etapeInitiale, 0), EcranSpec.etapes.count - 1)
+        etat.celebrationValidee = true
+        if reduceMotion || scenePhase != .active { etat.celebrationOnde = true }
+        etat.panneauSur = nil
     }
 
     /// L'OUVERTURE (partition §7, version J3) : les étapes naissent en

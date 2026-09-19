@@ -183,19 +183,21 @@ struct SessionSlate: View {
     private func buildGroupes() -> [SlateGroupe] {
         var out: [SlateGroupe] = []
         var courant: [SlateLigne] = []
-        for i in 0..<max(drafts.count, 5) {
-            if i < drafts.count {
-                courant.append(SlateLigne(
-                    reps: drafts[i].reps, kilos: drafts[i].weight,
-                    seconds: drafts[i].isDone ? drafts[i].durationSeconds
-                                              : restSeconds,
-                    done: drafts[i].isDone))
-            } else {
-                courant.append(SlateLigne(
-                    reps: drafts.last?.reps ?? 12,
-                    kilos: drafts.last?.weight ?? 20,
-                    seconds: restSeconds, done: false))
-            }
+        // L'ARDOISE DIT LE VRAI. Elle remplissait jusqu'à CINQ lignes en
+        // inventant les manquantes (les chiffres de la dernière série,
+        // non cochées) : « je vois 5 séries alors que j'en ai fait 2 ».
+        // Un replay ne devine pas — il retrace. Seules les vraies
+        // lignes du brouillon s'écrivent ; s'il n'y en a aucune, une
+        // ligne d'attente unique tient la place.
+        for d in drafts {
+            courant.append(SlateLigne(
+                reps: d.reps, kilos: d.weight,
+                seconds: d.isDone ? d.durationSeconds : restSeconds,
+                done: d.isDone))
+        }
+        if courant.isEmpty {
+            courant.append(SlateLigne(reps: 12, kilos: 20,
+                                      seconds: restSeconds, done: false))
         }
         out.append(SlateGroupe(id: "courant", exercise: exercise,
                                rows: courant))

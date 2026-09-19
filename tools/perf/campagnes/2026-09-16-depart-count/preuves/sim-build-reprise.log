@@ -1,0 +1,1389 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild build-for-testing -project /tmp/woop-count53/banc/Woop.xcodeproj -scheme WoopUITests -configuration Debug -destination "platform=iOS Simulator,id=6A504B5A-F76C-4EC1-B09A-E9CA4673B32A" -derivedDataPath /tmp/woop-count53/sim-dd -jobs 2 CURRENT_PROJECT_VERSION=53
+
+Build settings from command line:
+    CURRENT_PROJECT_VERSION = 53
+
+Build Preparation
+Build task concurrency set to 2 via user default IDEBuildOperationMaxNumberOfConcurrentCompileTasks
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (3 targets)
+    Target 'WoopUITests' in project 'Woop'
+        ➜ Explicit dependency on target 'Woop' in project 'Woop'
+    Target 'Woop' in project 'Woop'
+        ➜ Explicit dependency on target 'WoopWidgets' in project 'Woop'
+    Target 'WoopWidgets' in project 'Woop' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /tmp/woop-count53/banc/Woop/AppIcon.icon /tmp/woop-count53/banc/Woop/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+Build description signature: a8e4249d624deef3c220eb5c91f82ab8
+Build description path: /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/XCBuildData/a8e4249d624deef3c220eb5c91f82ab8.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk /tmp/woop-count53/sim-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+    cd /tmp/woop-count53/banc/Woop.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -o /tmp/woop-count53/sim-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache
+
+ProcessInfoPlistFile /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/Info.plist /tmp/woop-count53/banc/WoopWidgets/Info.plist (in target 'WoopWidgets' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-infoPlistUtility /tmp/woop-count53/banc/WoopWidgets/Info.plist -producttype com.apple.product-type.app-extension -expandbuildsettings -format binary -platform iphonesimulator -o /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex/Info.plist
+
+SwiftDriver Woop normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-count53/sim-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/woop-count53/sim-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator -F /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-count53/sim-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-count53/sim-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-count53/sim-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-count53/sim-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-generated-files.hmap -Xcc -I/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-own-target-headers.hmap -Xcc -I/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-project-headers.hmap -Xcc -I/tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/arm64 -Xcc -I/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-Swift.h -working-directory /tmp/woop-count53/banc -experimental-emit-module-separately -disable-cmo
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ Woop (in target 'Woop' from project 'Woop')
+
+EmitSwiftModule normal arm64 (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 Compiling\ WahouReveal.swift,\ WidgetEdition.swift /tmp/woop-count53/banc/Woop/Views/WahouReveal.swift /tmp/woop-count53/banc/Woop/Views/WidgetEdition.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/WahouReveal.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/WidgetEdition.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 Compiling\ NebulaConfiguration.swift,\ NebulaNoise.swift /tmp/woop-count53/banc/Woop/NebulaConfiguration.swift /tmp/woop-count53/banc/Woop/NebulaNoise.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/NebulaConfiguration.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/NebulaNoise.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling WahouReveal.swift, WidgetEdition.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ HaloDawnLab.swift /tmp/woop-count53/banc/Woop/Views/HaloDawnLab.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/HaloDawnLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling NebulaConfiguration.swift, NebulaNoise.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ HomeAuroraView.swift /tmp/woop-count53/banc/Woop/Views/HomeAuroraView.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/HomeAuroraView.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling HaloDawnLab.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ DemonSky.swift,\ Models.swift /tmp/woop-count53/banc/Woop/DemonSky.swift /tmp/woop-count53/banc/Woop/Models.swift (in target 'Woop' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/DemonSky.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Models.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling HomeAuroraView.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ EconomieWoop.swift,\ TapisScene.swift /tmp/woop-count53/banc/Woop/Services/EconomieWoop.swift /tmp/woop-count53/banc/Woop/Views/TapisScene.swift (in target 'Woop' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Services/EconomieWoop.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/TapisScene.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for Woop (in target 'Woop' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling DemonSky.swift, Models.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriver\ Compilation\ Requirements Woop normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-count53/sim-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/woop-count53/sim-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator -F /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-count53/sim-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-count53/sim-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-count53/sim-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-count53/sim-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-generated-files.hmap -Xcc -I/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-own-target-headers.hmap -Xcc -I/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-project-headers.hmap -Xcc -I/tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/arm64 -Xcc -I/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-Swift.h -working-directory /tmp/woop-count53/banc -experimental-emit-module-separately -disable-cmo
+
+SwiftCompile normal arm64 Compiling\ NebulaStrip.swift,\ Theme.swift /tmp/woop-count53/banc/Woop/NebulaStrip.swift /tmp/woop-count53/banc/Woop/Theme.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/NebulaStrip.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Theme.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+Copy /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.swiftmodule /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+SwiftDriverJobDiscovery normal arm64 Compiling NebulaStrip.swift, Theme.swift (in target 'Woop' from project 'Woop')
+
+Copy /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.swiftdoc /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftdoc (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftdoc /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.abi.json /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.abi.json (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.abi.json /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftsourceinfo (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftsourceinfo /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+SwiftCompile normal arm64 Compiling\ Compte.swift,\ ForgeServeur.swift,\ HomeTextes.swift,\ Langue.swift,\ LuneForge.swift,\ OutboxGains.swift,\ OuvertureSeanceServeur.swift,\ ProfilServeur.swift,\ SacreServeur.swift,\ Supabase.swift,\ SupabaseSync.swift,\ SynthesisService.swift,\ WorkoutActivityController.swift,\ ActiveWorkoutView.swift,\ AppelChapitre.swift /tmp/woop-count53/banc/Woop/Services/Compte.swift /tmp/woop-count53/banc/Woop/Services/ForgeServeur.swift /tmp/woop-count53/banc/Woop/Services/HomeTextes.swift /tmp/woop-count53/banc/Woop/Services/Langue.swift /tmp/woop-count53/banc/Woop/Services/LuneForge.swift /tmp/woop-count53/banc/Woop/Services/OutboxGains.swift /tmp/woop-count53/banc/Woop/Services/OuvertureSeanceServeur.swift /tmp/woop-count53/banc/Woop/Services/ProfilServeur.swift /tmp/woop-count53/banc/Woop/Services/SacreServeur.swift /tmp/woop-count53/banc/Woop/Services/Supabase.swift /tmp/woop-count53/banc/Woop/Services/SupabaseSync.swift /tmp/woop-count53/banc/Woop/Services/SynthesisService.swift /tmp/woop-count53/banc/Woop/Services/WorkoutActivityController.swift /tmp/woop-count53/banc/Woop/Views/ActiveWorkoutView.swift /tmp/woop-count53/banc/Woop/Views/AppelChapitre.swift (in target 'Woop' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Services/Compte.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Services/ForgeServeur.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Services/HomeTextes.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Services/Langue.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Services/LuneForge.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Services/LuneForge.swift:272:19: warning: value 'cadre' was defined but never used; consider replacing with boolean test
+        guard let cadre = UIImage(named: "carte-cadre")
+              ~~~~^~~~~~~~
+              (
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Services/OutboxGains.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Services/OuvertureSeanceServeur.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Services/ProfilServeur.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Services/SacreServeur.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Services/Supabase.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Services/SupabaseSync.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Services/SynthesisService.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Services/WorkoutActivityController.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ActiveWorkoutView.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/AppelChapitre.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 Compiling\ DiamondGlints.swift,\ AuroraBgLab.swift /tmp/woop-count53/banc/Woop/Figures/DiamondGlints.swift /tmp/woop-count53/banc/Woop/Views/AuroraBgLab.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Figures/DiamondGlints.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/AuroraBgLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling EconomieWoop.swift, TapisScene.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ SwapEmptyCard.swift /tmp/woop-count53/banc/Woop/Views/SwapEmptyCard.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/SwapEmptyCard.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling DiamondGlints.swift, AuroraBgLab.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ ProgressComet.swift,\ SwapCardSurface.swift /tmp/woop-count53/banc/WoopShared/ProgressComet.swift /tmp/woop-count53/banc/Woop/Views/SwapCardSurface.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/WoopShared/ProgressComet.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/SwapCardSurface.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling SwapEmptyCard.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ DemonVideo.swift,\ DepartCine.swift,\ DepartSeance.swift,\ DuolinguoPage.swift,\ ExerciseDetailView.swift,\ ExerciseEditor.swift,\ ExercisePhoto.swift,\ ExerciseSetupCard.swift,\ ExercisesView.swift,\ ExosFond.swift,\ FilmDepartSeance.swift,\ FlameLab.swift,\ FlammeJauge.swift,\ FondVideoMetal.swift /tmp/woop-count53/banc/Woop/Views/DemonVideo.swift /tmp/woop-count53/banc/Woop/Views/DepartCine.swift /tmp/woop-count53/banc/Woop/Views/DepartSeance.swift /tmp/woop-count53/banc/Woop/Views/DuolinguoPage.swift /tmp/woop-count53/banc/Woop/Views/ExerciseDetailView.swift /tmp/woop-count53/banc/Woop/Views/ExerciseEditor.swift /tmp/woop-count53/banc/Woop/Views/ExercisePhoto.swift /tmp/woop-count53/banc/Woop/Views/ExerciseSetupCard.swift /tmp/woop-count53/banc/Woop/Views/ExercisesView.swift /tmp/woop-count53/banc/Woop/Views/ExosFond.swift /tmp/woop-count53/banc/Woop/Views/FilmDepartSeance.swift /tmp/woop-count53/banc/Woop/Views/FlameLab.swift /tmp/woop-count53/banc/Woop/Views/FlammeJauge.swift /tmp/woop-count53/banc/Woop/Views/FondVideoMetal.swift (in target 'Woop' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/DemonVideo.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/DepartCine.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/DepartSeance.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/DuolinguoPage.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Views/DuolinguoPage.swift:1432:9: warning: result of call to 'withAnimation' is unused
+        withAnimation(.easeInOut(duration: 0.45)) { etat.reclamees.insert(e.id) }
+        ^            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/tmp/woop-count53/banc/Woop/Views/DuolinguoPage.swift:1441:17: warning: result of call to 'withAnimation' is unused
+                withAnimation(.easeInOut(duration: 0.30)) { etat.reclamees.remove(e.id) }
+                ^            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ExerciseDetailView.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Views/ExerciseDetailView.swift:2138:13: warning: initialization of immutable value 'naissance' was never used; consider replacing with assignment to '_' or removing it
+        let naissance = Self.sstep(0.45, 0.92, u)
+        ~~~~^~~~~~~~~
+        _
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ExerciseEditor.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ExercisePhoto.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ExerciseSetupCard.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ExercisesView.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Views/ExercisesView.swift:2117:49: warning: call to main actor-isolated static method 'voileBas' in a synchronous nonisolated context
+                    let bas = min(1, GrilleExos.voileBas(vh - f.maxY - 60) * 1.5)
+                                                ^
+/tmp/woop-count53/banc/Woop/Views/ExercisesView.swift:1881:17: note: calls to static method 'voileBas' from outside of its actor context are implicitly asynchronous
+    static func voileBas(_ d: CGFloat) -> Double {
+                ^
+/tmp/woop-count53/banc/Woop/Views/ExercisesView.swift:1881:17: note: main actor isolation inferred from conformance to protocol 'View'
+    static func voileBas(_ d: CGFloat) -> Double {
+                ^
+/tmp/woop-count53/banc/Woop/Views/ExercisesView.swift:2118:43: warning: call to main actor-isolated static method 'voileHaut' in a synchronous nonisolated context
+                    let haut = GrilleExos.voileHaut(reserve - f.minY)
+                                          ^
+/tmp/woop-count53/banc/Woop/Views/ExercisesView.swift:1890:17: note: calls to static method 'voileHaut' from outside of its actor context are implicitly asynchronous
+    static func voileHaut(_ d: CGFloat) -> Double {
+                ^
+/tmp/woop-count53/banc/Woop/Views/ExercisesView.swift:1890:17: note: main actor isolation inferred from conformance to protocol 'View'
+    static func voileHaut(_ d: CGFloat) -> Double {
+                ^
+/tmp/woop-count53/banc/Woop/Views/ExercisesView.swift:2206:42: warning: call to main actor-isolated static method 'voileBas' in a synchronous nonisolated context
+                    let bas = GrilleExos.voileBas(vh - f.maxY)
+                                         ^
+/tmp/woop-count53/banc/Woop/Views/ExercisesView.swift:1881:17: note: calls to static method 'voileBas' from outside of its actor context are implicitly asynchronous
+    static func voileBas(_ d: CGFloat) -> Double {
+                ^
+/tmp/woop-count53/banc/Woop/Views/ExercisesView.swift:1881:17: note: main actor isolation inferred from conformance to protocol 'View'
+    static func voileBas(_ d: CGFloat) -> Double {
+                ^
+/tmp/woop-count53/banc/Woop/Views/ExercisesView.swift:2207:43: warning: call to main actor-isolated static method 'voileHaut' in a synchronous nonisolated context
+                    let haut = GrilleExos.voileHaut(reserve - f.minY)
+                                          ^
+/tmp/woop-count53/banc/Woop/Views/ExercisesView.swift:1890:17: note: calls to static method 'voileHaut' from outside of its actor context are implicitly asynchronous
+    static func voileHaut(_ d: CGFloat) -> Double {
+                ^
+/tmp/woop-count53/banc/Woop/Views/ExercisesView.swift:1890:17: note: main actor isolation inferred from conformance to protocol 'View'
+    static func voileHaut(_ d: CGFloat) -> Double {
+                ^
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ExosFond.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/FilmDepartSeance.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/FlameLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/FlammeJauge.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/FondVideoMetal.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling ProgressComet.swift, SwapCardSurface.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ ObsidianCard.swift,\ SliderLab.swift /tmp/woop-count53/banc/Woop/Views/ObsidianCard.swift /tmp/woop-count53/banc/Woop/Views/SliderLab.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ObsidianCard.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/SliderLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling Compte.swift, ForgeServeur.swift, HomeTextes.swift, Langue.swift, LuneForge.swift, OutboxGains.swift, OuvertureSeanceServeur.swift, ProfilServeur.swift, SacreServeur.swift, Supabase.swift, SupabaseSync.swift, SynthesisService.swift, WorkoutActivityController.swift, ActiveWorkoutView.swift, AppelChapitre.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ Foyer.swift,\ FumeeInviteMetal.swift,\ GaletEtape.swift,\ GaletLab.swift,\ GaletSlide.swift,\ HomeView.swift,\ JewelTabBar.swift,\ LensParticles.swift,\ LiquidLensLab.swift,\ LisereCoreAnimation.swift,\ LisereImages.swift,\ LiveExerciseView.swift,\ LoginLab.swift,\ LogoLab.swift /tmp/woop-count53/banc/Woop/Views/Foyer.swift /tmp/woop-count53/banc/Woop/Views/FumeeInviteMetal.swift /tmp/woop-count53/banc/Woop/Views/GaletEtape.swift /tmp/woop-count53/banc/Woop/Views/GaletLab.swift /tmp/woop-count53/banc/Woop/Views/GaletSlide.swift /tmp/woop-count53/banc/Woop/Views/HomeView.swift /tmp/woop-count53/banc/Woop/Views/JewelTabBar.swift /tmp/woop-count53/banc/Woop/Views/LensParticles.swift /tmp/woop-count53/banc/Woop/Views/LiquidLensLab.swift /tmp/woop-count53/banc/Woop/Views/LisereCoreAnimation.swift /tmp/woop-count53/banc/Woop/Views/LisereImages.swift /tmp/woop-count53/banc/Woop/Views/LiveExerciseView.swift /tmp/woop-count53/banc/Woop/Views/LoginLab.swift /tmp/woop-count53/banc/Woop/Views/LogoLab.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/Foyer.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/FumeeInviteMetal.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/GaletEtape.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Views/GaletEtape.swift:88:13: warning: initialization of immutable value 's' was never used; consider replacing with assignment to '_' or removing it
+        let s = graine
+        ~~~~^
+        _
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/GaletLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/GaletSlide.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/HomeView.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/JewelTabBar.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/LensParticles.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Views/LensParticles.swift:46:17: warning: initialization of immutable value 'ce' was never used; consider replacing with assignment to '_' or removing it
+            let ce = ceStart.map { now.timeIntervalSince($0) } ?? -1
+            ~~~~^~
+            _
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/LiquidLensLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Views/LiquidLensLab.swift:1153:13: warning: immutable value 'veil' was never used; consider replacing with '_' or removing it
+        let veil: Double = entering ? 1 : 0
+            ^~~~
+            _
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/LisereCoreAnimation.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/LisereImages.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/LiveExerciseView.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/LoginLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/LogoLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling ObsidianCard.swift, SliderLab.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ LisereRespirant.swift,\ NotchedCard.swift /tmp/woop-count53/banc/Woop/Views/LisereRespirant.swift /tmp/woop-count53/banc/Woop/Views/NotchedCard.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/LisereRespirant.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/NotchedCard.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling Foyer.swift, FumeeInviteMetal.swift, GaletEtape.swift, GaletLab.swift, GaletSlide.swift, HomeView.swift, JewelTabBar.swift, LensParticles.swift, LiquidLensLab.swift, LisereCoreAnimation.swift, LisereImages.swift, LiveExerciseView.swift, LoginLab.swift, LogoLab.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ ChambreHiit.swift,\ ChambreLongue.swift,\ ChambrePeak.swift,\ ChambreRegularite.swift,\ ChambreVolume.swift,\ ChargeFiche.swift,\ ChevronAppelNatif.swift,\ CinematicPlayer.swift,\ ClavierBraise.swift,\ CoffreFlipLab.swift,\ CoffreFortCoin.swift,\ CoffreFortView.swift,\ CoffreV2.swift,\ ConnexionCinematic.swift,\ CounterLab.swift /tmp/woop-count53/banc/Woop/Views/ChambreHiit.swift /tmp/woop-count53/banc/Woop/Views/ChambreLongue.swift /tmp/woop-count53/banc/Woop/Views/ChambrePeak.swift /tmp/woop-count53/banc/Woop/Views/ChambreRegularite.swift /tmp/woop-count53/banc/Woop/Views/ChambreVolume.swift /tmp/woop-count53/banc/Woop/Views/ChargeFiche.swift /tmp/woop-count53/banc/Woop/Views/ChevronAppelNatif.swift /tmp/woop-count53/banc/Woop/Views/CinematicPlayer.swift /tmp/woop-count53/banc/Woop/Views/ClavierBraise.swift /tmp/woop-count53/banc/Woop/Views/CoffreFlipLab.swift /tmp/woop-count53/banc/Woop/Views/CoffreFortCoin.swift /tmp/woop-count53/banc/Woop/Views/CoffreFortView.swift /tmp/woop-count53/banc/Woop/Views/CoffreV2.swift /tmp/woop-count53/banc/Woop/Views/ConnexionCinematic.swift /tmp/woop-count53/banc/Woop/Views/CounterLab.swift (in target 'Woop' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ChambreHiit.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ChambreLongue.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ChambrePeak.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ChambreRegularite.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ChambreVolume.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ChargeFiche.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ChevronAppelNatif.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/CinematicPlayer.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ClavierBraise.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/CoffreFlipLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Views/CoffreFlipLab.swift:246:43: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+                    .position(x: UIScreen.main.bounds.width / 2,
+                                          ^
+/tmp/woop-count53/banc/Woop/Views/CoffreFlipLab.swift:248:45: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+                                 ? UIScreen.main.bounds.height * 0.63
+                                            ^
+/tmp/woop-count53/banc/Woop/Views/CoffreFlipLab.swift:249:45: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+                                 : UIScreen.main.bounds.height * 0.46)
+                                            ^
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/CoffreFortCoin.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/CoffreFortView.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/CoffreV2.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ConnexionCinematic.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/CounterLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling LisereRespirant.swift, NotchedCard.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ BottleSplash.swift,\ CoinChime.swift,\ Ink.swift,\ LightDial.swift,\ LuneDust.swift,\ MonolithChime.swift,\ NightBirds.swift,\ RocketHaptics.swift,\ SparkleBurst.swift,\ SplashBackground.swift,\ SplashWisp.swift,\ Annonces.swift,\ AppleAuth.swift,\ ChambreServeur.swift,\ CoachServeur.swift /tmp/woop-count53/banc/Woop/Figures/BottleSplash.swift /tmp/woop-count53/banc/Woop/Figures/CoinChime.swift /tmp/woop-count53/banc/Woop/Figures/Ink.swift /tmp/woop-count53/banc/Woop/Figures/LightDial.swift /tmp/woop-count53/banc/Woop/Figures/LuneDust.swift /tmp/woop-count53/banc/Woop/Figures/MonolithChime.swift /tmp/woop-count53/banc/Woop/Figures/NightBirds.swift /tmp/woop-count53/banc/Woop/Figures/RocketHaptics.swift /tmp/woop-count53/banc/Woop/Figures/SparkleBurst.swift /tmp/woop-count53/banc/Woop/Figures/SplashBackground.swift /tmp/woop-count53/banc/Woop/Figures/SplashWisp.swift /tmp/woop-count53/banc/Woop/Services/Annonces.swift /tmp/woop-count53/banc/Woop/Services/AppleAuth.swift /tmp/woop-count53/banc/Woop/Services/ChambreServeur.swift /tmp/woop-count53/banc/Woop/Services/CoachServeur.swift (in target 'Woop' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Figures/BottleSplash.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Services/AppleAuth.swift:302:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Figures/CoinChime.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Services/AppleAuth.swift:302:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Figures/Ink.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Services/AppleAuth.swift:302:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Figures/LightDial.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Services/AppleAuth.swift:302:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Figures/LuneDust.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Services/AppleAuth.swift:302:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Figures/MonolithChime.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Services/AppleAuth.swift:302:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Figures/NightBirds.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Services/AppleAuth.swift:302:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Figures/RocketHaptics.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Services/AppleAuth.swift:302:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Figures/SparkleBurst.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Services/AppleAuth.swift:302:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Figures/SplashBackground.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Services/AppleAuth.swift:302:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Figures/SplashWisp.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Services/AppleAuth.swift:302:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Services/Annonces.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Services/AppleAuth.swift:302:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Services/AppleAuth.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Services/AppleAuth.swift:302:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Services/ChambreServeur.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Services/AppleAuth.swift:302:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Services/CoachServeur.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Services/AppleAuth.swift:302:74: warning: 'init()' was deprecated in iOS 26.0: Use init(windowScene:) instead.
+        return fenetres.first(where: \.isKeyWindow) ?? fenetres.first ?? ASPresentationAnchor()
+                                                                         ^
+
+SwiftDriverJobDiscovery normal arm64 Compiling DemonVideo.swift, DepartCine.swift, DepartSeance.swift, DuolinguoPage.swift, ExerciseDetailView.swift, ExerciseEditor.swift, ExercisePhoto.swift, ExerciseSetupCard.swift, ExercisesView.swift, ExosFond.swift, FilmDepartSeance.swift, FlameLab.swift, FlammeJauge.swift, FondVideoMetal.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ HarmonieLab.swift,\ LaunchPebble.swift /tmp/woop-count53/banc/Woop/Views/HarmonieLab.swift /tmp/woop-count53/banc/Woop/Views/LaunchPebble.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/HarmonieLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/LaunchPebble.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling ChambreHiit.swift, ChambreLongue.swift, ChambrePeak.swift, ChambreRegularite.swift, ChambreVolume.swift, ChargeFiche.swift, ChevronAppelNatif.swift, CinematicPlayer.swift, ClavierBraise.swift, CoffreFlipLab.swift, CoffreFortCoin.swift, CoffreFortView.swift, CoffreV2.swift, ConnexionCinematic.swift, CounterLab.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ DevilAuraOverlay.swift /tmp/woop-count53/banc/Woop/Views/DevilAuraOverlay.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/DevilAuraOverlay.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling HarmonieLab.swift, LaunchPebble.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ ObjectiveCard.swift /tmp/woop-count53/banc/Woop/Views/ObjectiveCard.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ObjectiveCard.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling DevilAuraOverlay.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ SliderObsidienne.swift,\ SondeCadence.swift,\ SondeVol.swift,\ StopCard.swift,\ MoonGlyph.swift,\ WorkoutActivity.swift,\ StopSessionSheet.swift,\ StoryEnded.swift,\ StoryFlow.swift,\ StorySuite.swift,\ StoryVideo.swift,\ SuccessLab.swift,\ SynthesisCard.swift,\ TapisLab.swift /tmp/woop-count53/banc/Woop/Views/SliderObsidienne.swift /tmp/woop-count53/banc/Woop/Views/SondeCadence.swift /tmp/woop-count53/banc/Woop/Views/SondeVol.swift /tmp/woop-count53/banc/Woop/Views/StopCard.swift /tmp/woop-count53/banc/WoopShared/MoonGlyph.swift /tmp/woop-count53/banc/WoopShared/WorkoutActivity.swift /tmp/woop-count53/banc/Woop/Views/StopSessionSheet.swift /tmp/woop-count53/banc/Woop/Views/StoryEnded.swift /tmp/woop-count53/banc/Woop/Views/StoryFlow.swift /tmp/woop-count53/banc/Woop/Views/StorySuite.swift /tmp/woop-count53/banc/Woop/Views/StoryVideo.swift /tmp/woop-count53/banc/Woop/Views/SuccessLab.swift /tmp/woop-count53/banc/Woop/Views/SynthesisCard.swift /tmp/woop-count53/banc/Woop/Views/TapisLab.swift (in target 'Woop' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/SliderObsidienne.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/SondeCadence.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/SondeVol.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/StopCard.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/WoopShared/MoonGlyph.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/WoopShared/WorkoutActivity.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/StopSessionSheet.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/StoryEnded.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/StoryFlow.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/StorySuite.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Views/StorySuite.swift:834:25: warning: '+' was deprecated in iOS 26.0: Use string interpolation on `Text` instead: `Text("Hello \(name)")`
+                    acc + Text(m.0)
+                        ^
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/StoryVideo.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/SuccessLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/SynthesisCard.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/TapisLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling ObjectiveCard.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ ConnexionButtonLab.swift,\ CorpsNacre.swift /tmp/woop-count53/banc/Woop/Views/ConnexionButtonLab.swift /tmp/woop-count53/banc/Woop/Views/CorpsNacre.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ConnexionButtonLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/CorpsNacre.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling BottleSplash.swift, CoinChime.swift, Ink.swift, LightDial.swift, LuneDust.swift, MonolithChime.swift, NightBirds.swift, RocketHaptics.swift, SparkleBurst.swift, SplashBackground.swift, SplashWisp.swift, Annonces.swift, AppleAuth.swift, ChambreServeur.swift, CoachServeur.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ WorkoutsListView.swift,\ Atmosphere.swift /tmp/woop-count53/banc/Woop/Views/WorkoutsListView.swift /tmp/woop-count53/banc/Woop/Atmosphere.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/WorkoutsListView.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Atmosphere.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling ConnexionButtonLab.swift, CorpsNacre.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ ObjectiveCardLab.swift,\ ObsidianCardLab.swift,\ OrphanProbe.swift,\ PageCard.swift,\ PanBande.swift,\ ParoleLigne.swift,\ PerleSemaineNative.swift,\ PiluleVagabonde.swift,\ PlayerMonde.swift,\ PlayerSeance.swift,\ PorteApple.swift,\ PorteEntree.swift,\ PremiereArrivee.swift,\ ProfilLune.swift /tmp/woop-count53/banc/Woop/Views/ObjectiveCardLab.swift /tmp/woop-count53/banc/Woop/Views/ObsidianCardLab.swift /tmp/woop-count53/banc/Woop/Views/OrphanProbe.swift /tmp/woop-count53/banc/Woop/Views/PageCard.swift /tmp/woop-count53/banc/Woop/Views/PanBande.swift /tmp/woop-count53/banc/Woop/Views/ParoleLigne.swift /tmp/woop-count53/banc/Woop/Views/PerleSemaineNative.swift /tmp/woop-count53/banc/Woop/Views/PiluleVagabonde.swift /tmp/woop-count53/banc/Woop/Views/PlayerMonde.swift /tmp/woop-count53/banc/Woop/Views/PlayerSeance.swift /tmp/woop-count53/banc/Woop/Views/PorteApple.swift /tmp/woop-count53/banc/Woop/Views/PorteEntree.swift /tmp/woop-count53/banc/Woop/Views/PremiereArrivee.swift /tmp/woop-count53/banc/Woop/Views/ProfilLune.swift (in target 'Woop' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ObjectiveCardLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ObsidianCardLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/OrphanProbe.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/PageCard.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/PanBande.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ParoleLigne.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/PerleSemaineNative.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/PiluleVagabonde.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Views/PiluleVagabonde.swift:377:25: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        130...(UIScreen.main.bounds.height - 138)
+                        ^
+/tmp/woop-count53/banc/Woop/Views/PiluleVagabonde.swift:390:26: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        let W = UIScreen.main.bounds.width
+                         ^
+/tmp/woop-count53/banc/Woop/Views/PiluleVagabonde.swift:443:26: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        let W = UIScreen.main.bounds.width
+                         ^
+/tmp/woop-count53/banc/Woop/Views/PiluleVagabonde.swift:920:35: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+            .position(x: UIScreen.main.bounds.width / 2,
+                                  ^
+/tmp/woop-count53/banc/Woop/Views/PiluleVagabonde.swift:1092:31: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        .position(x: UIScreen.main.bounds.width / 2, y: IleGeo.centreY)
+                              ^
+/tmp/woop-count53/banc/Woop/Views/PiluleVagabonde.swift:1181:31: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+        .position(x: UIScreen.main.bounds.width / 2,
+                              ^
+/tmp/woop-count53/banc/Woop/Views/PiluleVagabonde.swift:1431:36: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+            .frame(width: UIScreen.main.bounds.width - NotifGeo.margeH * 2,
+                                   ^
+/tmp/woop-count53/banc/Woop/Views/PiluleVagabonde.swift:1502:35: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+            .position(x: UIScreen.main.bounds.width / 2, y: y)
+                                  ^
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/PlayerMonde.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/PlayerSeance.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/PorteApple.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/PorteEntree.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/PremiereArrivee.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ProfilLune.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling WorkoutsListView.swift, Atmosphere.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ HomeNuit.swift /tmp/woop-count53/banc/Woop/Views/HomeNuit.swift (in target 'Woop' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/HomeNuit.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Views/HomeNuit.swift:3387:13: warning: initialization of immutable value 'flou' was never used; consider replacing with assignment to '_' or removing it
+        let flou = DepartCine.sstep(DepartCine.flouAt,
+        ~~~~^~~~
+        _
+/tmp/woop-count53/banc/Woop/Views/HomeNuit.swift:3389:13: warning: initialization of immutable value 'mort' was never used; consider replacing with assignment to '_' or removing it
+        let mort = DepartCine.sstep(DepartCine.fadeAt,
+        ~~~~^~~~
+        _
+
+SwiftDriverJobDiscovery normal arm64 Compiling SliderObsidienne.swift, SondeCadence.swift, SondeVol.swift, StopCard.swift, MoonGlyph.swift, WorkoutActivity.swift, StopSessionSheet.swift, StoryEnded.swift, StoryFlow.swift, StorySuite.swift, StoryVideo.swift, SuccessLab.swift, SynthesisCard.swift, TapisLab.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ BordSeance.swift,\ ChipVerre.swift /tmp/woop-count53/banc/Woop/Views/BordSeance.swift /tmp/woop-count53/banc/Woop/Views/ChipVerre.swift (in target 'Woop' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/BordSeance.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ChipVerre.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling ObjectiveCardLab.swift, ObsidianCardLab.swift, OrphanProbe.swift, PageCard.swift, PanBande.swift, ParoleLigne.swift, PerleSemaineNative.swift, PiluleVagabonde.swift, PlayerMonde.swift, PlayerSeance.swift, PorteApple.swift, PorteEntree.swift, PremiereArrivee.swift, ProfilLune.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ CoffreFortPurse.swift /tmp/woop-count53/banc/Woop/Views/CoffreFortPurse.swift (in target 'Woop' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/CoffreFortPurse.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling HomeNuit.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ ProgressionView.swift,\ ProgressPage.swift,\ RecentWorkoutCard.swift,\ RestartSheet.swift,\ RewardCard.swift,\ RewardChemin.swift,\ RewardCheminCard.swift,\ RewardCheminVariants.swift,\ RewardLab.swift,\ RythmeEcran.swift,\ SacreAccueil.swift,\ SessionSlate.swift,\ SetEntrySheet.swift,\ SetHistoryRow.swift /tmp/woop-count53/banc/Woop/Views/ProgressionView.swift /tmp/woop-count53/banc/Woop/Views/ProgressPage.swift /tmp/woop-count53/banc/Woop/Views/RecentWorkoutCard.swift /tmp/woop-count53/banc/Woop/Views/RestartSheet.swift /tmp/woop-count53/banc/Woop/Views/RewardCard.swift /tmp/woop-count53/banc/Woop/Views/RewardChemin.swift /tmp/woop-count53/banc/Woop/Views/RewardCheminCard.swift /tmp/woop-count53/banc/Woop/Views/RewardCheminVariants.swift /tmp/woop-count53/banc/Woop/Views/RewardLab.swift /tmp/woop-count53/banc/Woop/Views/RythmeEcran.swift /tmp/woop-count53/banc/Woop/Views/SacreAccueil.swift /tmp/woop-count53/banc/Woop/Views/SessionSlate.swift /tmp/woop-count53/banc/Woop/Views/SetEntrySheet.swift /tmp/woop-count53/banc/Woop/Views/SetHistoryRow.swift (in target 'Woop' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ProgressionView.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ProgressPage.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/RecentWorkoutCard.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/RestartSheet.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/RewardCard.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Views/RewardCard.swift:1542:17: warning: initialization of immutable value 'tilt' was never used; consider replacing with assignment to '_' or removing it
+            let tilt = SkyMotion.shared.tilt
+            ~~~~^~~~
+            _
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/RewardChemin.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/RewardCheminCard.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/RewardCheminVariants.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/RewardLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/RythmeEcran.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/SacreAccueil.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/SessionSlate.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/SetEntrySheet.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/SetHistoryRow.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling BordSeance.swift, ChipVerre.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ StopLab.swift,\ ImpGlyph.swift /tmp/woop-count53/banc/Woop/Views/StopLab.swift /tmp/woop-count53/banc/WoopShared/ImpGlyph.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/StopLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/WoopShared/ImpGlyph.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling CoffreFortPurse.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ MoonPath.swift,\ MoonSDF.swift /tmp/woop-count53/banc/Woop/MoonPath.swift /tmp/woop-count53/banc/Woop/MoonSDF.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/MoonPath.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/MoonSDF.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling StopLab.swift, ImpGlyph.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ AuthView.swift /tmp/woop-count53/banc/Woop/Views/AuthView.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/AuthView.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling MoonPath.swift, MoonSDF.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ VerreCoulant.swift,\ VisiteHome.swift /tmp/woop-count53/banc/Woop/Views/VerreCoulant.swift /tmp/woop-count53/banc/Woop/Views/VisiteHome.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/VerreCoulant.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/VisiteHome.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling AuthView.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ LuneDeSang.swift,\ MenuCouronne.swift,\ MenuNappe.swift,\ MoonCoinLab.swift,\ MoonSplash.swift,\ NavDiagnostic.swift,\ NavEncre.swift,\ NavLab.swift,\ NeonPrimaryButton.swift,\ NeonPrimaryLab.swift,\ NosfyOnboarding.swift,\ NotifCard.swift,\ NotifChasse.swift,\ NotifLab.swift /tmp/woop-count53/banc/Woop/Views/LuneDeSang.swift /tmp/woop-count53/banc/Woop/Views/MenuCouronne.swift /tmp/woop-count53/banc/Woop/Views/MenuNappe.swift /tmp/woop-count53/banc/Woop/Views/MoonCoinLab.swift /tmp/woop-count53/banc/Woop/Views/MoonSplash.swift /tmp/woop-count53/banc/Woop/Views/NavDiagnostic.swift /tmp/woop-count53/banc/Woop/Views/NavEncre.swift /tmp/woop-count53/banc/Woop/Views/NavLab.swift /tmp/woop-count53/banc/Woop/Views/NeonPrimaryButton.swift /tmp/woop-count53/banc/Woop/Views/NeonPrimaryLab.swift /tmp/woop-count53/banc/Woop/Views/NosfyOnboarding.swift /tmp/woop-count53/banc/Woop/Views/NotifCard.swift /tmp/woop-count53/banc/Woop/Views/NotifChasse.swift /tmp/woop-count53/banc/Woop/Views/NotifLab.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/LuneDeSang.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/MenuCouronne.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/MenuNappe.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Views/MenuNappe.swift:1959:34: warning: call to main actor-isolated instance method 'dragLevel' in a synchronous nonisolated context
+            RocketHaptics.shared.dragLevel(x * 0.55)
+                                 ^
+/tmp/woop-count53/banc/Woop/Figures/RocketHaptics.swift:341:10: note: calls to instance method 'dragLevel' from outside of its actor context are implicitly asynchronous
+    func dragLevel(_ climb: Double) {
+         ^
+/tmp/woop-count53/banc/Woop/Views/MenuNappe.swift:1959:27: warning: main actor-isolated static property 'shared' can not be referenced from a Sendable closure
+            RocketHaptics.shared.dragLevel(x * 0.55)
+                          ^
+/tmp/woop-count53/banc/Woop/Figures/RocketHaptics.swift:25:16: note: static property declared here
+    static let shared = RocketHaptics()
+               ^
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/MoonCoinLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/MoonSplash.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Views/MoonSplash.swift:883:60: warning: main actor-isolated property 'start' cannot be accessed from outside of the actor; this is an error in the Swift 6 language mode
+                let left = when - Date().timeIntervalSince(start)
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~
+                           await 
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/NavDiagnostic.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/NavEncre.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/NavLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/NeonPrimaryButton.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/NeonPrimaryLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/NosfyOnboarding.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Views/NosfyOnboarding.swift:475:65: warning: backward matching of the unlabeled trailing closure is deprecated; label the argument with 'onTap' to suppress this warning
+                SemaineTapable(choisis: reponses.jours, en: en) { i in
+                                                              ~ ^
+                                                              , onTap: 
+/tmp/woop-count53/banc/Woop/Views/NosfyOnboarding.swift:1816:16: note: 'init(choisis:onTap:en:)' declared here
+private struct SemaineTapable: View {
+               ^
+/tmp/woop-count53/banc/Woop/Views/NosfyOnboarding.swift:703:23: warning: main actor-isolated property 'etape' cannot be accessed from outside of the actor; this is an error in the Swift 6 language mode
+                while etape != e {
+                      ^~~~~~~~~~
+                      await 
+/tmp/woop-count53/banc/Woop/Views/NosfyOnboarding.swift:709:24: warning: main actor-isolated property 'etape' cannot be accessed from outside of the actor; this is an error in the Swift 6 language mode
+                return etape == e
+                       ^~~~~~~~~~
+                       await 
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/NotifCard.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/NotifChasse.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/NotifLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling VerreCoulant.swift, VisiteHome.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ WoopApp.swift,\ GeneratedAssetSymbols.swift /tmp/woop-count53/banc/Woop/WoopApp.swift /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Woop' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/WoopApp.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/WoopApp.swift:1314:44: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+            MiniCardJour(date: a.startedAt ?? .now,
+                               ~~~~~~~~~~~~^~~~~~~
+                                          
+/tmp/woop-count53/banc/Woop/WoopApp.swift:1339:58: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+                TimelineView(.periodic(from: a.startedAt ?? .now,
+                                             ~~~~~~~~~~~~^~~~~~~
+                                                        
+/tmp/woop-count53/banc/Woop/WoopApp.swift:1342:56: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+                        .timeIntervalSince(a.startedAt ?? .now)))
+                                           ~~~~~~~~~~~~^~~~~~~
+                                                      
+/tmp/woop-count53/banc/Woop/WoopApp.swift:1729:47: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+                    departSeance: a.startedAt ?? .now,
+                                  ~~~~~~~~~~~~^~~~~~~
+                                             
+/tmp/woop-count53/banc/Woop/WoopApp.swift:1755:41: warning: left side of nil coalescing operator '??' has non-optional type 'Date', so the right side is never used
+                    depart: a.startedAt ?? .now,
+                            ~~~~~~~~~~~~^~~~~~~
+                                       
+/tmp/woop-count53/banc/Woop/WoopApp.swift:1754:43: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+                    ecranTaille: UIScreen.main.bounds.size,
+                                          ^
+
+SwiftCompile normal arm64 /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling LuneDeSang.swift, MenuCouronne.swift, MenuNappe.swift, MoonCoinLab.swift, MoonSplash.swift, NavDiagnostic.swift, NavEncre.swift, NavLab.swift, NeonPrimaryButton.swift, NeonPrimaryLab.swift, NosfyOnboarding.swift, NotifCard.swift, NotifChasse.swift, NotifLab.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ EmberFlameLab.swift,\ FlammeJaugeLab.swift /tmp/woop-count53/banc/Woop/Views/EmberFlameLab.swift /tmp/woop-count53/banc/Woop/Views/FlammeJaugeLab.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/EmberFlameLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/FlammeJaugeLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling ProgressionView.swift, ProgressPage.swift, RecentWorkoutCard.swift, RestartSheet.swift, RewardCard.swift, RewardChemin.swift, RewardCheminCard.swift, RewardCheminVariants.swift, RewardLab.swift, RythmeEcran.swift, SacreAccueil.swift, SessionSlate.swift, SetEntrySheet.swift, SetHistoryRow.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ LivingNebulaBackground.swift /tmp/woop-count53/banc/Woop/Views/LivingNebulaBackground.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/LivingNebulaBackground.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling EmberFlameLab.swift, FlammeJaugeLab.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ BancCoutHome.swift,\ BoosterCard.swift,\ BoosterLab.swift,\ BoosterPack.swift,\ BoosterPopup.swift,\ BoutonPrimaire.swift,\ BravoLab.swift,\ CalendarView.swift,\ CalLab.swift,\ CardioFiche.swift,\ CardRoute.swift,\ CarnetLab.swift,\ CarnetScene.swift,\ CarteLuneLab.swift,\ ChambreDonnees.swift /tmp/woop-count53/banc/Woop/Views/BancCoutHome.swift /tmp/woop-count53/banc/Woop/Views/BoosterCard.swift /tmp/woop-count53/banc/Woop/Views/BoosterLab.swift /tmp/woop-count53/banc/Woop/Views/BoosterPack.swift /tmp/woop-count53/banc/Woop/Views/BoosterPopup.swift /tmp/woop-count53/banc/Woop/Views/BoutonPrimaire.swift /tmp/woop-count53/banc/Woop/Views/BravoLab.swift /tmp/woop-count53/banc/Woop/Views/CalendarView.swift /tmp/woop-count53/banc/Woop/Views/CalLab.swift /tmp/woop-count53/banc/Woop/Views/CardioFiche.swift /tmp/woop-count53/banc/Woop/Views/CardRoute.swift /tmp/woop-count53/banc/Woop/Views/CarnetLab.swift /tmp/woop-count53/banc/Woop/Views/CarnetScene.swift /tmp/woop-count53/banc/Woop/Views/CarteLuneLab.swift /tmp/woop-count53/banc/Woop/Views/ChambreDonnees.swift (in target 'Woop' from project 'Woop')
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/BancCoutHome.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/BoosterCard.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/BoosterLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/BoosterPack.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/BoosterPopup.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/BoutonPrimaire.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/BravoLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Views/BravoLab.swift:332:21: warning: initialization of immutable value 'bornU' was never used; consider replacing with assignment to '_' or removing it
+                let bornU = BravoCine.sstep(BravoCine.contentAt,
+                ~~~~^~~~~
+                _
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/CalendarView.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/CalLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/CardioFiche.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/CardRoute.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/CarnetLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/CarnetScene.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/CarteLuneLab.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Views/CarteLuneLab.swift:577:52: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+                            .frame(width: UIScreen.main.bounds.width * 2.4,
+                                                   ^
+/tmp/woop-count53/banc/Woop/Views/CarteLuneLab.swift:578:53: warning: 'main' was deprecated in iOS 26.0: Use a UIScreen instance found through context instead (i.e, view.window.windowScene.screen), or for properties like UIScreen.scale with trait equivalents, use a traitCollection found through context.
+                                   height: UIScreen.main.bounds.height * 2.4)
+                                                    ^
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/ChambreDonnees.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+/tmp/woop-count53/banc/Woop/Views/ChambreDonnees.swift:313:31: warning: 'flatMap' is deprecated: Please use compactMap(_:) for the case where closure returns an optional value
+            let pic = seances.flatMap { picHiit($0) }.max()
+                              ^
+/tmp/woop-count53/banc/Woop/Views/ChambreDonnees.swift:313:31: note: use 'compactMap(_:)' instead
+            let pic = seances.flatMap { picHiit($0) }.max()
+                              ^~~~~~~
+                              compactMap
+
+SwiftDriverJobDiscovery normal arm64 Compiling LivingNebulaBackground.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 Compiling\ WidgetsCards.swift,\ WorkoutPill.swift /tmp/woop-count53/banc/Woop/Views/WidgetsCards.swift /tmp/woop-count53/banc/Woop/Views/WorkoutPill.swift (in target 'Woop' from project 'Woop')
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/WidgetsCards.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftCompile normal arm64 /tmp/woop-count53/banc/Woop/Views/WorkoutPill.swift (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling WoopApp.swift, GeneratedAssetSymbols.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling WidgetsCards.swift, WorkoutPill.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriverJobDiscovery normal arm64 Compiling BancCoutHome.swift, BoosterCard.swift, BoosterLab.swift, BoosterPack.swift, BoosterPopup.swift, BoutonPrimaire.swift, BravoLab.swift, CalendarView.swift, CalLab.swift, CardioFiche.swift, CardRoute.swift, CarnetLab.swift, CarnetScene.swift, CarteLuneLab.swift, ChambreDonnees.swift (in target 'Woop' from project 'Woop')
+
+SwiftDriver\ Compilation Woop normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Woop -Onone @/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /tmp/woop-count53/sim-dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /tmp/woop-count53/sim-dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator -F /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /tmp/woop-count53/sim-dd/SDKStatCaches.noindex/iphonesimulator26.5-23F73-688ef53f1462e2c8f657fdc38a81448f6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /tmp/woop-count53/sim-dd/ModuleCache.noindex -sdk-module-cache-path /tmp/woop-count53/sim-dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule -validate-clang-modules-once -clang-build-session-file /tmp/woop-count53/sim-dd/ModuleCache.noindex/Session.modulevalidation -Xcc -I/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_const_extract_protocols.json -Xcc -iquote -Xcc /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-generated-files.hmap -Xcc -I/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-own-target-headers.hmap -Xcc -I/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-all-target-headers.hmap -Xcc -iquote -Xcc /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-project-headers.hmap -Xcc -I/tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources-normal/arm64 -Xcc -I/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources/arm64 -Xcc -I/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-Swift.h -working-directory /tmp/woop-count53/banc -experimental-emit-module-separately -disable-cmo
+
+Ld /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop.debug.dylib normal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator -F/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator -filelist /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.LinkFileList -install_name @rpath/Woop.debug.dylib -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.swiftmodule @/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop-linker-args.resp -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -Xlinker -no_adhoc_codesign -o /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop.debug.dylib
+
+ConstructStubExecutorLinkFileList /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-ExecutorLinkFileList-normal-arm64.txt (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    construct-stub-executor-link-file-list /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'Woop' from project 'Woop')
+
+Ld /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop normal (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator -F/tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @executable_path/Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop-ExecutorLinkFileList-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __entitlements -Xlinker /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.app-Simulated.xcent -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __ents_der -Xlinker /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.app-Simulated.xcent.der /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop.debug.dylib -Xlinker -no_adhoc_codesign -o /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop
+
+Copy /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/PlugIns/WoopWidgets.appex /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks -remove-static-executable /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopWidgets.appex /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/PlugIns
+
+ProcessInfoPlistFile /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/Info.plist /tmp/woop-count53/banc/Woop/Info.plist (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-infoPlistUtility /tmp/woop-count53/banc/Woop/Info.plist -producttype com.apple.product-type.application -genpkginfo /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/assetcatalog_generated_info.plist -scanforprivacyfile /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/PlugIns/WoopWidgets.appex -o /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/Info.plist
+
+ExtractAppIntentsMetadata (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --module-name Woop --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F42 --platform-family iOS --deployment-target 26.0 --bundle-identifier fr.kathryn.woop --output /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app --target-triple arm64-apple-ios26.0-simulator --binary-file /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop --dependency-file /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop_dependency_info.dat --stringsdata-file /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.SwiftFileList --metadata-file-list /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.DependencyMetadataFileList --static-metadata-file-list /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.DependencyStaticMetadataFileList --swift-const-vals-list /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Objects-normal/arm64/Woop.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-09-16 18:33:25.997 appintentsmetadataprocessor[9425:16570746] Starting appintentsmetadataprocessor export
+2026-09-16 18:33:26.033 appintentsmetadataprocessor[9425:16570746] Extracted no relevant App Intents symbols, skipping writing output
+
+CopySwiftLibs /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-swiftStdLibTool --copy --verbose --sign - --scan-executable /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop.debug.dylib --scan-folder /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/Frameworks --scan-folder /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/PlugIns --scan-folder /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/SystemExtensions --scan-folder /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+
+AppIntentsSSUTraining (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/Info.plist --temp-dir-path /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/ssu --bundle-id fr.kathryn.woop --product-path /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app --extracted-metadata-path /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/Metadata.appintents --metadata-file-list /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.DependencyMetadataFileList --source-file /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/Info.plist --archive-ssu-assets
+2026-09-16 18:33:26.052 appintentsnltrainingprocessor[9426:16570750] Parsing options for appintentsnltrainingprocessor
+2026-09-16 18:33:26.053 appintentsnltrainingprocessor[9426:16570750] Starting AppIntents SSU YAML Generation
+2026-09-16 18:33:26.055 appintentsnltrainingprocessor[9426:16570750] No AppShortcuts found - Skipping.
+
+CodeSign /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop.debug.dylib (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --timestamp\=none --generate-entitlement-der /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/Woop.debug.dylib
+
+CodeSign /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/__preview.dylib (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --timestamp\=none --generate-entitlement-der /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/__preview.dylib
+
+CodeSign /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --entitlements /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/Woop.build/Woop.app.xcent --timestamp\=none --generate-entitlement-der /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app
+
+ValidateEmbeddedBinary /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/PlugIns/WoopWidgets.appex (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    /Applications/Xcode.app/Contents/Developer/usr/bin/embeddedBinaryValidationUtility /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/PlugIns/WoopWidgets.appex -signing-cert - -info-plist-path /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app/Info.plist
+
+RegisterExecutionPolicyException /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-RegisterExecutionPolicyException /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app
+
+Validate /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-validationUtility /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app -shallow-bundle -infoplist-subpath Info.plist
+
+Touch /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app (in target 'Woop' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    /usr/bin/touch -c /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/Woop.app
+
+ProcessInfoPlistFile /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Info.plist /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/empty-WoopUITests.plist (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-infoPlistUtility /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/empty-WoopUITests.plist -producttype com.apple.product-type.bundle.ui-testing -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/ProductTypeInfoPlistAdditions.plist -o /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Info.plist
+
+Ld /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/WoopUITests normal (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -bundle -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator -L/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -filelist /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.LinkFileList -Xlinker -rpath -Xlinker @loader_path/Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.swiftmodule @/tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests-linker-args.resp -Xlinker -needed_framework -Xlinker XCTest -framework XCTest -Xlinker -needed-lXCTestSwiftSupport -lXCTestSwiftSupport -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __entitlements -Xlinker /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests.xctest-Simulated.xcent -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __ents_der -Xlinker /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests.xctest-Simulated.xcent.der -Xlinker -no_adhoc_codesign -o /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/WoopUITests
+
+CopySwiftLibs /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-swiftStdLibTool --copy --verbose --sign - --scan-executable /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/WoopUITests --scan-folder /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Frameworks --scan-folder /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/PlugIns --scan-folder /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/SystemExtensions --scan-folder /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Frameworks --strip-bitcode --scan-executable /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+
+ExtractAppIntentsMetadata (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.42.0.BA5Ggr/Metal.xctoolchain --module-name WoopUITests --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F42 --platform-family iOS --deployment-target 26.0 --bundle-identifier fr.kathryn.woop.WoopUITests --output /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest --target-triple arm64-apple-ios26.0-simulator --binary-file /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/WoopUITests --dependency-file /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests_dependency_info.dat --stringsdata-file /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.SwiftFileList --metadata-file-list /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests.DependencyMetadataFileList --static-metadata-file-list /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests.DependencyStaticMetadataFileList --swift-const-vals-list /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/Objects-normal/arm64/WoopUITests.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-09-16 18:33:27.643 appintentsmetadataprocessor[9436:16570831] Starting appintentsmetadataprocessor export
+2026-09-16 18:33:27.644 appintentsmetadataprocessor[9436:16570831] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+AppIntentsSSUTraining (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Info.plist --temp-dir-path /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/ssu --bundle-id fr.kathryn.woop.WoopUITests --product-path /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest --extracted-metadata-path /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Metadata.appintents --metadata-file-list /tmp/woop-count53/sim-dd/Build/Intermediates.noindex/Woop.build/Debug-iphonesimulator/WoopUITests.build/WoopUITests.DependencyMetadataFileList --source-file /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Info.plist --archive-ssu-assets
+2026-09-16 18:33:27.659 appintentsnltrainingprocessor[9437:16570834] Parsing options for appintentsnltrainingprocessor
+2026-09-16 18:33:27.660 appintentsnltrainingprocessor[9437:16570834] Starting AppIntents SSU YAML Generation
+2026-09-16 18:33:27.660 appintentsnltrainingprocessor[9437:16570834] No AppShortcuts found - Skipping.
+
+CopyAndPreserveArchs /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/WoopUITests-Runner (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/lipo /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Xcode/Agents/XCTRunner.app/XCTRunner -output /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/WoopUITests-Runner -extract arm64
+
+CopyPlistFile /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/Info.plist /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Xcode/Agents/XCTRunner.app/Info.plist (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-copyPlist --validate --convert xml1 --macro-expansion WRAPPEDPRODUCTNAME WoopUITests-Runner --macro-expansion WRAPPEDPRODUCTBUNDLEIDENTIFIER fr.kathryn.woop.WoopUITests.xctrunner --macro-expansion TESTPRODUCTNAME WoopUITests --macro-expansion TESTPRODUCTBUNDLEIDENTIFIER fr.kathryn.woop.WoopUITests --copy-value UIDeviceFamily /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest/Info.plist --outdir /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app -- /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Xcode/Agents/XCTRunner.app/Info.plist
+
+MkDir /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    /bin/mkdir -p /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app
+
+Copy /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PkgInfo /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Xcode/Agents/XCTRunner.app/PkgInfo (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Xcode/Agents/XCTRunner.app/PkgInfo /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app
+
+Copy /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/Frameworks/libXCTestSwiftSupport.dylib /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/Frameworks
+
+Copy /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/Frameworks/XCUnit.framework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCUnit.framework (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCUnit.framework /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/Frameworks
+
+Copy /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/Frameworks/XCUIAutomation.framework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCUIAutomation.framework (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCUIAutomation.framework /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/Frameworks
+
+Copy /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/Frameworks/XCTestSupport.framework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestSupport.framework (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestSupport.framework /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/Frameworks
+
+Copy /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/Frameworks/XCTestCore.framework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestCore.framework (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestCore.framework /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/Frameworks
+
+Copy /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/Frameworks/XCTest.framework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCTest.framework (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCTest.framework /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/Frameworks
+
+Copy /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/Frameworks/XCTAutomationSupport.framework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTAutomationSupport.framework (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTAutomationSupport.framework /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/Frameworks
+
+Copy /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/Frameworks/Testing.framework /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/Testing.framework (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/Testing.framework /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/Frameworks
+
+CodeSign /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --timestamp\=none --generate-entitlement-der /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest
+
+RegisterExecutionPolicyException /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    builtin-RegisterExecutionPolicyException /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest
+
+CodeSign /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    
+    Signing Identity:     "Sign to Run Locally"
+    
+    /usr/bin/codesign --force --sign - --timestamp\=none --generate-entitlement-der /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app
+/tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app: replacing existing signature
+
+Touch /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest (in target 'WoopUITests' from project 'Woop')
+    cd /tmp/woop-count53/banc
+    /usr/bin/touch -c /tmp/woop-count53/sim-dd/Build/Products/Debug-iphonesimulator/WoopUITests-Runner.app/PlugIns/WoopUITests.xctest
+
+** TEST BUILD SUCCEEDED **
+

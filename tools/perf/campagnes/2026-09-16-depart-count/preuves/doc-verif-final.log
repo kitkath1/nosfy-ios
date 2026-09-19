@@ -1,0 +1,110 @@
+
+> woop-chambre-des-machines@2.0.0 verif
+> ../../tools/docsite/verifier.sh
+
+
+── 0. les prérequis
+   ✔ node v24.16.0 · Chrome présent
+
+── 1. le retard — le livrable est-il plus vieux que sa source ?
+   ✔ index.html est plus récent que content/ app/ components/ public/ fonts/ scripts/
+
+── 2. tsc --noEmit — une brique sans preuve ne compile pas
+   ✔ types
+
+── 3. la source — tests/contenu (ids, titres, preuves qui se lisent, SVG à jour)
+
+ RUN  v4.1.11 /Users/kathryn/Desktop/woochoper-ios/docs/site
+
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  18:47:28
+   Duration  152ms (transform 50ms, setup 0ms, import 18ms, tests 72ms, environment 0ms)
+
+
+── 4. next build (export statique → docs/site/out/)
+▲ Next.js 16.3.3 (Turbopack)
+✓ Running next.config.ts took 12ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 138ms
+  Running TypeScript ...
+  Finished TypeScript in 944ms ...
+  Collecting page data using 5 workers ...
+  Generating static pages using 5 workers (0/4) ...
+  Generating static pages using 5 workers (1/4) 
+  Generating static pages using 5 workers (2/4) 
+  Generating static pages using 5 workers (3/4) 
+✓ Generating static pages using 5 workers (4/4) in 298ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+└ ○ /icon.svg
+
+
+○  (Static)  prerendered as static content
+
+   ✔ out/index.html
+
+── 5. l'inliner — rebâti à côté, comparé au livrable
+inliner : /Users/kathryn/Desktop/woochoper-ios/docs/site/out/index.html
+   retirés  : 24 <script> · 7 <link> · 1 attributs Next · 226 commentaires RSC · 1 meta
+   inlinés  : 1 feuille(s) (47334 o) · 1 url() (99780 o) · 53 média(s) (501223 o) · site.js (9066 o)
+   titre    : Documentation Woop
+   livrable : /Users/kathryn/Desktop/woochoper-ios/docs/site/out/livrable-verif.html · 1995464 o (2.00 Mo) · 1 <script>
+   ✔ écrit
+   ✔ identique octet pour octet : le livrable EST le build (frais, déterministe)
+
+── 6. vitest — l'invariant des pastilles et la robe, sur le livrable
+
+ RUN  v4.1.11 /Users/kathryn/Desktop/woochoper-ios/docs/site
+
+
+ Test Files  2 passed (2)
+      Tests  23 passed (23)
+   Start at  18:47:32
+   Duration  151ms (transform 72ms, setup 0ms, import 47ms, tests 83ms, environment 0ms)
+
+
+── 7. la robe et l'autonomie, au grep sur docs/site/index.html
+   ✔ emoji dans un h1/h2/h3 : 0 (attendu = 0)
+   ✔ graisses de la page : 300 400 500 600 (⊆ 300 400 500 600)
+   ✔ @keyframes de la page (arrive · allume · reveal) : 2 (attendu ≤ 3)
+   ✔ backdrop-filter (règles, hors -webkit-) : 2 (attendu ≤ 4)
+   ✔ familles : 8 formes, toutes Inter ou mono système
+   ✔ dates relatives (depuis/posé/réparé aujourd'hui, ce matin) : 0 (attendu = 0)
+   ✔ %%{init : 0 (attendu = 0)
+   ✔ classDef : 0 (attendu = 0)
+   ✔ /_next/ : 0 (attendu = 0)
+   ✔ <script : 1 (attendu ≤ 1)
+   ✔ cdn. : 0 (attendu = 0)
+   ✔ transition sur un filtre : 0 (attendu = 0)
+   ✔ poids (o) : 1995464 (attendu < 2000000)
+
+── 8. les captures Chrome sans tête (à REGARDER, pas à supposer) → tools/docsite/captures/
+   ✔ etat-1440.png (1440 × 2400, scrollWidth 1440)
+   ✔ porte-1440.png (1440 × 2400, scrollWidth 1440)
+   ✔ etat-390.png (390 × 2400, scrollWidth 390)
+   ✔ porte-390.png (390 × 2400, scrollWidth 390)
+   id="etat" data-attendu="228" · 4 compteurs statiques (à trancher · à valider · en chantier · bon)
+
+── 9. les sondes PIL — le hero de Compte à 1440 (la teinte meurt dans le noir, rien ne bave dessous)
+   ✔ hero de y=173 à 573 : (720, 553) et (720, 585) sont noirs (#000 ± 4), la bordure basse est grise
+   ✔ sous y=570 : au pire 26 pixel(s) saturé(s) par ligne hors rail (≤ 40)
+
+── 10. la largeur à 390 — aucune des 10 pages ne défile de côté (scrollWidth = 390, mesuré page affichée)
+   ✔ etat : 390 px
+   ✔ serveur : 390 px
+   ✔ flow : 390 px
+   ✔ widgets : 390 px
+   ✔ coffre : 390 px
+   ✔ annonces : 390 px
+   ✔ forge : 390 px
+   ✔ histoire : 390 px
+   ✔ porte : 390 px
+   ✔ qa : 390 px
+
+✔ tout est vert en 16 s — REGARDE tools/docsite/captures/*.png avant de commiter

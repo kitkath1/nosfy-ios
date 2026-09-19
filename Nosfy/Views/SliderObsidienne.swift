@@ -76,6 +76,17 @@ struct SliderObsidienne: View {
     @State private var arme = false
     @State private var lastCran = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.ongletCache) private var ongletCache
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var monte = false
+    @State private var retourTask: Task<Void, Never>?
+
+    /// Le slider sert aussi les panneaux de série et d'arrêt : sa pause
+    /// suit son hôte, jamais l'onglet Home d'un rythme global. Visible,
+    /// il garde toute sa matière à 60 Hz, même sans geste en cours.
+    private var dort: Bool {
+        !monte || ongletCache || scenePhase != .active
+    }
 
     // MARK: La poudre
 
@@ -184,7 +195,8 @@ struct SliderObsidienne: View {
             let p = pose ?? (auto ? autoP : min(max(drag / travel, 0), 1))
             let ax = axPad + p * travel
 
-            TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { tl in
+            TimelineView(.animation(minimumInterval: 1.0 / 60.0,
+                                    paused: dort)) { tl in
                 let now = tl.date
                 let grip = poseGrip ?? (auto ? autoGrip : gripLevel(at: now))
                 let flash = max(0, 1 - now.timeIntervalSince(flashAt) / 0.45)
@@ -240,7 +252,18 @@ struct SliderObsidienne: View {
         .sensoryFeedback(.impact(weight: .medium, intensity: 0.9),
                          trigger: okBeat)
         .accessibilityRepresentation {
-            Button(label) { if validate() { onConfirm() } }
+            Button(label) {
+                guard !dort else { return }
+                if validate() { onConfirm() }
+            }
+        }
+        .onAppear { monte = true }
+        .onDisappear {
+            monte = false
+            suspendre()
+        }
+        .onChange(of: dort) { _, auRepos in
+            if auRepos { suspendre() }
         }
     }
 
@@ -616,6 +639,9 @@ struct SliderObsidienne: View {
     // MARK: Le pas de temps — TOUT état s'écrit ici, jamais dans le rendu
 
     private func pas(to d: Date, ax: CGFloat, p: CGFloat, travel: CGFloat) {
+        // Le changement de porte peut encore livrer la dernière date du
+        // Timeline : aucun pas de banc, son ou mood après la suspension.
+        guard !dort else { return }
         if auto { cycleAuto(at: d, ax: ax) }
 
         // La poudre est semée par le DÉPLACEMENT du pouce, pas par le doigt :
@@ -747,10 +773,45 @@ struct SliderObsidienne: View {
 
     // MARK: Le geste
 
+    /// Un geste interrompu par le changement d'onglet ou de scène ne se
+    /// valide jamais au retour. Seuls ses états visuels sont remis à zéro.
+    private func suspendre() {
+        retourTask?.cancel()
+        retourTask = nil
+        if dragging {
+            RocketHaptics.shared.dragEnd()
+            Paillettes.shared.end()
+        }
+        let moodActif = dragging || drag != 0 || autoP != 0
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            drag = 0
+            dragging = false
+            refused = false
+            arme = false
+            lastCran = 0
+            flashAt = .distantPast
+            gripStart = nil
+            gripEnd = nil
+            lastTouch = .distantPast
+            lastAx = nil
+            lastDustX = nil
+            lastGemX = nil
+            lastSoundX = nil
+            dusts.removeAll()
+            gems.removeAll()
+            autoStart = nil
+            autoP = 0
+            autoGrip = 0
+            if moodActif { onMood(0) }
+        }
+    }
+
     private func push(travel: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 1)
             .onChanged { v in
-                guard !refused else { return }
+                guard !dort, !refused else { return }
                 lastTouch = .now
                 if !dragging {
                     dragging = true
@@ -790,6 +851,7 @@ struct SliderObsidienne: View {
                 }
             }
             .onEnded { _ in
+                guard !dort, dragging else { return }
                 let atteint = gripLevel(at: .now)
                 dragging = false
                 gripStart = nil
@@ -817,7 +879,11 @@ struct SliderObsidienne: View {
                 gerbe(at: axPad + travel)
                 drag = travel
                 onConfirm()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                retourTask?.cancel()
+                retourTask = Task { @MainActor in
+                    do { try await Task.sleep(for: .seconds(0.45)) }
+                    catch { return }
+                    guard !Task.isCancelled, !dort else { return }
                     arme = false
                     drag = 0
                 }
@@ -832,7 +898,11 @@ struct SliderObsidienne: View {
         RefusalHaptic.play()
         drag = 0
         onMood(0)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.42) {
+        retourTask?.cancel()
+        retourTask = Task { @MainActor in
+            do { try await Task.sleep(for: .seconds(0.42)) }
+            catch { return }
+            guard !Task.isCancelled, !dort else { return }
             refused = false
         }
     }

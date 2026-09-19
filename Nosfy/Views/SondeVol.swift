@@ -278,7 +278,7 @@ final class SondeVol {
         if onglet == "?" { onglet = NavEtat.shared.page.rawValue }
         let bancHome: String = BancCoutHome.demande ? BancCoutHome.shared.phase.rawValue : "inactif"
         // Un format littéral évite une longue résolution des surcharges de +.
-        let format = "{\"t\":%.1f,\"img\":%.1f,\"pire\":%.0f,\"onglet\":\"%@\",\"seance\":%d,\"player\":%d,\"ile\":%d,\"drag\":%d,\"marque\":%d,\"gel\":%d,\"cpu\":%.0f,\"therm\":%d,\"corps\":%d,\"tics\":[%d,%d,%d,%d,%d,%d],\"chemin\":%d,\"protection\":%d,\"bancHome\":\"%@\",\"welcome\":%d,\"premiere\":%d}\n"
+        let format = "{\"t\":%.1f,\"img\":%.1f,\"pire\":%.0f,\"onglet\":\"%@\",\"seance\":%d,\"player\":%d,\"ile\":%d,\"drag\":%d,\"marque\":%d,\"gel\":%d,\"cpu\":%.0f,\"therm\":%d,\"corps\":%d,\"tics\":[%d,%d,%d,%d,%d,%d],\"chemin\":%d,\"protection\":%d,\"bancHome\":\"%@\",\"welcome\":%d,\"premiere\":%d,\"story\":%d,\"mouvement\":%d}\n"
         let ligne = String(format: format,
             t, cadence, min(pireMs, 2000), onglet,
             enSeance ? 1 : 0,
@@ -294,7 +294,9 @@ final class SondeVol {
             ProtectionThermique.shared.ambianceAuRepos ? 1 : 0,
             bancHome,
             DepartEtat.shared.welcomeOuverte ? 1 : 0,
-            DepartEtat.shared.welcomePremiereOuverte ? 1 : 0)
+            DepartEtat.shared.welcomePremiereOuverte ? 1 : 0,
+            RythmeEcran.shared.storyVisible ? 1 : 0,
+            BacMotion.shared.actif ? 1 : 0)
         if let d = ligne.data(using: .utf8) { sortie.write(d) }
     }
 }

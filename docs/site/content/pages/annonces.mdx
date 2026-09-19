@@ -1,3 +1,8 @@
+<Decision titre="Parcours de fin de séance — 19 septembre">
+  <p>Welcome Back est retenu pendant une séance, sa story, la Route et les panneaux de départ/pause. Il s’ouvre sur un accueil libre si le serveur dit le retour disponible. Le gain quotidien a été réclamé deux fois dans le banc API : un seul versement. Les annonces de fin attendent la sortie de la Route.</p>
+  <p>Preuves et limites : <code>tools/production/fin-seance-2026-09-19/README.md</code>. Contrôles iPhone, Apple et chauffe encore ouverts dans Test QA.</p>
+</Decision>
+
 <Decision titre="Les gains confirmés alimentent la file">
   <p>Clôtures, galets et retours rendent des événements avec IDs stables. Le client les retient pendant story/galet, puis les présente et les acquitte après affichage. Rejeu sans nouveau gain ; gains égaux distincts, cache par compte. API PASS ; séquence iPhone et haptique ouvertes.</p>
   <p>Preuves : <code>tools/carte-lune/integration-2026-09-18/README.md</code>.</p>
@@ -7,14 +12,14 @@
 
 ## Ce qui ment
 
-<Liste page="annonces" etats={['men']} vide="Rien ne ment ici — mais le rythme est décidé par trois modulos que la base ne connaît pas, la fin de séance n'a qu'un créneau de dalle, et la pièce d'argent finit dans un print." />
+<Liste page="annonces" etats={['men']} vide="Aucun défaut déclaré ici. Le rythme vient de Supabase ; les toasters passent par une file commune. Le contrôle encore ouvert figure dans « Ce qui reste »." />
 
 </div>
 <div className="reveal">
 
 ## Qui a le droit de parler, et quand
 
-<Schema id="regles-2-qui-a-le-droit" legende="Le rythme posé dans reward_rules le 29-08 : le budget, l'écart, le fait. Tranché le 30-08 par-dessus : les rangs FIXES 3 / 5 / 10 gagnent d'abord ; l'écart ne s'applique qu'aux rangs tirés au hasard après le 10, toutes les 5-8 séries. Au 30-08 l'app saute toutes ces questions et regarde seulement le rang de la série." />
+<Schema id="regles-2-qui-a-le-droit" legende="Les règles sont lues par l’app depuis le 15-09 : rangs fixes 3 / 5 / 10, puis tirage toutes les 5-8 séries, avec budget et écart. Réponse Supabase décodée par le vrai client Swift et journal relu sur iPhone le17-09." />
 
 </div>
 <div className="reveal">

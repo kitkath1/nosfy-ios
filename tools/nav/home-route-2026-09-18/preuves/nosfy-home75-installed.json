@@ -1,0 +1,48 @@
+{
+  "info" : {
+    "arguments" : [
+      "devicectl",
+      "device",
+      "info",
+      "apps",
+      "--device",
+      "022244AD-484B-5489-A884-6B781A82E372",
+      "--bundle-id",
+      "fr.kathryn.woop",
+      "--json-output",
+      "/tmp/nosfy-home75-installed.json",
+      "--timeout",
+      "15"
+    ],
+    "commandType" : "devicectl.device.info.apps",
+    "environment" : {
+      "TERM" : "dumb"
+    },
+    "jsonVersion" : 3,
+    "outcome" : "success",
+    "version" : "518.31"
+  },
+  "result" : {
+    "apps" : [
+      {
+        "appClip" : false,
+        "builtByDeveloper" : true,
+        "bundleIdentifier" : "fr.kathryn.woop",
+        "bundleVersion" : "75",
+        "defaultApp" : false,
+        "hidden" : false,
+        "internalApp" : false,
+        "name" : "Nosfy",
+        "removable" : true,
+        "url" : "file:///private/var/containers/Bundle/Application/51AEF903-0129-4B72-A973-B78905C1525C/Nosfy.app/",
+        "version" : "1.0"
+      }
+    ],
+    "defaultAppsIncluded" : false,
+    "deviceIdentifier" : "022244AD-484B-5489-A884-6B781A82E372",
+    "hiddenAppsIncluded" : false,
+    "internalAppsIncluded" : false,
+    "matchingBundleIdentifier" : "fr.kathryn.woop",
+    "removableAppsIncluded" : true
+  }
+}

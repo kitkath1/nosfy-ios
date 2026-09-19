@@ -26,12 +26,23 @@ if not MOV or not os.path.exists(MOV):
     sys.exit("usage: analyse_film.py <film.mov>")
 
 # ── LES HORODATAGES RÉELS ──────────────────────────────────────────────────
-pts = subprocess.run(
-    ["ffprobe", "-v", "error", "-select_streams", "v:0",
-     "-show_entries", "frame=pkt_pts_time", "-of", "csv=p=0", MOV],
-    capture_output=True, text=True).stdout.split()
-t = np.array([float(x.rstrip(",")) for x in pts if x.rstrip(",")
-              not in ("", "N/A")])
+# ⚠️ `pkt_pts_time` est MORT dans les ffprobe récents : il rend une sortie
+# VIDE, sans erreur — la sonde plantait plus loin sur un tableau à zéro
+# élément. Le champ vivant est `pts_time`. On essaie les deux et on garde
+# celui qui parle.
+def horodatages(champ):
+    s = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "v:0",
+         "-show_entries", f"frame={champ}", "-of", "csv=p=0", MOV],
+        capture_output=True, text=True).stdout.replace(",", " ").split()
+    return np.array([float(x) for x in s if x not in ("", "N/A")])
+
+
+t = horodatages("pts_time")
+if len(t) < 2:
+    t = horodatages("pkt_pts_time")
+if len(t) < 2:
+    sys.exit("aucun horodatage lisible dans ce film — ffprobe muet")
 dt = np.diff(t)
 print(f"{len(t)} images sur {t[-1] - t[0]:.2f} s — cadence apparente "
       f"{len(t) / (t[-1] - t[0]):.1f} img/s")

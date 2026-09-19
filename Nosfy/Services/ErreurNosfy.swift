@@ -1,6 +1,7 @@
 import Foundation
 import Network
 import Observation
+import SwiftUI
 
 // ════════════════════════════════════════════════════════════════════════
 // L'ERREUR DE NOSFY — UN SEUL ÉCRAN POUR TOUT, LE MODE AVION COMPRIS (18-09)
@@ -19,9 +20,11 @@ import Observation
 //                    PAS RÉPONDU. Il n'y a pas de troisième message — un
 //                    utilisateur n'a rien à faire d'un code HTTP.
 //
-// Le mode avion : l'écran lit `Reseau.enLigne`. Sans réseau, une panne serveur
-// se DIT « pas de réseau » (c'est la vérité utile) ; et quand le réseau revient,
-// l'écran rejoue tout seul — le bouton n'est là que pour la main impatiente.
+// Le mode avion (19-09, son mot : « quand j'active le mode avion ça marche pas,
+// c'est une règle Apple, donc t'affiches le message ») : dès que `Reseau` dit
+// hors ligne, la racine (`EcranErreurHote`) MONTE l'écran, sans attendre qu'un
+// appel échoue ; il tombe tout seul quand le réseau revient. Le bouton n'est là
+// que pour la main impatiente.
 // ════════════════════════════════════════════════════════════════════════
 
 /// Le réseau, écouté une fois pour toute l'app.
@@ -48,8 +51,11 @@ final class Reseau {
             Task { @MainActor in
                 guard let self else { return }
                 if self.enLigne != ok || !self.mesure { print("[reseau] \(ok ? "en ligne" : "HORS LIGNE")") }
-                self.enLigne = ok
-                self.mesure = true
+                // En fondu : l'écran d'erreur monte et tombe sur cette valeur.
+                withAnimation(.easeOut(duration: 0.4)) {
+                    self.enLigne = ok
+                    self.mesure = true
+                }
             }
         }
         moniteur.start(queue: DispatchQueue(label: "fr.kathryn.woop.reseau"))

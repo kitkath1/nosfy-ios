@@ -1,0 +1,58 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-stories71-runtime-dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun -destination platform=iOS,id=00008120-001E4CDC0A85A01E -parallel-testing-enabled NO "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testAStoriesFrancaisesEtAnglaises" "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testBExceptionsDansLesDeuxLangues" -resultBundlePath /tmp/woop-stories71-langues.xcresult
+
+2026-09-18 08:46:32.944 xcodebuild[21415:18411993] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-stories71-langues.xcresult
+
+2026-09-18 08:46:32.951 xcodebuild[21415:18411993] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 08:46:33.044 xcodebuild[21415:18411993] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-18 08:46:33.831 xcodebuild[21415:18411993] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 08:46:34.025 xcodebuild[21415:18411993] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 08:46:35.749 xcodebuild[21415:18411993] [MT] Run Destination Preflight: The destination is not ready.
+Error Domain=com.apple.dt.deviceprep Code=-3 "Unlock iPhone de Frédéric to Continue" UserInfo={NSRecoveryAttempter=<_DVTErrorRecoveryHandler: 0xab7928050>, NSLocalizedRecoveryOptions=(
+    "Cancel Testing"
+), NSLocalizedRecoverySuggestion=Xcode cannot launch NavRuntimeUITests on iPhone de Frédéric because the device is locked., DVTRecoveryBlockKey=<__NSMallocBlock__: 0xab6e20c30>, NSLocalizedDescription=Unlock iPhone de Frédéric to Continue}
+2026-09-18 08:46:35.749 xcodebuild[21415:18411993] [MT] Run Destination Preflight: Waiting for the destination to become ready.
+2026-09-18 08:46:38.498 xcodebuild[21415:18411993] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 08:46:38.707472+0200 NavRuntimeUITests-Runner[46903:3580745] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-18 08:46:39.153.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-18 08:46:39.153.
+Test Suite 'NavRuntimeUITests' started at 2026-09-18 08:46:39.154.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testAStoriesFrancaisesEtAnglaises]' started.
+    t =     0.00s Start Test at 2026-09-18 08:46:39.155
+    t =     0.01s Set Up
+THERMIQUE IPHONE: 2
+    t =     0.02s Terminate fr.kathryn.woop:0
+/tmp/woop-stories71-runtime/NavRuntimeUITests.swift:8: -[NavRuntimeUITests.NavRuntimeUITests testAStoriesFrancaisesEtAnglaises] : Test skipped - Téléphone chaud : aucun stress supplémentaire
+    t =     0.02s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testAStoriesFrancaisesEtAnglaises]' skipped (0.026 seconds).
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testBExceptionsDansLesDeuxLangues]' started.
+    t =     0.00s Start Test at 2026-09-18 08:46:39.181
+    t =     0.01s Set Up
+THERMIQUE IPHONE: 2
+    t =     0.01s Terminate fr.kathryn.woop:0
+/tmp/woop-stories71-runtime/NavRuntimeUITests.swift:8: -[NavRuntimeUITests.NavRuntimeUITests testBExceptionsDansLesDeuxLangues] : Test skipped - Téléphone chaud : aucun stress supplémentaire
+    t =     0.01s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testBExceptionsDansLesDeuxLangues]' skipped (0.011 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-18 08:46:39.193.
+	 Executed 2 tests, with 2 tests skipped and 0 failures (0 unexpected) in 0.038 (0.039) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-18 08:46:39.193.
+	 Executed 2 tests, with 2 tests skipped and 0 failures (0 unexpected) in 0.038 (0.040) seconds
+Test Suite 'Selected tests' passed at 2026-09-18 08:46:39.194.
+	 Executed 2 tests, with 2 tests skipped and 0 failures (0 unexpected) in 0.038 (0.041) seconds
+2026-09-18 08:46:39.690 xcodebuild[21415:18411993] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 08:46:40.425 xcodebuild[21415:18411993] [MT] IDETestOperationsObserverDebug: 6.591 elapsed -- Testing started completed.
+2026-09-18 08:46:40.425 xcodebuild[21415:18411993] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-18 08:46:40.425 xcodebuild[21415:18411993] [MT] IDETestOperationsObserverDebug: 6.591 sec, +6.591 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-stories71-langues.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

@@ -1,0 +1,60 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-count54/iphone-dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun -destination platform=iOS,id=00008120-001E4CDC0A85A01E "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testOuvrirRouteSansDemarrer" -resultBundlePath /tmp/woop-count54/route-avant.xcresult -parallel-testing-enabled NO
+
+2026-09-16 20:37:51.720 xcodebuild[14576:16636192] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-count54/route-avant.xcresult
+
+2026-09-16 20:37:51.722 xcodebuild[14576:16636192] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:37:51.825 xcodebuild[14576:16636192] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-16 20:37:52.344 xcodebuild[14576:16636192] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:37:52.458 xcodebuild[14576:16636192] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:37:57.173 xcodebuild[14576:16636192] [MT] Run Destination Preflight: The destination is not ready.
+Error Domain=com.apple.dt.deviceprep Code=-3 "Unlock iPhone de Frédéric to Continue" UserInfo={NSRecoveryAttempter=<_DVTErrorRecoveryHandler: 0xbab8f0150>, NSLocalizedRecoveryOptions=(
+    "Cancel Testing"
+), NSLocalizedRecoverySuggestion=Xcode cannot launch NavRuntimeUITests on iPhone de Frédéric because the device is locked., DVTRecoveryBlockKey=<__NSMallocBlock__: 0xbaae44fc0>, NSLocalizedDescription=Unlock iPhone de Frédéric to Continue}
+2026-09-16 20:37:57.175 xcodebuild[14576:16636192] [MT] Run Destination Preflight: Waiting for the destination to become ready.
+2026-09-16 20:38:27.464 xcodebuild[14576:16636192] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:38:28.402191+0200 NavRuntimeUITests-Runner[35482:2747731] [Default] Running tests...
+2026-09-16 20:38:29.213 xcodebuild[14576:16636192] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:38:55.711244+0200 NavRuntimeUITests-Runner[35482:2747731] [Default] Failed to initialize for UI testing: Error Domain=com.apple.LocalAuthentication Code=-4 "Authentification annulée." UserInfo={BiometryType=2, NSLocalizedDescription=Authentification annulée.}
+
+
+*** If you believe this error represents a bug, please attach the result bundle at /tmp/woop-count54/route-avant.xcresult
+
+2026-09-16 20:38:56.025 xcodebuild[14576:16637391]  IDETestOperationsObserverDebug: Failure collecting diagnostics from devices: Process exited with error 1:
+ ERROR: The operation couldn?t be completed. (CoreDeviceCLISupport.DiagnoseError error 0.)
+This tool generates files that allow Apple to investigate issues with your
+computer and help improve Apple products. The files might contain personal
+information found on your device or associated with your Apple Account(s),
+including but not limited to your name, serial numbers of your device,
+your device name, your device's location over the last one to two days,
+your attached peripheral devices, your user name, your email address and
+email settings, file paths, file names, Siri suggestions, your computer's
+IP addresses, and network connection information.
+
+This information is used by Apple in accordance with its privacy policy
+(www.apple.com/privacy) and is not shared with any other company. By using
+this tool and sending the results to Apple, you consent to Apple using the
+contents of these files to improve Apple products.
+
+An error occurred while running devicectl diagnose. Will archive the diagnostics collected thus far.
+Wrote file to /tmp/woop-count54/route-avant.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+Partial devicectl diagnose bundle located here: /tmp/woop-count54/route-avant.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+
+2026-09-16 20:38:56.048 xcodebuild[14576:16636192] [MT] IDETestOperationsObserverDebug: 63.702 elapsed -- Testing started completed.
+2026-09-16 20:38:56.049 xcodebuild[14576:16636192] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-16 20:38:56.049 xcodebuild[14576:16636192] [MT] IDETestOperationsObserverDebug: 63.702 sec, +63.702 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-count54/route-avant.xcresult
+
+Testing failed:
+	NavRuntimeUITests-Runner (35482) encountered an error (The test runner failed to initialize for UI testing. (Underlying Error: Authentification annulée.))
+
+** TEST EXECUTE FAILED **
+
+Testing started

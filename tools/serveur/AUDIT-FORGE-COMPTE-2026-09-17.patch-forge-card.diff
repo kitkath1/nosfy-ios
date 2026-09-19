@@ -1,0 +1,70 @@
+diff --git a/supabase/functions/forge-card/index.ts b/supabase/functions/forge-card/index.ts
+index a447be7..eb84515 100644
+--- a/supabase/functions/forge-card/index.ts
++++ b/supabase/functions/forge-card/index.ts
+@@ -87,6 +87,18 @@ function tireRarete(): string {
+   return "common";
+ }
+ 
++/// Une famille AU HASARD DANS UNE RARETÉ — jamais au hasard dans les 25.
++/// ⚠️ Payé (lu le 17-09) : le chemin « neuve » (35 % des tirages, et tout
++/// tirage dont le pool est vide) prenait `FAMILLES[random]`, donc la rareté
++/// de la carte neuve suivait le NOMBRE DE FAMILLES (4 / 11 / 4 / 6) et non
++/// les POIDS (60 / 27 / 10 / 3) : une légendaire une fois sur dix au lieu
++/// d'une sur trente-trois. Les deux chemins tirent désormais la même rareté.
++function familleTiree(rarete: string): Famille {
++  const du = FAMILLES.filter((f) => f.rarete === rarete);
++  const parmi = du.length > 0 ? du : FAMILLES;
++  return parmi[Math.floor(Math.random() * parmi.length)];
++}
++
+ // ── La forge ────────────────────────────────────────────────────────
+ 
+ async function directeur(f: Famille, cle: string): Promise<string> {
+@@ -227,34 +239,29 @@ Deno.serve(async (req) => {
+     let fraiche = false;
+     const forceNeuf = corps.force_new === true || typeof corps.famille === "string";
+ 
++    // LA RARETÉ SE TIRE UNE FOIS, AVANT de savoir si la carte vient du pool
++    // ou de la forge : les deux chemins la partagent. Sinon (lu le 17-09) le
++    // chemin « neuve » tirait sa famille au hasard dans les 25, et la rareté
++    // servie ne suivait plus les poids — une légendaire une fois sur dix.
++    const rarete = rareteImposee ?? tireRarete();
++
+     if (!forceNeuf && Math.random() >= PART_NEUF) {
+-      const rarete = rareteImposee ?? tireRarete();
+       const { data } = await admin.from("cards").select("*").eq("rarete", rarete);
+       if (data && data.length > 0) carte = data[Math.floor(Math.random() * data.length)];
+       // Pool vide pour cette rareté → on forgera une neuve de cette rareté.
+-      if (!carte) {
+-        const du = FAMILLES.filter((f) => f.rarete === rarete);
+-        corps.famille = du[Math.floor(Math.random() * du.length)].nom;
+-      }
+-    }
+-
+-    // LA GARANTIE TIENT AUSSI SUR LE CHEMIN « NEUVE ». Sans cette ligne, le
+-    // tirage 35 % qui saute le pool forgeait une famille prise AU HASARD
+-    // dans les 25 — donc une commune, avec une pièce noire. La rareté
+-    // imposée doit borner LES DEUX chemins, pas seulement celui du pool.
+-    if (!carte && rareteImposee && typeof corps.famille !== "string") {
+-      const du = FAMILLES.filter((f) => f.rarete === rareteImposee);
+-      corps.famille = du[Math.floor(Math.random() * du.length)].nom;
+     }
+ 
+     if (!carte) {
+       const cle = Deno.env.get("OPENAI_API_KEY");
+       if (!cle) return Response.json({ error: "OPENAI_API_KEY absent" }, { status: 500 });
+ 
++      // La famille voulue n'existe que pour l'atelier (`famille` est effacée
++      // pour tout autre compte plus haut) ; pour tout le monde, une famille
++      // DE LA RARETÉ TIRÉE — la garantie du noir passe par là aussi
++      // (`rareteImposee` = legendary → une des six familles légendaires).
+       const voulu = typeof corps.famille === "string" ? corps.famille.toLowerCase() : null;
+-      const famille = voulu
+-        ? FAMILLES.find((f) => f.nom.toLowerCase().includes(voulu)) ?? FAMILLES[Math.floor(Math.random() * FAMILLES.length)]
+-        : FAMILLES[Math.floor(Math.random() * FAMILLES.length)];
++      const famille = (voulu ? FAMILLES.find((f) => f.nom.toLowerCase().includes(voulu)) : null)
++        ?? familleTiree(rarete);
+ 
+       const [logo, ancre] = await Promise.all([
+         admin.storage.from("cards").download("refs/carte-logo-ref.png"),

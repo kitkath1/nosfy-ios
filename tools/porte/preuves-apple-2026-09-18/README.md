@@ -67,10 +67,3 @@ sorties 0. Les 23 tests du site passent, livrable identique à son rebuild,
 État et Compte relues à 390 et 1440 px. Une première passe avait détecté
 un titre de la session parallèle trop long et trois références de lignes
 déplacées dans RestartSheet ; seuls le titre et les références ont été recalés.
-
-## Complément — renommage livré ensuite le même jour
-
-Le maintien des fichiers et cibles ci-dessus décrit la première étape. Ils ont
-ensuite été renommés Nosfy, ainsi que le dossier du Bureau. Release74 installée,
-nom Nosfy relu sur iPhone ; identifiants Apple et stockage conservés. Preuves :
-`../../nom/preuves-2026-09-18/README.md`.

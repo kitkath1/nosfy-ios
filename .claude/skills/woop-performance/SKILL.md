@@ -326,6 +326,62 @@ jamais l'accuser ni le disculper.
 
 ---
 
+## 6. LA CAMPAGNE DU 05-09 APRÈS-MIDI — les leçons de l'application en grand
+
+Douze familles d'horloges transformées d'un coup (home, widgets, nappe, route,
+profil, île de la pilule), chacune derrière `-souffleHorloge`. Ce qui a été
+appris — chaque point a été soit payé, soit imposé par un contradicteur :
+
+1. **LE CLIP UNIQUE.** Deux robes croisées (repos + pic sous `.opacity(phase)`)
+   ne s'empilent JAMAIS en deux formes : l'anti-crénelage du bord se densifie
+   avec la phase. Deux `Rectangle` fondus puis UN `clipShape` de la forme.
+2. **UN ATTRIBUT NE PORTE QU'UNE ANIMATION.** Jamais `f(phase, sweep)` dans un
+   seul modificateur : le sweep (chambre, pousse, doigt) réécrirait la cible et
+   le `repeatForever` serait REMPLACÉ au lieu de survivre. Scinder :
+   `.scaleEffect(1 + 0.10*s).scaleEffect(0.35 + 0.65*a)` — même produit, même
+   ancre, attributs disjoints. Idem pour deux `.opacity` empilées.
+3. **LA FEUILLE NAÎT AVEC SON SUJET.** Un `armer()` qui court avant que la vue
+   animée n'existe (un sommet créé par la pousse) attache l'animation à rien :
+   la phase reste posée au pic, figée. La phase vit dans une feuille qui
+   n'existe QUE quand son sujet existe.
+4. **LES BOUCLES ASYNC (impulsions à silence, étincelles)** : échéances
+   RECALÉES sur `ContinuousClock` à chaque tour (`k = max(k, ceil(...))`),
+   jamais `k += 1` aveugle — une heure de suspension rejouerait ~1 400 cycles
+   en rafale. Et la remise à zéro ne partage JAMAIS le tour de runloop d'une
+   montée (le double withAnimation) : elle vit après l'extinction, invisible.
+5. **UNE SOMME DE DEUX SINUS n'est PAS exprimable en une animation.** Trois
+   voies, toutes à MONTRER : la période dominante seule (change le caractère —
+   déclaré, verdict sur capture) ; la décomposition en couches sous opacités
+   (erreur d'empilement α₁+α₂−α₁α₂ ≤ ~0,03 à déclarer) ; ou l'EXACTE : une
+   `struct View + Animatable` sur `t` (`.linear(900 s).repeatForever`) qui
+   réapplique les formules d'origine sur des couches d'identité stable.
+6. **DANS UN BODY ANIMATABLE (évalué par image), les enfants sont des VALEURS
+   STOCKÉES** construites chez le parent rare — une closure re-créée dans le
+   body rend l'enfant « inégalable, re-rendu à chaque passage » (la leçon
+   DemandesCards). Les flous aux entrées constantes restent alors en cache.
+7. **`task(id:)` : l'id couvre TOUTES les entrées d'`armer()`** — `dort`, mais
+   aussi `fait`/`derniere`/`chaud` si le guard les lit ; sinon un changement de
+   données laisse une animation morte ou orpheline.
+8. **L'ANGLE MORT DE LA SONDE** : une horloge sans `SondeVol.tic()` n'existe
+   pas dans `tics[]` — les « 93-128 battements » du §4 ne comptaient QUE les
+   familles instrumentées. Et avant d'accuser une horloge, prouver son
+   MONTAGE : la barre bijou (60 + 30 Hz, zéro tic) n'est montée nulle part
+   (`barreBijouVisible` = false, archive v1) — un remède sans malade.
+9. **UNE SÉANCE OUVERTE fausse toute mesure « au repos »** : elle tient les
+   galets dispo (46-72 tics/s — un galet `.lune/.piece(dispo: true)` respire À
+   VIE par `pauseTimeline`), la card route et la vidéo. Lire `seance` dans la
+   ligne de sonde AVANT d'interpréter ; c'est un cousin du piège `-demoData`.
+10. **LA CAMPAGNE ABBA AU CÂBLE DÉRIVE** : 4 manches de 75 s = thermique
+    0 → 2, cadences incomparables (piège 4 en grand). Les BATTEMENTS (tics)
+    restent comparables — c'est eux qui prouvent qu'une famille s'est tue —
+    mais une catégorie thermique égale ne garantit pas les mêmes fréquences
+    CPU/GPU. Les mesures à chaud restent nécessaires pour reproduire les gels
+    et vérifier navigation/protection ; elles ne prouvent pas, seules, un gain
+    énergétique à froid. Séparer explicitement ces deux validations.
+11. **`RythmeEcran.ongletActif` est observé, et c'est PORTEUR** — pas de
+    `@ObservationIgnored` : c'est ce qui ré-arme les `task(id:)` des feuilles
+    à la bascule d'onglet. Ne pas le « réparer ».
+
 ## La checklist avant de dire « c'est plus fluide »
 
 1. Le chiffre vient-il de **son téléphone**, pas du simulateur ?

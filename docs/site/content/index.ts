@@ -96,7 +96,7 @@ export function badge(f: Familles): string {
   const p: string[] = []
   if (f.trancher) p.push(`${f.trancher} à trancher`)
   if (f.valider) p.push(`${f.valider} à valider`)
-  return p.length ? p.join(' · ') : estVert(f) ? 'tout bon' : 'en chantier'
+  return p.length ? p.join(' · ') : estVert(f) ? 'tout est bon' : 'en chantier'
 }
 /** La teinte d'une card de domaine : la même règle, sur les briques d'un domaine. */
 export function teinteDomaine(d: Domaine): Famille {

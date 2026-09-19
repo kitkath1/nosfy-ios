@@ -128,6 +128,9 @@ struct JewelTabBar: View {
     /// slots égaux — le banc s'en sert pour comparer avant/après.
     var play: PlayParams?
     var onPlay: () -> Void = {}
+    /// L'APPUI LONG sur le galet EN SÉANCE : le stop universel — il
+    /// ouvre le panneau « Terminer la séance ? » d'où qu'on soit.
+    var onPlayHold: () -> Void = {}
     /// Une bouffée d'invite commandée du dehors (l'arrivée de la cinématique
     /// de connexion) : le halo du galet respire UNE fois — attaque 0,12 s,
     /// extinction 0,5 s — puis rend la main au réglage de repos.
@@ -189,6 +192,8 @@ struct JewelTabBar: View {
     /// Le doigt sur le galet : sa propre rampe, indépendante de la pastille.
     @State private var playAt: Date = .distantPast
     @State private var playDown = false
+    /// L'appui tenu a déjà ouvert le panneau : le relâcher se tait.
+    @State private var holdFired = false
     @State private var playPulse: Date = .distantPast
     /// Compteur de touchers du galet — c'est lui qui déclenche le retour
     /// haptique. Un compteur, pas un booléen : deux appuis d'affilée doivent
@@ -383,6 +388,21 @@ struct JewelTabBar: View {
                                 .onChanged { _ in
                                     if !playDown {
                                         playAt = .now; playDown = true
+                                        holdFired = false
+                                        // LE STOP SE SENT SOUS LE DOIGT :
+                                        // en séance, la tenue de 0,55 s
+                                        // ouvre le panneau À CET
+                                        // INSTANT — pas au relâcher.
+                                        if running {
+                                            let t0 = playAt
+                                            DispatchQueue.main.asyncAfter(
+                                                deadline: .now() + 0.55) {
+                                                guard playDown,
+                                                      playAt == t0 else { return }
+                                                holdFired = true
+                                                onPlayHold()
+                                            }
+                                        }
                                         // Le son part AVEC la lueur, à l'instant
                                         // où le doigt se pose. Au relâcher il
                                         // aurait un temps de retard : on
@@ -394,8 +414,17 @@ struct JewelTabBar: View {
                                     playPulse = .now
                                 }
                                 .onEnded { _ in
+                                    // L'appui tenu a DÉJÀ parlé pendant
+                                    // la tenue (le doigt le sent au
+                                    // moment où ça se produit — jamais
+                                    // au relâcher) : ici on ne fait que
+                                    // le tap court.
                                     playAt = .now; playDown = false
-                                    onPlay()
+                                    if holdFired {
+                                        holdFired = false
+                                    } else {
+                                        onPlay()
+                                    }
                                 }
                         )
                         .accessibilityLabel(running ? "Séance en cours — l'ouvrir"

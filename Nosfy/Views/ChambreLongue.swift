@@ -1026,14 +1026,21 @@ struct ObjectifRangee: View {
                         .foregroundStyle(on ? Color(white: 0.043) : CardTon.encreSourde)
                         .frame(width: 31, height: 31)
                         .background {
+                            // LE FEEDBACK DU CHOIX (14-09, son retour du vrai test : « il
+                            // manque un petit feedback comme quoi c'est pris en compte : la
+                            // pastille devient blanche par exemple, plus haptique ») : la
+                            // pastille choisie est BLANCHE, pleine, avec un léger halo — pas
+                            // l'orange de la chaleur, qui se lisait comme une donnée.
                             if on {
-                                Circle().fill(LinearGradient(colors: [CardTon.chaleur(1), CardTon.chaleur(0.75)],
-                                                             startPoint: .top, endPoint: .bottom))
+                                Circle().fill(Color.white)
+                                    .shadow(color: Color.white.opacity(0.35), radius: 6)
                             } else { Circle().fill(Color.white.opacity(0.045)) }
                         }
                         .contentShape(Circle())
                         .onTapGesture {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.5)
+                            // Une haptique FRANCHE au choix (« plus haptique »), pas le tic
+                            // léger des sélecteurs : c'est un réglage qui part au serveur.
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 1.0)
                             withAnimation(.easeOut(duration: 0.18)) { onChoix(n) }
                         }
                 }

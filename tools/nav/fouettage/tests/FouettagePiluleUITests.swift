@@ -33,6 +33,9 @@ final class FouettagePiluleUITests: XCTestCase {
         }
         // UN SEUL tap doit suffire : le garde « en mini, tout tap déploie »
         // avalait le premier de chaque séance sans jamais naviguer.
+        // ⚠️ On attend d'abord que la TABBAR NATIVE parte (elle avale le
+        // 1er tap ~1-2 s au lancement — dump Foyer 13-09, cf. attendreNavPropre).
+        b.attendreNavPropre()
         b.taper(b.centreGlyphe(1))
         XCTAssertTrue(b.attendre(4) { $0.page == "exos" },
             "LE PREMIER TAP EST ENCORE CONFISQUÉ ; sonde=\(b.etat()?.brut ?? "?")")
@@ -42,8 +45,7 @@ final class FouettagePiluleUITests: XCTestCase {
     // MARK: — « impossible de cliquer sur la bulle, pas d'overlay »
 
     func test03_seance_tapPilule_ouvreLeGrandPlayer() {
-        let b = BancPilule(); b.lancer(["-activeWorkout"])
-        b.attendreSeance()
+        let b = BancPilule(); b.lancerEnSeanceAvecPilule()
         b.gesteAttendu("cas03-tap-ouvre",
                        geste: { b.taper(b.centrePilule()) },
                        attendu: { $0.grandPlayer >= 1 })
@@ -52,8 +54,7 @@ final class FouettagePiluleUITests: XCTestCase {
     }
 
     func test04_seance_lachee_sePoseLaOuOnLaLache_etPasDansLIle() {
-        let b = BancPilule(); b.lancer(["-activeWorkout"])
-        b.attendreSeance()
+        let b = BancPilule(); b.lancerEnSeanceAvecPilule()
         guard let e0 = b.etat() else { return XCTFail("sonde absente") }
         let y0 = e0.yRatio
         // Un drag VERS LE HAUT, franc mais posé (tenue au lever) : elle
@@ -66,8 +67,7 @@ final class FouettagePiluleUITests: XCTestCase {
     }
 
     func test05_seance_deplacementLateralLent_nAspirePasDansLIle() {
-        let b = BancPilule(); b.lancer(["-activeWorkout"])
-        b.attendreSeance()
+        let b = BancPilule(); b.lancerEnSeanceAvecPilule()
         // LA PORTE RESSERRÉE : avant, ~125 pt de côté suffisaient à
         // l'avaler — sans intention, et sans plus aucun moyen d'ouvrir
         // le player. Un déplacement LENT ne doit plus rien déclencher.
@@ -85,6 +85,9 @@ final class FouettagePiluleUITests: XCTestCase {
         let b = BancPilule(); b.lancer(["-activeWorkout"])
         b.attendreSeance()
         XCTAssertTrue(b.etat()?.navVisible == true, "nav absente au départ")
+        // ⚠️ La tabbar native avale le 1er tap ~1-2 s (dump Foyer 13-09) :
+        // on attend qu'elle parte avant le premier aller.
+        b.attendreNavPropre()
         // Trois allers-retours entre les onglets : chaque PageCard
         // publie/retire sa voix au registre. Un jeton ORPHELIN (jamais
         // retiré) gèlerait la nav cachée POUR TOUJOURS — c'est le risque

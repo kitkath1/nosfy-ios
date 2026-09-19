@@ -1,0 +1,31 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-count53/sim-dd/Build/Products/WoopUITests_iphonesimulator26.5-arm64.xctestrun -destination "platform=iOS Simulator,id=6A504B5A-F76C-4EC1-B09A-E9CA4673B32A" "-only-testing:WoopUITests/CountdownUITests/test04_startSansSondePuisRepriseSansDoublon" -resultBundlePath /tmp/woop-count55/sim57.xcresult -parallel-testing-enabled NO
+
+2026-09-17 09:09:15.732 xcodebuild[28918:16810622] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-count55/sim57.xcresult
+
+2026-09-17 09:09:15.779 xcodebuild[28918:16810622] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 09:09:16.440 xcodebuild[28918:16810622] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 09:09:16.755 xcodebuild[28918:16810622] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 09:09:22.901284+0200 WoopUITests-Runner[28944:16811048] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-17 09:09:23.697.
+Test Suite 'WoopUITests.xctest' started at 2026-09-17 09:09:23.698.
+Test Suite 'CountdownUITests' started at 2026-09-17 09:09:23.698.
+Test Suite 'CountdownUITests' passed at 2026-09-17 09:09:23.699.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'WoopUITests.xctest' passed at 2026-09-17 09:09:23.699.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'Selected tests' passed at 2026-09-17 09:09:23.699.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.002) seconds
+2026-09-17 09:09:23.979 xcodebuild[28918:16810622] [MT] IDETestOperationsObserverDebug: 7.525 elapsed -- Testing started completed.
+2026-09-17 09:09:23.979 xcodebuild[28918:16810622] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-17 09:09:23.979 xcodebuild[28918:16810622] [MT] IDETestOperationsObserverDebug: 7.525 sec, +7.525 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-count55/sim57.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

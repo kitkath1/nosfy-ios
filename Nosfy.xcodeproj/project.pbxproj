@@ -40,11 +40,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		D47000000000000000000001 /* App Info.plist */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (Info.plist, );
-			target = A00000000000000000000006 /* Nosfy */;
-		};
 		B0000000000000000000000F /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -52,10 +47,17 @@
 			);
 			target = B00000000000000000000004 /* NosfyWidgets */;
 		};
+		D47000000000000000000001 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = A00000000000000000000006 /* Nosfy */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		A00000000000000000000002 /* Nosfy */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (D47000000000000000000001 /* App Info.plist */, ); explicitFileTypes = {}; explicitFolders = (); path = Nosfy; sourceTree = "<group>"; };
+		A00000000000000000000002 /* Nosfy */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (D47000000000000000000001 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Nosfy; sourceTree = "<group>"; };
 		B00000000000000000000002 /* NosfyWidgets */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (B0000000000000000000000F /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = NosfyWidgets; sourceTree = "<group>"; };
 		B00000000000000000000003 /* NosfyShared */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = NosfyShared; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */

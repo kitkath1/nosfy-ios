@@ -89,7 +89,7 @@ actor SupabaseSync {
 
     // MARK: Envoi
 
-    func push(_ snapshots: [Snapshot]) async {
+    func push(_ snapshots: [Snapshot], proprietaire: String? = nil) async {
         // Les données de démonstration ne quittent jamais l'appareil : un run
         // Xcode avec `-demoData` ne doit pas polluer un vrai compte.
         // `-syncNow` lève le garde-fou (tests de bout en bout uniquement).
@@ -97,7 +97,7 @@ actor SupabaseSync {
            !CommandLine.arguments.contains("-syncNow") { return }
         guard WoopConfig.isConfigured, !snapshots.isEmpty, !inFlight else { return }
         do {
-            try await pousser(snapshots)
+            try await pousser(snapshots, proprietaire: proprietaire)
             await OutboxGains.shared.vider()
         } catch {
             // La séance est déjà enregistrée localement : on réessaiera au prochain envoi.
@@ -111,7 +111,7 @@ actor SupabaseSync {
     /// l'envoi échoue — `push` avale ses pannes, elle ne peut pas le savoir.
     /// Même corps, même ordre (les clés étrangères pointent vers la table
     /// précédente), sans le garde-fou de la démo : c'est l'appelant qui décide.
-    func pousser(_ snapshots: [Snapshot]) async throws {
+    func pousser(_ snapshots: [Snapshot], proprietaire: String? = nil) async throws {
         guard WoopConfig.isConfigured, !snapshots.isEmpty else { return }
         while inFlight { try await Task.sleep(for: .milliseconds(100)) }
         inFlight = true
@@ -120,6 +120,9 @@ actor SupabaseSync {
         do {
             let token = try await SupabaseSession.shared.token()
             let userID = try await SupabaseSession.shared.currentUserID()
+            guard proprietaire == nil || proprietaire?.lowercased() == userID.lowercased() else {
+                throw CancellationError()
+            }
             let iso = ISO8601DateFormatter()
 
             // Une séance et son arbre dans UNE transaction, avant toute clôture.

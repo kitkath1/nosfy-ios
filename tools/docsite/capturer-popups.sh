@@ -31,6 +31,8 @@ capturer() {
 for robe in spotlight halo neon galet fire welcome welcomeTexte; do
   capturer "reward-$robe" 5 -rewardLab -robe $robe -rewardFreeze 0.6 -rewardNu
 done
+# Welcome Back en production utilise aussi la vidéo par défaut : les deux
+# variantes ci-dessus couvrent son rendu, sans troisième robe vide.
 # ── la pop-up de première fois : 2 robes (galet = la vraie ; test = Nosfy de face) — la home
 #    arrive après le splash DEBUG (3,4 s), la pop-up 3 s plus tard : 13 s.
 capturer "premiere-galet"  13 -skipAuth -welcomePremiere galet -sansVisite

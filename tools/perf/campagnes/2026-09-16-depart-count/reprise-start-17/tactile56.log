@@ -1,0 +1,115 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-count54/iphone-dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun -destination platform=iOS,id=00008120-001E4CDC0A85A01E "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testStartTactileSansSeance" -resultBundlePath /tmp/woop-count55/tactile56.xcresult -parallel-testing-enabled NO
+
+2026-09-17 09:00:23.474 xcodebuild[27510:16797614] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-count55/tactile56.xcresult
+
+2026-09-17 09:00:23.476 xcodebuild[27510:16797614] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 09:00:23.578 xcodebuild[27510:16797614] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-17 09:00:24.147 xcodebuild[27510:16797614] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 09:00:24.272 xcodebuild[27510:16797614] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 09:00:26.139175+0200 NavRuntimeUITests-Runner[37338:2896692] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-17 09:00:26.508.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-17 09:00:26.508.
+Test Suite 'NavRuntimeUITests' started at 2026-09-17 09:00:26.509.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testStartTactileSansSeance]' started.
+    t =     0.00s Start Test at 2026-09-17 09:00:26.509
+    t =     0.01s Set Up
+    t =     0.01s Open fr.kathryn.woop
+    t =     0.01s     Launch fr.kathryn.woop
+    t =     0.10s         Setting up automation session
+2026-09-17 09:00:26.696 xcodebuild[27510:16797614] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     0.20s         Wait for fr.kathryn.woop to idle
+    t =     1.61s Waiting 25.0s for "Start" Button to exist
+    t =     2.65s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     2.65s         Checking existence of `"Start" Button`
+    t =     2.72s         Capturing element debug description
+    t =     3.65s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     3.65s         Checking existence of `"Start" Button`
+    t =     3.71s         Capturing element debug description
+    t =     4.63s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     4.63s         Checking existence of `"Start" Button`
+    t =     4.69s Find the "Start" Button
+    t =     4.78s Find the Application 'fr.kathryn.woop'
+    t =     5.01s Added attachment named 'avant-start-banc'
+    t =     5.02s Requesting snapshot of accessibility hierarchy for app with pid 37339
+    t =     5.58s Requesting snapshot of accessibility hierarchy for app with pid 37339
+    t =     5.69s Added attachment named 'avant-start-banc-arbre'
+    t =     5.69s Tap "Start" Button[0.50, 0.50]
+    t =     5.70s     Wait for fr.kathryn.woop to idle
+    t =     5.70s     Find the "Start" Button
+    t =     5.77s     Check for interrupting elements affecting "Start" Button
+    t =     5.83s     Synthesize event
+    t =     5.85s         Find the "Start" Button
+    t =     5.93s         Find the "Start" Button
+    t =     6.00s         Find the "Start" Button
+    t =     6.36s     Wait for fr.kathryn.woop to idle
+    t =     6.37s Waiting 4.0s for "depart-compte-rebours" Button to exist
+    t =     7.39s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =     7.39s         Checking existence of `"depart-compte-rebours" Button`
+    t =     7.45s         Capturing element debug description
+    t =     8.38s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =     8.38s         Checking existence of `"depart-compte-rebours" Button`
+    t =     8.42s         Capturing element debug description
+    t =     9.45s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =     9.45s         Checking existence of `"depart-compte-rebours" Button`
+    t =     9.49s         Capturing element debug description
+    t =    10.38s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =    10.38s         Checking existence of `"depart-compte-rebours" Button`
+    t =    10.43s         Capturing element debug description
+    t =    10.43s     Checking existence of `"depart-compte-rebours" Button`
+    t =    10.46s Collecting debug information to assist test failure triage
+    t =    10.46s     Requesting snapshot of accessibility hierarchy for app with pid 37339
+    t =    10.56s Find the Application 'fr.kathryn.woop'
+    t =    10.75s Added attachment named 'apres-start-banc'
+    t =    10.75s Requesting snapshot of accessibility hierarchy for app with pid 37339
+    t =    11.10s Requesting snapshot of accessibility hierarchy for app with pid 37339
+    t =    11.18s Added attachment named 'apres-start-banc-arbre'
+/tmp/woop-count54/iphone/NavRuntimeUITests.swift:20: error: -[NavRuntimeUITests.NavRuntimeUITests testStartTactileSansSeance] : XCTAssertTrue failed - Le vrai bouton Start doit monter le film, sans séance créée au banc
+    t =    11.22s Tear Down
+2026-09-17 09:00:37.906 xcodebuild[27510:16797614] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testStartTactileSansSeance]' failed (11.489 seconds).
+Test Suite 'NavRuntimeUITests' failed at 2026-09-17 09:00:37.998.
+	 Executed 1 test, with 1 failure (0 unexpected) in 11.489 (11.490) seconds
+Test Suite 'NavRuntimeUITests.xctest' failed at 2026-09-17 09:00:37.999.
+	 Executed 1 test, with 1 failure (0 unexpected) in 11.489 (11.491) seconds
+Test Suite 'Selected tests' failed at 2026-09-17 09:00:38.000.
+	 Executed 1 test, with 1 failure (0 unexpected) in 11.489 (11.492) seconds
+2026-09-17 09:00:38.980 xcodebuild[27510:16797616]  IDETestOperationsObserverDebug: Failure collecting diagnostics from devices: Process exited with error 1:
+ ERROR: The operation couldn?t be completed. (CoreDeviceCLISupport.DiagnoseError error 0.)
+This tool generates files that allow Apple to investigate issues with your
+computer and help improve Apple products. The files might contain personal
+information found on your device or associated with your Apple Account(s),
+including but not limited to your name, serial numbers of your device,
+your device name, your device's location over the last one to two days,
+your attached peripheral devices, your user name, your email address and
+email settings, file paths, file names, Siri suggestions, your computer's
+IP addresses, and network connection information.
+
+This information is used by Apple in accordance with its privacy policy
+(www.apple.com/privacy) and is not shared with any other company. By using
+this tool and sending the results to Apple, you consent to Apple using the
+contents of these files to improve Apple products.
+
+An error occurred while running devicectl diagnose. Will archive the diagnostics collected thus far.
+Wrote file to /tmp/woop-count55/tactile56.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+Partial devicectl diagnose bundle located here: /tmp/woop-count55/tactile56.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+
+2026-09-17 09:00:38.982 xcodebuild[27510:16797614] [MT] IDETestOperationsObserverDebug: 14.833 elapsed -- Testing started completed.
+2026-09-17 09:00:38.982 xcodebuild[27510:16797614] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-17 09:00:38.982 xcodebuild[27510:16797614] [MT] IDETestOperationsObserverDebug: 14.833 sec, +14.833 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-count55/tactile56.xcresult
+
+Failing tests:
+	NavRuntimeUITests.testStartTactileSansSeance()
+
+** TEST EXECUTE FAILED **
+
+Testing started

@@ -1,5 +1,10 @@
 import SwiftUI
 
+/// `-verreNav` : rejoue le VERRE NATIF de la navigation (le galet du menu
+/// et sa navette), retiré le 05-09 — verdict Kathryn : « le design est
+/// trop moche, c'est pas celui d'Apple ». Le témoin du design d'avant.
+let verreNavRejoue = CommandLine.arguments.contains("-verreNav")
+
 // MARK: - LE GALET ET LES HALOS (chantier A, plan § 13)
 //
 // Un seul bouton en bas à gauche, et le bas de l'écran qui s'allume en
@@ -117,7 +122,19 @@ struct GaletMaison: View {
     /// verre revient.
     var transport: Bool = false
 
+    /// L'hôte certifie que le galet est invisible. Les deux usages actuels
+    /// sont constants : caché sur la Home, visible dans le banc du menu.
+    var cache: Bool = false
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.ongletCache) private var ongletCache
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var monte = false
+
+    private var dort: Bool {
+        cache || !monte || reduceMotion || ongletCache
+            || scenePhase != .active || CouvertureFoyer.shared.recouvert
+    }
     /// Le nom du verre pour le MORPHISME natif : c'est `glassEffectID` qui
     /// autorise ici un changement de bounds. Sans lui, la loi tient — un
     /// `glassEffect` redimensionné reste flou plat pour toujours.
@@ -190,7 +207,7 @@ struct GaletMaison: View {
         // `-souffleHorloge` rejoue l'ancienne forme (le témoin de l'A/B).
         if SouffleBanc.horloge {
             TimelineView(.animation(minimumInterval: RythmeEcran.pas,
-                                    paused: DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { ctx in
+                                    paused: dort || DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { ctx in
                 let _ = SondeVol.shared.tic(1)
                 let t = ctx.date.timeIntervalSinceReferenceDate
                 corps(souffle: reduceMotion ? 1.0
@@ -199,11 +216,21 @@ struct GaletMaison: View {
                         : 0.55 + 0.45 * (0.5 + 0.5 * sin(t * 2 * .pi / 3.4)))
             }
             .frame(width: taille, height: taille)
+            .onAppear { monte = true }
+            .onDisappear { monte = false }
         } else {
             corps(souffle: souffleAnime, braise: braiseAnime)
                 .frame(width: taille, height: taille)
-                .task { armerSouffle() }
-                .onChange(of: reduceMotion) { _, _ in armerSouffle() }
+                .task(id: dort) {
+                    guard !Task.isCancelled else { return }
+                    armerSouffle(dort)
+                }
+                .onAppear { monte = true }
+                .onDisappear {
+                    monte = false
+                    // La disparition annule la task, pas ses interpolations.
+                    armerSouffle(true)
+                }
         }
     }
 
@@ -213,8 +240,8 @@ struct GaletMaison: View {
     @State private var souffleAnime: Double = 1
     @State private var braiseAnime: Double = 0.78
 
-    private func armerSouffle() {
-        guard !reduceMotion else {
+    private func armerSouffle(_ dort: Bool) {
+        guard !dort else {
             var t = Transaction(); t.disablesAnimations = true
             withTransaction(t) { souffleAnime = 1; braiseAnime = 0.78 }
             return
@@ -238,17 +265,20 @@ struct GaletMaison: View {
                 // exactement ce qui sonnait cheap. Chez Apple un bouton ne
                 // PROJETTE rien : il se comprime, et c'est LA SCÈNE qui
                 // répond (ici l'allumage directionnel des halos).
-                // LE VERRE, seul dans son conteneur. Rond quand il est de
-                // service, NAVETTE quand il est rangé — et c'est le même
-                // verre qui se déforme, pas deux objets qui se remplacent.
-                if transport {
-                    // LA DOUBLURE DU TRANSPORT — le sosie mat du verre : la
-                    // grammaire de la navette (l'arête spéculaire qui dit
-                    // « verre », un souffle de clarté, jamais un lait). On ne
-                    // voile pas du verre en mouvement, on le DÉMONTE — il
-                    // ignore `.opacity`, et le déplacer coûte 60 → 14 img/s.
+                // ⚠️ LE VERRE NATIF DE LA NAVIGATION EST RETIRÉ (05-09,
+                // verdict Kathryn : « le design est trop moche, c'est pas
+                // celui d'Apple »). La robe PEINTE — l'ancien sosie mat du
+                // transport : l'arête spéculaire qui dit « verre », un
+                // souffle de clarté, jamais un lait — devient la robe de
+                // TOUS les états (ronde en service, navette rangée).
+                // `-verreNav` rejoue le verre natif (le témoin du design).
+                // Bonus mesurable : un GlassEffectContainer de moins sur la
+                // home, et plus de morphisme de bounds à recomposer.
+                if transport || !verreNavRejoue {
+                    let forme = range ? AnyShape(Capsule())
+                                      : AnyShape(Circle())
                     ZStack {
-                        Circle()
+                        forme
                             .fill(LinearGradient(
                                 stops: [
                                     .init(color: .white.opacity(0.095),
@@ -259,7 +289,7 @@ struct GaletMaison: View {
                                           location: 1.00),
                                 ],
                                 startPoint: .top, endPoint: .bottom))
-                        Circle()
+                        forme
                             .stroke(LinearGradient(
                                 stops: [
                                     .init(color: .white.opacity(0.55),
@@ -407,9 +437,18 @@ struct MenuHalos: View {
                       height: (d.y - 0.8) * 6 / taille.height)
     }
 
+    // ⚠️ LES HALOS NE SE REDESSINENT PLUS, ILS S'ANIMENT (05-09, voir
+    // `LisereRespirant`) : l'horloge refabriquait la nuit et les quatre
+    // dégradés radiaux vingt fois par seconde pour un souffle de ±10 %.
+    // L'alpha entier d'un foyer est AFFINE dans son souffle : le dégradé
+    // est construit une fois à pleine force, et deux `.opacity` empilées
+    // portent la base (réécrite par le doigt) et le souffle (le
+    // `repeatForever`) — jamais le même attribut, le sweep ne retarge
+    // rien. `-souffleHorloge` rejoue l'ancienne forme (l'A/B).
     var body: some View {
         GeometryReader { g in
             let W = g.size.width, H = g.size.height
+            if SouffleBanc.horloge {
             TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                     paused: DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome)) { ctx in
                 let _ = SondeVol.shared.tic(1)
@@ -464,9 +503,91 @@ struct MenuHalos: View {
             // Ils MONTENT à peine : c'est leur densité qui fait la montée,
             // pas leur position. Un halo qui voyage est un objet.
             .offset(y: 24 * (1 - p))
+            } else {
+                let dort = DepartEtat.shared.cheminOuvert || RythmeEcran.dortHome
+                ZStack {
+                    LinearGradient(
+                        stops: [
+                            .init(color: .black.opacity(0.00), location: 0.00),
+                            .init(color: .black.opacity(0.30), location: 0.34),
+                            .init(color: .black.opacity(0.50), location: 0.68),
+                            .init(color: .black.opacity(0.62), location: 1.00),
+                        ],
+                        startPoint: .top, endPoint: .bottom)
+                        .frame(height: H * 0.62)
+                        .frame(maxHeight: .infinity, alignment: .bottom)
+
+                    ZStack {
+                        ForEach(0..<Self.foyers.count, id: \.self) { i in
+                            FoyerHalo(i: i, p: p, proche: proche(i),
+                                      par: decalage(g.size), W: W,
+                                      dort: dort, reduceMotion: reduceMotion)
+                        }
+                    }
+                    .blendMode(.plusLighter)
+                    .compositingGroup()
+                }
+                .frame(width: W, height: H)
+                .offset(y: 24 * (1 - p))
+            }
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
+    }
+
+    /// UN FOYER QUI RESPIRE SANS SE REDESSINER. Le dégradé est bâti à
+    /// pleine force (stops 1 / 0,38 / 0) ; la base — allumage, doigt — vit
+    /// dans une première `.opacity`, le souffle (±10 %, ramené sous 1 par
+    /// le facteur 1,1) dans une seconde, seule animée. Sous Reduce Motion
+    /// le souffle se pose à 1, la valeur fixe de l'ancienne forme.
+    private struct FoyerHalo: View {
+        var i: Int
+        var p: Double
+        var proche: Double
+        var par: CGSize
+        var W: CGFloat
+        var dort: Bool
+        var reduceMotion: Bool
+
+        /// b·1,1 = le souffle réel ∈ [0,9 ; 1,1].
+        @State private var b: Double = 1.0 / 1.1
+
+        var body: some View {
+            let f = MenuHalos.foyers[i]
+            let rang = Double(MenuHalos.ordre[i])
+            let dep = rang * 0.16
+            let all = min(max((p - dep) / (1 - dep), 0), 1)
+            let base = f.f * all * (1 + 0.12 * proche) * 1.1
+            RadialGradient(
+                stops: [
+                    .init(color: Color(red: f.c.0, green: f.c.1,
+                                       blue: f.c.2), location: 0.00),
+                    .init(color: Color(red: f.c.0, green: f.c.1 * 0.72,
+                                       blue: f.c.2 * 0.42)
+                        .opacity(0.38), location: 0.46),
+                    .init(color: .clear, location: 1.00),
+                ],
+                center: UnitPoint(x: f.x + par.width,
+                                  y: f.y + par.height),
+                startRadius: 0, endRadius: W * f.r)
+            .opacity(base)
+            .opacity(b)
+            .task(id: "\(dort)-\(reduceMotion)") { armer() }
+        }
+
+        private func armer() {
+            guard !dort, !reduceMotion else {
+                var tr = Transaction()
+                tr.disablesAnimations = true
+                withTransaction(tr) { b = 1.0 / 1.1 }
+                return
+            }
+            b = 0.9 / 1.1
+            withAnimation(.easeInOut(duration: MenuHalos.foyers[i].T / 2)
+                .repeatForever(autoreverses: true)) {
+                b = 1.0
+            }
+        }
     }
 }
 
@@ -1444,7 +1565,8 @@ struct MenuHote<Fond: View, Contenu: View>: View {
                             // obéit à l'opacité.
                             transport: enMain
                                 || DepartEtat.shared.cheminOuvert
-                                || galetCache)
+                                || galetCache,
+                            cache: galetCache)
                     // ⚠️ PIÈGE PAYÉ ICI, et il vaut pour toute l'app :
                     // **DEUX `withAnimation` SUR LA MÊME VALEUR DANS LE MÊME
                     // TOUR NE JOUENT RIEN.** Écrire 0 → 1 puis 1 → 0 dans le

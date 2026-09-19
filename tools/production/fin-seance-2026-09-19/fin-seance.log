@@ -1,0 +1,49 @@
+/Users/kathryn/Desktop/Nosfy/Nosfy/Services/ReglementSeance.swift:44:27: warning: no calls to throwing functions occur within 'try' expression
+42 |         defer { if repriseEnCours == generation { repriseEnCours = nil } }
+43 |         let ticket = await OutboxGains.shared.identiteGeneration
+44 |         guard let owner = try? await SupabaseSession.shared.currentUserID(),
+   |                           `- warning: no calls to throwing functions occur within 'try' expression
+45 |               generation == CompteEtat.shared.generationDonnees else { return }
+46 |         let workouts = (try? contexte.fetch(FetchDescriptor<Workout>())) ?? []
+PASS une série faite parmi cinq prévues
+Arrêt du processus après sauvegarde, avant tout appel réseau
+PASS nouveau processus retrouve clôture et demande de gain
+PASS story ne compte que les séries faites
+PASS aucune pièce par série inventée avant réponse
+PASS pas de faux gain avant réponse
+PASS gain mis en file avant première synchro
+PASS la reprise transmet le nombre réellement fait
+PASS échec ou absence de réponse conserve le marqueur
+PASS réponse sauvegardée acquitte la clôture locale
+PASS vingt pièces affichent le sachet forfaitaire confirmé
+PASS le bilan confirmé sort de l’attente
+PASS reçu rejoué après annonces acquittées conserve les trois sachets
+PASS bilan garde pièces totales et argent du serveur
+PASS faits TOP et double appartiennent à la même séance
+PASS séance vide : aucune série démo et aucun galet
+PASS piscine pure avance sans inventer de musculation
+PASS un autre reçu ne repeint pas la séance
+[welcome-back] retenue : séance, story ou route à l’écran
+PASS Welcome Back retenu garde 0
+[welcome-back] retenue : séance, story ou route à l’écran
+PASS Welcome Back retenu garde 1
+[welcome-back] retenue : séance, story ou route à l’écran
+PASS Welcome Back retenu garde 2
+[welcome-back] retenue : séance, story ou route à l’écran
+PASS Welcome Back retenu garde 3
+[welcome-back] retenue : séance, story ou route à l’écran
+PASS Welcome Back retenu garde 4
+[welcome-back] retenue : la porte, le film ou le splash tient l'écran
+PASS Welcome Back retenu garde 5
+[welcome-back] retenue : première arrivée (c'est Nosfy qui parle)
+PASS Welcome Back retenu garde 6
+[welcome-back] retenue : retour_disponible faux (rien à prendre, ou aucune séance finie — S4)
+PASS Welcome Back retenu garde 7
+[welcome-back] ouverte (le serveur dit que le jour est à prendre)
+PASS Welcome Back disponible sur accueil libre
+25 contrôles PASS dans le second processus
+PASS reçu acquitté conservé après nouveau processus
+PASS story retrouve le bilan persistant
+PASS faits persistants retrouvés
+PASS migration conserve l’historique déjà présent
+PASS nouveaux champs sans gain rétroactif sur ancienne base

@@ -20,14 +20,18 @@ struct SetHistoryRow: View {
     /// le repos prévu pour une série à venir.
     let seconds: Int
     let done: Bool
-    var coins: Int = CoffreFortPurse.perSeries
+    /// Le gain de la ligne. `nil` = LE TAUX DE LA MAISON, lu au serveur
+    /// (`CoffreFortPurse.perSeries` → `EconomieWoop.piecesParSerie`, 15-09)
+    /// au moment du rendu — un défaut d'argument ne peut pas lire l'acteur
+    /// principal, le corps si.
+    var coins: Int? = nil
     /// LE GENRE (15-09, plan cardio §D) : une série (le défaut), un
     /// intervalle cardio, ou les longueurs de la piscine — le MÊME gabarit
     /// de 66 pt (l'invariant PageCard), trois contenus.
     var genre: SlateLigne.Genre = .serie(reps: 0, kilos: 0)
 
     init(rank: Int, reps: Int, kilos: Double, seconds: Int, done: Bool,
-         coins: Int = CoffreFortPurse.perSeries) {
+         coins: Int? = nil) {
         self.rank = rank
         self.reps = reps
         self.kilos = kilos
@@ -44,7 +48,7 @@ struct SetHistoryRow: View {
         self.kilos = ligne.kilos
         self.seconds = ligne.seconds
         self.done = ligne.done
-        self.coins = CoffreFortPurse.perSeries
+        self.coins = nil
         self.genre = ligne.genre
     }
 
@@ -238,7 +242,7 @@ struct SetHistoryRow: View {
     private var gain: some View {
         if done {
             HStack(spacing: 5) {
-                Text("+\(coins)")
+                Text("+\(coins ?? CoffreFortPurse.perSeries)")
                     .font(.inter(14, .semibold))
                     .foregroundStyle(Color.woopGold.opacity(0.92))
                     .monospacedDigit()

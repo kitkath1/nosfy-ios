@@ -1,0 +1,13 @@
+
+> woop-chambre-des-machines@2.0.0 test
+> vitest run
+
+
+ RUN  v4.1.11 /Users/kathryn/Desktop/woochoper-ios/docs/site
+
+
+ Test Files  2 passed (2)
+      Tests  23 passed (23)
+   Start at  08:05:24
+   Duration  1.80s (transform 627ms, setup 0ms, import 275ms, tests 918ms, environment 4ms)
+

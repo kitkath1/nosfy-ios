@@ -1,0 +1,98 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-story-session-ile/runner-dd/Build/Products/NavRuntimeUITests_iphonesimulator26.5-arm64-x86_64.xctestrun -destination "platform=iOS Simulator,id=6473B9E0-5A1A-4DFB-A261-CC19539B5859" "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testToasterDepuisIle" -resultBundlePath /tmp/woop-story-session-ile/sim68-toaster.xcresult
+
+2026-09-17 16:03:27.288 xcodebuild[19258:17615924] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-story-session-ile/sim68-toaster.xcresult
+
+2026-09-17 16:03:27.309 xcodebuild[19258:17615924] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 16:03:27.797 xcodebuild[19258:17615924] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 16:03:28.051 xcodebuild[19258:17615924] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 16:03:28.895120+0200 NavRuntimeUITests-Runner[19270:17616213] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-17 16:03:29.534.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-17 16:03:29.534.
+Test Suite 'NavRuntimeUITests' started at 2026-09-17 16:03:29.535.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testToasterDepuisIle]' started.
+    t =     0.00s Start Test at 2026-09-17 16:03:29.535
+    t =     0.02s Set Up
+    t =     0.03s Open fr.kathryn.woop
+    t =     0.03s     Launch fr.kathryn.woop
+    t =     0.15s         Setting up automation session
+objc[19270]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10a3c8310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10a8a4398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     1.05s         Wait for fr.kathryn.woop to idle
+    t =     3.22s Waiting 22.0s for "annonce-ile-120" Any to exist
+    t =     4.25s     Checking `Expect predicate `existsNoRetry == 1` for object "annonce-ile-120" Any`
+    t =     4.25s         Checking existence of `"annonce-ile-120" Any`
+    t =     4.31s         Capturing element debug description
+    t =     5.23s     Checking `Expect predicate `existsNoRetry == 1` for object "annonce-ile-120" Any`
+    t =     5.23s         Checking existence of `"annonce-ile-120" Any`
+    t =     5.24s         Capturing element debug description
+    t =     6.28s     Checking `Expect predicate `existsNoRetry == 1` for object "annonce-ile-120" Any`
+    t =     6.28s         Checking existence of `"annonce-ile-120" Any`
+    t =     6.31s         Capturing element debug description
+    t =     7.26s     Checking `Expect predicate `existsNoRetry == 1` for object "annonce-ile-120" Any`
+    t =     7.26s         Checking existence of `"annonce-ile-120" Any`
+    t =     7.43s         Capturing element debug description
+    t =     8.26s     Checking `Expect predicate `existsNoRetry == 1` for object "annonce-ile-120" Any`
+    t =     8.26s         Checking existence of `"annonce-ile-120" Any`
+    t =     8.30s         Capturing element debug description
+    t =     9.24s     Checking `Expect predicate `existsNoRetry == 1` for object "annonce-ile-120" Any`
+    t =     9.24s         Checking existence of `"annonce-ile-120" Any`
+    t =     9.28s         Capturing element debug description
+    t =    10.32s     Checking `Expect predicate `existsNoRetry == 1` for object "annonce-ile-120" Any`
+    t =    10.32s         Checking existence of `"annonce-ile-120" Any`
+    t =    10.34s         Capturing element debug description
+    t =    11.27s     Checking `Expect predicate `existsNoRetry == 1` for object "annonce-ile-120" Any`
+    t =    11.27s         Checking existence of `"annonce-ile-120" Any`
+    t =    11.29s         Capturing element debug description
+    t =    12.22s     Checking `Expect predicate `existsNoRetry == 1` for object "annonce-ile-120" Any`
+    t =    12.22s         Checking existence of `"annonce-ile-120" Any`
+    t =    12.24s         Capturing element debug description
+    t =    13.27s     Checking `Expect predicate `existsNoRetry == 1` for object "annonce-ile-120" Any`
+    t =    13.27s         Checking existence of `"annonce-ile-120" Any`
+    t =    13.30s         Capturing element debug description
+    t =    14.22s     Checking `Expect predicate `existsNoRetry == 1` for object "annonce-ile-120" Any`
+    t =    14.22s         Checking existence of `"annonce-ile-120" Any`
+    t =    14.24s         Capturing element debug description
+    t =    15.28s     Checking `Expect predicate `existsNoRetry == 1` for object "annonce-ile-120" Any`
+    t =    15.28s         Checking existence of `"annonce-ile-120" Any`
+    t =    15.30s Find the "annonce-ile-120" Any
+    t =    15.35s Find the Application 'fr.kathryn.woop'
+    t =    16.24s Added attachment named 'toaster-ile-pieces'
+    t =    16.24s Waiting 8.0s for "annonce-ile-1" Any to exist
+    t =    17.27s     Checking `Expect predicate `existsNoRetry == 1` for object "annonce-ile-1" Any`
+    t =    17.27s         Checking existence of `"annonce-ile-1" Any`
+    t =    17.35s         Capturing element debug description
+    t =    18.28s     Checking `Expect predicate `existsNoRetry == 1` for object "annonce-ile-1" Any`
+    t =    18.28s         Checking existence of `"annonce-ile-1" Any`
+    t =    18.33s Find the Application 'fr.kathryn.woop'
+    t =    18.93s Added attachment named 'toaster-ile-booster'
+    t =    18.93s Waiting 6.0s for "annonce-ile-1" Any to not exist
+    t =    19.97s     Checking `Expect predicate `existsNoRetry == 0` for object "annonce-ile-1" Any`
+    t =    19.97s         Checking existence of `"annonce-ile-1" Any`
+    t =    19.99s         Capturing element debug description
+    t =    21.02s     Checking `Expect predicate `existsNoRetry == 0` for object "annonce-ile-1" Any`
+    t =    21.02s         Checking existence of `"annonce-ile-1" Any`
+    t =    21.05s         Capturing element debug description
+    t =    21.97s     Checking `Expect predicate `existsNoRetry == 0` for object "annonce-ile-1" Any`
+    t =    21.97s         Checking existence of `"annonce-ile-1" Any`
+    t =    22.00s Terminate fr.kathryn.woop:19282
+    t =    23.06s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testToasterDepuisIle]' passed (23.216 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-17 16:03:52.752.
+	 Executed 1 test, with 0 failures (0 unexpected) in 23.216 (23.217) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-17 16:03:52.753.
+	 Executed 1 test, with 0 failures (0 unexpected) in 23.216 (23.218) seconds
+Test Suite 'Selected tests' passed at 2026-09-17 16:03:52.753.
+	 Executed 1 test, with 0 failures (0 unexpected) in 23.216 (23.219) seconds
+2026-09-17 16:03:53.053 xcodebuild[19258:17615924] [MT] IDETestOperationsObserverDebug: 25.244 elapsed -- Testing started completed.
+2026-09-17 16:03:53.053 xcodebuild[19258:17615924] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-17 16:03:53.053 xcodebuild[19258:17615924] [MT] IDETestOperationsObserverDebug: 25.244 sec, +25.244 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-story-session-ile/sim68-toaster.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

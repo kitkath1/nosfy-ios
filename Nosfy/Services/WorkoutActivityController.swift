@@ -146,7 +146,7 @@ enum WorkoutActivityController {
 
     private static func state(for workout: Workout) -> WorkoutActivityAttributes.ContentState {
         .init(exerciseCount: workout.exerciseCount,
-              setCount: workout.setCount,
+              setCount: workout.seriesPayantes,
               volume: Int(workout.totalVolume),
               focus: focused?.session == workout.startedAt ? focused?.value : nil,
               language: Langue.courante)

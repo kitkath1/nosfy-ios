@@ -1,0 +1,9 @@
+[welcome-back] retenue : le serveur n'a pas répondu
+[pull] seances_depuis(2026-09-17T14:55:21.572885+00:00) → total 0, rendues 0 · insérées 0, ignorées 0 · local 35
+[home-serveur] home() → prénom Kathryn · 35 / 3, reste 0 · en séance false (0 min) · 35 séances en tout · première fois false · visite true · langue en
+[home-serveur] phrases → active, active_zero, seance, seance_debut, vide
+[chemin] composition conforme à la base (5 règles lues)
+[welcome-back] retenue : retour_disponible faux (rien à prendre, ou aucune séance finie — S4)
+[annonces] regles_annonces() → rangs [3, 5, 10], vidéo 10, hasard 5-8 après 10, budget 4/1/1, écart 3 séries ET 6 min, rare reward-rare, pool 7 vidéos ["reward-piece-1", "reward-piece-2", "reward-piece-3", "reward-piece-4", "reward-piece-5", "reward-fire", "reward-lune"]
+[cardio] planchers du barème lus : tapis 5.0 min, escalier 5.0 min, seuil 15.0 km/h, effort HIIT 20.0 s
+[welcome-back] retenue : retour_disponible faux (rien à prendre, ou aucune séance finie — S4)

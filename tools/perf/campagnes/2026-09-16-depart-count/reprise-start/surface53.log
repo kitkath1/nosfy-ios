@@ -1,0 +1,178 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-count53/sim-dd/Build/Products/WoopUITests_iphonesimulator26.5-arm64.xctestrun -destination "platform=iOS Simulator,id=6A504B5A-F76C-4EC1-B09A-E9CA4673B32A" "-only-testing:WoopUITests/CountdownUITests/test05_startBordGauche" "-only-testing:WoopUITests/CountdownUITests/test06_startBordHaut" -resultBundlePath /tmp/woop-count54/surface53.xcresult -parallel-testing-enabled NO
+
+2026-09-16 20:40:27.589 xcodebuild[15048:16647444] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-count54/surface53.xcresult
+
+2026-09-16 20:40:27.595 xcodebuild[15048:16647444] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:40:28.138 xcodebuild[15048:16647444] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:40:29.156895+0200 WoopUITests-Runner[15112:16647708] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-16 20:40:29.570.
+Test Suite 'WoopUITests.xctest' started at 2026-09-16 20:40:29.570.
+Test Suite 'CountdownUITests' started at 2026-09-16 20:40:29.570.
+Test Case '-[WoopUITests.CountdownUITests test05_startBordGauche]' started.
+    t =     0.00s Start Test at 2026-09-16 20:40:29.571
+    t =     0.02s Set Up
+    t =     0.02s Terminate fr.kathryn.woop:0
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+2026-09-16 20:40:29.650 xcodebuild[15048:16647444] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 20:40:29.650 xcodebuild[15048:16647444] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[15112]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10849c310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x107cac398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     0.69s         Setting up automation session
+    t =     1.08s         Wait for fr.kathryn.woop to idle
+    t =     2.84s Waiting 25.0s for "Start" Button to exist
+    t =     3.87s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     3.87s         Checking existence of `"Start" Button`
+    t =     3.93s         Capturing element debug description
+    t =     4.85s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     4.86s         Checking existence of `"Start" Button`
+    t =     4.87s         Capturing element debug description
+    t =     5.90s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     5.90s         Checking existence of `"Start" Button`
+    t =     5.91s         Capturing element debug description
+    t =     6.85s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     6.85s         Checking existence of `"Start" Button`
+    t =     6.85s         Capturing element debug description
+    t =     7.89s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     7.89s         Checking existence of `"Start" Button`
+    t =     7.90s         Capturing element debug description
+    t =     8.93s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     8.93s         Checking existence of `"Start" Button`
+    t =     8.94s         Capturing element debug description
+    t =     9.87s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     9.87s         Checking existence of `"Start" Button`
+    t =     9.87s         Capturing element debug description
+    t =    10.90s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    10.91s         Checking existence of `"Start" Button`
+    t =    10.91s         Capturing element debug description
+    t =    11.85s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    11.85s         Checking existence of `"Start" Button`
+    t =    11.86s         Capturing element debug description
+    t =    12.90s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    12.90s         Checking existence of `"Start" Button`
+    t =    12.92s         Capturing element debug description
+    t =    13.85s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    13.85s         Checking existence of `"Start" Button`
+    t =    13.87s         Capturing element debug description
+    t =    14.90s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    14.91s         Checking existence of `"Start" Button`
+    t =    14.93s         Capturing element debug description
+    t =    15.86s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    15.86s         Checking existence of `"Start" Button`
+    t =    15.88s         Capturing element debug description
+    t =    16.91s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    16.91s         Checking existence of `"Start" Button`
+    t =    16.93s         Capturing element debug description
+    t =    17.86s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    17.86s         Checking existence of `"Start" Button`
+    t =    17.88s         Capturing element debug description
+    t =    18.91s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    18.91s         Checking existence of `"Start" Button`
+    t =    18.93s         Capturing element debug description
+    t =    19.86s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    19.86s         Checking existence of `"Start" Button`
+    t =    19.88s         Capturing element debug description
+    t =    20.91s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    20.91s         Checking existence of `"Start" Button`
+    t =    20.93s         Capturing element debug description
+    t =    21.86s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    21.86s         Checking existence of `"Start" Button`
+    t =    21.88s         Capturing element debug description
+    t =    22.92s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    22.92s         Checking existence of `"Start" Button`
+    t =    22.94s         Capturing element debug description
+    t =    23.87s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    23.87s         Checking existence of `"Start" Button`
+    t =    23.89s         Capturing element debug description
+    t =    24.92s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    24.93s         Checking existence of `"Start" Button`
+    t =    24.95s         Capturing element debug description
+    t =    25.87s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    25.87s         Checking existence of `"Start" Button`
+    t =    25.89s         Capturing element debug description
+    t =    26.92s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    26.92s         Checking existence of `"Start" Button`
+    t =    26.95s         Capturing element debug description
+    t =    27.85s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    27.85s         Checking existence of `"Start" Button`
+    t =    27.87s         Capturing element debug description
+    t =    27.88s     Checking existence of `"Start" Button`
+    t =    27.89s Collecting debug information to assist test failure triage
+    t =    27.89s     Requesting snapshot of accessibility hierarchy for app with pid 15118
+/tmp/woop-count53/banc/WoopUITests/CountdownUITests.swift:88: error: -[WoopUITests.CountdownUITests test05_startBordGauche] : XCTAssertTrue failed
+    t =    28.11s Tear Down
+Test Case '-[WoopUITests.CountdownUITests test05_startBordGauche]' failed (28.435 seconds).
+Test Case '-[WoopUITests.CountdownUITests test06_startBordHaut]' started.
+    t =     0.00s Start Test at 2026-09-16 20:40:58.007
+    t =     0.03s Set Up
+    t =     0.03s Terminate fr.kathryn.woop:15118
+    t =     1.08s Open fr.kathryn.woop
+    t =     1.08s     Launch fr.kathryn.woop
+2026-09-16 20:40:59.093 xcodebuild[15048:16647444] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 20:40:59.093 xcodebuild[15048:16647444] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.30s         Setting up automation session
+2026-09-16 20:40:59.851 xcodebuild[15048:16647444] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     1.93s         Wait for fr.kathryn.woop to idle
+    t =     3.55s Waiting 25.0s for "Start" Button to exist
+2026-09-16 20:41:01.624 xcodebuild[15048:16647444] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     4.58s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     4.58s         Checking existence of `"Start" Button`
+    t =     4.71s         Capturing element debug description
+    t =     5.63s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     5.63s         Checking existence of `"Start" Button`
+    t =     5.69s         Capturing element debug description
+    t =     6.62s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     6.62s         Checking existence of `"Start" Button`
+    t =     6.65s Find the "Start" Button
+    t =     6.68s Find the "count-state" StaticText
+WOOP_START_CIBLE=(148.66666666666666, 448.3333333333333, 73.66666666666669, 34.0);point=0.5,0.08;actives=1;id=04F546EA-A762-4A78-806F-DA88C27A8FAE;film=0;page=home
+    t =     6.72s Tap "Start" Button[0.50, 0.08]
+    t =     6.72s     Wait for fr.kathryn.woop to idle
+    t =     6.72s     Find the "Start" Button
+    t =     6.75s     Check for interrupting elements affecting "Start" Button
+    t =     6.78s     Synthesize event
+    t =     6.78s         Find the "Start" Button
+    t =     6.81s         Find the "Start" Button
+    t =     6.84s         Find the "Start" Button
+    t =     7.15s     Wait for fr.kathryn.woop to idle
+2026-09-16 20:41:05.616 xcodebuild[15048:16647444] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:41:05.936 xcodebuild[15048:16647444] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     8.22s Checking existence of `"Start" Button`
+    t =     8.29s Find the "count-state" StaticText
+2026-09-16 20:41:06.407 xcodebuild[15048:16647444] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     9.23s Checking existence of `"Start" Button`
+    t =     9.30s Find the "count-state" StaticText
+    t =    10.25s Checking existence of `"Start" Button`
+    t =    10.31s Find the "count-state" StaticText
+    t =    11.26s Checking existence of `"Start" Button`
+    t =    11.32s Find the "count-state" StaticText
+    t =    12.19s Checking existence of `"Start" Button`
+    t =    12.27s Find the "count-state" StaticText
+    t =    12.30s Find the "count-state" StaticText
+/tmp/woop-count53/banc/WoopUITests/CountdownUITests.swift:92: error: -[WoopUITests.CountdownUITests test06_startBordHaut] : XCTAssertTrue failed - actives=1;id=04F546EA-A762-4A78-806F-DA88C27A8FAE;film=0;page=home
+    t =    12.32s Tear Down
+Test Case '-[WoopUITests.CountdownUITests test06_startBordHaut]' failed (12.601 seconds).
+Test Suite 'CountdownUITests' failed at 2026-09-16 20:41:10.608.
+	 Executed 2 tests, with 2 failures (0 unexpected) in 41.036 (41.038) seconds
+Test Suite 'WoopUITests.xctest' failed at 2026-09-16 20:41:10.608.
+	 Executed 2 tests, with 2 failures (0 unexpected) in 41.036 (41.038) seconds
+Test Suite 'Selected tests' failed at 2026-09-16 20:41:10.608.
+	 Executed 2 tests, with 2 failures (0 unexpected) in 41.036 (41.038) seconds
+2026-09-16 20:41:13.076 xcodebuild[15048:16647444] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:41:19.894 xcodebuild[15048:16647444] [MT] IDETestOperationsObserverDebug: 51.753 elapsed -- Testing started completed.
+2026-09-16 20:41:19.894 xcodebuild[15048:16647444] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-16 20:41:19.894 xcodebuild[15048:16647444] [MT] IDETestOperationsObserverDebug: 51.753 sec, +51.753 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-count54/surface53.xcresult
+
+Failing tests:
+	CountdownUITests.test05_startBordGauche()
+	CountdownUITests.test06_startBordHaut()
+
+** TEST EXECUTE FAILED **
+
+Testing started

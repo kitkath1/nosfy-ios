@@ -1,0 +1,68 @@
+--- Woop/Views/StoryEnded.swift
++++ Woop/Views/StoryEnded.swift
+@@ -189,12 +189,12 @@
+     /// JAMAIS le débord d'une couche UIKit, ici il n'a rien à rattraper.
+     private var verriere: some View {
+         HStack(spacing: EndedCine.corps * 0.24) {
+-            mot("Session", nom: "story-ended-verre-a")
+-            mot("Ended", nom: "story-ended-verre-b")
+-        }
+-    }
+-
+-    private func mot(_ texte: String, nom: String) -> some View {
++            mot(L("Séance", "Session"), cle: "Session", nom: "story-ended-verre-a")
++            mot(L("Terminée", "Ended"), cle: "Ended", nom: "story-ended-verre-b")
++        }
++    }
++
++    private func mot(_ texte: String, cle: String, nom: String) -> some View {
+         let glyphe = Text(texte).font(.inter(EndedCine.corps, .bold))
+         return glyphe
+             .foregroundStyle(.clear)
+@@ -215,7 +215,7 @@
+             .onGeometryChange(for: CGSize.self) { $0.size } action: {
+                 guard $0.width.isFinite, $0.height.isFinite,
+                       $0.width > 0, $0.height > 0 else { return }
+-                taillesMots[texte] = $0
++                taillesMots[cle] = $0
+             }
+     }
+ 
+@@ -341,7 +341,7 @@
+         let gris = Color(white: 0.52)
+         let lignes: [(String, Color)] = [
+             ("Kathryn,", blanc),
+-            ("votre session", gris),
++            (L("votre séance", "your session"), gris),
+             (dateCourte, blanc)
+         ]
+         return VStack(alignment: .leading, spacing: 2) {
+@@ -448,7 +448,7 @@
+         let blanc = Color(white: 0.97)
+         let gris = Color(white: 0.52)
+         return VStack(alignment: .leading, spacing: 0) {
+-            Text("Séance du jour")
++            Text(L("Séance du jour", "Today’s session"))
+                 .font(.system(size: 13, weight: .medium))
+                 .foregroundStyle(gris)
+                 .opacity(ligne(0))
+@@ -457,7 +457,7 @@
+                 .frame(width: 26, height: 1.5)
+                 .padding(.top, 8)
+                 .opacity(ligne(0))
+-            Text("Résumé")
++            Text(L("Résumé", "Summary"))
+                 .font(.system(size: 44, weight: .bold))
+                 .foregroundStyle(blanc)
+                 .padding(.top, 18)
+@@ -466,8 +466,8 @@
+             Spacer(minLength: 0)
+ 
+             rangée(1, session.minutes, "min", blanc, gris)
+-            rangée(2, session.series, "séries", blanc, gris)
+-            rangée(3, session.exos, "exos", blanc, gris)
++            rangée(2, session.series, L("séries", "sets"), blanc, gris)
++            rangée(3, session.exos, L("exos", "exercises"), blanc, gris)
+             rangée(4, session.kcal, "calories", blanc, gris)
+         }
+         .padding(28)

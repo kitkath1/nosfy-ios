@@ -87,9 +87,29 @@ struct StoryEnded: View {
         mode == .resume ? t + EndedCine.cut + 0.15 : t
     }
 
-    /// Les cadres des deux mots dans le repère du composite — MESURÉS.
-    @State private var motRects: [String: CGRect] = [:]
-    @State private var verriereSize: CGSize = .zero
+    /// Seules les tailles LOCALES sont mesurées. Relire les rectangles dans
+    /// un repère nommé sous le zoom alimentait une boucle de géométrie lors
+    /// de la réouverture : le déplacement recalculait sa propre mesure.
+    /// Le HStack a un espacement fixe et centre les deux glyphes en hauteur.
+    @State private var taillesMots: [String: CGSize] = [:]
+    private var verriereSize: CGSize {
+        let a = taillesMots["Session"] ?? .zero
+        let b = taillesMots["Ended"] ?? .zero
+        return CGSize(width: a.width + EndedCine.corps * 0.24 + b.width,
+                      height: max(a.height, b.height))
+    }
+    private var motRects: [String: CGRect] {
+        guard let a = taillesMots["Session"], let b = taillesMots["Ended"]
+        else { return [:] }
+        let h = max(a.height, b.height)
+        return [
+            "Session": CGRect(x: 0, y: (h - a.height) / 2,
+                              width: a.width, height: a.height),
+            "Ended": CGRect(x: a.width + EndedCine.corps * 0.24,
+                            y: (h - b.height) / 2,
+                            width: b.width, height: b.height)
+        ]
+    }
 
     var body: some View {
         ZStack {
@@ -172,10 +192,6 @@ struct StoryEnded: View {
             mot(L("Séance", "Session"), cle: "Session", nom: "story-ended-verre-a")
             mot(L("Terminée", "Ended"), cle: "Ended", nom: "story-ended-verre-b")
         }
-        .coordinateSpace(name: "verriere")
-        .onGeometryChange(for: CGSize.self) { $0.size } action: {
-            verriereSize = $0
-        }
     }
 
     private func mot(_ texte: String, cle: String, nom: String) -> some View {
@@ -196,9 +212,11 @@ struct StoryEnded: View {
                 }
             }
             .mask { glyphe }
-            .onGeometryChange(for: CGRect.self) {
-                $0.frame(in: .named("verriere"))
-            } action: { motRects[cle] = $0 }
+            .onGeometryChange(for: CGSize.self) { $0.size } action: {
+                guard $0.width.isFinite, $0.height.isFinite,
+                      $0.width > 0, $0.height > 0 else { return }
+                taillesMots[cle] = $0
+            }
     }
 
     /// L'échelle visuelle du composite. Plus de « repos petit » : la

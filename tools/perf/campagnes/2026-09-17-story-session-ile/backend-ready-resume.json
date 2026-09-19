@@ -1,0 +1,9 @@
+{
+  "apple_enabled": true,
+  "jwt_exp": 3600,
+  "apple_secrets_present": {
+    "APPLE_KEY_ID": false,
+    "APPLE_TEAM_ID": false,
+    "APPLE_PRIVATE_KEY": false
+  }
+}

@@ -98,7 +98,6 @@ POPUPS = [
     ('pop-reward-fire',       'Reward · flamme noire',         'RewardPopup(style: .fire)'),
     ('pop-reward-welcome',    'Welcome Back · vidéo chauve-souris', 'RewardPopup(style: .welcome, robe: .video, videoNom: "reward-welcome")'),
     ('pop-reward-welcomeTexte', 'Welcome Back · texte géant « YOU\'RE / BACK »', 'RewardPopup(style: .welcome, robe: .texte)'),
-    ('pop-welcome-back-prod', 'Welcome Back · tel qu\'il s\'ouvre EN PROD (sans sa vidéo)', 'NosfyApp.swift → RewardPopup(.welcome, .video) sans videoNom'),
     ('pop-premiere-galet',    'Première fois · Nosfy sur les galets', 'RewardPopup(.welcome, videoNom: "welcome-galet-premiere", bouton: .capsule)'),
     ('pop-premiere-entree',   'Première fois · Nosfy de face',        'RewardPopup(.welcome, videoNom: "welcome-nosfy-premiere", bouton: .capsule)'),
     ('pop-notifs-pile',       'Les trois toasters, empilés',   'NotifJauge · NotifGrosTexte · NotifChasse'),
@@ -171,6 +170,12 @@ def reduire(src, out, largeur, fmt, qualite=None):
     l, h = dims(out)
     if l != largeur:
         raise RuntimeError('%s fait %d px de large au lieu de %d' % (os.path.basename(out), l, largeur))
+    if fmt == 'jpeg':
+        # 17-09 : le livrable a franchi les 2 Mo sous le poids du texte. Les JPEG de sips
+        # ne sont pas optimisés (Huffman par défaut, pas de progressif) : les mêmes pixels
+        # réécrits par Pillow pèsent ~30 % de moins — scripts/alleger.py, idempotent.
+        from alleger import alleger
+        alleger(out)
     if fmt == 'png':
         # 14-09 : LA PALETTE (256 couleurs + transparence tRNS) — le hero de la forge pesait 316 Ko
         # en RGBA, 30 Ko en palette, l'alpha gardé. C'est « baisser la qualité », jamais le nombre

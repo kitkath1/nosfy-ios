@@ -1,6 +1,17 @@
 import SwiftUI
 import SwiftData
 
+private struct StoryDecorAuReposKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var storyDecorAuRepos: Bool {
+        get { self[StoryDecorAuReposKey.self] }
+        set { self[StoryDecorAuReposKey.self] = newValue }
+    }
+}
+
 // MARK: - Ce que la story raconte
 
 /// Une série. Le modèle de l'app porte `reps` et `weight` (`StrengthSet`) ;
@@ -62,6 +73,8 @@ struct StorySession {
     var series: Int
     var kcal: Int
     var sets: [StorySet]
+    var recompense: BilanRecompenseSeance? = nil
+    var recompenseEnAttente = false
     /// La partition par exercice (la grammaire de l'ardoise) : quand elle
     /// est là, la story 2 pose `SlateListe` — la liste dépliable, ses
     /// petites flammes — à la place des cinq lignes plates.
@@ -116,18 +129,26 @@ struct StorySession {
         dateLabel = L("Séance du ", "Session on ") + f.string(from: workout.startedAt)
         minutes = max(1, Int(workout.duration / 60))
         exos = workout.orderedExercises.count
-        let all = workout.orderedExercises.flatMap { $0.sets ?? [] }
-        series = all.count
+        let all = workout.orderedExercises.flatMap { $0.orderedSets.filter(\.isDone) }
+        series = workout.seriesPayantes
+        recompense = workout.bilanRecompense.flatMap { try? JSONDecoder().decode(BilanRecompenseSeance.self, from: $0) }
+        recompenseEnAttente = recompense == nil
+        if let bilan = recompense {
+            if bilan.top == "top_muscu" { top = .muscu }
+            else if bilan.top == "top_cardio" { top = .cardio }
+            if let heures = bilan.heuresDouble {
+                double = DoubleFait(heures: heures, minutes: bilan.minutesDouble ?? minutes)
+            }
+        }
         // Une estimation franche tant qu'il n'y a pas de calcul de dépense :
         // sept kilocalories par minute d'effort.
         kcal = minutes * 7
-        // Les mêmes gains que la maquette, tant que l'économie n'existe pas.
-        let purse = [20, 15, 12, 18, 18]
+        // Les pièces de musculation sont confirmées dans le reçu de cette séance.
+        let taux = (recompense?.piecesMuscu ?? 0) / max(series, 1)
         sets = all.prefix(5).enumerated().map { i, s in
             StorySet(rank: i + 1, reps: s.reps, kilos: s.weight,
-                     coins: purse[i % purse.count])
+                     coins: taux)
         }
-        if sets.isEmpty { sets = StorySession.demo.sets }
         // La partition : les mêmes groupes que l'ardoise (le barème de
         // `SessionSlate.buildGroupes`, côté séance persistée).
         groupes = workout.orderedExercises.compactMap { le in
@@ -265,8 +286,14 @@ struct StoryFlow: View {
     /// chaque changement de page.
     @State private var partitionRect: CGRect = .zero
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var inactiveDepuis: Date?
 
     private var paused: Bool { pausedAt != nil }
+    private var suspendue: Bool { paused || scenePhase != .active }
+    private var decorAuRepos: Bool {
+        suspendue || reduceMotion || ProtectionThermique.shared.appelAuRepos
+    }
 
     // MARK: La table des pages
 
@@ -312,7 +339,8 @@ struct StoryFlow: View {
             ZStack {
                 Color.black.ignoresSafeArea()
 
-                TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { tl in
+                TimelineView(.animation(minimumInterval: 1.0 / 60.0,
+                                        paused: suspendue)) { tl in
                     let now = tl.date
                     let t = clock(now)
                     ZStack {
@@ -328,23 +356,23 @@ struct StoryFlow: View {
                             case .ouverture:
                                 StoryEnded(session: session, t: t,
                                            now: now, size: geo.size,
-                                           paused: paused,
+                                           paused: decorAuRepos,
                                            mode: exception ?? .complet)
                             case .resume:
                                 StoryEnded(session: session, t: t,
                                            now: now, size: geo.size,
-                                           paused: paused, mode: .resume)
+                                           paused: decorAuRepos, mode: .resume)
                             case .details:
                                 StoryDetails(session: session, t: t,
                                              now: now, size: geo.size,
-                                             paused: paused,
+                                             paused: decorAuRepos,
                                              onPartitionRect: {
                                                  partitionRect = $0
                                              })
                             case .analyse:
                                 StoryAnalyse(session: session, t: t,
                                              now: now, size: geo.size,
-                                             paused: paused,
+                                             paused: decorAuRepos,
                                              onPartitionRect: {
                                                  partitionRect = $0
                                              })
@@ -352,7 +380,7 @@ struct StoryFlow: View {
                             // coffre, le compteur, les boosters.
                             case .butin:
                                 StoryWin(session: session, t: t,
-                                         size: geo.size, paused: paused,
+                                         size: geo.size, paused: decorAuRepos,
                                          onCardRect: {
                                              partitionRect = $0
                                          })
@@ -398,16 +426,44 @@ struct StoryFlow: View {
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         .preferredColorScheme(.dark)
+        .accessibilityIdentifier("story-flow")
+        .overlay(alignment: .bottomLeading) {
+            if CommandLine.arguments.contains("-storyProbe") {
+                Text("page=\(page);pause=\(suspendue ? 1 : 0)")
+                    .font(.system(size: 9)).foregroundStyle(.white)
+                    .accessibilityIdentifier("story-etat")
+            }
+        }
         .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.55),
                          trigger: tapBeat)
-        .task(id: beat) { await conduct() }
+        .environment(\.storyDecorAuRepos, decorAuRepos)
+        .task(id: [beat, suspendue ? 1 : 0]) {
+            guard !suspendue else { return }
+            await conduct()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active {
+                if inactiveDepuis == nil { inactiveDepuis = .now }
+                pressToken += 1
+            } else if let debut = inactiveDepuis {
+                let interruption = Date.now.timeIntervalSince(debut)
+                pageStart = pageStart.addingTimeInterval(interruption)
+                if let pause = pausedAt {
+                    // Le doigt ne reste pas appuyé pendant une interruption.
+                    pageStart = pageStart.addingTimeInterval(debut.timeIntervalSince(pause))
+                    pausedAt = nil
+                }
+                pressStart = nil
+                inactiveDepuis = nil
+            }
+        }
     }
 
     // MARK: L'horloge
 
     /// Le temps écoulé sur la page, pause déduite.
     private func clock(_ now: Date) -> Double {
-        (pausedAt ?? now).timeIntervalSince(pageStart)
+        (pausedAt ?? inactiveDepuis ?? now).timeIntervalSince(pageStart)
     }
 
     /// L'avance automatique. Un `Task` par page plutôt qu'un `Timer` : il
@@ -559,6 +615,7 @@ struct StoryPortal: View {
 
     @State private var open: CGFloat = 0
     @State private var closing = false
+    @State private var couverture = UUID()
 
     /// Le rayon des coins de l'appareil. Un plein écran qui garde 24 de rayon
     /// a l'air d'une carte géante ; à zéro il a l'air d'une capture. Au rayon
@@ -599,6 +656,8 @@ struct StoryPortal: View {
         .ignoresSafeArea()
         .background(Color.black.opacity(Double(open)).ignoresSafeArea())
         .onAppear {
+            RythmeEcran.shared.stories.insert(couverture)
+            NavDiagnostic.noter("story-ouverte")
             // LE COUP. `slam()` est l'enveloppe la plus lourde de l'app —
             // 0,72 s de pose. Le fichier de SwapFeedback documente pourquoi
             // `.sensoryFeedback(.impact(intensity: 1))` ne peut pas la
@@ -609,11 +668,17 @@ struct StoryPortal: View {
                 open = 1
             }
         }
+        .onDisappear {
+            RythmeEcran.shared.stories.remove(couverture)
+            NavDiagnostic.noter("story-fermee")
+        }
     }
 
     private func close() {
         guard !closing else { return }
         closing = true
+        // Le portail garde sa couverture jusqu'au démontage : le geste de
+        // sortie ne doit pas réveiller ni toucher la Home à travers le masque.
         withAnimation(.timingCurve(0.4, 0, 0.7, 1, duration: 0.34)) {
             open = 0
         }
@@ -622,6 +687,37 @@ struct StoryPortal: View {
 }
 
 // MARK: - Le banc
+
+/// Ouvre les vraies vues depuis la Home sans créer ni terminer de séance.
+/// Uniquement sur demande explicite du banc ; aucun minuteur permanent.
+struct BancRetourStory: View {
+    @State private var ouverte = false
+    @State private var booster = false
+    @ObservedObject private var mouvement = BacMotion.shared
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            if booster {
+                // Cérémonie complète sans forge ni récompense sur le compte.
+                BoosterLab(onRetourHome: { booster = false })
+            } else if ouverte {
+                StoryPortal(from: .zero, session: .demo) { ouverte = false }
+            } else {
+                VStack(alignment: .leading) {
+                    Button("Booster test") { booster = true }
+                        .accessibilityIdentifier("booster-test-ouvrir")
+                    Button("Story test") { ouverte = true }
+                        .accessibilityIdentifier("story-test-ouvrir")
+                    Text("mouvement=\(mouvement.actif ? 1 : 0);couverture=\(RythmeEcran.shared.storyVisible ? 1 : 0);route=\(DepartEtat.shared.cheminOuvert ? 1 : 0)")
+                        .accessibilityIdentifier("story-test-retour")
+                }
+                .font(.system(size: 10)).padding(8).background(.black)
+                .foregroundStyle(.white).padding(.bottom, 85)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+    }
+}
 
 /// `-storyLab`. La story rejouée en boucle depuis une carte factice posée là
 /// où le deck de la Home pose la sienne — c'est la méthode maison pour juger
@@ -666,7 +762,7 @@ struct StoryLab: View {
                         .frame(width: 220, height: 282)
                         .position(x: card.midX, y: card.midY)
                         .overlay {
-                            Text("glisse vers le haut")
+                            Text(L("glisse vers le haut", "swipe up"))
                                 .font(.inter(12))
                                 .foregroundStyle(Color.inkMuted)
                                 .position(x: card.midX, y: card.midY)

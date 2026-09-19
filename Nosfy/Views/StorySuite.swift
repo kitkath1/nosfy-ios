@@ -164,6 +164,14 @@ struct StoryAnalyse: View {
 /// gris mêlés — STATIQUE aujourd'hui, contextuelle plus tard (le
 /// contrat des textes dynamiques du plan backend, §4 : l'IA choisira
 /// les MOTS, jamais la typo).
+/// LES DEUX ROBES DE LA STORY CARD (27-08, plan
+/// ../story/PLAN-STORY-CARD-COLONNE.md) — `.rangee` : les trois
+/// stickers en rangée sous le mot géant, le texte dans le flux (la
+/// robe validée) ; `.colonne` : ils passent en COLONNE au flanc
+/// gauche et deviennent SAISISSABLES, le texte s'ancre en bas et
+/// ÉMERGE de la nuit, le mot géant descend derrière.
+enum RobeStoryCard { case rangee, colonne }
+
 struct StoryCard: View {
     let session: StorySession
     let t: Double
@@ -171,6 +179,23 @@ struct StoryCard: View {
     var paused: Bool = false
     /// Le cadre de la card, remonté au chef d'orchestre.
     var onCardRect: (CGRect) -> Void = { _ in }
+    /// La robe. Le moteur tranchera (backend §4 nonies) ; au banc,
+    /// `-storyCardColonne`.
+    var robe: RobeStoryCard =
+        ProcessInfo.processInfo.arguments.contains("-storyCardColonne")
+            ? .colonne : .rangee
+
+    private var colonne: Bool { robe == .colonne }
+
+    /// LES OBJETS DE LA COLONNE — la machinerie partagée avec la page
+    /// butin (`ObjetSaisissable`). Ils REVIENNENT à leur place : une
+    /// vitrine dont les objets restent par terre n'est plus une
+    /// vitrine, et la story se rejoue.
+    @State private var placements: [Int: CGSize] = [:]
+    @State private var prises: [Int: CGSize] = [:]
+    @State private var tenus: Set<Int> = []
+    @State private var grains: [(pos: CGPoint, naissance: Date)] = []
+    @State private var saisies = 0
 
     /// L'horloge murale de la poudre — un `@State` : la vue se
     /// ré-évalue à chaque image de `t`, la naissance ne bouge pas.
@@ -183,6 +208,9 @@ struct StoryCard: View {
     @GestureState private var tenue = false
     /// LE GYRO DOUX — la parallaxe différentielle au poignet.
     @ObservedObject private var motion = BacMotion.shared
+    @State private var lecteurMouvement = UUID()
+    @Environment(\.storyDecorAuRepos) private var decorAuRepos
+    @Environment(\.scenePhase) private var scenePhase
 
     private static let forme = RoundedRectangle(cornerRadius: 36,
                                                 style: .continuous)
@@ -191,21 +219,22 @@ struct StoryCard: View {
         let l = min(size.width * 0.80, 332)
         let h = l * 1.32
 
-        VStack(alignment: .leading, spacing: 0) {
-            scene(l: l)
-                .padding(.top, 26)
-            texte
-                .padding(.top, 18)
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 30)
-        .frame(width: l, height: h, alignment: .topLeading)
+        contenu(l: l, h: h)
         // LA POUDRE DE DIAMANT — et elle OBÉIT à la lumière : les
         // grains brillent plus quand la nappe du spotlight passe.
         .overlay {
             PoudreStory(largeur: l, hauteur: h, naissance: naissance,
                         nappe: l / 2 + balaie(l: l))
                 .opacity(StoryCine.sstep(0.55, 1.1, t))
+        }
+        // LA POUDRE DU DOIGT — montée SEULEMENT s'il y a des grains :
+        // une Canvas à 30 Hz qui ne dessine rien reste une horloge qui
+        // coûte.
+        .overlay {
+            if !grains.isEmpty {
+                PoudreDoigt(grains: grains)
+                    .allowsHitTesting(false)
+            }
         }
         .background {
             ZStack {
@@ -239,6 +268,14 @@ struct StoryCard: View {
         .simultaneousGesture(
             DragGesture(minimumDistance: 3)
                 .onChanged { v in
+                    // ⚠️ LE TILT SE DÉSARME QUAND UN OBJET EST DANS LA
+                    // MAIN. Un `.gesture` d'enfant n'annule PAS un
+                    // `.simultaneousGesture` d'ancêtre (c'est sa
+                    // définition) : sans ce garde, le doigt qui traîne
+                    // un sticker ferait AUSSI basculer la card de ±11°,
+                    // et l'objet se décalerait du doigt (le repère du
+                    // drag voyage avec la vue qui le porte).
+                    guard tenus.isEmpty else { return }
                     pench = CGSize(
                         width: max(-11, min(11, v.translation.width / 9)),
                         height: max(-11, min(11, v.translation.height / 9)))
@@ -261,16 +298,65 @@ struct StoryCard: View {
         .offset(y: (1 - CGFloat(StoryCine.sstep(0.25, 0.85, t))) * 16)
         // Le cadre remonté au chef : les gestes nés dedans ne ferment
         // pas la story (les transforms ne changent pas le layout).
+        // 20 pt de marge sur chaque bord (l'école du butin) : sans
+        // elle, un doigt qui vise le bord d'un objet collé au flanc
+        // démarre HORS du rect — la card est un R36, le rect un
+        // rectangle — et le chef reprend le geste.
         .onGeometryChange(for: CGRect.self) {
-            $0.frame(in: .named("storyFlow"))
+            $0.frame(in: .named("storyFlow")).insetBy(dx: -20, dy: -20)
         } action: { onCardRect($0) }
-        .onAppear { BacMotion.shared.start() }
+        .onChange(of: !paused && !decorAuRepos && scenePhase == .active, initial: true) { _, actif in
+            if actif { motion.start(pour: lecteurMouvement) }
+            else { motion.stop(pour: lecteurMouvement) }
+        }
+        .onDisappear { motion.stop(pour: lecteurMouvement) }
     }
 
-    /// La course de la nappe du spotlight, autour du centre de la
-    /// rangée des stickers.
+    /// Le contenu de la card, selon la robe.
+    @ViewBuilder
+    private func contenu(l: CGFloat, h: CGFloat) -> some View {
+        if colonne {
+            // LA COLONNE QUITTE LE FLUX : posée en absolu (l'école des
+            // objets du butin), elle libère les 143,87 pt que la rangée
+            // prenait — c'est ce qui donne au texte la place de
+            // s'ancrer en bas.
+            ZStack {
+                titre(l: l)
+                    .offset(x: CGFloat(motion.pench.width) * 3,
+                            y: h * 0.06)
+                EllipticalGradient(
+                    colors: [Color(red: 1.0, green: 0.94, blue: 0.84)
+                        .opacity(0.26), .clear],
+                    center: .center)
+                    .frame(width: l * 0.79, height: l * 0.53)
+                    .offset(x: -l * 0.18 + balaie(l: l), y: -h * 0.06)
+                    .blendMode(.plusLighter)
+                texte
+                    .padding(.leading, 44)
+                    .padding(.trailing, 30)
+                    .padding(.bottom, 30)
+                    .frame(width: l, height: h, alignment: .bottomLeading)
+                colonneObjets(l: l, h: h)
+            }
+            .frame(width: l, height: h)
+        } else {
+            VStack(alignment: .leading, spacing: 0) {
+                scene(l: l)
+                    .padding(.top, 26)
+                texte
+                    .padding(.top, 18)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 30)
+            .frame(width: l, height: h, alignment: .topLeading)
+        }
+    }
+
+    /// La course de la nappe du spotlight — au centre de la rangée, ou
+    /// DÉCALÉE À GAUCHE quand la colonne y vit (la lumière lèche les
+    /// objets et meurt sur le texte).
     private func balaie(l: CGFloat) -> CGFloat {
-        CGFloat(sin(t * 0.52)) * l * 0.33
+        CGFloat(sin(t * 0.52)) * l * (colonne ? 0.26 : 0.33)
     }
 
     /// Les slams déjà tombés — le trigger haptique de l'entrée.
@@ -368,6 +454,93 @@ struct StoryCard: View {
         .frame(maxWidth: .infinity)
     }
 
+    /// LA COLONNE — trois objets qui SERPENTENT au flanc gauche
+    /// (jamais une pile : le héros du milieu est plus gros et avance
+    /// vers le centre), et qu'on PREND DANS LA MAIN.
+    private func colonneObjets(l: CGFloat, h: CGFloat) -> some View {
+        let trio = planche
+        let grandC = l * 0.30
+        let bal = balaie(l: l)
+        let places: [(x: CGFloat, y: CGFloat, deg: Double,
+                      k: CGFloat, z: Double)] = [
+            (-0.315, -0.290, -11, 1.00, 0),
+            (-0.255, -0.065, 6, 1.16, 2),
+            (-0.330, 0.155, -5, 0.94, 1)
+        ]
+        // Les bornes : l'objet ENTIER reste dans la card — elle CLIPPE
+        // avant les gestes, et dans un coin R36 l'écart entre le
+        // rectangle et la forme atteint 10,5 pt.
+        let marge = grandC * 0.50 + 10.5
+        let bornes = Bornes(x: l / 2 - marge,
+                            haut: -h / 2 + marge, bas: h / 2 - marge)
+        let origine = CGPoint(x: l / 2, y: h / 2)
+        return ZStack {
+            ForEach(Array(trio.enumerated()), id: \.offset) { i, st in
+                let p = places[min(i, 2)]
+                ObjetSaisissable(
+                    cle: i, centre: origine, bornes: bornes,
+                    base: CGPoint(x: p.x * l, y: p.y * h),
+                    revient: true,
+                    // La saisie ne s'arme qu'après le dernier slam :
+                    // avant ~1 s le chef tourne la page sur un tap.
+                    armeA: 1.15, horloge: t,
+                    placements: $placements, prises: $prises,
+                    tenus: $tenus, grains: $grains, saisies: $saisies) {
+                        objetColonne(st, i: i, grand: grandC * p.k,
+                                     deg: p.deg, bal: bal)
+                    }
+                    .zIndex(tenus.contains(i) ? 10 : p.z)
+            }
+        }
+        .frame(width: l, height: h)
+    }
+
+    /// UN objet de la colonne : il arrive en cascade, DÉRIVE dans une
+    /// ellipse de Lissajous (un objet suspendu ne fait pas que monter
+    /// et descendre), et SE SOULÈVE quand on le tient.
+    private func objetColonne(_ st: WoopSticker, i: Int, grand: CGFloat,
+                              deg: Double, bal: CGFloat) -> some View {
+        let a = 0.45 + Double(i) * 0.20
+        let pose = StoryCine.sstep(a, a + 0.32, t)
+        let chute = 1.55 - 0.55 * StoryCine.outLong(pose, 3.0)
+        let phi = Double(i) * 2.1
+        let np = CGFloat(pose)
+        let dx = CGFloat(sin(t * 0.53 + phi)) * 2.5 * np
+        let dy = CGFloat(sin(t * 1.57 + phi)) * 3.0 * np
+        let sway = sin(t * 0.71 + phi) * 3.5 * pose
+        let souffle = 1 + 0.012 * CGFloat(sin(t * 1.9 + phi)) * np
+        let doigt = CGFloat(motion.pench.width) * (3.5 + CGFloat(i) * 1.6)
+        let tenu = tenus.contains(i)
+        let leve: CGFloat = tenu ? 1.08 : 1.0
+        let ombreL: CGFloat = tenu ? 1.30 : 1.0
+        let flou: CGFloat = tenu ? 14 : 8
+        let largeurOmbre: CGFloat =
+            (grand * 0.44 + dy * 3 + abs(bal) * 0.05) * ombreL
+        let alphaOmbre: Double = 0.50 * pose - Double(dy) * 0.03
+        return ZStack {
+            Ellipse()
+                .fill(Color.black.opacity(alphaOmbre))
+                .frame(width: largeurOmbre, height: grand * 0.10)
+                .blur(radius: flou)
+                .offset(x: -bal * 0.16, y: grand * 0.30)
+            Image(st.asset)
+                .resizable()
+                .scaledToFit()
+                .frame(width: grand, height: grand)
+                .offset(y: -dy)
+        }
+        .rotationEffect(.degrees(deg + sway))
+        .scaleEffect(CGFloat(chute) * souffle * leve)
+        .animation(.easeOut(duration: 0.18), value: tenu)
+        .opacity(min(1, pose * 2.5))
+        .offset(x: dx + doigt)
+        // ⚠️ SwiftUI teste le RECTANGLE, pas l'alpha — et le glyphe ne
+        // fait que ~45 % du canevas de ces PNG. Sans zone réduite, le
+        // doigt attrape un objet en visant du vide et les voisins se
+        // volent le départ du drag.
+        .contentShape(Circle().scale(0.62))
+    }
+
     /// Un sticker qui ARRIVE (le slam de pose de la pièce du calendrier :
     /// il tombe avec du poids, l'ombre s'écrase) puis qui VIT — la
     /// lévitation amplifiée, le balancement, la respiration, la
@@ -451,14 +624,11 @@ struct StoryCard: View {
         // GAUCHE commence PLUS TÔT (verdict : « il commence trop
         // loin ») : le mot sort de la nuit au lieu d'être posé dessus.
         .mask {
-            LinearGradient(
-                stops: [.init(color: .clear, location: 0),
-                        .init(color: .white.opacity(0.35),
-                              location: 0.16),
-                        .init(color: .white, location: 0.42),
-                        .init(color: .white, location: 0.86),
-                        .init(color: .clear, location: 1)],
-                startPoint: .leading, endPoint: .trailing)
+            // En colonne, les objets occupent déjà le flanc gauche :
+            // l'asymétrie (qui servait à faire SORTIR le mot de la nuit
+            // à gauche) n'a plus de rôle.
+            LinearGradient(stops: flancsMot,
+                           startPoint: .leading, endPoint: .trailing)
         }
         // Le fondu majestueux : plein en haut du mot, mort aux deux
         // tiers.
@@ -472,7 +642,10 @@ struct StoryCard: View {
                         .init(color: .clear, location: 0.94)],
                 startPoint: .top, endPoint: .bottom)
         }
-        .opacity(0.52 * StoryCine.sstep(0.35, 0.90, t))
+        // En colonne, il y a des OBJETS NETS à sa gauche : le mot
+        // recule d'un cran (la leçon payée sur le mot du butin).
+        .opacity((colonne ? 0.42 : 0.52)
+            * StoryCine.sstep(0.35, 0.90, t))
     }
 
     /// LA LUMIÈRE DIFFUSE DU MOT — sept nappes molles, chacune sur SA
@@ -526,7 +699,7 @@ struct StoryCard: View {
     private var faits: (exo: String, kg: Int, volume: Int) {
         var exo = L("la barre", "the bar"); var kg = 0; var volume = 0
         for g in session.groupes {
-            for r in g.rows {
+            for r in g.rows where r.done {
                 volume += r.reps * Int(r.kilos)
                 if Int(r.kilos) > kg {
                     kg = Int(r.kilos)
@@ -616,8 +789,43 @@ struct StoryCard: View {
 
     // MARK: L'analyse
 
+    /// Le masque du texte en robe colonne : il ÉMERGE de la nuit en
+    /// descendant — la dernière ligne (la chute) reste PLEINE. Un texte
+    /// dont on ne lit pas la fin n'est pas un texte (la loi `titleFade`).
+    /// Un masque neutre (la robe rangée ne masque pas son texte).
+    static let plein = LinearGradient(colors: [.white, .white],
+                                      startPoint: .top,
+                                      endPoint: .bottom)
+
+    /// Les flancs du mot géant — deux tables, PRÉ-TYPÉES (la loi du
+    /// type-checker : un ternaire entre deux littéraux de stops fait
+    /// exploser la vérification).
+    private var flancsMot: [Gradient.Stop] {
+        if colonne {
+            return [.init(color: .clear, location: 0),
+                    .init(color: .white, location: 0.22),
+                    .init(color: .white, location: 0.80),
+                    .init(color: .clear, location: 1)]
+        }
+        return [.init(color: .clear, location: 0),
+                .init(color: .white.opacity(0.35), location: 0.16),
+                .init(color: .white, location: 0.42),
+                .init(color: .white, location: 0.86),
+                .init(color: .clear, location: 1)]
+    }
+
+    private var voileTexte: LinearGradient {
+        LinearGradient(
+            stops: [.init(color: .clear, location: 0),
+                    .init(color: .white.opacity(0.30), location: 0.14),
+                    .init(color: .white.opacity(0.72), location: 0.38),
+                    .init(color: .white, location: 0.62),
+                    .init(color: .white, location: 1)],
+            startPoint: .top, endPoint: .bottom)
+    }
+
     private var texte: some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: colonne ? 5 : 3) {
             ForEach(Array(phrases.enumerated()), id: \.offset) { i, mots in
                 let a = 0.70 + Double(i) * 0.10
                 // LA LECTURE QUI S'ALLUME : chaque ligne grise s'éclaire
@@ -637,6 +845,8 @@ struct StoryCard: View {
                 .opacity(StoryCine.sstep(a, a + 0.45, t))
             }
         }
+        // EN ROBE COLONNE, le bloc ÉMERGE de la nuit du pied de card.
+        .mask { colonne ? voileTexte : Self.plein }
     }
 }
 
@@ -649,6 +859,7 @@ struct StoryCard: View {
 /// demandé AU CONTEXTE, jamais à la vue. Le jour où l'arbre est calme,
 /// l'une des deux meurt.
 private struct PoudreStory: View {
+    @Environment(\.storyDecorAuRepos) private var decorAuRepos
     var largeur: CGFloat
     var hauteur: CGFloat
     var naissance: Date
@@ -666,7 +877,7 @@ private struct PoudreStory: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0,
-                                paused: reduceMotion)) { tl in
+                                paused: reduceMotion || decorAuRepos)) { tl in
             let t = tl.date.timeIntervalSince(naissance)
             Canvas { ctx, _ in
                 ctx.blendMode = .plusLighter
@@ -1286,8 +1497,8 @@ struct StoryWin: View {
     // Muscu : séries × 20. CARDIO : le barème du serveur (aucune série), lu au
     // `dernierGainCardio` — sinon la story disait « 0 pièce » au HIIT (bug
     // Kathryn 16-09). Remis à zéro à chaque fin de séance (debutFinSeance).
-    private var pieces: Int { session.series * 20 + EconomieWoop.shared.dernierGainCardio }
-    private var boosters: Int { pieces / 100 }
+    private var pieces: Int { session.recompense?.pieces ?? (session.recompenseEnAttente ? 0 : session.series * 20) }
+    private var boosters: Int { session.recompense?.boosters ?? (session.recompenseEnAttente ? 0 : pieces / 100) }
 
     private var roule: Int {
         let u = StoryCine.outLong(min(max(
@@ -1383,13 +1594,19 @@ struct StoryWin: View {
         let titreU = StoryCine.sstep(WinCine.titreAt,
                                      WinCine.titreAt + 0.4, t)
         return VStack(spacing: 2) {
-            Text("+\(roule)")
+            Text(session.recompenseEnAttente ? "—" : "+\(roule)")
                 .font(.system(size: 44, weight: .bold))
                 .monospacedDigit()
+                .accessibilityIdentifier("story.recompenses")
+                .accessibilityLabel(session.recompenseEnAttente
+                    ? L("Récompenses en attente", "Rewards pending")
+                    : L("\(pieces) pièces gagnées, \(boosters) boosters", "\(pieces) coins earned, \(boosters) boosters"))
                 .contentTransition(.identity)
                 .foregroundStyle(Color(white: 0.96))
                 .opacity(compteurU)
-            Text(L("pièces gagnées", "coins earned"))
+            Text(session.recompenseEnAttente
+                 ? L("Récompenses en attente", "Rewards pending")
+                 : L("pièces gagnées", "coins earned"))
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(Color(white: 0.55))
                 .opacity(compteurU)
@@ -1784,7 +2001,7 @@ struct StoryWin: View {
     // MARK: Les objets saisissables
 
     private var beatPlaques: Int {
-        (1...max(1, boosters)).filter { roule >= $0 * 100 + 15 }.count
+        (0..<min(boosters, 5)).filter { t >= WinCine.compteurAt + 0.4 + Double($0) * 0.22 }.count
     }
 
     /// La pièce (clé 0) + les boosters (clés 1…5) : chacun a sa place
@@ -1894,8 +2111,8 @@ struct StoryWin: View {
                      haut: -h / 2 + hb * 0.62, bas: h / 2)
         return ZStack {
             ForEach(0 ..< montres, id: \.self) { i in
-                let seuil = Double((i + 1) * 100)
-                let pose = min(max((Double(roule) - seuil) / 30.0, 0), 1)
+                let arrivee = WinCine.compteurAt + 0.4 + Double(i) * 0.22
+                let pose = StoryCine.sstep(arrivee, arrivee + 0.55, t)
                 // LA CHUTE (robe renversée) : il TOMBE du plafond et
                 // REBONDIT — une arrivée molle serait un vol, pas une
                 // chute. Sinon : la montée douce de la poche.
@@ -2166,9 +2383,13 @@ struct ObjetSaisissable<Contenu: View>: View {
 /// TRANCHÉ et meurt. Une seule horloge pour tout le champ.
 private struct PoudreDoigt: View {
     let grains: [(pos: CGPoint, naissance: Date)]
+    @Environment(\.storyDecorAuRepos) private var decorAuRepos
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var terminee = false
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                paused: terminee || decorAuRepos || reduceMotion)) { tl in
             Canvas { ctx, _ in
                 ctx.blendMode = .plusLighter
                 for (i, g) in grains.enumerated() {
@@ -2204,6 +2425,14 @@ private struct PoudreDoigt: View {
             }
         }
         .allowsHitTesting(false)
+        .task(id: grains.last?.naissance) {
+            terminee = false
+            guard let derniere = grains.last?.naissance else { terminee = true; return }
+            do {
+                try await Task.sleep(for: .seconds(max(0, 0.8 + derniere.timeIntervalSinceNow)))
+                terminee = true
+            } catch { /* Un nouveau geste remplace cette échéance. */ }
+        }
     }
 
     private static func hash(_ i: Int, _ k: Int) -> Double {
@@ -2221,12 +2450,13 @@ private struct PoudreDoigt: View {
 private struct PoudrePiece: View {
     let naissance: Date
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.storyDecorAuRepos) private var decorAuRepos
 
     private static let grains = 26
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0,
-                                paused: reduceMotion)) { tl in
+                                paused: reduceMotion || decorAuRepos)) { tl in
             let t = tl.date.timeIntervalSince(naissance)
             Canvas { ctx, size in
                 ctx.blendMode = .plusLighter

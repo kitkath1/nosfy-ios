@@ -1,0 +1,33 @@
+
+> woop-chambre-des-machines@2.0.0 artefact
+> next build && node scripts/inliner.mjs
+
+▲ Next.js 16.3.3 (Turbopack)
+✓ Running next.config.ts took 36ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 707ms
+  Running TypeScript ...
+  Finished TypeScript in 1009ms ...
+  Collecting page data using 5 workers ...
+  Generating static pages using 5 workers (0/4) ...
+  Generating static pages using 5 workers (1/4) 
+  Generating static pages using 5 workers (2/4) 
+  Generating static pages using 5 workers (3/4) 
+✓ Generating static pages using 5 workers (4/4) in 327ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+└ ○ /icon.svg
+
+
+○  (Static)  prerendered as static content
+
+inliner : /Users/kathryn/Desktop/woochoper-ios/docs/site/out/index.html
+   retirés  : 24 <script> · 7 <link> · 1 attributs Next · 226 commentaires RSC · 1 meta
+   inlinés  : 1 feuille(s) (47334 o) · 1 url() (99780 o) · 53 média(s) (501223 o) · site.js (9066 o)
+   titre    : Documentation Woop
+   livrable : /Users/kathryn/Desktop/woochoper-ios/docs/site/index.html · 1996782 o (2.00 Mo) · 1 <script>
+   ✔ écrit

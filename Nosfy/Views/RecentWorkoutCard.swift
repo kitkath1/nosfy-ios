@@ -41,6 +41,8 @@ struct RecentWorkoutCard: View {
         case .cardio: return "figure.run"
         case .abdos: return "figure.core.training"
         case .fessiers: return "figure.strengthtraining.functional"
+        case .haut: return "figure.strengthtraining.traditional"
+        case .bas: return "figure.step.training"
         case nil: return "dumbbell"
         }
     }

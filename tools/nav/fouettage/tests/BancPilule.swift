@@ -40,7 +40,15 @@ final class BancPilule {
     let app = XCUIApplication()
 
     func lancer(_ args: [String]) {
-        app.launchArguments = ["-fouettagePilule", "-skipAuth"] + args
+        // ⚠️ `-piluleSortie` DEPUIS LE 05-09 : la pastille VOLE dans l'île
+        // 0,55 s après le départ de séance (le nouveau défaut). Tous les
+        // cas de ce banc ont été écrits dans le monde d'avant, pastille
+        // posée — sans ce barreau, `attendreSeance()` guette un corps qui
+        // n'est plus monté et TOUT est rouge avant le premier geste.
+        // L'entrée dans l'île reste testée : cas 05 (la porte ne s'ouvre
+        // pas par accident), cas 06a/07a (elle s'ouvre au jet voulu).
+        app.launchArguments = ["-fouettagePilule", "-skipAuth",
+                               "-piluleSortie"] + args
         app.launch()
         XCTAssertTrue(sonde.waitForExistence(timeout: 60),
             "LANCEMENT INVALIDE — la sonde n'est jamais apparue")
@@ -108,6 +116,34 @@ final class BancPilule {
                           y: f.maxY - 39)
     }
 
+    /// ⚠️ LA TABBAR NATIVE HANTE L'ÉCRAN ~1-2 s AU LANCEMENT EN SÉANCE
+    /// (identifié par la session Foyer, 13-09, dump d'accessibilité) :
+    /// malgré `.toolbarVisibility(.hidden, for: .tabBar)`, son Button
+    /// « Exercices » reste HIT-TESTABLE au même point (196, 813) que le
+    /// glyphe custom « Entraînements », et ABSORBE le premier tap par
+    /// coordonnée sans naviguer. La fenêtre se referme seule — d'où
+    /// l'intermittence (2 pass / 7 fail selon la chaleur du conteneur).
+    /// AVANT le premier tap de nav par coordonnée, on attend qu'elle
+    /// parte : sinon on mesure la tabbar fantôme, pas la nav custom.
+    /// (Remède de banc ; le fantôme lui-même — un vrai risque doigt de
+    /// 2 s — est un sujet CHÂSSIS, signalé, hors de ce banc.)
+    func attendreNavPropre() {
+        // ⚠️ L'INTERCEPTION EST TEMPORELLE, PAS INTERROGEABLE : la native
+        // rapporte déjà `isHittable=false` pendant qu'elle avale le tap
+        // réel par coordonnée (le hit-test système la met devant, l'API
+        // XCUITest la dit cachée) — s'y fier fait sortir l'attente
+        // aussitôt, et on remesure le fantôme. La seule vérité mesurée
+        // est la contre-épreuve du Foyer : « +2 s avant le tap → passe ».
+        // On pose donc un délai de tassement FERME (2,5 s), et on imprime
+        // ce que l'arbre montre encore, pour garder l'œil sur la fenêtre.
+        Thread.sleep(forTimeInterval: 2.5)
+        let f = app.tabBars.buttons["Exercices"]
+        if f.exists {
+            print("FOUET-PILULE tabbar native encore dans l'arbre à 2,5 s "
+                + "(hittable=\(f.isHittable)) — délai en place, on tape")
+        }
+    }
+
     // MARK: les gestes
 
     /// presse 0,08 s + drag + TENUE 0,22 s : vélocité ~nulle au lever →
@@ -169,10 +205,28 @@ final class BancPilule {
                        "\(nom) — L'APP N'EST PLUS AU PREMIER PLAN")
     }
 
-    /// Attend une SÉANCE vivante et une pilule posée.
-    func attendreSeance() {
+    /// Lance une séance avec la pastille VISIBLE. ⚠️ DEPUIS LE 06-09 LE
+    /// FOYER GATE LA PASTILLE SUR LA HOME (WoopApp : `selection != .home`
+    /// — la home « séance en cours » affiche déjà chrono et feu, la
+    /// pastille y serait une deuxième lampe). Un banc pastille qui se
+    /// lance sur la home guette donc un corps qui n'est JAMAIS monté et
+    /// tout est rouge avant le premier geste — payé le 06-09, deux runs.
+    /// `-openTab exercises` (domaine d'arguments UserDefaults) ouvre là
+    /// où elle vit.
+    func lancerEnSeanceAvecPilule() {
+        lancer(["-activeWorkout", "-openTab", "exercises"])
+        attendreSeance(avecPilule: true)
+    }
+
+    /// Attend une SÉANCE vivante — et la pilule seulement là où elle VIT.
+    /// ⚠️ Depuis le gate du Foyer (06-09), la home en séance n'affiche PAS
+    /// la pastille : les cas nav (01, 02, 08), lancés sur la home, ne
+    /// guettent que la séance ; les cas pastille passent par
+    /// `lancerEnSeanceAvecPilule()` qui exige aussi le corps.
+    func attendreSeance(avecPilule: Bool = false) {
         XCTAssertTrue(attendre(20) { $0.seance },
             "séance jamais active ; sonde=\(etat()?.brut ?? "ABSENTE")")
+        guard avecPilule else { return }
         XCTAssertTrue(pilule.waitForExistence(timeout: 10),
             "la pilule n'est jamais apparue en séance")
         // ⚠️ ON IMPRIME LES RECTS. Une marque posée APRÈS un `.position`

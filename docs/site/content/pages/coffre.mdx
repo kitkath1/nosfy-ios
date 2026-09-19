@@ -1,61 +1,30 @@
-<Decision titre="Deux stocks et reçus déployés">
-  <p>Ordinaires et noirs possédés, dont ceux des galets, sont distincts. Noir possédé gratuit avant achat contre argent. Une ouverture non révélée reste reprenable. Stock versionné et reçu remplacent les additions optimistes.28 API Cartes et35 régressions gains PASS ; parcours physique à terminer.</p>
-  <p>Preuves : <code>tools/carte-lune/integration-2026-09-18/README.md</code>.</p>
+<Decision titre="Coffre — backend vérifié le19 septembre">
+  <p><b>53 contrôles Coffre et28 API Cartes PASS</b>, sur des comptes temporaires supprimés après les essais. Conversion des pièces, versement quotidien, fuseau Paris, flamme, droits, rejouabilité et stocks orange/noir contrôlés.</p>
+  <p>Les soldes, stocks, prix et reçus viennent du serveur. Le profil ouvre chaque page du coffre par sa pastille ; le bouton Ouvrir attend la fin du film. Les deux manèges ont été joués sur son iPhone le18-09. La chauffe du projecteur et l’endurance restent suivies ci-dessous : ces tests backend ne les valident pas.</p>
+  <p>Preuves actuelles : <code>tools/carte-lune/profil-coffre-2026-09-19/README.md</code>.</p>
 </Decision>
 
-<Decision titre="Compte, gains et Route : correctif déployé le18-09">
-  <p>Compte vide : <b>premier galet, tout en haut</b>. Une séance terminée avec travail fait avancer d’un galet ; deux le même jour comptent deux fois, une pause ne fait pas avancer. Cinq chapitres de sept séances, récompenses à3et7 ; après35, l’historique continue sans réinitialiser le parcours.</p>
-  <p>Le serveur reçoit la séance complète avant de payer. Séance absente, partielle ou nombre incohérent : aucun gain, demande conservée pour reprise.35 contrôles API,51 Compte,13 de file de gains,12 de synchronisation et1074 Route PASS. Déploiement autorisé sur le projet partagé ; anciens binaires à mettre à jour pour leurs prochaines clôtures.</p>
-  <p>La vraie connexion/révocation Apple, le rapprochement de l’historique du téléphone et le parcours visuel neuf restent ouverts. Forge/chauffe suivies par leurs sessions. Preuves : <code>tools/production/compte-progression-2026-09-18/README.md</code>.</p>
-</Decision>
-
-<Decision titre="Historique : défaut d’intégrité corrigé le18-09">
-  <p>Sur un compte temporaire, <code>cloturer_seance</code> a crédité 20 pièces et un sachet pour une séance inexistante. Les tables restent fermées aux écritures directes ; la fonction autorisée ne valide pas suffisamment ce qu’elle rémunère. Le test <code>verif_compte.py --integrite</code> échoue et ses comptes ont été nettoyés.</p>
-  <p>La correction est suivie dans <a href="#serveur" data-saut="serveur">Serveur</a>. Corrigé depuis par83033 ;35 contrôles repassent après84850, reprises conservées. Preuve : <code>tools/production/preuves-2026-09-18/integrite-gains.log</code>.</p>
-</Decision>
-
-<div className="reveal">
-
-## Ce qui ment
-
-<Liste page="coffre" etats={['men']} vide="Rien ne ment sur cette page — le 🔴 du domaine (la home et le profil calculent chacun leur solde, b-deux-nombres) est rangé sur la carte du serveur. Le coffre disait « reste 60 » sur un solde de 1360 — treize tranches de 100 qui n'étaient des sachets nulle part : converties le 30-08 soir (20260830210000), le stock d'avant compris." />
-
-</div>
 <div className="reveal">
 
 ## Les quatre pages du coffre
 
-<Schema id="regles-3-les-quatre-pages-du" legende="Tout vient d'un seul objet, etat_coffre(), depuis le 29-08. Depuis le 30-08 soir il convertit : à 100 pièces un sachet apparaît tout seul, le nombre monte (1, 2…), les pièces retombent — et il rend le jour, retour_disponible, retour_prochain et la flamme." />
+<Schema id="regles-3-les-quatre-pages-du" legende="Pièces d’or, sachets Lune, pièces d’argent et sachets noirs : même état serveur versionné. À100 pièces, la conversion crée un sachet ; un noir possédé s’ouvre gratuitement avant tout achat contre argent." />
 
-</div>
-<div className="reveal">
+Le profil présente les quatre pastilles, même à zéro. Elles ouvrent le coffre
+sur la bonne page. Le géant propose les sachets possédés ; sans sachet, il
+montre la jauge et Verrouillé. L’ancien achat orange est fermé.
 
-## Ce qui reste
+Les textes et le journal des gains suivent le français ou l’anglais. Le taux
+par série et le versement du jour sont lus au serveur, actuellement20 et10.
+Le retour quotidien respecte les portes du compte et minuit à Paris ; il ne
+crédite qu’une fois. Une absence ne remet pas la collection à zéro.
 
-<Liste page="coffre" etats={['loc', 'srv', 'abs']} mesures />
+## Ce qui reste à vérifier
 
-</div>
-<div className="reveal">
+<Liste page="coffre" etats={['men', 'loc', 'srv', 'abs']} mesures />
 
 ## Ce qui tient
 
-<Liste page="coffre" etats={['ok']} vide="Rien de branché n'est posé sur cette page : ce qui tient — le carnet, etat_coffre(), le sachet forfaitaire de clôture, la consommation du noir — est sur la carte du serveur, domaine Économie." />
+<Liste page="coffre" etats={['ok']} />
 
 </div>
-
-<Decision titre="Tranché le 15-09">
-  <p><b>Le profil, quatre pastilles sur une ligne</b> : noir, orange, argent, or — la pièce d'or sans son mot ; <b>au tap, chacune ouvre le coffre à sa page</b> (plus de manège direct depuis une pill : c'est « Ouvrir » sur la page du sachet). <b>Le géant a deux variants</b> : « N sachets à ouvrir » avec OUVRIR ; sinon <b>la jauge du coffre</b> (le même composant, « 80 / 100 ») et « Verrouillé » — plus jamais « Utiliser 100 pièces », l'achat est mort. <b>Le coffre parle la langue du profil</b>, français ou anglais, comme les autres blocs. <b>Les nombres ne bougent pas</b> (20 la série, +10 le jour) : ce qui change, c'est que l'app les <i>lit</i> au serveur partout, elle ne les <i>connaît</i> plus. Le plan : <code>tools/coffre-v2/PLAN-COFFRE-VERT.md</code>.</p>
-</Decision>
-
-<Decision titre="Tranché le 30-08">
-  <p><b>La jauge convertit.</b> À 100 pièces un sachet apparaît tout seul, le nombre monte, bouton « Ouvrir » ; les pièces retombent. La conversion vit au serveur (<code>convertir_pieces()</code>, privée, déclenchée par tout crédit jaune du carnet — clôture, versement du jour, nœud du chemin), jamais dans l'écran ; le témoin d'idempotence est le solde lui-même. <code>reste = solde % prix</code> est vrai depuis la pose du 30-08 soir : le stock d'avant a été converti (compte de test : 1 536 → 15 sachets + 36), sonde <code>tools/annonces/verif_backend_coffre.py</code> verte.</p>
-  <p><b>Le bouton d'achat meurt.</b> Avec la conversion, le solde ne dépasse plus 99 : « 100 coins open one » (<code>claim_booster</code>) ne peut plus réussir — la fonction est FERMÉE au serveur depuis le 30-08 soir (403) ; l'app l'appelle encore quand <code>boosters == 0</code>, retirée au J2 (Q9, défaut). « Ouvrir » ouvre un sachet qui existe déjà, et va droit au manège (Q6, défaut).</p>
-  <p><b>Le profil montre tout, même à 0</b> : la pièce d'or, la pièce d'argent, le géant, le booster noir — et l'orange (Q10). <b>Le jour, c'est minuit à Paris</b> : une clé serveur <code>fuseau_jour</code>, jamais le fuseau du téléphone (Q7). <b>La flamme</b> : jours d'affilée, dérivée de <code>workouts.ended_at</code> au serveur, sans bonus, jamais stockée. Les nombres ne bougent pas : 20 / série · +10 / jour · 100 = 1 sachet · 1 argent = 1 noir · nœud 100-200. Le plan : <code>tools/annonces/PLAN-COFFRE-ANNONCES.md</code> §0, §4 M1, §5.4 — jalons J1 et J2.</p>
-</Decision>
-
-<Savoir>
-  <p><b>Ce que le code faisait au 30-08 midi (relu) — corrigé le soir par <code>20260830210000_conversion_jour_flamme.sql</code>.</b> <code>etat_coffre()</code> calcule <code>reste = solde_or % prix_booster</code> sur le solde TOTAL (<code>20260830160000_sachet_scelle_et_tirage.sql:455-461</code>) — la sonde du serveur rend <code>solde_or 1360 → reste 60</code>. La migration du 29-08 l'écrit noir sur blanc : « aucune conversion automatique, et c'est voulu » (<code>20260829120000_annonces.sql:38-48</code>) — c'est ça qui a été tranché dans l'autre sens. <code>claim_booster()</code> (<code>20260828190000_gains_coffre.sql:354-381</code>) débite 100 au tap et crée un sachet <code>achat</code>, sans témoin d'idempotence (double tap = deux achats) ; on ne l'atteint que depuis le profil quand <code>boosters == 0</code> (<code>ProfilLune.swift:1255-1265</code>). La raison <code>conversion_booster</code> existe dans le check du carnet depuis le 28-08 et n'a jamais été écrite ; <code>booster_progress</code> est morte et le reste — un solde se dérive.</p>
-  <p><b>Le profil</b> : les pills noire et orange sont cachées à 0 (<code>ProfilLune.swift:562-574</code>, « si supérieur à 0 »), aucune vue de la pièce d'argent (un seul commentaire, :1245), le géant est un bouton hors inventaire (:272-277). La home et le profil recalculent chacun un solde local (<code>ProfilLune.swift:127-130</code> : <code>CoffreFortPurse.coins(doneSeries:)</code>) — le 🔴 du domaine, sur la carte du serveur.</p>
-  <p><b>Ce qui tient depuis le 29-08</b> : tout le coffre vient d'un seul objet, <code>etat_coffre()</code>. Avant, le même nombre était calculé à neuf endroits, et le prix d'un sachet valait 20 sur le profil, 100 dans le coffre. Le « une fois par jour » du versement tient par l'index partiel <code>coin_ledger_retour_jour_unique</code>, pas par un réglage — l'idempotence est un index, jamais un compteur. Son rythme et sa porte sont sur « Les annonces ».</p>
-  <p><b>La flamme</b> : au serveur depuis le 30-08 soir (<code>flamme()</code>, dérivée de <code>workouts.ended_at</code> dans le fuseau de la maison, aussi dans <code>etat_coffre().flamme</code>), personne ne l'affiche encore (J2). Avant : rien, nulle part — ni fonction, ni clé, ni colonne ; le seul « streak » est hebdomadaire, local, dans <code>CalendarView</code> que personne ne monte ; la flamme des galets est un glyphe (plan §2.5).</p>
-</Savoir>

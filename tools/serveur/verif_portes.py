@@ -22,7 +22,7 @@ b-fn-solde-noir, b-fn-solde-argent, b-fn-solde-or, b-tb-syntheses, b-migrations-
   3. solde_noir → 404 PGRST202 (retirée le 28-08, wallet_coffre.sql:94) avec ses deux
      témoins : la fonction inventée → 404 aussi, solde_argent → 200 ; claim_booster →
      403 (fermée, pas absente) ; solde_or → 200 (appelable — la carte disait « interne ») ;
-  4. syntheses → 404 PGRST205 (la table N'EST PAS au serveur), témoin workout_facts → 200 ;
+  4. syntheses → 200 (posée le 15-09, RLS vide), témoin workout_facts → 200 ;
      booster_progress → 404 et welcome_* → [] (le ménage du 15-09, 20260915100000), et
      etat_coffre() rend toujours retour_disponible et reste (le pop-up et la jauge s'en passent) ;
   5. les migrations : `supabase migration list --linked` (jeton .secrets, JAMAIS celui de
@@ -173,7 +173,7 @@ verdict(s == 200 and isinstance(j(b), int), f"solde_or → {s} {b[:10]} : appela
 
 print("\n[4] les tables")
 s, b = call("/rest/v1/syntheses?select=id&limit=1", None, jwt, "GET")
-verdict(s == 404 and "PGRST205" in b, f"syntheses → {s} PGRST205 « Could not find the table » : la table N'EST PAS au serveur")
+verdict(s == 200, f"syntheses → {s} : la table EXISTE depuis le 15-09 (20260915130000, le cache du bilan) — RLS vide → {b[:20]}")
 s, b = call("/rest/v1/workout_facts?select=workout_id&limit=1", None, jwt, "GET")
 verdict(s == 200, f"témoin : workout_facts → {s} (une table qui existe rend 200, même vide : {b[:20]})")
 s, b = call("/rest/v1/booster_progress?select=user_id&limit=1", None, jwt, "GET")

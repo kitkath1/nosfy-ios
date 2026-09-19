@@ -199,7 +199,7 @@ struct NotifJauge: View {
             Spacer(minLength: 8)
             BarreParticules(fraction: pose ? fraction : 0,
                             naissance: naissance,
-                            grains: robe == .piece)
+                            grains: false)
         }
     }
 
@@ -221,7 +221,10 @@ struct NotifJauge: View {
     private var piece: some View {
         switch robe {
         case .piece:
-            PieceQuiTourne(diametre: Self.diametrePiece,
+            // Un peu plus PETITE (0,84×) et DÉCOLLÉE du bord droit ET du bas
+            // (verdict Kathryn 15-09) : elle ne mord plus le coin, elle
+            // respire dans son angle.
+            PieceQuiTourne(diametre: Self.diametrePiece * 0.84,
                            periode: Self.periodePiece,
                            naissance: naissance)
                 .background {
@@ -229,10 +232,10 @@ struct NotifJauge: View {
                         colors: [Color(red: 1.00, green: 0.74, blue: 0.34)
                             .opacity(0.13), .clear],
                         center: .center, startRadius: 2,
-                        endRadius: Self.diametrePiece * 0.68)
+                        endRadius: Self.diametrePiece * 0.84 * 0.68)
                 }
                 .shadow(color: .black.opacity(0.65), radius: 12, y: 7)
-                .offset(x: Self.morsure)
+                .offset(x: -8, y: -8)
                 .allowsHitTesting(false)
         case .booster:
             boosterSprite
@@ -265,6 +268,35 @@ struct NotifJauge: View {
                 if NotifBanc.tFige != nil { flotte = true; return }
                 withAnimation(.easeInOut(duration: 1.9)
                     .repeatForever(autoreverses: true)) { flotte = true }
+            }
+    }
+}
+
+// MARK: - LE TOASTER PRÊT À POSER (fiche, home)
+
+/// LE TOASTER DE GAIN, prêt à poser dans un flux — il gère SON entrée (la
+/// barre se remplit, le chiffre monte) et SON horloge, pour qu'un site
+/// d'appel n'ait qu'à donner le gain et la progression du coffre. Il remplace
+/// `PillGain` (fiche) et la dalle rudimentaire de la home. Robe `.piece` pour
+/// un gain de pièces, `.booster` quand un sachet tombe (surtout la home).
+struct ToasterGain: View {
+    let gain: Int
+    /// La progression du coffre APRÈS ce gain [0,1] — ce que dit la jauge.
+    var fraction: Double = 0
+    var robe: NotifJauge.Robe = .piece
+    var libelle: String = "COINS EARNED"
+    var sousTitre: String = "VAULT PROGRESS"
+
+    @State private var pose = false
+    @State private var naissance = Date()
+
+    var body: some View {
+        NotifJauge(sousTitre: sousTitre, libelle: libelle, gain: gain,
+                   fraction: fraction, pose: pose, naissance: naissance,
+                   robe: robe)
+            .onAppear {
+                naissance = Date()
+                withAnimation(.easeOut(duration: 0.5)) { pose = true }
             }
     }
 }

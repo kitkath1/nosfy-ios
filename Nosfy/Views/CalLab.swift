@@ -4069,13 +4069,23 @@ final class BacMotion: ObservableObject {
     private var rollRef: Double?
     private var lisse = CGSize.zero
     @Published private(set) var pench = CGSize.zero
+    private var lecteurs: Set<UUID> = []
+    private static let calendrier = UUID()
+    @Published private(set) var actif = false
 
     func start() {
+        start(pour: Self.calendrier)
+    }
+
+    func start(pour lecteur: UUID) {
+        lecteurs.insert(lecteur)
         guard mgr.isDeviceMotionAvailable, !mgr.isDeviceMotionActive
         else { return }
         pitchRef = nil
         rollRef = nil
         mgr.deviceMotionUpdateInterval = 1.0 / 30.0
+        actif = true
+        NavDiagnostic.noter("mouvement-demarre")
         mgr.startDeviceMotionUpdates(using: .xArbitraryZVertical,
                                      to: .main) { [weak self] m, _ in
             guard let self, let m else { return }
@@ -4096,8 +4106,16 @@ final class BacMotion: ObservableObject {
     }
 
     func stop() {
+        stop(pour: Self.calendrier)
+    }
+
+    func stop(pour lecteur: UUID) {
+        lecteurs.remove(lecteur)
+        guard lecteurs.isEmpty else { return }
         guard mgr.isDeviceMotionActive else { return }
         mgr.stopDeviceMotionUpdates()
+        actif = false
+        NavDiagnostic.noter("mouvement-arrete")
         pench = .zero
         lisse = .zero
     }
@@ -4738,7 +4756,7 @@ struct DemoSession: Identifiable {
 
     /// La partition de démonstration : deux-trois exercices du catalogue,
     /// leurs séries faites — la matière de la story 2 et de l'ardoise.
-    var groupes: [SlateGroupe] {
+    @MainActor var groupes: [SlateGroupe] {
         if let w = workout { return StorySession(workout: w).groupes }
         let n = dayNumber
         let all = ExerciseCatalog.all
@@ -4756,7 +4774,7 @@ struct DemoSession: Identifiable {
     }
 
     /// Le récit que la story raconte, fabriqué depuis la démo.
-    var storySession: StorySession {
+    @MainActor var storySession: StorySession {
         if let w = workout { return StorySession(workout: w) }
         let g = groupes
         let toutes = g.flatMap(\.rows)

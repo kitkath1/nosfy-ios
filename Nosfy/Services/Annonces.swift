@@ -97,6 +97,7 @@ final class FileAnnonces {
         withAnimation(.spring(response: 0.48, dampingFraction: 0.82)) {
             visible = v
         }
+        NavDiagnostic.noter("annonce-visible", destination: String(v.annonce.montant))
         DispatchQueue.main.asyncAfter(deadline: .now() + duree) { [weak self] in
             guard let self, self.jeton == j else { return }
             if let e = v.evenement {
@@ -146,73 +147,120 @@ final class FileAnnonces {
 /// dalles se posent l'une sous l'autre et ne prennent aucun toucher.
 struct PileAnnoncesHote: View {
     private var file = FileAnnonces.shared
-
-    /// LE DÉGAGEMENT DU HAUT, DEVICE PAR DEVICE (bug Kathryn 16-09 : « le toaster
-    /// disparaît dans le Dynamic Island »). Le 54 fixe passait sur un iPhone SANS
-    /// île mais PAS sur un iPhone à Dynamic Island (inset ~59) : on lit l'inset
-    /// RÉEL de la fenêtre (l'île + la barre d'état) et on pose le toaster JUSTE
-    /// dessous — aussi haut que possible, jamais une valeur qui ment selon le modèle.
-    private var degagementHaut: CGFloat {
-        let insetHaut = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap(\.windows)
-            .first(where: \.isKeyWindow)?.safeAreaInsets.top ?? 47
-        return insetHaut + 6
-    }
-
-    /// LE MORPH « DEPUIS L'ÎLE » — l'état INACTIF (d'où le toaster entre, où il
-    /// repart) : réduit à une PILULE SOMBRE (échelle 0,30, ancrée en HAUT pour
-    /// grandir vers le bas), REMONTÉE à la place de l'île. ⚠️ PAS d'opacité :
-    /// une petite dalle NOIRE à la place de l'île se confond avec l'île (donc
-    /// pas de « pop »), et surtout elle reste VISIBLE pendant qu'elle grandit —
-    /// c'est ÇA le morphisme d'appel iPhone. Avec un fondu, la naissance se
-    /// jouait transparente et le toaster semblait juste apparaître en haut.
-    /// Le ressort de `FileAnnonces` (0,48 s) fait le voyage île → place, en
-    /// grandissant. Scale + offset SEULEMENT : aucun cadre ne bouge, rien ne se
-    /// re-layoute (loi de la maison). La sortie est l'inverse : il se rétracte
-    /// dans l'île.
-    private var sortieDeLIle: AnyTransition {
-        .scale(scale: 0.30, anchor: .top)
-            .combined(with: .offset(y: hautIle - degagementHaut))
-    }
-
-    /// LE HAUT DU DYNAMIC ISLAND — ~11 pt sur les iPhone à île (14 Pro → 16).
-    /// C'est de là que le toaster NAÎT. Constante volontaire : iOS n'expose pas
-    /// le cadre de l'île ; le dégagement réel (`degagementHaut`) donne le bas de
-    /// la zone, ce 11 en donne le haut — assez pour faire naître le toaster
-    /// « dans » l'île sans jamais mentir selon le modèle (sur un iPhone SANS
-    /// île, l'inset est plus petit, le toaster naît juste plus haut : correct).
-    private let hautIle: CGFloat = 11
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        let visible = file.visible
+        let fenetre = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }.flatMap(\.windows)
+            .first(where: \.isKeyWindow)
+        let hautSur = fenetre?.safeAreaInsets.top ?? 0
+        let largeur = fenetre?.bounds.width ?? 393
+        let haut: CGFloat = hautSur >= 51 ? 11 : max(6, hautSur)
+        // Ce socle reste monté quand la file est vide. Le GeometryReader
+        // dans cette pile racine ne montait pas sa branche d'annonce.
         VStack(spacing: 0) {
-            if let v = file.visible {
-                ToasterAnnonce(annonce: v.annonce)
+            if let v = visible {
+                AnnonceDepuisIle(visible: v, largeur: largeur,
+                                 hautSur: hautSur)
                     .id(v.id)
-                    // « MORPHISME, COMME LES APPELS IPHONE » (Kathryn, 05-09,
-                    // écrit dans PiluleVagabonde) : le toaster NAÎT petit, à la
-                    // place de la pilule de l'île, et GRANDIT vers le bas ; à la
-                    // sortie il se rétracte dedans. Échelle + offset + opacité
-                    // SEULEMENT — jamais un redimensionnement de cadre (la loi
-                    // d'`EntreeNotif` : un frame animé re-layoute tout).
-                    .transition(sortieDeLIle)
+                    .accessibilityIdentifier("annonce-ile-\(v.annonce.montant)")
+                    .transition(reduceMotion || CommandLine.arguments.contains("-sansMorphAnnonces")
+                        ? .opacity : .modifier(
+                        active: MorphAnnonceIle(ouverture: 0),
+                        identity: MorphAnnonceIle(ouverture: 1)))
+                    .offset(y: haut)
+                    .frame(maxWidth: .infinity, alignment: .top)
             }
             Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, alignment: .top)
-        // Sous le Dynamic Island (Kathryn 15-09 puis 16-09) — le dégagement est
-        // maintenant l'inset RÉEL de la fenêtre (device par device), pas un 54 fixe
-        // qui disparaissait dans l'île sur les iPhone à Dynamic Island.
-        .padding(.top, degagementHaut)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .ignoresSafeArea()
         .allowsHitTesting(false)
+        .onChange(of: visible?.id) { _, _ in
+            NavDiagnostic.noter("annonces-rendu", destination: String(visible?.annonce.montant ?? 0))
+        }
         .onAppear {
-            // `-pileTest` : la séquence des annonces (pièces → sachet) se joue
-            // seule — le simulateur ne finit pas une séance pour de vrai.
+            NavDiagnostic.noter("annonces-hote")
             guard CommandLine.arguments.contains("-pileTest") else { return }
-            // Après le splash (≈10 s), pour que la séquence se voie SUR la home.
             DispatchQueue.main.asyncAfter(deadline: .now() + 13) {
+                NavDiagnostic.noter("annonces-banc")
                 FileAnnonces.shared.pousser([.pieces(120), .sachet(1)])
             }
+        }
+    }
+}
+
+/// Une seule peau noire s'ouvre depuis l'île. Ses bornes de layout restent
+/// fixes : seul le masque dessiné s'étire, l'encre apparaît ensuite.
+private struct MorphAnnonceIle: ViewModifier, Animatable {
+    var ouverture: CGFloat
+    var animatableData: CGFloat {
+        get { ouverture }
+        set { ouverture = newValue }
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .environment(\.ouvertureAnnonceIle, min(1, max(0, ouverture)))
+            .mask(FormeAnnonceIle(ouverture: ouverture))
+    }
+}
+
+private struct OuvertureAnnonceIleKey: EnvironmentKey {
+    static let defaultValue: CGFloat = 1
+}
+
+private extension EnvironmentValues {
+    var ouvertureAnnonceIle: CGFloat {
+        get { self[OuvertureAnnonceIleKey.self] }
+        set { self[OuvertureAnnonceIleKey.self] = newValue }
+    }
+}
+
+private struct FormeAnnonceIle: Shape {
+    var ouverture: CGFloat
+    var animatableData: CGFloat {
+        get { ouverture }
+        set { ouverture = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        let u = min(1, max(0, ouverture))
+        let w = min(126, rect.width) + (rect.width - min(126, rect.width)) * u
+        let h = 36 + (rect.height - 36) * u
+        return Path(roundedRect: CGRect(x: (rect.width - w) / 2, y: 0,
+                                        width: w, height: h),
+                    cornerRadius: 18 + (NotifGeo.rayon - 18) * u)
+    }
+}
+
+private struct AnnonceDepuisIle: View {
+    let visible: AnnonceVisible
+    let largeur: CGFloat
+    let hautSur: CGFloat
+    @Environment(\.ouvertureAnnonceIle) private var ouverture
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        // La réserve protège la caméra. La vue ignore la safe area : elle
+        // n'ajoute donc plus deux fois le dégagement supérieur.
+        let haut: CGFloat = hautSur >= 51 ? 11 : max(6, hautSur)
+        let reserve = hautSur >= 51 ? max(40, hautSur - haut + 3) : 8
+        let w = max(126, largeur - 2 * NotifGeo.margeH)
+        ZStack(alignment: .top) {
+            Color.black
+            ToasterAnnonce(annonce: visible.annonce)
+                .frame(width: largeur, height: NotifGeo.hauteur)
+                .padding(.top, reserve)
+                .opacity(reduceMotion ? Double(ouverture) : Double(max(0, (ouverture - 0.40) / 0.60)))
+                .offset(y: reduceMotion ? 0 : (1 - ouverture) * -8)
+        }
+        .frame(width: w, height: reserve + NotifGeo.hauteur)
+        .clipped()
+        .onAppear {
+            NavDiagnostic.noter("annonce-montee", destination: "\(visible.annonce.montant);largeur=\(largeur);haut=\(hautSur)")
+            CarillonIle.entree()
         }
     }
 }

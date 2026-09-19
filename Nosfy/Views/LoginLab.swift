@@ -288,7 +288,7 @@ struct AuroraLoginBackground: View {
 
 /// Les murmures de la page : la paillette (verre très aigu, désaccordé de
 /// quelques cents) quand l'étoile de la croix fleurit, et le souffle d'air
-/// au début de chaque caresse. Synthétisés (Nosfy/Sounds), joués en
+/// au début de chaque caresse. Synthétisés (Woop/Sounds), joués en
 /// `.ambient` + `mixWithOthers` : jamais par-dessus la musique — dessous,
 /// comme le tic du cadran.
 final class SparkleChime {

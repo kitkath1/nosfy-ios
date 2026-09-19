@@ -1,0 +1,48 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-count54/iphone-dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun -destination platform=iOS,id=00008120-001E4CDC0A85A01E "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testLireSansRelancer" -resultBundlePath /tmp/woop-count55/apres-start.xcresult -parallel-testing-enabled NO
+
+2026-09-17 08:51:45.736 xcodebuild[26609:16787505] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-count55/apres-start.xcresult
+
+2026-09-17 08:51:45.741 xcodebuild[26609:16787505] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 08:51:45.838 xcodebuild[26609:16787505] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-17 08:51:46.295 xcodebuild[26609:16787505] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 08:51:46.411 xcodebuild[26609:16787505] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 08:51:48.106110+0200 NavRuntimeUITests-Runner[37277:2890092] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-17 08:51:48.471.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-17 08:51:48.472.
+Test Suite 'NavRuntimeUITests' started at 2026-09-17 08:51:48.472.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testLireSansRelancer]' started.
+    t =     0.00s Start Test at 2026-09-17 08:51:48.473
+    t =     0.02s Set Up
+WOOP_ETAT=4
+    t =     0.02s Find the Application 'fr.kathryn.woop'
+2026-09-17 08:51:48.659 xcodebuild[26609:16787505] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     0.30s Added attachment named 'apres-start'
+    t =     0.30s Requesting snapshot of accessibility hierarchy for app with pid 37253
+    t =     0.53s Requesting snapshot of accessibility hierarchy for app with pid 37253
+    t =     0.60s Added attachment named 'arbre-apres-start'
+    t =     0.60s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testLireSansRelancer]' passed (0.622 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-17 08:51:49.095.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.622 (0.623) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-17 08:51:49.095.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.622 (0.623) seconds
+Test Suite 'Selected tests' passed at 2026-09-17 08:51:49.095.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.622 (0.624) seconds
+2026-09-17 08:51:49.241 xcodebuild[26609:16787505] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 08:51:49.395 xcodebuild[26609:16787505] [MT] IDETestOperationsObserverDebug: 3.098 elapsed -- Testing started completed.
+2026-09-17 08:51:49.395 xcodebuild[26609:16787505] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-17 08:51:49.395 xcodebuild[26609:16787505] [MT] IDETestOperationsObserverDebug: 3.098 sec, +3.098 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-count55/apres-start.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

@@ -583,12 +583,12 @@ struct ProfilLuneView: View {
                     .allowsHitTesting(false))
             .overlay(coque
                 .strokeBorder(Color.white.opacity(0.09), lineWidth: 1))
-            // LE TRÉSOR SUR LA BANNIÈRE : la flamme, les deux réserves
-            // de sachets, l'argent et l'or — TOUJOURS visibles, même à 0
+            // LE TRÉSOR SUR LA BANNIÈRE : les deux réserves de sachets,
+            // l'argent et l'or, sur UNE ligne — TOUJOURS visibles, même à 0
             // (verdict 30-08). La pill booster est LA RÉCUPÉRATION du
             // parcours : dire « Plus tard » à la pop-up ne perd jamais un
-            // sachet, on revient le chercher ici par sa page du coffre,
-            // dont le bouton ouvre le manège de la bonne couleur.
+            // sachet, on revient le chercher ici — par le coffre, ouvert
+            // sur SA page (15-09), dont « Ouvrir » monte le Manège.
             .overlay(alignment: .bottomTrailing) {
                 tresorBanniere
             }
@@ -727,22 +727,43 @@ struct ProfilLuneView: View {
 
     // MARK: Le trésor sur la bannière
 
-    /// LES CINQ PASTILLES (30-08, `tools/annonces/PLAN-COFFRE-ANNONCES.md`
-    /// §0 « le profil ») : la pièce d'or, la pièce d'argent, le booster
-    /// noir, le booster orange et la flamme — **toujours visibles, même à
-    /// 0** : « sinon on ne sait pas qu'il existe ». Le géant, lui, vit
-    /// dans le sol (`TirageBooster`), pas ici.
+    /// LES QUATRE PASTILLES (30-08, `tools/annonces/PLAN-COFFRE-ANNONCES.md`
+    /// §0 « le profil ») : le booster noir, le booster orange, la pièce
+    /// d'argent, la pièce d'or — **toujours visibles, même à 0** : « sinon
+    /// on ne sait pas qu'il existe ». Le géant, lui, vit dans le sol
+    /// (`TirageBooster`), pas ici.
     ///
-    /// ⚠️ DEUX RANGS, pas un : cinq pastilles en ligne font ~410 pt, et à
-    /// droite de KD la bannière n'en offre ~270 (383 − 14 − 90). Le rang du
-    /// haut dit l'ÉTAT (la flamme) et les RÉSERVES (noir, orange) ; le rang
-    /// du bas, ancré où l'or a toujours été, dit les MONNAIES (argent, or).
+    /// UNE LIGNE (15-09, verdict : « mettre les pills sur la même ligne et
+    /// mettre juste la pièce en or et pas son wording ») — les deux rangs
+    /// du 30-08 tenaient à cause du mot « pièces » et de la flamme ; sans
+    /// eux, quatre pills de ~60-70 pt tiennent à droite de l'avatar
+    /// (≈ 288 pt : 378 − 90). L'or reste le plus près du pouce, où il a
+    /// toujours été ; l'ordre, de droite à gauche, est celui du manège du
+    /// coffre (or · Lune · argent · noir).
+    ///
+    /// ET LES QUATRE OUVRENT LE COFFRE, AU BON CRAN (« au clic des 4
+    /// pastilles liquid glass ça ramène sur la page coffre au bon item ») :
+    /// plus de manège direct depuis une pill — le coffre est LA porte, son
+    /// bouton « Ouvrir » monte le manège (le chemin qui existe déjà), et une
+    /// pill à 0 ne fait plus rien de spécial : elle mène à sa page, qui
+    /// dit ce qui manque.
     /// Les `.transition` des pills restent : rien n'apparaît plus, mais le
     /// jour où une pill se cache elles diront la sortie.
     private var tresorBanniere: some View {
-        VStack(alignment: .trailing, spacing: 6) {
-            rangReserves
-            rangMonnaies
+        HStack(spacing: 6) {
+            PillBooster(nombre: SacreEtat.shared.boostersNoirsEnAttente,
+                        robe: .noire) {
+                ouvrirCoffre(cran: 3)
+            }
+            .accessibilityIdentifier("profil-booster-noir")
+            .transition(.scale(scale: 0.7).combined(with: .opacity))
+            PillBooster(nombre: SacreEtat.shared.boostersEnAttente) {
+                ouvrirCoffre(cran: 1)
+            }
+            .accessibilityIdentifier("profil-booster-orange")
+            .transition(.scale(scale: 0.7).combined(with: .opacity))
+            pastilleArgent
+            pastillePieces
         }
         .animation(.spring(response: 0.42, dampingFraction: 0.8),
                    value: SacreEtat.shared.boostersEnAttente)
@@ -752,42 +773,9 @@ struct ProfilLuneView: View {
         .padding(.bottom, 14)
     }
 
-    /// Le rang du haut : les deux réserves de sachets. (La pastille de la
-    /// flamme qui ouvrait ce rang est RETIRÉE le 15-09 sur son verdict :
-    /// « il sert à rien » — le serveur compte toujours la flamme,
-    /// `etat_coffre().flamme`, personne ne l'affiche plus.)
-    /// LA RÉSERVE NOIRE A SA PROPRE PILL, et elle passe devant l'orange :
-    /// deux réserves qui ne se mélangent jamais (verdict 28-08) — une
-    /// pastille sur la pill jaune aurait dit « des boosters, dont des
-    /// noirs », alors que ce sont deux portes et deux manèges.
-    private var rangReserves: some View {
-        HStack(spacing: 8) {
-            PillBooster(nombre: SacreEtat.shared.boostersNoirsEnAttente,
-                        robe: .noire) {
-                ouvrirReserve(.noire)
-            }
-            .accessibilityIdentifier("profil-booster-noir")
-            .transition(.scale(scale: 0.7).combined(with: .opacity))
-            PillBooster(nombre: SacreEtat.shared.boostersEnAttente) {
-                ouvrirReserve(.lune)
-            }
-            .accessibilityIdentifier("profil-booster-orange")
-            .transition(.scale(scale: 0.7).combined(with: .opacity))
-        }
-    }
-
-    /// Le rang du bas : l'argent, puis l'or.
-    private var rangMonnaies: some View {
-        HStack(spacing: 8) {
-            pastilleArgent
-            pastillePieces
-        }
-    }
-
-    /// Les réserves ouvrent leur page du coffre, même à zéro.
-    /// La destination porte ensemble le cran et la présentation.
-    private func ouvrirReserve(_ robe: RobeBooster) {
-        destinationCoffre = DestinationCoffre(id: robe == .noire ? 3 : 1)
+    /// La pastille présente le coffre avec sa destination indivisible.
+    private func ouvrirCoffre(cran: Int) {
+        destinationCoffre = DestinationCoffre(id: cran)
     }
 
     /// LA PIÈCE D'ARGENT (30-08) — la sœur de la pastille d'or : même
@@ -805,7 +793,7 @@ struct ProfilLuneView: View {
                 argentKick = 0
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
-                destinationCoffre = DestinationCoffre(id: 2)
+                ouvrirCoffre(cran: 2)
             }
         } label: {
             HStack(spacing: 7) {
@@ -828,7 +816,8 @@ struct ProfilLuneView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(
-            "\(economie.argent) pièces d'argent — ouvrir le coffre")
+            L("\(economie.argent) pièces d'argent — ouvrir le coffre",
+              "\(economie.argent) silver coins — open the vault"))
     }
 
     /// La pastille de la page BRAVO, en petit, posée SUR la bannière. Au
@@ -844,7 +833,7 @@ struct ProfilLuneView: View {
                 coinKick = 0
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
-                destinationCoffre = DestinationCoffre(id: 0)
+                ouvrirCoffre(cran: 0)
             }
         } label: {
             HStack(spacing: 7) {
@@ -862,18 +851,20 @@ struct ProfilLuneView: View {
                 MoonCoinView(coinR: 11, draggable: false,
                              yawOverride: 0.34, idleLife: 0, fps: 6,
                              reveal: 0.34, matte: 0, figee: true)
+                    // Le métal est décoratif : son tap interne, même sans
+                    // action, ne doit pas absorber celui de la pastille.
+                    .allowsHitTesting(false)
                     .frame(width: 11 * MoonCoinView.hostScale,
                            height: 11 * MoonCoinView.hostScale)
                     .frame(width: 24, height: 24)
                     .rotationEffect(.degrees(Double(coinKick) * -14))
+                // Le nombre, sans le mot (15-09 : « juste la pièce en or et
+                // pas son wording ») — la pièce dit laquelle c'est, comme
+                // pour l'argent.
                 Text("\(pieces)")
                     .font(.inter(15, .bold))
                     .foregroundStyle(Color.inkPrimary)
                     .contentTransition(.numericText())
-                Text("pièces")
-                    .font(.inter(11, .semibold))
-                    .tracking(0.6)
-                    .foregroundStyle(Color.inkSecondary)
             }
             .padding(.horizontal, 13)
             .padding(.vertical, 7)
@@ -883,7 +874,8 @@ struct ProfilLuneView: View {
             .scaleEffect(1 + 0.10 * coinKick)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(pieces) pièces — ouvrir le coffre")
+        .accessibilityLabel(L("\(pieces) pièces — ouvrir le coffre",
+                              "\(pieces) coins — open the vault"))
     }
 
     // MARK: Le titre de la collection
@@ -903,12 +895,12 @@ struct ProfilLuneView: View {
     // MARK: Les quatre registres
 
     private static let registresProfil: [(nom: String, sous: String,
-                                          pips: Int, total: Int,
+                                          pips: Int,
                                           cle: String)] = [
-        ("Une Lune", "Normal", 1, 4, "common"),
-        ("Deux Lunes", "Plus rare", 2, 11, "rare"),
-        ("Trois Lunes", "Très rare", 3, 4, "epic"),
-        ("Quatre Lunes", "Légendaire", 4, 6, "legendary"),
+        ("Une Lune", "Normal", 1, "common"),
+        ("Deux Lunes", "Plus rare", 2, "rare"),
+        ("Trois Lunes", "Très rare", 3, "epic"),
+        ("Quatre Lunes", "Légendaire", 4, "legendary"),
     ]
 
     private var registres: some View {
@@ -925,6 +917,7 @@ struct ProfilLuneView: View {
                                                   .opacity(0.55))
                             }
                         }
+                        .frame(width: 44, alignment: .leading)
                         VStack(alignment: .leading, spacing: 1) {
                             Text(reg.nom)
                                 .font(.inter(15, .semibold))
@@ -944,6 +937,7 @@ struct ProfilLuneView: View {
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(Color.inkMuted)
                     }
+                    .accessibilityIdentifier("profil-registre-\(reg.cle)")
                     .padding(.horizontal, 20)
 
                     // Les collectées d'abord (l'ordre d'obtention, la
@@ -1027,9 +1021,10 @@ struct ProfilLuneView: View {
 /// coupé, ses gestes internes dorment) posé sur le voile du footer. On le
 /// TIRE vers le haut : passé le seuil — ou d'un geste vif — le sheet de
 /// verre s'ouvre et le sachet SAUTE dans son en-tête (UNE seule vue qui
-/// voyage, la leçon morphPhoto). « Utiliser 20 pièces pour ouvrir un
-/// booster ? » — Oui ouvre le Manège à la racine (`SacreEtat`) ; sinon
-/// l'overlay descend et le sachet RESAUTILLE (ressort + haptique).
+/// voyage, la leçon morphPhoto). Le panneau dit « N sachets à ouvrir »
+/// (OUVRIR monte le Manège à la racine, `SacreEtat`) ou, sans sachet, la
+/// jauge du coffre vers le prochain (15-09) ; RETOUR : l'overlay descend et
+/// le sachet RESAUTILLE (ressort + haptique).
 /// `-profilTirage` ouvre le sheet au lancement (captures).
 struct TirageBooster: View {
     @Environment(\.ongletCache) private var ongletCache
@@ -1388,35 +1383,43 @@ struct TirageBooster: View {
         }
     }
 
-    /// LA PORTE DU MANÈGE — et c'est ici que l'argent change de main.
-    ///
-    /// ⚠️ **UN SACHET EN RÉSERVE S'OUVRE GRATUITEMENT.** C'est tout l'intérêt
-    /// de l'avoir gagné : un booster de fin de séance ne se rachète pas.
-    /// Le débit ne part que pour un sachet qu'on n'a pas.
-    ///
-    /// ⚠️ **ON N'OUVRE LA CÉRÉMONIE QU'APRÈS LA RÉPONSE.** Monter le manège
-    /// puis débiter, ce serait ouvrir un sachet qu'on n'a peut-être pas — et
-    /// il n'y a pas de marche arrière une fois la roue posée. La demi-seconde
-    /// d'attente est le prix de ne jamais mentir.
-    private func ouvrirOuAcheter() {
-        if economie.boosters > 0 {
-            // Le Manège se monte à la RACINE : on pose l'état partagé,
-            // personne n'a besoin d'écouter (la leçon de l'onglet paresseux
-            // — cf. `BoosterPopup.swift`).
-            SacreEtat.shared.ouvrirManege()
-            fermer()
-            return
-        }
-        // ⚠️ L'ACHAT EST MORT (30-08 soir, Q9) : `claim_booster` est révoquée
-        // au serveur, la conversion automatique fait naître le sachet à 100
-        // pièces. À 0 sachet, le panneau dit déjà « Il te manque N pièces » ;
-        // le tap ne fait que le confirmer du bout du doigt.
-        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+    /// LA PORTE DU MANÈGE — un sachet en réserve s'ouvre, gratuitement :
+    /// c'est tout l'intérêt de l'avoir gagné. Le Manège se monte à la
+    /// RACINE : on pose l'état partagé, personne n'a besoin d'écouter (la
+    /// leçon de l'onglet paresseux — cf. `BoosterPopup.swift`). Sans sachet,
+    /// le bouton n'existe pas (le mat du coffre à sa place) : rien à
+    /// ouvrir, rien à acheter — l'ACHAT EST MORT (30-08 soir, Q9 :
+    /// `claim_booster` révoquée, les 100 pièces deviennent un sachet toutes
+    /// seules).
+    private func ouvrirReserve() {
+        guard economie.boosters > 0 else { return }
+        SacreEtat.shared.ouvrirManege()
+        fermer()
     }
 
+    /// LE PANNEAU, EN DEUX VARIANTS (15-09, tranché par Kathryn : « deux
+    /// variants : N SACHETS À OUVRIR ; et en cas de pas possible, la jauge —
+    /// même composant que dans le coffre — pour dire le nombre de pièces
+    /// qu'il faut »).
+    ///
+    /// ⚠️ Il disait « Utiliser 100 pièces pour ouvrir un booster ? » depuis
+    /// le 29-08 — un texte qui promettait une transaction MORTE depuis le
+    /// 30-08 (la conversion) : avec un sachet en réserve, OUVRIR l'ouvrait
+    /// gratuitement ; sans, le tap ne faisait qu'une vibration. Un 🔴 posé
+    /// sur le site (b-rg-le-geant), fermé ici. Et « Il t'en restera N » ne
+    /// pouvait plus jamais s'écrire : le solde ne dépasse plus 99.
+    ///
+    /// Le vocabulaire est celui de la page du sachet Lune du coffre
+    /// (`PiedCoffre`) : le compte en titre, la barre fine `BarreFine` avec
+    /// la mini pièce d'or (« 43 / 100 »), le primaire quand il y a quelque
+    /// chose à ouvrir, le MAT quand il n'y a rien (la 5ᵉ loi d'Opal : même
+    /// place, même hauteur, le bijou en moins). Dans les deux langues.
     private func sheet(W: CGFloat) -> some View {
         let forme = RoundedRectangle(cornerRadius: 28, style: .continuous)
-        let manque = prix - pieces
+        let sachets = economie.boosters
+        // Ce qu'il manque vers le PROCHAIN sachet — le solde est déjà la
+        // jauge (`reste = solde`, < prix par construction depuis le 30-08).
+        let manque = max(prix - economie.reste, 0)
         return VStack(spacing: 0) {
             Spacer()
             VStack(spacing: 10) {
@@ -1442,38 +1445,60 @@ struct TirageBooster: View {
                     .combined(with: .opacity))
                 .frame(height: 250)
                 .padding(.top, 2)
-                Text("Utiliser \(prix) pièces\npour ouvrir un booster ?")
+                // LE COMPTE, EN TITRE : ce qu'il y a à ouvrir — ou ce qui
+                // manque vers le prochain sachet. Le nombre vient du
+                // serveur (`etat_coffre` : sachets, reste, prix), jamais
+                // d'ici.
+                Text(sachets > 0
+                     ? L(sachets == 1 ? "1 sachet à ouvrir"
+                                      : "\(sachets) sachets à ouvrir",
+                         sachets == 1 ? "1 pack to open"
+                                      : "\(sachets) packs to open")
+                     : L("Il te manque \(manque) pièces",
+                         "\(manque) more coins to go"))
                     .font(.inter(20, .bold))
                     .tracking(-0.2)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(Color.inkPrimary)
-                Text(manque > 0
-                     ? "Il te manque \(manque) pièces."
-                     : "Il t'en restera \(pieces - prix).")
-                    .font(.inter(13, .regular))
-                    .foregroundStyle(Color.inkMuted)
+                    .contentTransition(.numericText())
 
-                // NOTRE bouton primary — le diamant du trio auth, fumée
-                // dorée (la page est de braise), et le retour de la
-                // maison en secondaire.
-                DiamondPrimaryButton(title: "OUVRIR",
-                                     smokeWarmth: 0.6) {
-                    ouvrirOuAcheter()
+                if sachets > 0 {
+                    // NOTRE bouton primary — le diamant du trio auth, fumée
+                    // dorée (la page est de braise). Il n'existe que s'il y
+                    // a quelque chose à ouvrir.
+                    DiamondPrimaryButton(title: L("OUVRIR", "OPEN"),
+                                         smokeWarmth: 0.6) {
+                        ouvrirReserve()
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 6)
+                } else {
+                    // LA JAUGE DU COFFRE, telle quelle : la barre fine, la
+                    // légende « 43 / 100 » avec la mini pièce d'or, la
+                    // lueur de la page du sachet Lune (`PiedCoffre`).
+                    BarreFine(jauge: .compte(courant: economie.reste,
+                                             cible: prix, monnaie: .or),
+                              lueur: CoffreV2Page.lueurSachetLune,
+                              remplie: 1)
+                        .padding(.top, 8)
+                        .padding(.bottom, 10)
+                    // LE MAT DU COFFRE (la 5ᵉ loi d'Opal, `PiedCoffre.bouton`) :
+                    // même place, même hauteur que le primaire, le bijou en
+                    // moins — jamais un bouton grisé qui a l'air cassé.
+                    // `.clear` et pas `.regular` : le givré est interdit.
+                    Text(L("Verrouillé", "Locked"))
+                        .font(.inter(18, .semibold))
+                        .tracking(-0.2)
+                        .foregroundStyle(.white.opacity(0.55))
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 58)
+                        .glassEffect(.clear, in: .capsule)
+                        .padding(.horizontal, 24)
                 }
-                // ⚠️⚠️ **LE VERROU EXISTE ENFIN.** Le commentaire qui vivait
-                // ici disait « DÉMO : le verrou des pièces NE FERME JAMAIS la
-                // porte » — et c'était vrai à la lettre : ce bouton posait
-                // l'état partagé et rien d'autre. Aucun débit, aucune garde.
-                // On pouvait ouvrir des sachets à l'infini avec zéro pièce
-                // pendant que l'écran promettait « Utiliser N pièces ».
-                //
-                // Il ne débite QUE s'il n'y a pas déjà un sachet en réserve :
-                // un booster gagné en fin de séance s'ouvre gratuitement,
-                // c'est tout l'intérêt de l'avoir gagné.
-                .padding(.horizontal, 24)
                 // Le retour en LIEN nu — pas de fond (verdict).
                 Button(action: fermer) {
-                    Text("RETOUR")
+                    Text(L("RETOUR", "BACK"))
                         .font(.inter(13, .semibold))
                         .tracking(2.2)
                         .foregroundStyle(Color.inkMuted)

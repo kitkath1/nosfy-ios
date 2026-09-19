@@ -1,0 +1,5 @@
+Name                 Hostname                              Identifier                             State         Model                 
+------------------   -----------------------------------   ------------------------------------   -----------   ----------------------
+iPhone               iPhone.coredevice.local               404B8458-7E09-5A58-B845-D7583F8ED28D   unavailable   iPhone 13 (iPhone14,5)
+iPhone (3)           iPhone-3.coredevice.local             44FCC57B-9828-5A29-BDB8-7B125E498AB4   unavailable   iPhone 15 (iPhone15,4)
+iPhone de Frédéric   iPhone-de-Frederic.coredevice.local   022244AD-484B-5489-A884-6B781A82E372   connected     iPhone 15 (iPhone15,4)

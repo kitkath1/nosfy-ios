@@ -1,0 +1,83 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-count53/sim-dd/Build/Products/WoopUITests_iphonesimulator26.5-arm64.xctestrun -destination "platform=iOS Simulator,id=6A504B5A-F76C-4EC1-B09A-E9CA4673B32A" "-only-testing:WoopUITests/CountdownUITests/test04_startTroisiemeGaletTapCoordonnees" -resultBundlePath /tmp/woop-count54/repro53.xcresult -parallel-testing-enabled NO
+
+2026-09-16 20:38:52.305 xcodebuild[14796:16638817] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-count54/repro53.xcresult
+
+2026-09-16 20:38:52.310 xcodebuild[14796:16638817] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:38:52.783 xcodebuild[14796:16638817] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:38:56.885077+0200 WoopUITests-Runner[14874:16639164] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-16 20:38:57.399.
+Test Suite 'WoopUITests.xctest' started at 2026-09-16 20:38:57.399.
+Test Suite 'CountdownUITests' started at 2026-09-16 20:38:57.399.
+Test Case '-[WoopUITests.CountdownUITests test04_startTroisiemeGaletTapCoordonnees]' started.
+    t =     0.00s Start Test at 2026-09-16 20:38:57.400
+    t =     0.05s Set Up
+    t =     0.05s Terminate fr.kathryn.woop:0
+    t =     0.05s Open fr.kathryn.woop
+    t =     0.05s     Launch fr.kathryn.woop
+2026-09-16 20:38:57.628 xcodebuild[14796:16638817] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 20:38:57.628 xcodebuild[14796:16638817] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[14874]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10a8cc310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x106f8c398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     1.08s         Setting up automation session
+    t =     1.67s         Wait for fr.kathryn.woop to idle
+    t =     3.82s Waiting 25.0s for "count-state" StaticText to exist
+    t =     4.85s     Checking `Expect predicate `existsNoRetry == 1` for object "count-state" StaticText`
+    t =     4.85s         Checking existence of `"count-state" StaticText`
+    t =     4.96s Find the "count-state" StaticText
+    t =     5.03s Waiting 25.0s for "Start" Button to exist
+    t =     6.06s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     6.06s         Checking existence of `"Start" Button`
+    t =     6.08s Find the Target Application 'fr.kathryn.woop'
+    t =     6.52s Added attachment named 'route-avant-start'
+    t =     6.52s Tap "Start" Button[0.50, 0.50]
+    t =     6.52s     Wait for fr.kathryn.woop to idle
+    t =     6.52s     Find the "Start" Button
+    t =     6.54s     Check for interrupting elements affecting "Start" Button
+    t =     6.58s     Synthesize event
+    t =     6.58s         Find the "Start" Button
+    t =     6.60s         Find the "Start" Button
+    t =     6.63s         Find the "Start" Button
+    t =     6.94s     Wait for fr.kathryn.woop to idle
+    t =     6.94s Waiting 4.0s for "depart-compte-rebours" Button to exist
+2026-09-16 20:39:04.359 xcodebuild[14796:16638817] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     7.98s     Checking `Expect predicate `existsNoRetry == 1` for object "depart-compte-rebours" Button`
+    t =     7.98s         Checking existence of `"depart-compte-rebours" Button`
+    t =     8.02s Find the Target Application 'fr.kathryn.woop'
+    t =     8.20s Added attachment named 'route-countdown'
+    t =     9.23s Checking existence of `"depart-compte-rebours" Button`
+    t =    10.20s Checking existence of `"depart-compte-rebours" Button`
+    t =    11.28s Checking existence of `"depart-compte-rebours" Button`
+    t =    12.25s Checking existence of `"depart-compte-rebours" Button`
+    t =    13.20s Checking existence of `"depart-compte-rebours" Button`
+    t =    14.21s Checking existence of `"depart-compte-rebours" Button`
+    t =    14.23s Find the "count-state" StaticText
+    t =    14.26s Find the "count-state" StaticText
+    t =    14.28s Find the "count-state" StaticText
+    t =    14.31s Find the Target Application 'fr.kathryn.woop'
+    t =    14.41s Added attachment named 'route-arrivee-exercices'
+    t =    14.41s Find the "count-state" StaticText
+WOOP_COUNT_ETAT=actives=1;id=04F546EA-A762-4A78-806F-DA88C27A8FAE;film=0;page=exercises
+    t =    22.44s Find the "count-state" StaticText
+    t =    22.47s Terminate fr.kathryn.woop:14884
+    t =    23.55s Tear Down
+Test Case '-[WoopUITests.CountdownUITests test04_startTroisiemeGaletTapCoordonnees]' passed (23.667 seconds).
+Test Suite 'CountdownUITests' passed at 2026-09-16 20:39:21.067.
+	 Executed 1 test, with 0 failures (0 unexpected) in 23.667 (23.668) seconds
+Test Suite 'WoopUITests.xctest' passed at 2026-09-16 20:39:21.067.
+	 Executed 1 test, with 0 failures (0 unexpected) in 23.667 (23.668) seconds
+Test Suite 'Selected tests' passed at 2026-09-16 20:39:21.068.
+	 Executed 1 test, with 0 failures (0 unexpected) in 23.667 (23.669) seconds
+2026-09-16 20:39:26.560 xcodebuild[14796:16638817] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:39:31.054 xcodebuild[14796:16638817] [MT] IDETestOperationsObserverDebug: 38.269 elapsed -- Testing started completed.
+2026-09-16 20:39:31.054 xcodebuild[14796:16638817] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-16 20:39:31.054 xcodebuild[14796:16638817] [MT] IDETestOperationsObserverDebug: 38.269 sec, +38.269 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-count54/repro53.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

@@ -314,17 +314,48 @@ struct CardRoute: View {
         // permanente sur cette card serait un coût permanent sur la page dont
         // la cadence est le chantier.
         //
-        // ⚠️ Fonction PURE DU TEMPS, pas un `@State` + `repeatForever` : cette
-        // card est démontée à chaque film de départ (`if verreMonte`), et un
-        // état de phase y sauterait à chaque aller-retour de la home.
-        if enSeance {
-            TimelineView(.animation(minimumInterval: 1.0 / 20.0,
+        // ⚠️ LE SOUFFLE NE SE REDESSINE PLUS, IL S'ANIME (05-09, voir
+        // `LisereRespirant`) : l'horloge ré-évaluait le corps ENTIER de la
+        // card (ardoise en verre, galets, textes) vingt fois par seconde,
+        // pendant TOUTE la séance, pour un point de 6 pt et une lueur de
+        // bord. Le `@State` de phase est ré-armé à `.task` : la card étant
+        // démontée à chaque film de départ, la respiration REPART du repos
+        // au remontage (déclaré ; l'ancienne forme reprenait en vol).
+        // ⚠️ CHANGEMENT DÉCLARÉ, à trancher sur capture : l'ancien souffle
+        // sommait DEUX sinus (4,7 s + 7,9 s, jamais le même état) ; une
+        // animation ne sait pas sommer deux périodes sur un même attribut —
+        // la nouvelle forme respire sur la SEULE période dominante (4,7 s),
+        // même plage (0,24 → 1,0). `-souffleHorloge` rejoue l'ancienne.
+        if enSeance, SouffleBanc.horloge {
+            TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                     paused: reduceMotion || RythmeEcran.dortHome)) { tl in
                 let _ = SondeVol.shared.tic(3)
                 corps(souffle(tl.date.timeIntervalSinceReferenceDate))
             }
+        } else if enSeance {
+            corps(0.24 + 0.76 * respiration)
+                .task(id: "\(reduceMotion)-\(RythmeEcran.dortHome)") {
+                    armerRespiration()
+                }
         } else {
             corps(0)
+        }
+    }
+
+    /// La phase du souffle de séance, 0 → 1 — LA seule chose qui bouge.
+    @State private var respiration: Double = 0
+
+    private func armerRespiration() {
+        guard enSeance, !reduceMotion, !RythmeEcran.dortHome else {
+            var tr = Transaction()
+            tr.disablesAnimations = true
+            withTransaction(tr) { respiration = 0 }
+            return
+        }
+        respiration = 0
+        withAnimation(.easeInOut(duration: 4.7 / 2)
+            .repeatForever(autoreverses: true)) {
+            respiration = 1
         }
     }
 

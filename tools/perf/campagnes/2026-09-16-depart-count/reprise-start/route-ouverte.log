@@ -1,0 +1,126 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-count54/iphone-dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun -destination platform=iOS,id=00008120-001E4CDC0A85A01E -destination-timeout 15 "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testOuvrirRouteSansDemarrer" -resultBundlePath /tmp/woop-count54/route-ouverte.xcresult -parallel-testing-enabled NO
+
+2026-09-16 20:40:53.492 xcodebuild[15189:16648802] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-count54/route-ouverte.xcresult
+
+2026-09-16 20:40:53.494 xcodebuild[15189:16648802] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:40:53.596 xcodebuild[15189:16648802] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-16 20:40:53.776 xcodebuild[15189:16648802] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:40:55.985644+0200 NavRuntimeUITests-Runner[35522:2750903] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-16 20:40:59.725.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-16 20:40:59.726.
+Test Suite 'NavRuntimeUITests' started at 2026-09-16 20:40:59.726.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testOuvrirRouteSansDemarrer]' started.
+    t =     0.00s Start Test at 2026-09-16 20:40:59.727
+    t =     0.04s Set Up
+    t =     0.04s Open fr.kathryn.woop
+    t =     0.04s     Activate fr.kathryn.woop
+    t =     0.07s         Wait for fr.kathryn.woop to idle
+    t =     0.16s Checking existence of `"Start" Button`
+2026-09-16 20:40:59.850 xcodebuild[15189:16648802] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     0.26s Tap Application 'fr.kathryn.woop'[0.50, 0.66]
+    t =     0.26s     Wait for fr.kathryn.woop to idle
+    t =     0.27s     Find the Application 'fr.kathryn.woop'
+    t =     0.39s     Check for interrupting elements affecting "Woop" Application
+    t =     0.45s     Synthesize event
+    t =     0.46s         Find the Application 'fr.kathryn.woop'
+    t =     0.50s         Find the Application 'fr.kathryn.woop'
+    t =     0.56s         Find the Application 'fr.kathryn.woop'
+    t =     1.01s     Wait for fr.kathryn.woop to idle
+    t =     1.01s Waiting 12.0s for "Start" Button to exist
+    t =     1.86s     Device orientation changed to Face Up
+2026-09-16 20:41:01.620 xcodebuild[15189:16648802] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     2.06s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     2.06s         Checking existence of `"Start" Button`
+    t =     2.12s         Capturing element debug description
+    t =     3.05s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     3.05s         Checking existence of `"Start" Button`
+    t =     3.10s         Capturing element debug description
+    t =     4.03s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     4.03s         Checking existence of `"Start" Button`
+    t =     4.08s         Capturing element debug description
+    t =     5.02s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     5.02s         Checking existence of `"Start" Button`
+    t =     5.06s         Capturing element debug description
+    t =     5.90s     Device orientation changed to Portrait
+2026-09-16 20:41:05.616 xcodebuild[15189:16648802] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     6.10s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     6.10s         Checking existence of `"Start" Button`
+    t =     6.15s             Device orientation changed to Face Up
+    t =     6.15s         Capturing element debug description
+2026-09-16 20:41:05.936 xcodebuild[15189:16648802] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     6.68s     Device orientation changed to Portrait
+2026-09-16 20:41:06.407 xcodebuild[15189:16648802] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     7.08s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     7.08s         Checking existence of `"Start" Button`
+    t =     7.13s         Capturing element debug description
+    t =     8.06s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     8.06s         Checking existence of `"Start" Button`
+    t =     8.11s         Capturing element debug description
+    t =     9.05s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     9.05s         Checking existence of `"Start" Button`
+    t =     9.10s         Capturing element debug description
+    t =    10.03s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    10.03s         Checking existence of `"Start" Button`
+    t =    10.08s         Capturing element debug description
+    t =    11.02s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    11.02s         Checking existence of `"Start" Button`
+    t =    11.05s         Capturing element debug description
+    t =    12.09s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    12.09s         Checking existence of `"Start" Button`
+    t =    12.14s         Capturing element debug description
+    t =    13.02s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =    13.02s         Checking existence of `"Start" Button`
+    t =    13.07s         Capturing element debug description
+    t =    13.08s     Checking existence of `"Start" Button`
+    t =    13.11s Collecting debug information to assist test failure triage
+    t =    13.11s     Requesting snapshot of accessibility hierarchy for app with pid 35509
+/tmp/woop-count54/iphone/NavRuntimeUITests.swift:12: error: -[NavRuntimeUITests.NavRuntimeUITests testOuvrirRouteSansDemarrer] : XCTAssertTrue failed
+    t =    13.27s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testOuvrirRouteSansDemarrer]' failed (13.391 seconds).
+Test Suite 'NavRuntimeUITests' failed at 2026-09-16 20:41:13.118.
+	 Executed 1 test, with 1 failure (0 unexpected) in 13.391 (13.392) seconds
+Test Suite 'NavRuntimeUITests.xctest' failed at 2026-09-16 20:41:13.120.
+	 Executed 1 test, with 1 failure (0 unexpected) in 13.391 (13.394) seconds
+Test Suite 'Selected tests' failed at 2026-09-16 20:41:13.121.
+	 Executed 1 test, with 1 failure (0 unexpected) in 13.391 (13.395) seconds
+2026-09-16 20:41:13.073 xcodebuild[15189:16648802] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:41:13.878 xcodebuild[15189:16648805]  IDETestOperationsObserverDebug: Failure collecting diagnostics from devices: Process exited with error 1:
+ ERROR: The operation couldn?t be completed. (CoreDeviceCLISupport.DiagnoseError error 0.)
+This tool generates files that allow Apple to investigate issues with your
+computer and help improve Apple products. The files might contain personal
+information found on your device or associated with your Apple Account(s),
+including but not limited to your name, serial numbers of your device,
+your device name, your device's location over the last one to two days,
+your attached peripheral devices, your user name, your email address and
+email settings, file paths, file names, Siri suggestions, your computer's
+IP addresses, and network connection information.
+
+This information is used by Apple in accordance with its privacy policy
+(www.apple.com/privacy) and is not shared with any other company. By using
+this tool and sending the results to Apple, you consent to Apple using the
+contents of these files to improve Apple products.
+
+An error occurred while running devicectl diagnose. Will archive the diagnostics collected thus far.
+Wrote file to /tmp/woop-count54/route-ouverte.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+Partial devicectl diagnose bundle located here: /tmp/woop-count54/route-ouverte.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+
+2026-09-16 20:41:13.880 xcodebuild[15189:16648802] [MT] IDETestOperationsObserverDebug: 20.102 elapsed -- Testing started completed.
+2026-09-16 20:41:13.880 xcodebuild[15189:16648802] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-16 20:41:13.880 xcodebuild[15189:16648802] [MT] IDETestOperationsObserverDebug: 20.102 sec, +20.102 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-count54/route-ouverte.xcresult
+
+Failing tests:
+	NavRuntimeUITests.testOuvrirRouteSansDemarrer()
+
+** TEST EXECUTE FAILED **
+
+Testing started

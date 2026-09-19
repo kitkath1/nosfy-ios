@@ -1,0 +1,42 @@
+    private func demarrerDepuisChemin() {
+        NavDiagnostic.noter("depart.racine", destination: filmDepart == nil ? "libre" : "film-en-cours")
+        guard filmDepart == nil else { return }
+        // INJECTION DE BANC TEMPORAIRE : aucune séance locale ou serveur.
+        if CommandLine.arguments.contains("-startTactileLab") {
+            NavDiagnostic.noter("depart.banc-sans-seance")
+            filmDepart = UUID()
+            var tr = Transaction(); tr.disablesAnimations = true
+            withTransaction(tr) {
+                depart.fermerChemin(sansAnimation: true)
+                selection = .exercises
+            }
+            return
+        }
+        // Lire aussi le contexte : la @Query peut attendre le prochain rendu
+        // après le premier tap. Un deuxième callback ne crée pas de doublon.
+        let ouverte = active ?? (try? modelContext.fetch(FetchDescriptor<Workout>(
+            predicate: #Predicate { $0.endedAt == nil })))?.first
+        if ouverte == nil {
+            let workout = Workout()
+            modelContext.insert(workout)
+            try? modelContext.save()
+            WorkoutActivityController.ensure(workout)
+            if !DepartFilmBanc.sansFilm { filmDepart = UUID() }
+        }
+        if filmDepart != nil {
+            // Le noir du film couvre la bascule. Les pages se préparent
+            // dessous, leurs moteurs restant en pause jusqu'à la fin.
+            var tr = Transaction()
+            tr.disablesAnimations = true
+            withTransaction(tr) {
+                depart.fermerChemin(sansAnimation: true)
+                selection = .exercises
+            }
+        } else {
+            depart.fermerChemin()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) {
+                withAnimation(.easeOut(duration: 0.3)) { selection = .exercises }
+            }
+        }
+    }
+

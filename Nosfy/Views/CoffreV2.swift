@@ -1351,18 +1351,23 @@ struct BarreFine: View, Animatable {
     /// une horloge neuve à « in 24 h » sur un versement dû (§29.7).
     static func horloge(montant: Int, disponible: Bool, prochain: Date,
                         now: Date) -> (part: Double, legende: String) {
-        // En toutes lettres (30-08 : « +10 pièces in 6 hours par exemple »).
+        // En toutes lettres (30-08 : « +10 pièces in 6 hours par exemple »),
+        // dans la langue du profil (15-09).
         let restant = prochain.timeIntervalSince(now)
         if disponible || restant <= 0 {
-            return (1, "+\(montant) coins to claim")
+            return (1, L("+\(montant) pièces à réclamer", "+\(montant) coins to claim"))
         }
         let part = min(max(1 - restant / 86_400, 0), 1)
         let minutes = Int((restant / 60).rounded(.up))
         if minutes < 60 {
-            return (part, "+\(montant) coins in \(minutes) minute\(minutes == 1 ? "" : "s")")
+            let s = minutes == 1 ? "" : "s"
+            return (part, L("+\(montant) pièces dans \(minutes) minute\(s)",
+                            "+\(montant) coins in \(minutes) minute\(s)"))
         }
         let heures = Int((restant / 3600).rounded())
-        return (part, "+\(montant) coins in \(heures) hour\(heures == 1 ? "" : "s")")
+        let s = heures == 1 ? "" : "s"
+        return (part, L("+\(montant) pièces dans \(heures) heure\(s)",
+                        "+\(montant) coins in \(heures) hour\(s)"))
     }
 
     private func rendu(part: Double, legende: String,
@@ -1475,11 +1480,6 @@ struct PiedCoffre: View {
     let v: PiedVariante
     /// 0 → 1 : l'arrivée de la barre (le ressort de l'ancienne pill).
     var remplie: Double = 1
-    /// Ouvrir le manège de CETTE page — nil sur une page de pièce.
-    var onOuvrir: (() -> Void)?
-    /// Ouvrir l'histoire d'une robe (la vidéo, puis la page).
-    var onHistoire: ((RobeBooster) -> Void)?
-
     /// ⚠️ **LE BOUTON N'EXISTE QU'UNE FOIS LE PROJECTEUR ALLUMÉ** (18-09, le
     /// 🔴 « Ouvrir » des Cartes). Pendant le film d'arrivée la page est à
     /// opacité 0 — mais un bouton monté est un bouton que l'arbre
@@ -1489,6 +1489,11 @@ struct PiedCoffre: View {
     /// (XCUITest l'ignore, mesuré). Éteint, le pied garde la place du bouton,
     /// vide : la grille des quatre pages ne bouge pas.
     var allume: Bool = true
+    /// Ouvrir le manège de CETTE page — nil sur une page de pièce.
+    var onOuvrir: (() -> Void)?
+    /// Ouvrir l'histoire d'une robe (la vidéo, puis la page).
+    var onHistoire: ((RobeBooster) -> Void)?
+
     /// ⚠️⚠️ **LA PLAQUE EST MORTE, ET C'EST LA LEÇON D'OPAL (28-08).**
     /// 128 → 104 → **plus de plaque du tout**. Verdict : *« ça fait cheap »*,
     /// trois fois, sur trois mises en page différentes. La cause n'était
@@ -1579,6 +1584,12 @@ struct PiedCoffre: View {
             // On lui passe donc une action VIDE et c'est notre tap prioritaire
             // qui commet l'ouverture : deux chemins vers la même action
             // risqueraient de l'ouvrir deux fois.
+            //
+            // ⚠️ Le 🔴 « Ouvrir » des Cartes (18-09) n'était PAS ici : mesuré
+            // A/B (tools/carte-lune/ouverture-ui-2026-09-18), ce bouton
+            // ouvre le manège avec ou sans `allowsHitTesting(false)`. Le banc
+            // tapait PENDANT le film d'arrivée, sur une page à opacité 0 —
+            // d'où `accessibilityHidden(pageOp == 0)` sur la page, plus bas.
             DiamondPrimaryButton(title: b.mot) {}
                 .allowsHitTesting(false)
                 .contentShape(Capsule())
@@ -1589,12 +1600,6 @@ struct PiedCoffre: View {
                     onOuvrir()
                 })
         } else if let b = v.bouton {
-            //
-            // ⚠️ Le 🔴 « Ouvrir » des Cartes (18-09) n'était PAS ici : mesuré
-            // A/B (tools/carte-lune/ouverture-ui-2026-09-18), ce bouton
-            // ouvre le manège avec ou sans `allowsHitTesting(false)`. Le banc
-            // tapait PENDANT le film d'arrivée, sur une page à opacité 0 —
-            // d'où `accessibilityHidden(pageOp == 0)` sur la page, plus bas.
             // ⚠️ **LE VERROUILLÉ SE DIT PAR LA MATIÈRE** (5ᵉ loi d'Opal,
             // §17.3) : même place, même hauteur, le bijou en moins. Du verre
             // mat et un mot qui dit ce qui manque — jamais un cadenas seul,
@@ -1624,7 +1629,7 @@ struct PiedCoffre: View {
             // primaire — la grille des quatre pages tient.
             // ⚠️ Priorité haute, comme le primaire : un tap d'enfant sous le
             // geste de page se fait affamer.
-            Text("Discover history".enPhrase)
+            Text(L("Découvrir l'histoire", "Discover history"))
                 .font(.inter(18, .semibold))
                 .tracking(-0.2)
                 .foregroundStyle(.white.opacity(0.92))
@@ -1988,6 +1993,9 @@ struct CoffreV2Page: View {
         .piece(.argent), .booster(.noire),
     ]
     private static var dernierePage: Double { Double(manege.count - 1) }
+    /// La braise du sachet Lune — la jauge du géant du profil (15-09) porte
+    /// la même lueur que la page du sachet : un objet, une couleur.
+    static let lueurSachetLune: Color = ObjetSocle.booster(.lune).lueur
 
     /// LA PIÈCE PRÉSENTÉE — le faisceau la suit quand elle grandit et lévite.
     /// (Il ne la suit PAS latéralement : le projecteur est fixe, et c'est ce
@@ -2032,7 +2040,7 @@ struct CoffreV2Page: View {
                     // 80. Elle n'en a plus qu'une — titre, intitulés et dates
                     // sur un seul axe — et seules les vignettes pendent à sa
                     // gauche, comme des pochettes.
-                    Text("Mes gains")
+                    Text(L("Mes gains", "My rewards"))
                         .font(.inter(30, .bold))
                         .tracking(-0.4)
                         // ⚠️ **ICI c'est le VRAI `titleFade`, le blanc.** Sur
@@ -2067,7 +2075,10 @@ struct CoffreV2Page: View {
                         .padding(.bottom, 18)
                         .modifier(ArriveeFloue(p: apparu, rang: 0))
                     if gains.isEmpty {
-                        Text("Rien encore. Une série faite, vingt pièces.")
+                        // Le taux vient du serveur (`pieces_par_serie`), jamais
+                        // d'un « vingt » écrit ici (15-09).
+                        Text(L("Rien encore. Une série faite, \(EconomieWoop.shared.piecesParSerie) pièces.",
+                               "Nothing yet. One set done, \(EconomieWoop.shared.piecesParSerie) coins."))
                             .font(.inter(13))
                             .foregroundStyle(.white.opacity(0.44))
                             .modifier(ArriveeFloue(p: apparu, rang: 1))
@@ -2296,7 +2307,7 @@ struct CoffreV2Page: View {
             // haut, 22 du bord. ⚠️ `ChipVerre` est un `Button` sous le drag du
             // parent : on le rend sourd et c'est notre tap prioritaire qui
             // ferme — la loi payée sur le stop du player.
-            ChipVerre(symbole: "chevron.left", label: "Retour", clarte: 0) {}
+            ChipVerre(symbole: "chevron.left", label: L("Retour", "Back"), clarte: 0) {}
                 .allowsHitTesting(false)
                 .contentShape(Rectangle())
                 .highPriorityGesture(TapGesture().onEnded { fermerHistoire() })
@@ -2367,22 +2378,39 @@ struct CoffreV2Page: View {
     /// ⚠️ Sans tirets dans le texte affiché (verdict explicite du 29-08). Et
     /// sans chiffre que le serveur ne garantit pas : le nombre de cartes d'un
     /// sachet n'est écrit nulle part, on ne l'invente pas ici.
-    static let recitNoir = RecitBooster(
-        titre: "Legendary\nbooster",
+    /// Dans la langue du profil (15-09) — des `static var`, pas des `let` :
+    /// la langue peut changer pendant que l'app vit (le film, `home()`).
+    /// ⚠️ « A hundred coins buy another » disait le récit Lune : on ne les
+    /// ACHÈTE plus depuis le 30-08, cent pièces EN DEVIENNENT un.
+    static var recitNoir: RecitBooster { RecitBooster(
+        titre: L("Booster\nlégendaire", "Legendary\nbooster"),
         corps: [
-            "A black booster always holds one legendary card. Not a chance at one. One, guaranteed.",
-            "It opens with a single silver coin. You cannot buy that coin, and you cannot earn it by training. It falls, rarely, somewhere along the path, and when it does, this is where it goes.",
-            "Inside, the card comes from the sealed registry: the pieces that exist in few copies, forged once and never again. The moon on the wrapper is the only thing that tells you which one waits.",
-            "Nothing else in the vault works this way. Everything else is patience. This one is luck, and it is meant to feel like it.",
-        ])
-    static let recitLune = RecitBooster(
-        titre: "The Lune\nbooster",
+            L("Un booster noir contient toujours une carte légendaire. Pas une chance d'en avoir une. Une, garantie.",
+              "A black booster always holds one legendary card. Not a chance at one. One, guaranteed."),
+            L("Il s'ouvre avec une seule pièce d'argent. Cette pièce ne s'achète pas, et l'entraînement ne la gagne pas. Elle tombe, rarement, quelque part sur le chemin, et quand elle tombe, c'est ici qu'elle va.",
+              "It opens with a single silver coin. You cannot buy that coin, and you cannot earn it by training. It falls, rarely, somewhere along the path, and when it does, this is where it goes."),
+            L("À l'intérieur, la carte vient du registre scellé : les pièces qui existent en peu d'exemplaires, forgées une fois et jamais plus. La lune sur le sachet est la seule chose qui dit laquelle attend.",
+              "Inside, the card comes from the sealed registry: the pieces that exist in few copies, forged once and never again. The moon on the wrapper is the only thing that tells you which one waits."),
+            L("Rien d'autre dans le coffre ne marche comme ça. Tout le reste est de la patience. Celui-ci est de la chance, et c'est fait pour se sentir.",
+              "Nothing else in the vault works this way. Everything else is patience. This one is luck, and it is meant to feel like it."),
+        ]) }
+    static var recitLune: RecitBooster {
+        // Les deux nombres du récit sont ceux de la base (`prix_booster`,
+        // `pieces_par_serie`), jamais écrits ici en toutes lettres.
+        let prix = max(EconomieWoop.shared.prixBooster, 1)
+        let taux = max(EconomieWoop.shared.piecesParSerie, 1)
+        return RecitBooster(
+        titre: L("Le booster\nLune", "The Lune\nbooster"),
         corps: [
-            "Every session you finish earns one. No condition, no streak to keep. You train, it arrives.",
-            "A hundred coins buy another, and coins come twenty at a time, one set after the next. That is the whole economy: the work you already do, counted.",
-            "Inside waits a hand from the Lune set, drawn when you tear it open and not a moment before. Most of them are common. Some are not.",
-            "It is the booster you will open the most, and the one the vault was built around.",
-        ])
+            L("Chaque séance terminée en rapporte un. Aucune condition, aucune série à tenir. Tu t'entraînes, il arrive.",
+              "Every session you finish earns one. No condition, no streak to keep. You train, it arrives."),
+            L("\(prix) pièces en deviennent un autre, et les pièces viennent \(taux) par \(taux), une série après l'autre. C'est toute l'économie : le travail que tu fais déjà, compté.",
+              "Every \(prix) coins turn into another, and coins come \(taux) at a time, one set after the next. That is the whole economy: the work you already do, counted."),
+            L("À l'intérieur attend une main de cartes du set Lune, tirée quand tu le déchires et pas un instant avant. La plupart sont communes. Certaines ne le sont pas.",
+              "Inside waits a hand from the Lune set, drawn when you tear it open and not a moment before. Most of them are common. Some are not."),
+            L("C'est le booster que tu ouvriras le plus, et celui autour duquel le coffre a été construit.",
+              "It is the booster you will open the most, and the one the vault was built around."),
+        ]) }
 
 
     private func ouvrirHistoire(_ robe: RobeBooster) {
@@ -2582,12 +2610,15 @@ struct CoffreV2Page: View {
         let prix = max(e.prixBooster, 1)
         return [
             // ① la pièce d'or : son solde, et l'horloge du versement quotidien.
-            //    ⚠️ En anglais, comme le reste de la page (tranché 30-08).
-            PiedVariante(nom: "Gold Coin",
-                         phrase: "Opens a Lune Booster.",
+            //    ⚠️ « En anglais, comme le reste de la page » (30-08) est
+            //    RENVERSÉ le 15-09 : « comme les autres blocs, une en anglais
+            //    et une en français selon le choix de l'onboarding » — `L()`.
+            PiedVariante(nom: L("Pièce d'or", "Gold Coin"),
+                         phrase: L("Ouvre un booster Lune.", "Opens a Lune Booster."),
                          glyphe: .piece(.or), nombre: e.or,
                          // ⚠️ Le taux vient du serveur (`pieces_par_serie`).
-                         sousPill: "\(e.piecesParSerie) coins for every set you finish.",
+                         sousPill: L("\(e.piecesParSerie) pièces par série terminée.",
+                                     "\(e.piecesParSerie) coins for every set you finish."),
                          jauge: jaugeRetour(e),
                          robe: nil, histoire: .lune, bouton: nil,
                          lueur: Self.manege[0].lueur),
@@ -2596,36 +2627,38 @@ struct CoffreV2Page: View {
             //    sous la conversion (M1, à poser) il vaudra le solde même.
             //    ⚠️ La phrase ne dit AUCUN nombre de cartes : le code de la
             //    page du récit refuse de l'écrire (voir `recitLune`).
-            PiedVariante(nom: "Lune Booster",
-                         phrase: "A pack of cards from the Lune set.",
+            PiedVariante(nom: L("Booster Lune", "Lune Booster"),
+                         phrase: L("Un sachet de cartes du set Lune.", "A pack of cards from the Lune set."),
                          glyphe: .sachet(.lune), nombre: e.boosters,
                          sousPill: nil,
                          jauge: .compte(courant: e.reste, cible: prix, monnaie: .or),
                          robe: .lune, histoire: nil,
                          // La casse est celle du composant (`enPhrase`) :
-                         // « Ouvrir » / « Locked ». « N COINS TO GO » est
+                         // « Ouvrir » / « Verrouillé ». « N COINS TO GO » est
                          // mort : la barre le dit déjà (§26.2, la redondance).
                          bouton: e.boosters > 0
-                            ? ("OUVRIR", true) : ("LOCKED", false),
+                            ? (L("OUVRIR", "OPEN"), true)
+                            : (L("VERROUILLÉ", "LOCKED"), false),
                          lueur: Self.manege[1].lueur),
             // ③ la pièce d'argent : PAS de barre — elle TOMBE (p ≈ 1/30), et
             //    la seule jauge possible exposerait la pitié.
-            PiedVariante(nom: "Silver Coin",
-                         phrase: "Opens a Legendary Booster.",
+            PiedVariante(nom: L("Pièce d'argent", "Silver Coin"),
+                         phrase: L("Ouvre un booster légendaire.", "Opens a Legendary Booster."),
                          glyphe: .piece(.argent), nombre: e.argent,
-                         sousPill: "A rare drop from the path.",
+                         sousPill: L("Elle tombe, rarement, sur le chemin.", "A rare drop from the path."),
                          jauge: nil, robe: nil, histoire: .noire, bouton: nil,
                          lueur: Self.manege[2].lueur),
             // ④ le booster noir : pas de barre non plus (rien ne s'accumule
             //    vers lui, il naît d'une pièce entière ; « courant / 1 »
             //    écrirait « 2 / 1 »). Son compte EST le solde d'argent.
-            PiedVariante(nom: "Legendary Booster",
-                         phrase: "One legendary card, guaranteed.",
+            PiedVariante(nom: L("Booster légendaire", "Legendary Booster"),
+                         phrase: L("Une carte légendaire, garantie.", "One legendary card, guaranteed."),
                          glyphe: .sachet(.noire), nombre: e.boostersNoirs,
                          sousPill: nil,
                          jauge: nil, robe: .noire, histoire: nil,
                          bouton: e.boostersNoirs > 0
-                            ? ("OUVRIR", true) : ("LOCKED", false),
+                            ? (L("OUVRIR", "OPEN"), true)
+                            : (L("VERROUILLÉ", "LOCKED"), false),
                          lueur: Self.manege[3].lueur),
         ]
     }
@@ -2678,7 +2711,7 @@ struct CoffreV2Page: View {
                     gainsOuverts = true
                 }
             })
-            .accessibilityLabel("Historique des gains")
+            .accessibilityLabel(L("Historique des gains", "Rewards history"))
     }
 
     /// LA SYNTHÈSE TIENT DANS UNE BARRE DE 20 POINTS.
@@ -2750,6 +2783,9 @@ struct CoffreV2Page: View {
     /// d'une pièce d'argent qui tombe (`claim_booster_legendaire`), et cette
     /// porte-là est déjà tenue par le solde d'argent.
     private func ouvrirManege(_ robe: RobeBooster) {
+        #if DEBUG
+        traceQA("coffre : ouvrirManege(\(robe)) boosters=\(economie.boosters) noirs=\(economie.boostersNoirs)")
+        #endif
         if robe == .noire || economie.boosters > 0 {
             onClose()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
@@ -2783,9 +2819,6 @@ struct CoffreV2Page: View {
                 }
 
                 carte(sc).offset(y: bas)
-        #if DEBUG
-        traceQA("coffre : ouvrirManege(\(robe)) boosters=\(economie.boosters) noirs=\(economie.boostersNoirs)")
-        #endif
                 // ⚠️ **LES NÉONS SONT LA MÊME IMAGE QUE L'ARCHE** : ils
                 // prennent le mouvement du décor au pixel près, sur-cadrage
                 // compris. Un point d'écart et les anneaux allumés sortent de
@@ -2853,6 +2886,11 @@ struct CoffreV2Page: View {
                         .offset(y: bas)
                 }
                 contenu(sc).offset(y: bas)
+                    // Page éteinte (film d'arrivée) : rien à lire pour VoiceOver.
+                    // ⚠️ XCUITest, lui, IGNORE ce modificateur (mesuré 18-09, deux
+                    // fois : le bouton restait dans l'arbre) — c'est `allume` du
+                    // pied qui tient le banc à l'écart, pas cette ligne.
+                    .accessibilityHidden(pageOp == 0)
                 // LA GERBE passe DEVANT : elle sort de la pièce, elle ne se
                 // cache pas derrière.
                 if let ne = gerbeNe {
@@ -2886,11 +2924,6 @@ struct CoffreV2Page: View {
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         // LE BOUCLIER SYSTÈME (03-09, item 10) : la moitié qui manquait —
-                    // Page éteinte (film d'arrivée) : rien à lire pour VoiceOver.
-                    // ⚠️ XCUITest, lui, IGNORE ce modificateur (mesuré 18-09, deux
-                    // fois : le bouton restait dans l'arbre) — c'est `allume` du
-                    // pied qui tient le banc à l'écart, pas cette ligne.
-                    .accessibilityHidden(pageOp == 0)
         // l'indicateur était déjà caché, mais le geste bas partait au
         // système au premier glissement.
         .defersSystemGestures(on: .bottom)
@@ -3360,7 +3393,7 @@ struct CoffreV2Page: View {
                 // parce que le mur était éclairé — mesuré sur la capture, le
                 // chevron ressortait à **65 de luminance contre 18 pour la
                 // pill des gains** : une dalle grise posée sur la nuit.
-                ChipVerre(symbole: "chevron.left", label: "Fermer",
+                ChipVerre(symbole: "chevron.left", label: L("Fermer", "Close"),
                           clarte: 0, action: onClose)
                 titre
             }

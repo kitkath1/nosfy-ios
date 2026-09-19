@@ -1,0 +1,79 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-count53/sim-dd/Build/Products/WoopUITests_iphonesimulator26.5-arm64.xctestrun -destination "platform=iOS Simulator,id=6A504B5A-F76C-4EC1-B09A-E9CA4673B32A" "-only-testing:WoopUITests/CountdownUITests/test06_startBordHaut" -resultBundlePath /tmp/woop-count54/surface54.xcresult -parallel-testing-enabled NO
+
+2026-09-16 20:43:02.261 xcodebuild[15476:16657649] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-count54/surface54.xcresult
+
+2026-09-16 20:43:02.267 xcodebuild[15476:16657649] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:43:02.419 xcodebuild[15476:16657649] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:43:03.454916+0200 WoopUITests-Runner[15554:16657925] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-16 20:43:03.953.
+Test Suite 'WoopUITests.xctest' started at 2026-09-16 20:43:03.953.
+Test Suite 'CountdownUITests' started at 2026-09-16 20:43:03.953.
+Test Case '-[WoopUITests.CountdownUITests test06_startBordHaut]' started.
+    t =     0.00s Start Test at 2026-09-16 20:43:03.953
+    t =     0.02s Set Up
+    t =     0.02s Terminate fr.kathryn.woop:0
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+2026-09-16 20:43:04.014 xcodebuild[15476:16657649] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-09-16 20:43:04.014 xcodebuild[15476:16657649] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     0.68s         Setting up automation session
+objc[15554]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10ab88310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10a42c398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     1.34s         Wait for fr.kathryn.woop to idle
+    t =     3.16s Waiting 25.0s for "Start" Button to exist
+    t =     4.21s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     4.21s         Checking existence of `"Start" Button`
+    t =     4.30s         Capturing element debug description
+    t =     5.23s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     5.23s         Checking existence of `"Start" Button`
+    t =     5.28s         Capturing element debug description
+    t =     6.22s     Checking `Expect predicate `existsNoRetry == 1` for object "Start" Button`
+    t =     6.22s         Checking existence of `"Start" Button`
+    t =     6.25s Find the "Start" Button
+    t =     6.29s Find the "count-state" StaticText
+WOOP_START_CIBLE=(148.66666666666666, 448.3333333333333, 73.66666666666669, 34.0);point=0.5,0.08;actives=1;id=04F546EA-A762-4A78-806F-DA88C27A8FAE;film=0;page=home
+    t =     6.32s Tap "Start" Button[0.50, 0.08]
+    t =     6.32s     Wait for fr.kathryn.woop to idle
+    t =     6.32s     Find the "Start" Button
+    t =     6.35s     Check for interrupting elements affecting "Start" Button
+    t =     6.38s     Synthesize event
+    t =     6.38s         Find the "Start" Button
+    t =     6.41s         Find the "Start" Button
+    t =     6.45s         Find the "Start" Button
+    t =     6.77s     Wait for fr.kathryn.woop to idle
+    t =     7.81s Checking existence of `"Start" Button`
+    t =     7.88s Find the "count-state" StaticText
+    t =     8.83s Checking existence of `"Start" Button`
+    t =     8.89s Find the "count-state" StaticText
+    t =     9.84s Checking existence of `"Start" Button`
+    t =     9.90s Find the "count-state" StaticText
+    t =    10.85s Checking existence of `"Start" Button`
+    t =    10.92s Find the "count-state" StaticText
+    t =    11.77s Checking existence of `"Start" Button`
+    t =    11.85s Find the "count-state" StaticText
+    t =    11.88s Find the "count-state" StaticText
+/tmp/woop-count53/banc/WoopUITests/CountdownUITests.swift:92: error: -[WoopUITests.CountdownUITests test06_startBordHaut] : XCTAssertTrue failed - actives=1;id=04F546EA-A762-4A78-806F-DA88C27A8FAE;film=0;page=home
+    t =    11.94s Tear Down
+Test Case '-[WoopUITests.CountdownUITests test06_startBordHaut]' failed (12.195 seconds).
+Test Suite 'CountdownUITests' failed at 2026-09-16 20:43:16.149.
+	 Executed 1 test, with 1 failure (0 unexpected) in 12.195 (12.196) seconds
+Test Suite 'WoopUITests.xctest' failed at 2026-09-16 20:43:16.149.
+	 Executed 1 test, with 1 failure (0 unexpected) in 12.195 (12.196) seconds
+Test Suite 'Selected tests' failed at 2026-09-16 20:43:16.150.
+	 Executed 1 test, with 1 failure (0 unexpected) in 12.195 (12.197) seconds
+2026-09-16 20:43:25.935 xcodebuild[15476:16657649] [MT] IDETestOperationsObserverDebug: 23.513 elapsed -- Testing started completed.
+2026-09-16 20:43:25.935 xcodebuild[15476:16657649] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-16 20:43:25.935 xcodebuild[15476:16657649] [MT] IDETestOperationsObserverDebug: 23.513 sec, +23.513 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-count54/surface54.xcresult
+
+Failing tests:
+	CountdownUITests.test06_startBordHaut()
+
+** TEST EXECUTE FAILED **
+
+Testing started

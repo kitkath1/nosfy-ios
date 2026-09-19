@@ -1,4 +1,4 @@
-# Le site de documentation
+# Le site de documentation de Nosfy
 
 **C'est la référence du projet.** Il répond à **une seule question**, sur chaque
 brique du produit : *est-ce que ça marche, est-ce que ça ment, ou est-ce que ça

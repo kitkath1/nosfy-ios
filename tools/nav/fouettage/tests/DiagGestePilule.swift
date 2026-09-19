@@ -85,4 +85,46 @@ final class DiagGestePilule: XCTestCase {
             b.pilule.swipeUp(velocity: .slow)
         }
     }
+
+    /// V2 06-09 — L'ÉCHELLE DU CENTRE, sans jamais toucher le stop.
+    /// La carte fine lisait « mort » au centre à TOUS les rangs — mais
+    /// chaque rang commençait par un tap aile-G qui pressait le STOP :
+    /// l'hypothèse est que sa card s'ouvrait et que le tap centre suivant
+    /// la REFERMAIT (consommé par le scrim). Ici : app fraîche, aucune
+    /// pression du stop — chaque échelon du centre doit SORTIR la
+    /// pastille si la prise est vraiment vivante.
+    func testF_echelleCentreSansStop() {
+        let b = BancPilule(); b.lancerEnSeanceAvecPilule()
+        b.gesteAttendu("echelle-entre",
+                       geste: { b.jeter(b.centrePilule(), dy: -700) },
+                       attendu: { $0.dansIle })
+        let x = b.app.frame.midX
+        for y in [CGFloat(58), 65, 72, 80, 88] {
+            guard b.attendre(4, { $0.dansIle }) else {
+                print("ECHELLE y=\(Int(y)) : PAS TESTÉ (retour manqué)")
+                continue
+            }
+            b.taper(b.pointEcran(x: x, y: y))
+            Thread.sleep(forTimeInterval: 1.2)
+            let e = b.etat()
+            let sorti = !(e?.dansIle ?? true)
+            print("ECHELLE centre y=\(Int(y)) : \(sorti ? "SORT" : "muet") "
+                + "(stop=\(e?.nbStop ?? -1))")
+            if sorti {
+                b.gesteAttendu("echelle-rentre",
+                               geste: { b.jeter(b.centrePilule(), dy: -700) },
+                               attendu: { $0.dansIle })
+            }
+        }
+        // Et l'aile gauche BASSE : à y 80, est-ce encore le stop qui
+        // claime (stop= monte) ou la prise (sortie) ?
+        if b.attendre(4, { $0.dansIle }) {
+            let s0 = b.etat()?.nbStop ?? -1
+            b.taper(b.pointEcran(x: x - 108, y: 80))
+            Thread.sleep(forTimeInterval: 1.2)
+            let e = b.etat()
+            print("ECHELLE aile-G y=80 : sorti=\(!(e?.dansIle ?? true)) "
+                + "stop \(s0)→\(e?.nbStop ?? -1)")
+        }
+    }
 }

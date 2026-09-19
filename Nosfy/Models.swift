@@ -325,6 +325,9 @@ final class Workout {
     var startedAt: Date = Date.now
     var endedAt: Date?
     var notes: String = ""
+    /// Sauvé avec endedAt : une fermeture avant le premier appel reste rejouable.
+    var recompenseARegler: Bool = false
+    var bilanRecompense: Data?
 
     @Relationship(deleteRule: .cascade, inverse: \LoggedExercise.workout)
     var exercises: [LoggedExercise]? = []
@@ -375,6 +378,12 @@ final class Workout {
     /// la clôture (les gardes « séries > 0 ») quand la muscu est à zéro.
     var cardioFait: Bool {
         orderedExercises.contains { $0.intervallesFaits > 0 || $0.longueurs > 0 }
+    }
+
+    var faitPourRoute: Bool {
+        seriesPayantes > 0 || orderedExercises.contains { exo in
+            exo.longueurs > 0 || exo.phasesFaites.contains { $0.isEffort && $0.seconds > 0 }
+        }
     }
 
     /// Volume total (charge × répétitions) de la séance.

@@ -45,26 +45,39 @@ Demande historique du 05-09 :
 
 ---
 
-## 1. LA CHAÎNE D'AUJOURD'HUI — ce sur quoi ça se greffe
+## 1. LA CHAÎNE D'AUJOURD'HUI — celle de la ROUTE
+
+⚠️ **CORRECTION DU 05-09** : la première version de ce plan accrochait le
+décompte au panneau du galet de la HOME (`DepartEtat.proposer()` →
+« Commencer »). **Ce n'est pas le départ dont elle parle.** Le sien est celui de
+la **route des galets** — « il est sur la route des galets, il clique sur
+start ». Ce sont deux portes différentes, et une seule est la bonne.
 
 | étape | où | ce qui se passe |
 |---|---|---|
-| le galet play | `DepartSeance.swift:193` | `panneauOuvert = true` — le panneau du départ monte |
-| « Commencer » | `WoopApp.swift:1618-1626` | `depart.fermer()` · `tutoDemande = true` · `startWorkout()` |
-| la séance naît | `WoopApp.swift:821-833` | `Workout()` inséré, `WorkoutActivityController.ensure`, puis **`selection = .exercises`** |
-| la page exos | `ExercisesView.swift:1030` | `armerTutoSiDemande()` → le tuto **existant** (voile percé) à +0,3 s |
+| la route s'ouvre | `HomeNuit.swift:2514` · `:3208` → `DepartEtat.ouvrirChemin` (`DepartSeance.swift:151-163`) | le chemin monte par-dessus la home endormie |
+| on tape le galet du jour | `DuolinguoPage.swift:1364-1399` | `PanneauDepartChemin` grandit depuis le galet, CTA **« Start »** (`cEst` = c'est aujourd'hui) |
+| **« Start »** | `DuolinguoPage.swift:1391` → `fermerEtDemarrer()` (`:2029` la variante galet) | le panneau se résorbe en **0,18 s**, le relais part à **+0,20 s** — la sortie va au bout (leçon du 28-08 : à +0,15 s on coupait 83 % de l'animation) |
+| le relais | `HomeNuit.demarrerDepuisChemin()` (`:2451`) | `ouvrirSeanceEnBase()` · `DepartEtat.fermerChemin(sansAnimation: true)` · puis **`onRoute(.exercises)` à +0,05 s** |
+| la page exos | `ExercisesView.swift:1030` | `armerTutoSiDemande()` — mais `tutoDemande` n'est posé QUE par le panneau de la home (`WoopApp.swift:1622`), **donc le départ par la route n'arme aucun tuto aujourd'hui** |
+
+**LE POINT D'INSERTION EST DONC `demarrerDepuisChemin()`** : la séance y naît,
+le chemin s'y replie, et c'est lui qui décide quand la page exos prend la scène.
+Le décompte se glisse entre les deux — il **couvre** la bascule au lieu de la
+subir.
 
 **Le tuto existant n'est PAS celui qu'elle décrit** : c'est un voile
 `.ultraThinMaterial` percé de DEUX fenêtres (`VoileTuto`, remplissage `evenOdd`)
 qui s'ouvrent en cascade sur **la card** et **la molette**, avec des liserés de
 braise qui respirent (`ExercisesView.swift:1058-1150`). Pas de cercle, pas de
 flèche, pas de texte, pas de skip. Et il est servi **UNE FOIS PAR
-INSTALLATION** en release (`tutoExosVu`, `:1040-1043`) — en DEBUG il rejoue à
-chaque départ.
+INSTALLATION** en release (`tutoExosVu`, `:1040-1043`).
 
 Ce qu'on garde de lui : **la mécanique du voile percé** (le doigt passe à
 travers la fenêtre) et **les ancres** (`anchorPreference` / `SlotAnchorKey`,
-`:732` et `:2050`). Ce qu'on jette : les deux fenêtres, la cascade, la braise.
+`:732` et `:2050`). Ce qu'on jette : les deux fenêtres, la cascade, la braise,
+et sa clé — et il faut **armer le tuto depuis la route**, ce que personne ne
+fait aujourd'hui.
 
 ## 2. LA VIDÉO — mesurée, et telle quelle elle est INJOUABLE
 
@@ -119,8 +132,13 @@ Sur la page exos, tout se voile **sauf un exercice** :
 - **la flèche** : le même vocabulaire — un tracé courbe qui s'écrit après le
   cercle (retard 0,25 s), avec une pointe, en `LinearGradient` blanc
   (opaque à la pointe, éteint à la queue) ;
-- **le texte** : « Sélectionner un exercice pour commencer votre
-  entraînement », blanc, la fonte de la maison, sous la flèche ;
+- **le texte** : COURT. « Apple ne fait que des choses sans sous-titre » —
+  **quelques mots, jamais une phrase explicative**. Ma proposition :
+  **« Choisissez un exercice »** (l'app dit déjà exactement ces mots dans
+  l'invite de la pastille, `InviteAnimee` — une seule langue dans la maison).
+  Blanc, la fonte de la maison, sous la flèche. ⚠️ La phrase de la première
+  version du plan (« Sélectionner un exercice pour commencer votre
+  entraînement ») est morte : c'est un sous-titre, pas un mot ;
 - **skip** : dessous, discret (blanc 0,45), et il **éteint tout le tuto** —
   pas seulement l'étape ;
 - ⚠️ **le doigt passe à travers la fenêtre** (c'est déjà la loi du voile
@@ -131,8 +149,11 @@ Sur la page exos, tout se voile **sauf un exercice** :
 
 - La fenêtre voyage de la card vers **la Dynamic Island** (`IleGeo`,
   `PiluleVagabonde.swift` — cotes PHYSIQUES, l'hôte doit ignorer la zone sûre) ;
-- même cercle fin autour de la capsule, flèche qui monte, texte « Retrouvez ici
-  le détail de votre séance » ;
+- même cercle fin autour de la capsule, flèche qui monte, et un texte tout
+  aussi court. Le sujet de l'étape, c'est **qu'on peut la TIRER** (« montrer la
+  partie Display Island où on peut tirer la pastille ») — pas qu'il y a un
+  détail quelque part. Deux candidats, **? à trancher** :
+  **« Tirez votre séance »** ou **« Tirez pour la voir »** ;
 - puis **fin** : le voile s'éteint, **on reste sur la page exos**, aucune
   navigation (« bien sûr je reste sur la page exo pour sélectionner un
   exercice »).
@@ -180,10 +201,17 @@ cercle — sinon on entoure une card hors écran. Et le remède connu est étroi
 (`ScrollPosition(edge: .top)` + `scrollTo(y:)`). Le retour se fait AVANT le
 voile, jamais pendant : une page qui défile sous un voile est illisible.
 
-Les deux autres restent sur ma reco, à corriger d'un mot si elle veut :
-**④** iPhone sans Dynamic Island → l'étape 2 se replie sur la pastille à sa
-place réelle (`PiluleEtat.ancreGlobale`) ; **⑤** le décompte vaut pour TOUT
-départ de séance, pas seulement depuis la route (une règle, pas une exception).
+**⑥ NOUVELLE QUESTION — la langue.** La route parle **anglais** de bout en bout
+(« Today's session », « Start », « Later », `DuolinguoPage.swift:1371-1380`), la
+pastille aussi (« In session »), mais la page exos parle **français**
+(« Exercices », « Choisissez un exercice »). Le tuto arrive juste entre les
+deux. **Ma reco : le français**, celui de la page où il se pose — mais c'est un
+mot à dire, pas une déduction.
+
+**④ est MORTE (Kathryn, 05-09 : « je m'en fiche des iPhone sans Display
+Island »)** — aucun repli à coder, l'étape 2 vise l'île et c'est tout.
+**⑤** reste sur ma reco : le décompte vaut pour TOUT départ de séance, pas
+seulement depuis la route (une règle, pas une exception).
 
 ### Ce que ces réponses ferment côté code
 

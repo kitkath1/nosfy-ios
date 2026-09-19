@@ -1,0 +1,147 @@
+--- avant/HomeNuit.swift
++++ Nosfy/Views/HomeNuit.swift
+@@ -3399,7 +3399,12 @@
+         let flouSemaine = coefSonde(6), flouPiece = coefSonde(7)
+         // ── CE QUE FAIT L'HORLOGE ────────────────────────────────────────────
+         let supplement = supplementSalutation(geo.size.width)
+-        let chute = DepartCine.chuteTexte(e) - supplement * DepartCine.bascule(e)
++        // Le texte part plus haut ; sa destination près du slider reste
++        // fixe. Les deux phrases gardent le même trajet pendant leur fondu.
++        let courseTexte = DepartCine.courseTexte + 48
++            - EntetePage.haut(hauteur: phrase.taille * 1.21)
++        let chute = DepartCine.chuteTexte(e) * courseTexte / DepartCine.courseTexte
++            - supplement * DepartCine.bascule(e)
+         let flou = DepartCine.sstep(DepartCine.flouAt,
+                                     DepartCine.flouAt + DepartCine.flouFor, e)
+         let mort = DepartCine.sstep(DepartCine.fadeAt,
+@@ -3475,7 +3480,7 @@
+                 // alors confondus en permanence — c'est ce qui autorise le fondu
+                 // croisé à n'importe quel instant sans que la dernière ligne,
+                 // celle qu'on lit, ne bouge d'un pixel.
+-                .offset(y: chute - DepartCine.courseTexte + supplement)
++                .offset(y: chute - courseTexte + supplement)
+                 .allowsHitTesting(false)
+ 
+             // LE SLIDER VIT DANS L'ESPACE NOIR SOUS LA CARD — celui que la
+@@ -3562,7 +3567,8 @@
+                               params: phraseMuee(m), rasant: rasant,
+                               fragments: fragmentsPhrase(),
+                               ecran: geo.size.width,
+-                              hautEcran: geo.safeAreaInsets.top + 48,
++                              hautEcran: geo.safeAreaInsets.top
++                                + EntetePage.haut(hauteur: phrase.taille * 1.21),
+                               paroleActive: !enSeance && bascule < 0.02 && !menuOuvert
+                                 && !coffreOuvert && !cheminOuvert && !exoOuvert && !reglageOuvert,
+                               etatVoix: etatPhraseRouge, nombreVoix: faitsAffiche, palierVoix: faitsAffiche,
+@@ -3571,11 +3577,9 @@
+                               reglageOuvert: $reglageOuvert)
+                     }
+                         .padding(.leading, 24)
+-                        // 56 pt sous la barre. Le ScrollView est MORT (la
+-                        // home tient sur un écran, c'est le TIRAGE qui la
+-                        // déplace) : plus d'`ignoresSafeArea`, le padding
+-                        // se mesure depuis la safe area — 48 nu.
+-                        .padding(.top, 48)
++                        // La première ligne partage l'axe des titres et
++                        // chevrons des autres pages, depuis la zone sûre.
++                        .padding(.top, EntetePage.haut(hauteur: phrase.taille * 1.21))
+                         // ⚠️ LE PREMIER PALIER SE JOUE SOUS LE DOIGT (0 → 3,5 pt)
+                         // et il dit « la pièce change » ; le second (→ 22) dit
+                         // « ce plan est parti ». Le flou vit sur les GLYPHES —
+@@ -3601,11 +3605,8 @@
+                         .opacity((1 - 0.70 * min(max((scroll - 40) / 120, 0), 1))
+                                  * (1 - bascule)
+                                  * DepartCine.matiere(e))
+-                        // Elle descend de 403 pt : de sa place (bas à 291)
+-                        // jusqu'à celle de la phrase d'arrivée (bas à 694). Plus
+-                        // loin que la pilule (334) — le plan du devant va plus
+-                        // loin que celui du fond, c'est la parallaxe, et elle est
+-                        // dans le bon sens.
++                        // La course compense aussi la remontée de l'en-tête :
++                        // l'arrivée reste au-dessus du slider.
+                         .offset(y: chute)
+                         // Le plan traîne : 14 % de retard sur le tirage —
+                         // la parallaxe INTERNE de la card.
+@@ -3937,15 +3938,14 @@
+                     // épaisseur — et le croissant descend de lui-même à
+                     // 52 % : le néon discret est DANS la matière, pas dans
+                     // une opacité posée dessus.
+-                    // Alignée sur l'œil de la première ligne de la phrase
+-                    // (top 48 + centre de ligne 18 − rayon 23 = 43), à la
+-                    // marge miroir du texte (24).
++                    // Même axe que la première ligne et les chevrons ;
++                    // la marge horizontale reste le miroir du texte (24).
+                     CoffreFortCoinButton(onPress: { toucherPiece($0) },
+                                          action: { ouvrirCoffre() },
+                                          matte: 1)
+                         // LA VISITE (13-09) : les pièces, quatrième temps.
+                         .visiteAncre("visite-pieces")
+-                        .padding(.top, 43)
++                        .padding(.top, EntetePage.haut(hauteur: CoffreFortCoinButton.diameter))
+                         .padding(.trailing, 24)
+                         .frame(maxWidth: .infinity, maxHeight: .infinity,
+                                alignment: .topTrailing)
+--- avant/Foyer.swift
++++ Nosfy/Views/Foyer.swift
+@@ -129,10 +129,8 @@
+ enum FoyerGeo {
+     static let arete: CGFloat = 24
+ 
+-    /// LA PHRASE EST À LA MÊME HAUTEUR QUE LA HOME DE BASE (verdict 14-09) :
+-    /// 48 pt fixes depuis le haut du slot — la cote de `HomeNuit` (~3471),
+-    /// pas une fraction. Même arête, même hauteur : c'est LE MÊME BLOC.
+-    static let phraseHaut: CGFloat = 48
++    /// Même première ligne que la Home normale, sur l'axe des en-têtes.
++    static let phraseHaut = EntetePage.haut(hauteur: PhraseParams().taille * 1.21)
+     /// La chambre : trois dalles qui SE RECOUVRENT (y en fraction de B).
+     static let w3 = (y: 0.3526, l: 188.0, h: 68.0)
+     static let w2 = (y: 0.4175, l: 246.0, h: 84.0)
+--- avant/ChipVerre.swift
++++ Nosfy/Views/ChipVerre.swift
+@@ -1,4 +1,14 @@
+ import SwiftUI
++
++/// Axe commun aux chevrons, titres et actions des en-têtes, depuis la zone sûre.
++enum EntetePage {
++    static let margeHaute: CGFloat = 4
++    static let hauteurAction: CGFloat = 44
++
++    static func haut(hauteur: CGFloat) -> CGFloat {
++        margeHaute + (hauteurAction - hauteur) / 2
++    }
++}
+ 
+ // MARK: - LE chip de verre de la maison
+ 
+@@ -35,7 +45,7 @@
+                         .foregroundStyle(Self.encreClaire)
+                         .opacity(c)
+                 }
+-                .frame(width: 44, height: 44)
++                .frame(width: EntetePage.hauteurAction, height: EntetePage.hauteurAction)
+                 .background {
+                     // DEUX VERRES EN FONDU, et c'est la clé : baisser la
+                     // teinte d'un verre `.regular` ne le rend PAS
+@@ -97,7 +107,7 @@
+             droite()
+         }
+         .padding(.horizontal, 20)
+-        .padding(.top, 4)
++        .padding(.top, EntetePage.margeHaute)
+         .padding(.bottom, 8)
+     }
+ }
+--- avant/NosfyApp.swift
++++ Nosfy/NosfyApp.swift
+@@ -1817,7 +1817,10 @@
+             // 13-09 (Kathryn : « enlève le menu quand on affiche les
+             // overlays ») : une chambre longue ouverte efface la nav —
+             // la feuille prend tout, la nav revient en fondu à la fermeture.
+-            if NavEtat.shared.bandeVisiblePubliee, ChambreEtat.shared.ouverte == nil {
++            // Route est une page plein écran : la demande de la Home
++            // encore montée dessous ne doit pas y faire apparaître la nav.
++            if NavEtat.shared.bandeVisiblePubliee, ChambreEtat.shared.ouverte == nil,
++               !depart.cheminOuvert {
+                 // ⚠️ CENTRÉE DANS LE NOIR (04-09 : « centre la nav au
+                 // milieu de l'espace noir » — collée au bas elle mordait
+                 // l'indicateur, posée sur la zone sûre elle était trop

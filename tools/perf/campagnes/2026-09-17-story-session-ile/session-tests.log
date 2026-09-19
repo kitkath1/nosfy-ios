@@ -1,0 +1,29 @@
+/Users/kathryn/Desktop/woochoper-ios/tools/serveur/tests/session_regression.swift:110:22: warning: no 'async' operations occur within 'await' expression
+108 |         do { _ = try await s.token(); fatalError("refus attendu") } catch {}
+109 |         check(CoffreSession.lire() == nil, "refresh révoqué efface la session")
+110 |         let portes = await CompteEtat.shared.rappels
+    |                      `- warning: no 'async' operations occur within 'await' expression
+111 |         check(portes == 1, "une seule demande de reconnexion")
+112 | 
+2026-09-17 15:23:22.779 session-regression[5397:17485337] NetworkStorageDB:_openDBReadConnections: failed to open read connection to DB @ /Users/kathryn/Library/Caches/session-regression/Cache.db.  Error=14. Cause=unable to open database file
+2026-09-17 15:23:22.779 session-regression[5397:17485337] The read-connection to the DB=/Users/kathryn/Library/Caches/session-regression/Cache.db is NOT valid.  Unable to determine schema version.
+2026-09-17 15:23:22.779 session-regression[5397:17485337] NetworkStorageDB:_openDBWriteConnections: failed to open write connection to DB @ /Users/kathryn/Library/Caches/session-regression/Cache.db.  Error=14. Cause=unable to open database file
+2026-09-17 15:23:22.780 session-regression[5397:17485337] DEBUG: there is no SQL cache DB located at /Users/kathryn/Library/Caches/session-regression/Cache.db.
+2026-09-17 15:23:22.780 session-regression[5397:17485337] DEBUG: there is no SQL cache DB located at /Users/kathryn/Library/Caches/session-regression/Cache.db-shm.
+2026-09-17 15:23:22.780 session-regression[5397:17485337] DEBUG: there is no SQL cache DB located at /Users/kathryn/Library/Caches/session-regression/Cache.db-wal.
+PASS jeton frais
+PASS renouvellement avant expiration
+PASS jeton expiré
+PASS jeton illisible
+PASS expiration absente
+PASS cache valide sans réseau
+PASS 30 appels concurrents, un seul refresh
+PASS rotation conservée
+PASS 401 ancien sans invalidation du jeton neuf
+PASS panne réseau conserve la session
+PASS reprise réseau renouvelle
+[session] refresh refusé (401) → la session est oubliée · {"refresh_token":"refresh-renouvele","access_token":"e30.eyJleHAiOjE3ODk2NTUwMDIuOTk3MTI0LCJzdWIiOiJhbGljZSJ9.signature","user":{"id":"alice
+PASS refresh révoqué efface la session
+PASS une seule demande de reconnexion
+PASS refresh tardif ne remplace pas le nouveau compte
+PASS refresh tardif ne ressuscite pas une déconnexion

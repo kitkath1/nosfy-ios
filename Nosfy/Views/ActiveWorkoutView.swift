@@ -160,6 +160,10 @@ struct ActiveWorkoutSheet: View {
     /// « Ajouter un exercice » : fourni par la racine, ferme la feuille et
     /// ouvre la bibliothèque.
     var onAddExercise: (() -> Void)? = nil
+    /// LE STOP DU PLAYER passe par LE PANNEAU DE PAUSE de la maison
+    /// (fourni par la racine : elle ferme la feuille et monte le
+    /// panneau). Sans lui, l'alerte système d'origine reste le repli.
+    var onStopViaPause: (() -> Void)? = nil
 
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
@@ -273,7 +277,13 @@ struct ActiveWorkoutSheet: View {
             .padding(.horizontal, 6)
 
             FinishWorkoutButton(enabled: !workout.orderedExercises.isEmpty) {
-                confirmFinish = true
+                // Le panneau de pause de la maison quand la racine le
+                // fournit — l'alerte système n'est plus que le repli.
+                if let stop = onStopViaPause {
+                    stop()
+                } else {
+                    confirmFinish = true
+                }
             }
             .padding(.horizontal, 6)
         }

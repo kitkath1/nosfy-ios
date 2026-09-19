@@ -35,6 +35,8 @@ final class CompteEtat {
     var porteDemandee = false
     /// Invalide les retours réseau de la personne précédente.
     var generationDonnees = UUID()
+    var seanceEnCours = false
+    var finSeancePresentee = false
     var raisonPorte: String?
     /// La porte, le film de Nosfy ou le splash tiennent l'écran — le Welcome
     /// Back (et tout ce qui parle à une personne entrée) attend. Vrai au
@@ -84,6 +86,7 @@ enum Compte {
                 return .refusee(m)
             }
         }
+        await ReglementSeance.shared.reprendre()
         await OutboxGains.shared.vider()
         let gainsRestants = await OutboxGains.shared.enAttente
         if gainsRestants > 0 {
@@ -151,6 +154,8 @@ enum Compte {
     @MainActor
     static func effacerToutCeQuiEstAElle(contexte: ModelContext) async {
         CompteEtat.shared.generationDonnees = UUID()
+        CompteEtat.shared.seanceEnCours = false
+        CompteEtat.shared.finSeancePresentee = false
         DepartEtat.shared.oublierCompte()
         RewardCheminEtat.shared.oublierCompte()
         await OutboxGains.shared.effacer()
@@ -233,6 +238,7 @@ enum Compte {
         let depart = DepartEtat.shared
         let retenue: String? =
             etat.enPorte ? "la porte, le film ou le splash tient l'écran"
+            : (etat.seanceEnCours || etat.finSeancePresentee || depart.cheminOuvert || depart.panneauOuvert || depart.pauseOuverte) ? "séance, story ou route à l’écran"
             : PremiereArrivee.premiereFois ? "première arrivée (c'est Nosfy qui parle)"
             : !eco.serveur ? "le serveur n'a pas répondu"
             : !eco.retourDisponible ? "retour_disponible faux (rien à prendre, ou aucune séance finie — S4)"

@@ -1,0 +1,119 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-stories71-runtime-dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun -destination platform=iOS,id=00008120-001E4CDC0A85A01E -parallel-testing-enabled NO -resultBundlePath /tmp/woop-stories71-observer.xcresult
+
+2026-09-18 08:36:17.351 xcodebuild[18823:18389448] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-stories71-observer.xcresult
+
+2026-09-18 08:36:17.357 xcodebuild[18823:18389448] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 08:36:17.454 xcodebuild[18823:18389448] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-18 08:36:17.890 xcodebuild[18823:18389448] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 08:36:18.029 xcodebuild[18823:18389448] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 08:36:20.677984+0200 NavRuntimeUITests-Runner[46827:3575619] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'All tests' started at 2026-09-18 08:36:22.286.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-18 08:36:22.286.
+Test Suite 'NavRuntimeUITests' started at 2026-09-18 08:36:22.286.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testObserverSansRelancer]' started.
+    t =     0.00s Start Test at 2026-09-18 08:36:22.287
+    t =     0.03s Set Up
+ETAT AVANT: 4
+2026-09-18 08:36:22.681 xcodebuild[18823:18389448] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     0.33s Added attachment named 'avant-refroidissement'
+    t =     0.34s Requesting snapshot of accessibility hierarchy for app with pid 46674
+    t =     0.72s Requesting snapshot of accessibility hierarchy for app with pid 46674
+Attributes: Application, 0x10a0d7700, pid: 46674, label: 'Woop'
+Element subtree:
+ →Application, 0x10a0d7700, pid: 46674, label: 'Woop'
+    Window (Main), 0x10a0d7980, {{0.0, 0.0}, {393.0, 852.0}}
+      Other, 0x10a0d7ac0, {{0.0, 0.0}, {393.0, 852.0}}
+        Other, 0x10a0d57c0, {{0.0, 0.0}, {393.0, 852.0}}
+          Other, 0x10a0d7c00, {{0.0, 0.0}, {393.0, 852.0}}
+            Other, 0x10a0d7d40, {{0.0, 0.0}, {393.0, 852.0}}
+              Other, 0x10a0d7e80, {{0.0, 0.0}, {393.0, 852.0}}
+                Other, 0x10d9d4000, {{0.0, 0.0}, {393.0, 852.0}}
+                  Other, 0x10d9d4140, {{0.0, 0.0}, {393.0, 852.0}}
+                    Other, 0x10d9d4280, {{0.0, 0.0}, {393.0, 852.0}}
+                      Other, 0x10d9d43c0, {{0.0, 0.0}, {393.0, 852.0}}
+                        Other, 0x10d9d4500, {{0.0, 0.0}, {393.0, 852.0}}
+                          Other, 0x10d9d4640, {{0.0, 0.0}, {393.0, 852.0}}
+                            Other, 0x10d9d4780, {{0.0, 0.0}, {393.0, 852.0}}
+                              Other, 0x10d9d48c0, {{0.0, 0.0}, {393.0, 852.0}}
+                                Other, 0x10d9d4a00, {{0.0, 0.0}, {393.0, 852.0}}
+                                  Other, 0x10d9d4b40, {{0.0, 0.0}, {393.0, 852.0}}
+                                    StaticText, 0x10d9d4c80, {{-1215.5, -2595.8}, {1677.3, 581.3}}, label: 'Woodchopper poulie haute'
+                                    StaticText, 0x10d9d4dc0, {{-1215.5, -1990.5}, {1541.3, 128.0}}, label: 'Abdos • Obliques et transverse'
+                                    StaticText, 0x10d9d4f00, {{-1215.5, -1622.5}, {893.3, 98.7}}, label: 'DERNIÈRE CHARGE'
+                                    StaticText, 0x10d9d5040, {{-1215.5, -1499.8}, {80.0, 330.7}}, label: '·'
+                                    Other, 0x10d9d5180, {{-1215.5, -1137.2}, {2656.0, 736.0}}
+                                      Other, 0x10d9d52c0, {{-1045.6, -1137.2}, {437.8, 736.0}}, label: '1 avr. 2026 à 1 mai 2026', value: 42,5 sur toute la ...
+                                      Other, 0x10d9d5400, {{-607.8, -1137.2}, {452.4, 736.0}}, label: '1 mai 2026 à 1 juin 2026', value: 45 sur toute la pé...
+                                      Other, 0x10d9d5540, {{-155.4, -1137.2}, {437.8, 736.0}}, label: '1 juin 2026 à 1 juil. 2026', value: 47,5 sur toute la ...
+                                      Other, 0x10d9d5680, {{282.4, -1137.2}, {452.4, 736.0}}, label: '1 juil. 2026 à 1 août 2026', value: 45 sur toute la pé...
+                                      Other, 0x10d9d57c0, {{734.8, -1137.2}, {452.4, 736.0}}, label: '1 août 2026 à 1 sept. 2026', value: 50 à 52,5, en haus...
+                                    Other, 0x10d9d5900, {{-1215.5, -1137.2}, {2656.0, 736.0}}
+                                    Image, 0x10d9d5a40, {{-1202.5, -198.8}, {88.7, 88.7}}, identifier: 'sparkle', label: 'sparkle'
+                                    StaticText, 0x10d9d5b80, {{-1039.5, -225.2}, {1965.3, 128.0}}, label: 'Première fois ici. Pars léger, on mesure.'
+                                    Image, 0x10d9d5cc0, {{-328.5, -4060.3}, {1050.0, 1400.9}}, label: 'exo-woop-haute'
+                                    Button, 0x10d9d5e00, {{-1215.5, -4571.8}, {352.0, 352.0}}, label: 'Retour'
+                                      Image, 0x10d9d5f40, {{-1215.5, -4571.8}, {352.0, 352.0}}, identifier: 'chevron.left', label: 'Retour'
+                                      Image, 0x10d9d6080, {{-1079.5, -4449.2}, {61.3, 106.7}}, identifier: 'chevron.left', label: 'Retour'
+                                    Button, 0x10d9d61c0, {{-1375.5, 460.2}, {3144.0, 1280.0}}, label: 'Start exercise'
+                                    StaticText, 0x10d9d6300, {{173.5, 388.0}, {46.3, 14.7}}, label: 'SET 1'
+                                    StaticText, 0x10d9d6440, {{145.7, 408.7}, {102.0, 55.7}}, label: '0:42'
+                                    Button, 0x10d9d6580, {{26.0, 743.0}, {341.0, 62.0}}, label: 'Finish set'
+                                    Button, 0x10d9d66c0, {{0.0, 758.0}, {393.0, 44.0}}, label: 'Skip rest'
+                            Other, 0x10d9d6800, {{0.0, 0.0}, {393.0, 852.0}}
+                              Other, 0x10d9d6940, {{0.0, 0.0}, {393.0, 852.0}}
+                Other, 0x10d9d6a80, {{0.0, 769.0}, {393.0, 83.0}}
+                  Other, 0x10d9d6bc0, {{0.0, 0.0}, {393.0, 852.0}}
+                  Other, 0x10d9d6d00, {{0.0, 769.0}, {393.0, 83.0}}
+              Other, 0x10d9d6e40, {{39.7, 6.0}, {314.0, 54.0}}, identifier: 'seance-ile'
+                Other, 0x10d9d6f80, {{59.7, 6.0}, {274.0, 54.0}}
+                StaticText, 0x10d9d70c0, {{86.7, 25.8}, {27.7, 14.3}}, identifier: 'seance-ile-chrono', label: '1:18'
+                Button, 0x10d9d7200, {{265.7, 4.0}, {54.0, 58.0}}, identifier: 'seance-ile-stop', label: 'Arrêter la séance'
+              Other, 0x10d9d7340, {{0.0, 911.0}, {393.0, 759.0}}
+              StaticText, 0x10d9d7480, {{156.3, 1232.0}, {80.3, 25.7}}, label: 'Session'
+              ScrollView, 0x10d9d75c0, {{12.0, 1298.7}, {369.0, 371.3}}
+                Other, 0x10d9d7700, {{12.0, 1298.7}, {369.0, 270.0}}
+              Image, 0x10d9d7840, {{20.7, 944.4}, {40.6, 45.2}}
+              StaticText, 0x10d9d7980, {{24.8, 948.4}, {8.1, 7.2}}, label: '18.'
+              StaticText, 0x10d9d7ac0, {{24.8, 955.6}, {10.6, 4.3}}, label: 'SEPT'
+              Image, 0x10d9d7c00, {{19.2, 968.4}, {20.9, 20.9}}, label: 'sticker-flamme'
+              StaticText, 0x10d9d7d40, {{50.1, 962.5}, {21.3, 8.9}}, label: '0 SETS'
+              Image, 0x10d9d7e80, {{162.9, 1496.2}, {67.5, 67.5}}, identifier: 'stop.fill', label: 'Arrêter'
+              StaticText, 0x10d9e4000, {{117.7, 1568.0}, {158.0, 44.3}}, label: 'Page exercices'
+    Window, 0x10d9e4140, {{0.0, 0.0}, {393.0, 852.0}}
+      Other, 0x10d9e4280, {{0.0, 0.0}, {393.0, 852.0}}
+        Other, 0x10d9e43c0, {{0.0, 0.0}, {393.0, 852.0}}
+Path to element:
+ →Application, 0x10a0d7700, pid: 46674, label: 'Woop'
+Query chain:
+ →Find: Application 'fr.kathryn.woop'
+  Output: {
+    Application, 0x10d9e4500, pid: 46674, label: 'Woop'
+  }
+
+    t =     0.86s Pressing Home button
+    t =     1.32s Tear Down
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testObserverSansRelancer]' passed (1.364 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-18 08:36:23.653.
+	 Executed 1 test, with 0 failures (0 unexpected) in 1.364 (1.367) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-18 08:36:23.653.
+	 Executed 1 test, with 0 failures (0 unexpected) in 1.364 (1.368) seconds
+Test Suite 'All tests' passed at 2026-09-18 08:36:23.655.
+	 Executed 1 test, with 0 failures (0 unexpected) in 1.364 (1.369) seconds
+2026-09-18 08:36:23.973 xcodebuild[18823:18389448] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-18 08:36:24.162 xcodebuild[18823:18389448] [MT] IDETestOperationsObserverDebug: 6.269 elapsed -- Testing started completed.
+2026-09-18 08:36:24.162 xcodebuild[18823:18389448] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-18 08:36:24.162 xcodebuild[18823:18389448] [MT] IDETestOperationsObserverDebug: 6.269 sec, +6.269 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-stories71-observer.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

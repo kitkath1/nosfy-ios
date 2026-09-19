@@ -1,0 +1,6 @@
+PASS refresh Supabase réel : 12 appels, même jeton neuf, identité QA conservée, etat_coffre 200
+PASS vrai client Swift coffre : soldes, sachets, tarifs et date serveur décodés
+PASS vrai décodeur Swift annonces : rangs, budget, vidéos et écarts du serveur
+PASS vrais clients Swift : journal 60 lignes, collection 7 familles
+PASS coffre privé : jeton invalide refusé HTTP 401
+PASS seule la session QA de cet essai est fermée ; aucun gain écrit

@@ -1,0 +1,7 @@
+
+> woop-chambre-des-machines@2.0.0 schemas
+> node scripts/schemas.mjs
+
+  ● flow-1-entree-a-la-seance 45 Ko
+  ● flow-3-le-meme-parcours-vu 40 Ko
+schémas : 2 rendus sur 2

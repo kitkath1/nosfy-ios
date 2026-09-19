@@ -1,0 +1,85 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-ile47-runtime/dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun -destination platform=iOS,id=00008120-001E4CDC0A85A01E "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testCaptureNormale" -resultBundlePath /tmp/woop-count53/restauration.xcresult -parallel-testing-enabled NO
+
+2026-09-16 18:43:23.381 xcodebuild[11322:16596814] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-count53/restauration.xcresult
+
+2026-09-16 18:43:23.383 xcodebuild[11322:16596814] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 18:43:23.485 xcodebuild[11322:16596814] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-16 18:43:24.016 xcodebuild[11322:16596814] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 18:43:25.045 xcodebuild[11322:16596814] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 18:43:26.149 xcodebuild[11322:16596814] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 18:43:28.867289+0200 NavRuntimeUITests-Runner[34540:2676127] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-16 18:43:29.243.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-16 18:43:29.244.
+Test Suite 'NavRuntimeUITests' started at 2026-09-16 18:43:29.245.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testCaptureNormale]' started.
+    t =     0.00s Start Test at 2026-09-16 18:43:29.246
+    t =     0.02s Set Up
+    t =     0.02s Setting device orientation to Portrait
+    t =     0.03s     Wait for com.apple.springboard to idle
+/tmp/woop-ile47-runtime/NavRuntimeUITests.swift:243: error: -[NavRuntimeUITests.NavRuntimeUITests testCaptureNormale] : XCTAssertNotEqual failed: ("XCUIApplicationState(rawValue: 1)") is equal to ("XCUIApplicationState(rawValue: 1)")
+    t =     0.07s Open fr.kathryn.woop
+    t =     0.07s     Launch fr.kathryn.woop
+    t =     0.13s         Wait for accessibility to load
+2026-09-16 18:43:29.431 xcodebuild[11322:16596814] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     0.24s         Setting up automation session
+    t =     0.26s         Wait for fr.kathryn.woop to idle
+2026-09-16 18:43:31.179 xcodebuild[11322:16596814] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 18:43:31.328 xcodebuild[11322:16596814] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 18:43:31.449 xcodebuild[11322:16596814] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     4.57s Find the Application 'fr.kathryn.woop'
+    t =     4.57s     Device orientation changed to Face Up
+    t =     4.57s     Device orientation changed to Portrait
+    t =     4.57s     Device orientation changed to Face Up
+    t =     4.84s Added attachment named 'physique47-normale'
+    t =     4.85s Requesting snapshot of accessibility hierarchy for app with pid 34542
+    t =     4.99s Requesting snapshot of accessibility hierarchy for app with pid 34542
+    t =     5.04s Added attachment named 'physique47-normale-arbre'
+    t =     5.04s Tear Down
+2026-09-16 18:43:34.435 xcodebuild[11322:16596814] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testCaptureNormale]' failed (5.296 seconds).
+Test Suite 'NavRuntimeUITests' failed at 2026-09-16 18:43:34.542.
+	 Executed 1 test, with 1 failure (0 unexpected) in 5.296 (5.298) seconds
+Test Suite 'NavRuntimeUITests.xctest' failed at 2026-09-16 18:43:34.544.
+	 Executed 1 test, with 1 failure (0 unexpected) in 5.296 (5.300) seconds
+Test Suite 'Selected tests' failed at 2026-09-16 18:43:34.545.
+	 Executed 1 test, with 1 failure (0 unexpected) in 5.296 (5.301) seconds
+2026-09-16 18:43:38.514 xcodebuild[11322:16596817]  IDETestOperationsObserverDebug: Failure collecting diagnostics from devices: Process exited with error 1:
+ ERROR: The operation couldn?t be completed. (CoreDeviceCLISupport.DiagnoseError error 0.)
+This tool generates files that allow Apple to investigate issues with your
+computer and help improve Apple products. The files might contain personal
+information found on your device or associated with your Apple Account(s),
+including but not limited to your name, serial numbers of your device,
+your device name, your device's location over the last one to two days,
+your attached peripheral devices, your user name, your email address and
+email settings, file paths, file names, Siri suggestions, your computer's
+IP addresses, and network connection information.
+
+This information is used by Apple in accordance with its privacy policy
+(www.apple.com/privacy) and is not shared with any other company. By using
+this tool and sending the results to Apple, you consent to Apple using the
+contents of these files to improve Apple products.
+
+An error occurred while running devicectl diagnose. Will archive the diagnostics collected thus far.
+Wrote file to /tmp/woop-count53/restauration.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+Partial devicectl diagnose bundle located here: /tmp/woop-count53/restauration.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+
+2026-09-16 18:43:38.516 xcodebuild[11322:16596814] [MT] IDETestOperationsObserverDebug: 14.498 elapsed -- Testing started completed.
+2026-09-16 18:43:38.516 xcodebuild[11322:16596814] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-16 18:43:38.516 xcodebuild[11322:16596814] [MT] IDETestOperationsObserverDebug: 14.498 sec, +14.498 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-count53/restauration.xcresult
+
+Failing tests:
+	NavRuntimeUITests.testCaptureNormale()
+
+** TEST EXECUTE FAILED **
+
+Testing started

@@ -129,7 +129,7 @@ pas et on **dit** que ça n'a pas été mesuré.
 
 Son mode d'emploi complet : `docs/site/README.md`.
 
-## Chauffe et fluidité
+## ⚠️⚠️⚠️ LA FLUIDITÉ ET LA CHAUFFE SONT UN SUJET DE TOUTE L'APP — LE SKILL EST OBLIGATOIRE
 
 **Avant de reprendre ce bug : [registre des échecs, mesures invalides et preuves](tools/perf/ECHECS-CHAUFFE-HOME.md).**
 La navigation rétablie ne valide pas la résolution de la chauffe.
@@ -138,9 +138,63 @@ La navigation rétablie ne valide pas la résolution de la chauffe.
 Le charger pour reprendre la chauffe ou vérifier le coût d'une animation/vidéo.
 Il porte la méthode actualisée, l'analyseur de sonde et les pièges à ne pas rejouer.
 Les chiffres historiques ci-dessous restent des observations datées, pas des budgets.
-Les 27–39 % CPU historiques sont le défaut signalé, pas une norme acceptable.
+
+**Demandé par Kathryn le 05-09-2026 : « et surtout gère la performance et la
+chauffe, toute l'app a ce souci ».**
+
+Le skill **`woop-performance`** (`.claude/skills/woop-performance/SKILL.md`) est
+l'état vérifié de ce sujet : la méthode de mesure et ses six pièges payés, la
+sonde `-sondeVol`, les lois de coût **relevées sur son iPhone 15**, et les
+remèdes qui gardent le dessin intact. Il a été payé par une journée entière de
+mesures, dont la moitié perdue à mesurer faux.
+
+**Il se charge AVANT** : toute question de fluidité, de saccade, de chauffe ou
+de batterie ; **toute mesure sur le téléphone** ; et **toute vue qui ajoute une
+horloge, un verre, un flou, un masque ou un `blendMode`** — c'est-à-dire presque
+toute vue de ce dépôt.
+
+Les trois chiffres à connaître avant même de l'ouvrir, parce qu'ils décident de
+ce qu'on a le droit de poser :
+
+- **écran nu 1 % de processeur ; n'importe quelle page immobile : 27 à 39 %.**
+  Ces valeurs du 05-09 décrivent la charge excessive signalée, **pas une norme
+  acceptable**. Elles n'innocentent pas le GPU ni les vidéos. Correctif et
+  limites actualisés : `tools/perf/CORRECTIF-CHAUFFE-2026-09-14.md`.
+- **Le verre en est le quart** (six verres natifs éteints : 37 % → 28 %). Un
+  verre posé **sur une vidéo** ne met RIEN en cache.
+- **Redessiner pour animer coûte 3 à 8 fois plus que d'animer** (une
+  `TimelineView` à 20 Hz : 33-38 % ; la même image en valeur animable +
+  `repeatForever` : 4-18 %, à cadence égale, mesuré A/B sur son téléphone).
+
+⚠️ **Tout nouveau moteur coûteux arrive avec son barreau** (`-sansXxx`) — sans
+quoi on ne pourra jamais l'accuser ni le disculper. Et **le simulateur ne mesure
+que le simulateur** : aucune décision de performance ne se prend sans un chiffre
+pris sur SON téléphone, thermique lu à 0 au départ.
 
 ## Commits
+
+### ⚠️⚠️ ON NE COMMITE JAMAIS SANS QU'ELLE LE DEMANDE — RÈGLE ABSOLUE
+
+**Dit par Kathryn le 05-09-2026 : « arrête de commit sans que je te le dise ;
+mets ça dans un fichier MD, c'est trop pénible ».**
+
+Un commit ne part que sur un **ordre explicite** d'elle — « commit », « c'est
+bon commite », « scelle ». Rien d'autre ne l'autorise :
+
+- ni un build vert, ni un chantier « fini », ni une doc à jour ;
+- ni « c'est bien » ou « ça marche » sur une capture — un verdict de RENDU
+  n'est pas un ordre de commit ;
+- ni le fait qu'elle ait validé un point précis pendant qu'on itère ;
+- ni la peur de perdre le travail (l'arbre le garde ; c'est SON dépôt).
+
+Le geste juste, quand on croit avoir fini : **montrer** (capture, film, sha
+d'aucun commit), **dire ce qui est prêt à partir et par quels chemins**, puis
+**attendre**. Un commit qu'elle n'a pas demandé la force à relire un historique
+qu'elle n'a pas choisi — et à un rythme où l'on itère dix fois par heure, c'est
+elle qui paie.
+
+⚠️ Corollaire : entre deux ordres, on laisse les changements **dans l'arbre**,
+non commités. Ce n'est pas un travail « en danger », c'est l'état normal.
 
 Les commits sont TOUJOURS de Kathryn, jamais de Claude.
 

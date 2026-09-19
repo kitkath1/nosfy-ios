@@ -1,5 +1,30 @@
+<Decision titre="TestFlight — ce qui est validé et ce qui manque, 19 septembre">
+  <p><b>Serveur : parcours validé sur comptes jetables.</b> Compte vide, séances, gains, galets, boosters, cartes et reconnexion : 45 contrôles réels PASS. Retour quotidien payé une fois, reçu de séance stable après lecture des annonces. Deux comptes QA supprimés ; compte personnel préservé.</p>
+  <p><b>Corrections app :</b> reprise après fermeture pendant l’envoi, story sur les séries faites et les gains confirmés, aucun booster fictif au démarrage, Welcome Back retenu pendant séance/story/Route. 31 assertions SwiftData et migration PASS, 15 outbox, 12 sync, 1277 Route. L’animation finale du galet est en contrôle visuel.</p>
+  <ol>
+    <li><b>Apple natif :</b> compte neuf, relance, reconnexion et révocation à mesurer.</li>
+    <li><b>iPhone intégré :</b> séance → story → galet → annonces → booster → collection, interruption réseau et accueil du lendemain à jouer. L’iPhone est réservé par une autre session.</li>
+    <li><b>Chauffe :</b> QA18 reste ouverte. Le simulateur ne valide pas la consommation du téléphone.</li>
+    <li><b>Distribution :</b> sources finales identifiées, nouvelle archive signée, fiche App Store Connect, envoi et invitation restent à faire. Aucun upload effectué ici.</li>
+    <li><b>Exploitation :</b> diagnostics de sécurité à qualifier et restauration de sauvegarde à vérifier.</li>
+  </ol>
+  <p><b>Vert = contrôle réussi dans le périmètre écrit.</b> Le parcours iPhone complet reste « à valider ». Les cartes sont suivies par leur session ; l’archive79 antérieure ne contient pas ces corrections. Dossier de preuves : <code>tools/production/fin-seance-2026-09-19/README.md</code>.</p>
+</Decision>
+
 <Decision titre="Parcours Compte et récompense lunaire">
   <p>40 contrôles serveur PASS : création QA, sept séances, lune, ouverture des sachets, cartes et progression retrouvées à la reconnexion ; autre compte isolé.9 contrôles du pull Swift et2554 Route PASS. Deux séances du téléphone actuel rapprochées sans effacement. Reconnexion Apple et parcours tactile neuf restent à jouer ; ces bancs ne les remplacent pas.</p>
+</Decision>
+
+<Decision titre="Plan de la session stories / annonces — 17 septembre">
+  <p><b>Finir stories, toaster et liaison coffre / annonces / stories avec Supabase.</b> Les cartes en verre de l’accueil lisent les mêmes preuves que les pages : elles affichent « Tout est bon » quand toutes leurs lignes sont validées. Les points qui attendent un contrôle restent visibles dans le détail de la carte.</p>
+  <ol>
+    <li><b>Stories :</b> corriger le gel à la réouverture et libérer les moteurs à la fermeture. Parcours complets, retours et interruption testés sur l’iPhone, version69. Les résultats sont sur la page <a href="#histoire" data-saut="histoire">Stories</a>.</li>
+    <li><b>Toaster :</b> étirer la pilule depuis l’île à l’intérieur de Nosfy, en haut, puis enchaîner les annonces. Position, pièces → sachet et disparition testées sur l’iPhone ; morph filmé au simulateur. <a href="#annonces" data-saut="annonces">Les annonces</a> gardent le ressenti haptique à confirmer : réponse de Kathryn le17-09, « Pas encore vérifié ».</li>
+    <li><b>Connexion :</b> renouvellement de session corrigé ; le vrai client Swift a décodé les réponses Supabase du coffre et des règles d’annonces. Faits de clôture mesurés sur un compte de test et lus par la story. Relance de la session conservée et navigation testées sur l’iPhone. Ces preuves ne couvrent pas encore la première séance complète d’un nouveau compte dans l’interface.</li>
+    <li><b>Chauffe :</b> contrôle sans câble en attente à la demande de Kathryn le17-09. La campagne avec charge est conservée : thermique0 → 1 avant les stories, puis1 en récupération ; aucun gel sur69. Elle ne permet pas de conclure que la chauffe durable est résolue.</li>
+    <li><b>Clôture documentaire :</b> tenir à jour les lignes, les cartes en verre et le livrable ; vérifier le site local et ses captures. Une validation future de la chauffe ou de l’haptique mettra à jour la ligne concernée, puis la carte sera recalculée.</li>
+  </ol>
+  <p><b>Reportés à la clôture de ce périmètre :</b> Forge, Compte et Sign in with Apple, ainsi que la vraie Live Activity Apple. Une analyse seule du chapitre renommé <a href="#forge" data-saut="forge">Cartes</a> a ensuite été ouverte à la demande de Kathryn. Aucun nouveau chantier dans ces blocs pour terminer cette session. Plan détaillé et preuves : <code>tools/PASSATION-2026-09-17-story-annonces-coffre-toaster.md</code> et <code>tools/perf/campagnes/2026-09-17-story-session-ile/etat.md</code>.</p>
 </Decision>
 
 <div className="reveal">

@@ -1,0 +1,190 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-story-session-ile/runner-dd/Build/Products/NavRuntimeUITests_iphonesimulator26.5-arm64-x86_64.xctestrun -destination "platform=iOS Simulator,id=6473B9E0-5A1A-4DFB-A261-CC19539B5859" "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testReouvertureIntroduction" -resultBundlePath /tmp/woop-story-session-ile/sim69-intros.xcresult
+
+2026-09-17 16:14:16.903 xcodebuild[22532:17642165] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-story-session-ile/sim69-intros.xcresult
+
+2026-09-17 16:14:16.915 xcodebuild[22532:17642165] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 16:14:17.747 xcodebuild[22532:17642165] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-17 16:14:19.618048+0200 NavRuntimeUITests-Runner[22596:17642505] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-17 16:14:20.342.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-17 16:14:20.343.
+Test Suite 'NavRuntimeUITests' started at 2026-09-17 16:14:20.343.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testReouvertureIntroduction]' started.
+    t =     0.00s Start Test at 2026-09-17 16:14:20.344
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Launch fr.kathryn.woop
+    t =     0.16s         Setting up automation session
+objc[22596]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10ab44310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x109fc0398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     1.02s         Wait for fr.kathryn.woop to idle
+    t =     3.12s Waiting 30.0s for "story-test-ouvrir" Button to exist
+    t =     4.18s     Checking `Expect predicate `existsNoRetry == 1` for object "story-test-ouvrir" Button`
+    t =     4.18s         Checking existence of `"story-test-ouvrir" Button`
+    t =     4.29s Tap "story-test-ouvrir" Button
+    t =     4.29s     Wait for fr.kathryn.woop to idle
+    t =     4.31s     Find the "story-test-ouvrir" Button
+    t =     4.34s     Check for interrupting elements affecting "story-test-ouvrir" Button
+    t =     4.39s     Synthesize event
+    t =     4.71s     Wait for fr.kathryn.woop to idle
+    t =     4.73s Waiting 5.0s for "story-etat" StaticText to exist
+    t =     5.78s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =     5.78s         Checking existence of `"story-etat" StaticText`
+    t =    10.83s Press Application 'fr.kathryn.woop'[0.50, 0.10] for 0.1 seconds, then drag to Application 'fr.kathryn.woop'[0.50, 0.75] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    10.83s     Wait for fr.kathryn.woop to idle
+    t =    10.84s     Find the Application 'fr.kathryn.woop'
+    t =    10.94s     Check for interrupting elements affecting "Woop" Application
+    t =    10.99s     Synthesize event
+    t =    10.99s         Find the Application 'fr.kathryn.woop'
+    t =    11.04s         Find the Application 'fr.kathryn.woop'
+    t =    11.08s         Find the Application 'fr.kathryn.woop'
+    t =    11.12s         Find the Application 'fr.kathryn.woop'
+    t =    11.17s         Find the Application 'fr.kathryn.woop'
+    t =    12.61s     Wait for fr.kathryn.woop to idle
+    t =    12.62s Waiting 5.0s for "story-test-ouvrir" Button to exist
+    t =    13.67s     Checking `Expect predicate `existsNoRetry == 1` for object "story-test-ouvrir" Button`
+    t =    13.68s         Checking existence of `"story-test-ouvrir" Button`
+    t =    13.73s Find the "story-test-retour" StaticText
+    t =    14.79s Tap "story-test-ouvrir" Button
+    t =    14.79s     Wait for fr.kathryn.woop to idle
+    t =    14.79s     Find the "story-test-ouvrir" Button
+    t =    14.82s     Check for interrupting elements affecting "story-test-ouvrir" Button
+    t =    14.86s     Synthesize event
+    t =    15.16s     Wait for fr.kathryn.woop to idle
+    t =    15.17s Waiting 5.0s for "story-etat" StaticText to exist
+    t =    16.20s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    16.20s         Checking existence of `"story-etat" StaticText`
+    t =    21.23s Press Application 'fr.kathryn.woop'[0.50, 0.10] for 0.1 seconds, then drag to Application 'fr.kathryn.woop'[0.50, 0.75] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    21.23s     Wait for fr.kathryn.woop to idle
+    t =    21.23s     Find the Application 'fr.kathryn.woop'
+    t =    21.26s     Check for interrupting elements affecting "Woop" Application
+    t =    21.29s     Synthesize event
+    t =    21.30s         Find the Application 'fr.kathryn.woop'
+    t =    21.32s         Find the Application 'fr.kathryn.woop'
+    t =    21.35s         Find the Application 'fr.kathryn.woop'
+    t =    21.38s         Find the Application 'fr.kathryn.woop'
+    t =    21.41s         Find the Application 'fr.kathryn.woop'
+    t =    22.84s     Wait for fr.kathryn.woop to idle
+    t =    22.84s Waiting 5.0s for "story-test-ouvrir" Button to exist
+    t =    23.88s     Checking `Expect predicate `existsNoRetry == 1` for object "story-test-ouvrir" Button`
+    t =    23.88s         Checking existence of `"story-test-ouvrir" Button`
+    t =    23.96s Find the "story-test-retour" StaticText
+    t =    25.00s Tap "story-test-ouvrir" Button
+    t =    25.00s     Wait for fr.kathryn.woop to idle
+    t =    25.00s     Find the "story-test-ouvrir" Button
+    t =    25.03s     Check for interrupting elements affecting "story-test-ouvrir" Button
+    t =    25.05s     Synthesize event
+    t =    25.35s     Wait for fr.kathryn.woop to idle
+    t =    25.35s Waiting 5.0s for "story-etat" StaticText to exist
+    t =    26.39s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    26.39s         Checking existence of `"story-etat" StaticText`
+    t =    31.42s Press Application 'fr.kathryn.woop'[0.50, 0.10] for 0.1 seconds, then drag to Application 'fr.kathryn.woop'[0.50, 0.75] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    31.42s     Wait for fr.kathryn.woop to idle
+    t =    31.42s     Find the Application 'fr.kathryn.woop'
+    t =    31.45s     Check for interrupting elements affecting "Woop" Application
+    t =    31.49s     Synthesize event
+    t =    31.49s         Find the Application 'fr.kathryn.woop'
+    t =    31.51s         Find the Application 'fr.kathryn.woop'
+    t =    31.54s         Find the Application 'fr.kathryn.woop'
+    t =    31.57s         Find the Application 'fr.kathryn.woop'
+    t =    31.60s         Find the Application 'fr.kathryn.woop'
+    t =    33.03s     Wait for fr.kathryn.woop to idle
+    t =    33.04s Waiting 5.0s for "story-test-ouvrir" Button to exist
+    t =    34.07s     Checking `Expect predicate `existsNoRetry == 1` for object "story-test-ouvrir" Button`
+    t =    34.07s         Checking existence of `"story-test-ouvrir" Button`
+    t =    34.16s Find the "story-test-retour" StaticText
+    t =    35.23s Tap "story-test-ouvrir" Button
+    t =    35.23s     Wait for fr.kathryn.woop to idle
+    t =    35.23s     Find the "story-test-ouvrir" Button
+    t =    35.26s     Check for interrupting elements affecting "story-test-ouvrir" Button
+    t =    35.29s     Synthesize event
+    t =    35.58s     Wait for fr.kathryn.woop to idle
+    t =    35.59s Waiting 5.0s for "story-etat" StaticText to exist
+    t =    36.61s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    36.62s         Checking existence of `"story-etat" StaticText`
+    t =    41.64s Press Application 'fr.kathryn.woop'[0.50, 0.10] for 0.1 seconds, then drag to Application 'fr.kathryn.woop'[0.50, 0.75] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    41.64s     Wait for fr.kathryn.woop to idle
+    t =    41.65s     Find the Application 'fr.kathryn.woop'
+    t =    41.70s     Check for interrupting elements affecting "Woop" Application
+    t =    41.74s     Synthesize event
+    t =    41.75s         Find the Application 'fr.kathryn.woop'
+    t =    41.78s         Find the Application 'fr.kathryn.woop'
+    t =    41.82s         Find the Application 'fr.kathryn.woop'
+    t =    41.85s         Find the Application 'fr.kathryn.woop'
+    t =    41.89s         Find the Application 'fr.kathryn.woop'
+    t =    43.33s     Wait for fr.kathryn.woop to idle
+    t =    43.33s Waiting 5.0s for "story-test-ouvrir" Button to exist
+    t =    44.36s     Checking `Expect predicate `existsNoRetry == 1` for object "story-test-ouvrir" Button`
+    t =    44.36s         Checking existence of `"story-test-ouvrir" Button`
+    t =    44.40s Find the "story-test-retour" StaticText
+2026-09-17 16:15:05.266 xcodebuild[22532:17642165] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =    45.45s Tap "story-test-ouvrir" Button
+    t =    45.45s     Wait for fr.kathryn.woop to idle
+    t =    45.46s     Find the "story-test-ouvrir" Button
+    t =    45.49s     Check for interrupting elements affecting "story-test-ouvrir" Button
+    t =    45.52s     Synthesize event
+    t =    45.82s     Wait for fr.kathryn.woop to idle
+    t =    45.82s Waiting 5.0s for "story-etat" StaticText to exist
+    t =    46.85s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    46.85s         Checking existence of `"story-etat" StaticText`
+    t =    51.89s Press Application 'fr.kathryn.woop'[0.50, 0.10] for 0.1 seconds, then drag to Application 'fr.kathryn.woop'[0.50, 0.75] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    51.89s     Wait for fr.kathryn.woop to idle
+    t =    51.89s     Find the Application 'fr.kathryn.woop'
+    t =    51.92s     Check for interrupting elements affecting "Woop" Application
+    t =    51.95s     Synthesize event
+    t =    51.95s         Find the Application 'fr.kathryn.woop'
+    t =    51.98s         Find the Application 'fr.kathryn.woop'
+    t =    52.00s         Find the Application 'fr.kathryn.woop'
+    t =    52.03s         Find the Application 'fr.kathryn.woop'
+    t =    52.05s         Find the Application 'fr.kathryn.woop'
+2026-09-17 16:15:13.213 xcodebuild[22532:17642165] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =    53.48s     Wait for fr.kathryn.woop to idle
+    t =    53.49s Waiting 5.0s for "story-test-ouvrir" Button to exist
+    t =    54.51s     Checking `Expect predicate `existsNoRetry == 1` for object "story-test-ouvrir" Button`
+    t =    54.52s         Checking existence of `"story-test-ouvrir" Button`
+    t =    54.56s Find the "story-test-retour" StaticText
+    t =    55.64s Tap "story-test-ouvrir" Button
+    t =    55.64s     Wait for fr.kathryn.woop to idle
+    t =    55.64s     Find the "story-test-ouvrir" Button
+    t =    55.67s     Check for interrupting elements affecting "story-test-ouvrir" Button
+    t =    55.70s     Synthesize event
+    t =    56.00s     Wait for fr.kathryn.woop to idle
+    t =    56.00s Waiting 5.0s for "story-etat" StaticText to exist
+    t =    57.03s     Checking `Expect predicate `existsNoRetry == 1` for object "story-etat" StaticText`
+    t =    57.03s         Checking existence of `"story-etat" StaticText`
+    t =    62.07s Press Application 'fr.kathryn.woop'[0.50, 0.10] for 0.1 seconds, then drag to Application 'fr.kathryn.woop'[0.50, 0.75] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =    62.07s     Wait for fr.kathryn.woop to idle
+    t =    62.07s     Find the Application 'fr.kathryn.woop'
+    t =    62.10s     Check for interrupting elements affecting "Woop" Application
+    t =    62.13s     Synthesize event
+    t =    62.13s         Find the Application 'fr.kathryn.woop'
+    t =    62.15s         Find the Application 'fr.kathryn.woop'
+    t =    62.18s         Find the Application 'fr.kathryn.woop'
+    t =    62.20s         Find the Application 'fr.kathryn.woop'
+    t =    62.23s         Find the Application 'fr.kathryn.woop'
+    t =    63.65s     Wait for fr.kathryn.woop to idle
+    t =    63.65s Waiting 5.0s for "story-test-ouvrir" Button to exist
+    t =    64.67s     Checking `Expect predicate `existsNoRetry == 1` for object "story-test-ouvrir" Button`
+    t =    64.67s         Checking existence of `"story-test-ouvrir" Button`
+    t =    64.73s Find the "story-test-retour" StaticText
+    t =    65.80s Tear Down
+    t =    65.80s     Terminate fr.kathryn.woop:22605
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testReouvertureIntroduction]' passed (67.074 seconds).
+Test Suite 'NavRuntimeUITests' passed at 2026-09-17 16:15:27.418.
+	 Executed 1 test, with 0 failures (0 unexpected) in 67.074 (67.076) seconds
+Test Suite 'NavRuntimeUITests.xctest' passed at 2026-09-17 16:15:27.419.
+	 Executed 1 test, with 0 failures (0 unexpected) in 67.074 (67.077) seconds
+Test Suite 'Selected tests' passed at 2026-09-17 16:15:27.420.
+	 Executed 1 test, with 0 failures (0 unexpected) in 67.074 (67.078) seconds
+2026-09-17 16:15:27.729 xcodebuild[22532:17642165] [MT] IDETestOperationsObserverDebug: 69.976 elapsed -- Testing started completed.
+2026-09-17 16:15:27.729 xcodebuild[22532:17642165] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-17 16:15:27.729 xcodebuild[22532:17642165] [MT] IDETestOperationsObserverDebug: 69.976 sec, +69.976 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-story-session-ile/sim69-intros.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

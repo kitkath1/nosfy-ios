@@ -1,0 +1,171 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -xctestrun /tmp/woop-count54/iphone-dd/Build/Products/NavRuntimeUITests_iphoneos26.5-arm64.xctestrun -destination platform=iOS,id=00008120-001E4CDC0A85A01E -destination-timeout 15 "-only-testing:NavRuntimeUITests/NavRuntimeUITests/testObserverStartManuel" -resultBundlePath /tmp/woop-count54/manuel.xcresult -parallel-testing-enabled NO
+
+2026-09-16 20:45:30.038 xcodebuild[15873:16666585] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+Writing result bundle at path:
+	/tmp/woop-count54/manuel.xcresult
+
+2026-09-16 20:45:30.044 xcodebuild[15873:16666585] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:45:30.141 xcodebuild[15873:16666585] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS, arch:arm64e, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+{ platform:iOS, arch:arm64, id:00008120-001E4CDC0A85A01E, name:iPhone de Frédéric }
+2026-09-16 20:45:30.725 xcodebuild[15873:16666585] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:45:30.844 xcodebuild[15873:16666585] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:45:31.722 xcodebuild[15873:16666585] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:45:32.814770+0200 NavRuntimeUITests-Runner[35602:2756576] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-16 20:45:33.206.
+Test Suite 'NavRuntimeUITests.xctest' started at 2026-09-16 20:45:33.207.
+Test Suite 'NavRuntimeUITests' started at 2026-09-16 20:45:33.207.
+Test Case '-[NavRuntimeUITests.NavRuntimeUITests testObserverStartManuel]' started.
+    t =     0.00s Start Test at 2026-09-16 20:45:33.208
+2026-09-16 20:45:33.141 xcodebuild[15873:16666585] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     0.02s Set Up
+    t =     0.02s Open fr.kathryn.woop
+    t =     0.02s     Activate fr.kathryn.woop
+    t =     0.04s         Wait for fr.kathryn.woop to idle
+    t =     0.06s Find the Application 'fr.kathryn.woop'
+2026-09-16 20:45:33.282 xcodebuild[15873:16666585] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     0.38s Added attachment named 'avant-appui-manuel'
+    t =     0.38s Requesting snapshot of accessibility hierarchy for app with pid 35509
+    t =     0.73s Requesting snapshot of accessibility hierarchy for app with pid 35509
+    t =     0.81s     Device orientation changed to Face Up
+    t =     0.83s Added attachment named 'avant-appui-manuel-boutons'
+WOOP_OBSERVE_START_PRET
+    t =     0.83s Checking existence of `"depart-compte-rebours" Button`
+2026-09-16 20:45:34.015 xcodebuild[15873:16666585] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:45:34.217 xcodebuild[15873:16666585] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     1.38s Checking existence of `"depart-compte-rebours" Button`
+    t =     1.38s     Device orientation changed to Portrait
+    t =     1.90s Checking existence of `"depart-compte-rebours" Button`
+2026-09-16 20:45:35.415 xcodebuild[15873:16666585] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     2.41s Checking existence of `"depart-compte-rebours" Button`
+    t =     2.42s     Device orientation changed to Face Up
+    t =     2.42s     Device orientation changed to Portrait
+2026-09-16 20:45:35.647 xcodebuild[15873:16666585] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+    t =     2.93s Checking existence of `"depart-compte-rebours" Button`
+2026-09-16 20:45:38.310 xcodebuild[15873:16666585] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 20:45:38.493 xcodebuild[15873:16666585] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 21:02:00.376 xcodebuild[15873:16666585] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-09-16 21:05:09.686 xcodebuild[15873:16666585] [MT] IDELaunchReport: 15d97246972d47c0:15d97246972d47c0: Finished with error: An error occurred while communicating with a remote process.
+Domain: com.apple.dt.CoreDeviceError
+Code: 3
+User Info: {
+    DVTErrorCreationDateKey = "2026-09-16 19:05:09 +0000";
+    IDERunOperationFailingWorker = IDELaunchCoreDeviceWorker;
+}
+--
+The connection was invalidated.
+Domain: com.apple.Mercury.error
+Code: 1001
+User Info: {
+    XPCConnectionDescription = "<RemoteXPCPeerConnection 0x72cc2d560> { <remote connection: 0x72de16f80> { type = preconnected, state = canceled, remote service name = (null), server mode = 0, protocol version number = 1, protocol feature flags = 0x6, local service version = 0, remote service version = 0, traffic class = 0, (root, reply) helo received = (1, 1), next msg id = 7, first msg id = 1, send in progress = 0, preexisting socket = -1 }";
+}
+--
+
+2026-09-16 21:05:09.687 xcodebuild[15873:16666585] [MT] IDELaunchReport: 15d97246972d47c0:15d97246972d47c0: com.apple.dt.IDERunOperationWorkerFinished {
+    "device_identifier" = "00008120-001E4CDC0A85A01E";
+    "device_isCoreDevice" = 1;
+    "device_model" = "iPhone15,4";
+    "device_osBuild" = "26.6.1 (23G83)";
+    "device_osBuild_monotonic" = 2306008300;
+    "device_os_variant" = 1;
+    "device_platform" = "com.apple.platform.iphoneos";
+    "device_platform_family" = 2;
+    "device_reality" = 1;
+    "device_thinningType" = "iPhone15,4";
+    "device_transport" = 1;
+    "launchSession_schemeCommand" = Test;
+    "launchSession_schemeCommand_enum" = 2;
+    "launchSession_targetArch" = arm64e;
+    "launchSession_targetArch_enum" = 7;
+    "operation_duration_ms" = 1178677;
+    "operation_errorCode" = 1001;
+    "operation_errorDomain" = "com.apple.dt.CoreDeviceError.3.com.apple.Mercury.error";
+    "operation_errorWorker" = IDELaunchCoreDeviceWorker;
+    "operation_error_reportable" = 1;
+    "operation_name" = IDERunOperationWorkerGroup;
+    "param_consoleMode" = 0;
+    "param_debugger_attachToExtensions" = 0;
+    "param_debugger_attachToXPC" = 0;
+    "param_debugger_type" = 1;
+    "param_destination_isProxy" = 0;
+    "param_destination_platform" = "com.apple.platform.iphoneos";
+    "param_diag_MTE_enable" = 0;
+    "param_diag_MainThreadChecker_stopOnIssue" = 0;
+    "param_diag_MallocStackLogging_enableDuringAttach" = 0;
+    "param_diag_MallocStackLogging_enableForXPC" = 0;
+    "param_diag_allowLocationSimulation" = 1;
+    "param_diag_checker_mtc_enable" = 0;
+    "param_diag_checker_tpc_enable" = 0;
+    "param_diag_gpu_frameCapture_enable" = 3;
+    "param_diag_gpu_shaderValidation_enable" = 0;
+    "param_diag_gpu_validation_enable" = 1;
+    "param_diag_guardMalloc_enable" = 0;
+    "param_diag_memoryGraphOnResourceException" = 0;
+    "param_diag_queueDebugging_enable" = 0;
+    "param_diag_runtimeProfile_generate" = 0;
+    "param_diag_sanitizer_asan_enable" = 0;
+    "param_diag_sanitizer_tsan_enable" = 0;
+    "param_diag_sanitizer_tsan_stopOnIssue" = 0;
+    "param_diag_sanitizer_ubsan_enable" = 0;
+    "param_diag_sanitizer_ubsan_stopOnIssue" = 0;
+    "param_diag_showNonLocalizedStrings" = 0;
+    "param_diag_viewDebugging_enabled" = 0;
+    "param_diag_viewDebugging_insertDylibOnLaunch" = 0;
+    "param_install_style" = 2;
+    "param_launcher_UID" = 2;
+    "param_launcher_allowDeviceSensorReplayData" = 0;
+    "param_launcher_kind" = 0;
+    "param_launcher_style" = 0;
+    "param_launcher_substyle" = 64;
+    "param_runnable_appExtensionHostRunMode" = 0;
+    "param_runnable_productType" = "com.apple.product-type.application";
+    "param_testing_launchedForTesting" = 1;
+    "param_testing_suppressSimulatorApp" = 1;
+    "param_testing_usingCLI" = 0;
+    "sdk_canonicalName" = "iphoneos26.5";
+    "sdk_osVersion" = "26.5";
+    "sdk_platformID" = 2;
+    "sdk_variant" = iphoneos;
+    "sdk_version_monotonic" = 2305007300;
+}
+
+
+*** If you believe this error represents a bug, please attach the result bundle at /tmp/woop-count54/manuel.xcresult
+
+2026-09-16 21:05:10.063 xcodebuild[15873:16666602]  IDETestOperationsObserverDebug: Failure collecting diagnostics from devices: Process exited with error 1:
+ ERROR: The operation couldn?t be completed. (CoreDeviceCLISupport.DiagnoseError error 0.)
+This tool generates files that allow Apple to investigate issues with your
+computer and help improve Apple products. The files might contain personal
+information found on your device or associated with your Apple Account(s),
+including but not limited to your name, serial numbers of your device,
+your device name, your device's location over the last one to two days,
+your attached peripheral devices, your user name, your email address and
+email settings, file paths, file names, Siri suggestions, your computer's
+IP addresses, and network connection information.
+
+This information is used by Apple in accordance with its privacy policy
+(www.apple.com/privacy) and is not shared with any other company. By using
+this tool and sending the results to Apple, you consent to Apple using the
+contents of these files to improve Apple products.
+
+An error occurred while running devicectl diagnose. Will archive the diagnostics collected thus far.
+Wrote file to /tmp/woop-count54/manuel.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+Partial devicectl diagnose bundle located here: /tmp/woop-count54/manuel.xcresult/Staging/1_Test/Diagnostics/devicectl_diagnostics.zip
+
+2026-09-16 21:05:10.066 xcodebuild[15873:16666585] [MT] IDETestOperationsObserverDebug: 1179.339 elapsed -- Testing started completed.
+2026-09-16 21:05:10.066 xcodebuild[15873:16666585] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-16 21:05:10.066 xcodebuild[15873:16666585] [MT] IDETestOperationsObserverDebug: 1179.339 sec, +1179.339 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/woop-count54/manuel.xcresult
+
+Testing failed:
+	An error occurred while communicating with a remote process.
+	testObserverStartManuel() encountered an error (Encountered a problem with the test runner after launch. (Underlying Error: An error occurred while communicating with a remote process. (Underlying Error: The connection was invalidated.)))
+
+** TEST EXECUTE FAILED **
+
+Testing started
