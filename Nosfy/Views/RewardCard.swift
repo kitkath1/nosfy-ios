@@ -123,6 +123,9 @@ struct RewardPopup: View {
     /// donc `onChange(of: posee)` ne voit aucun changement : pas de
     /// tressaillement dans une capture censée être immobile.)
     @State private var posee = RewardBanc.fige != nil
+    /// Un Claim a été demandé : la fermeture ne s'attend plus à `posee` (le
+    /// tap pendant l'entrée doit fermer, pas rester ouvert).
+    @State private var claimDemande = false
     /// L'horloge de la poudre — posée UNE fois au montage (la scène, elle,
     /// renaît à chaque frame de `p` : une Date prise là-bas gèlerait tout).
     @State private var naissance = Date()
@@ -181,8 +184,20 @@ struct RewardPopup: View {
             }
     }
 
+    /// LE CLAIM (20-09, retour TestFlight « il faut appuyer 3 à 6 fois ») : le
+    /// +10 part, ET la card se ferme MÊME si l'entrée de 1,45 s n'est pas encore
+    /// « posée ». Avant, un tap pendant l'entrée encaissait sans fermer (fermer()
+    /// était gardé par `posee`) — Kathryn retapait, et le 2e tap était avalé.
+    private func claimEtFermer() {
+        onClaim?()
+        claimDemande = true
+        fermer()
+    }
+
     private func fermer() {
-        guard posee, !enSortie else { return }
+        // Un Claim demandé ferme tout de suite ; sinon on attend que l'entrée
+        // soit posée (une fermeture en plein fondu d'entrée saute).
+        guard !enSortie, posee || claimDemande else { return }
         enSortie = true
         // easeOut : la fin (le lever du scrim, la mort du halo — tout vit
         // dans le bas de `p`) se pose en douceur ; l'easeIn la comprimait
@@ -969,7 +984,7 @@ private struct RewardScene: View, Animatable {
             // Le Claim — sauf quand la card porte SON bouton (la robe « première
             // fois » de Nosfy : « Démarrer », rien à encaisser).
             if style == .welcome, bouton == nil {
-                BoutonClaim(montant: count, action: { onClaim?(); fermer() })
+                BoutonClaim(montant: count, action: claimEtFermer)
                     .opacity(sstep(0.58, 0.86, p))
                     .padding(.bottom, 6)
             }
@@ -1920,6 +1935,11 @@ private struct BoutonClaim: View {
                     .frame(width: 12 * MoonCoinView.hostScale,
                            height: 12 * MoonCoinView.hostScale)
                     .frame(width: 26, height: 26)
+                    // ⚠️ LA PIÈCE 3D NE PREND PAS LE TAP (20-09) : `MoonCoinView`
+                    // porte son propre `onTapGesture` (MoonCoinLab) — au bout
+                    // droit de la capsule, il volait le tap au bouton, et le
+                    // Claim ne partait pas. Elle est décorative ici.
+                    .allowsHitTesting(false)
             }
             .padding(.horizontal, 26)
             .frame(height: 52)

@@ -47,6 +47,11 @@ final class DepartEtat {
     /// lu au serveur sans payer). Le Claim encaisse, « Later » la range jusqu'au
     /// prochain premier plan.
     var welcomeOuverte = false
+    /// LA ROBE DU WELCOME BACK, ALTERNÉE (20-09, son verdict : « on alterne
+    /// entre les deux robes : celle actuelle et celle à gros texte »). Choisie
+    /// par `Compte.proposerWelcomeBack` À L'OUVERTURE (jamais dans un body : elle
+    /// basculerait à chaque image), persistée pour alterner d'un jour à l'autre.
+    var welcomeRobe: WelcomeRobe = .video
     /// LA POP-UP WELCOME « PREMIÈRE FOIS » (13-09, PremiereArrivee.swift) — 3 s
     /// après la première arrivée sur la Home ; « Démarrer » la ferme.
     var welcomePremiereOuverte = false

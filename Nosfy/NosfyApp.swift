@@ -2019,7 +2019,7 @@ struct RootView: View {
                             subtitle: "Your next session is waiting for you.",
                             unit: "Coins",
                             style: .welcome,
-                            robe: .video,
+                            robe: depart.welcomeRobe,
                             onClose: { depart.welcomeOuverte = false },
                             onClaim: { EconomieWoop.shared.reclamerRetour() })
                     .zIndex(8)
