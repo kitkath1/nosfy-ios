@@ -98,6 +98,10 @@ struct StoryDetails: View {
 
                 Spacer(minLength: 0)
             }
+            // LA COLONNE PREND TOUTE LA LARGEUR, partition ou pas : sans
+            // liste, elle se rétrécissait au titre et le ZStack la
+            // recentrait — « Détails » flottait au milieu (bug 20-09).
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 64)
         }
         .frame(width: size.width, height: size.height)
@@ -523,10 +527,14 @@ struct StoryCard: View {
     /// La meilleure série (l'exo du CATALOGUE + la charge) et le volume
     /// total — les faits v1, calculés du `StorySession`. Le fact engine
     /// serveur les remplacera avec ses fenêtres (contrat §4 ter).
-    private var faits: (exo: String, kg: Int, volume: Int) {
+    private var faits: (exo: String, kg: Int, volume: Int, intervalles: Int) {
         var exo = L("la barre", "the bar"); var kg = 0; var volume = 0
+        // Les intervalles FAITS (HIIT, tapis) : `series` ne les compte pas
+        // (le cardio n'est pas payé à la série) — la phrase les lit ici.
+        var intervalles = 0
         for g in session.groupes {
             for r in g.rows where r.done {
+                if case .intervalle = r.genre { intervalles += 1; continue }
                 volume += r.reps * Int(r.kilos)
                 if Int(r.kilos) > kg {
                     kg = Int(r.kilos)
@@ -534,7 +542,7 @@ struct StoryCard: View {
                 }
             }
         }
-        return (Self.court(exo), kg, volume)
+        return (Self.court(exo), kg, volume, intervalles)
     }
 
     /// Le nom du catalogue, TRONQUÉ au contrat (≤ 14 signes, au mot —
@@ -561,56 +569,53 @@ struct StoryCard: View {
         return mots.joined(separator: " ").lowercased()
     }
 
-    /// LES SIX PHRASES VRAIES — EXACTEMENT 6 lignes (le contrat §4 ter),
-    /// les nombres RECOPIÉS des faits, le nom du CATALOGUE dedans.
-    /// Gabarits par catégorie dominante — l'IA remplira LE MÊME MOULE.
+    /// LES QUATRE PHRASES VRAIES — EXACTEMENT 4 lignes (le contrat §4 ter
+    /// disait six ; verdict de Kathryn du 20-09 : « trop de texte » sur la
+    /// page d'analyse — deux lignes de moins, JAMAIS une police plus
+    /// petite), les nombres RECOPIÉS des faits, le nom du CATALOGUE dedans.
+    /// L'ouverture et la chute sont blanches, le milieu gris. Gabarits par
+    /// catégorie dominante — l'IA remplira LE MÊME MOULE.
     private var phrases: [[(String, Bool)]] {
         let f = faits
         let minutes = session.minutes
         let series = session.series
         switch planche.first ?? .bras {
         case .basket:
+            let n = f.intervalles
             return [[(L("Cardio accompli.", "Cardio came in."), false)],
                     [("\(minutes) min", false), (L(" au compteur,", " on the clock,"), true)],
-                    [(L("le cœur s’emballe,", "heart up high,"), true)],
-                    [(L("\(series) intervalles", "\(series) rounds"), false), (L(" terminés.", " done."), true)],
-                    [(L("sans rien lâcher.", "no seat taken."), true)],
+                    n > 0
+                        // Une seule ligne (mesuré au sim : « sans rien
+                        // lâcher » se repliait et refaisait cinq lignes).
+                        ? [(L("\(n) intervalle\(n > 1 ? "s" : "")", "\(n) round\(n > 1 ? "s" : "")"), false),
+                           (L(" tenus.", " held."), true)]
+                        : [(L("le cœur s’emballe.", "heart up high."), true)],
                     [(L("Soufflez. Reprenez.", "Breathe. Repeat."), false)]]
         case .chocolat:
             return [[(L("Abdos travaillés.", "Core day locked."), false)],
                     [(L("\(series) séries", "\(series) sets"), false), (L(" pour les abdos,", " of core,"), true)],
-                    [("\(f.exo),", false)],
-                    [(L("un centre solide,", "steel underneath,"), true)],
                     [(L("en \(minutes) minutes.", "in \(minutes) minutes."), true)],
                     [(L("Gardez le cap.", "Hold the line."), false)]]
         case .piscine:
             return [[(L("Longueurs bouclées.", "Water day done."), false)],
                     [("\(minutes) min", false), (L(" dans l’eau,", " in the lane,"), true)],
-                    [(L("longueur après longueur,", "stroke after stroke,"), true)],
-                    [(L("\(series) séries", "\(series) sets"), false), (L(" terminées.", " logged."), true)],
                     [(L("le souffle libéré.", "lungs wide open."), true)],
                     [(L("À la prochaine.", "Push off again."), false)]]
         case .jambes:
             return [[(L("Jambes sollicitées.", "Leg day loaded."), false)],
                     [("\(f.kg) kg", false), (L(" sur", " on"), true)],
-                    [("\(f.exo),", false)],
-                    [(L("avec amplitude,", "deep and low,"), true)],
-                    [(L("\(series) séries, \(minutes) min.", "\(series) sets, \(minutes) min."), true)],
-                    [(L("Savourez le retour.", "Walk it off."), false)]]
+                    [("\(f.exo),", true)],
+                    [(L("\(series) séries, \(minutes) min.", "\(series) sets, \(minutes) min."), false)]]
         case .abricot:
             return [[(L("Fessiers en feu.", "Glutes on fire."), false)],
                     [("\(f.kg) kg", false), (L(" sur", " on"), true)],
-                    [("\(f.exo),", false)],
-                    [(L("les hanches montent,", "hips driving up,"), true)],
-                    [(L("\(series) séries, \(minutes) min.", "\(series) sets, \(minutes) min."), true)],
-                    [(L("Serrez. Maintenez.", "Squeeze and hold."), false)]]
+                    [("\(f.exo),", true)],
+                    [(L("\(series) séries, \(minutes) min.", "\(series) sets, \(minutes) min."), false)]]
         default:
             return [[(L("Belle poussée.", "Big push day."), false)],
                     [("\(f.kg) kg", false), (L(" sur", " on"), true)],
-                    [("\(f.exo),", false)],
-                    [(L("votre meilleure série,", "your best set,"), true)],
-                    [(L("\(series) séries en \(minutes) min.", "\(series) sets in \(minutes) min."), true)],
-                    [(L("Continuez ainsi.", "Keep pressing."), false)]]
+                    [("\(f.exo),", true)],
+                    [(L("\(series) séries en \(minutes) min.", "\(series) sets in \(minutes) min."), false)]]
         }
     }
 

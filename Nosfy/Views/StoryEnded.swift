@@ -448,11 +448,25 @@ struct StoryEnded: View {
             Spacer(minLength: 0)
 
             rangée(1, session.minutes, "min", blanc, gris)
-            rangée(2, session.series, L("séries", "sets"), blanc, gris)
+            // LA DEUXIÈME LIGNE DIT CE QUI A ÉTÉ FAIT (20-09) : les séries
+            // en muscu, les intervalles au HIIT, les longueurs en piscine —
+            // plus jamais « 0 séries » sur une séance cardio.
+            rangée(2, effort.valeur, effort.unite, blanc, gris)
             rangée(3, session.exos, L("exos", "exercises"), blanc, gris)
             rangée(4, session.kcal, "calories", blanc, gris)
         }
         .padding(28)
+    }
+
+    private var effort: (valeur: Int, unite: String) {
+        if session.series > 0 { return (session.series, L("séries", "sets")) }
+        if session.intervalles > 0 {
+            return (session.intervalles, L("intervalles", "intervals"))
+        }
+        if session.longueurs > 0 {
+            return (session.longueurs, L("longueurs", "lengths"))
+        }
+        return (session.series, L("séries", "sets"))
     }
 
     private func rangée(_ i: Int, _ valeur: Int, _ unite: String,

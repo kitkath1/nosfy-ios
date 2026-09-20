@@ -68,6 +68,27 @@ struct StorySession {
     /// est là, la story 2 pose `SlateListe` — la liste dépliable, ses
     /// petites flammes — à la place des cinq lignes plates.
     var groupes: [SlateGroupe] = []
+    /// LES INTERVALLES FAITS et LES LONGUEURS NAGÉES, lus de la partition
+    /// (20-09) : `series` ne compte que la muscu — le Résumé d'un HIIT
+    /// disait « 0 séries » (« je croyais qu'on l'avait fix »).
+    var intervalles: Int {
+        var n = 0
+        for g in groupes {
+            for r in g.rows where r.done {
+                if case .intervalle = r.genre { n += 1 }
+            }
+        }
+        return n
+    }
+    var longueurs: Int {
+        var n = 0
+        for g in groupes {
+            for r in g.rows {
+                if case .longueurs(let l, _) = r.genre { n += l }
+            }
+        }
+        return n
+    }
     /// L'EXCEPTION : quand la séance est la meilleure de la semaine, la
     /// story ouvre sur la page TOP SESSION (4 pages ce jour-là).
     var top: TopSport? = nil
@@ -140,17 +161,17 @@ struct StorySession {
         }
         // La partition : les mêmes groupes que l'ardoise (le barème de
         // `SessionSlate.buildGroupes`, côté séance persistée).
+        // ⚠️ Payé le 20-09 (« il n'y a pas le détail ») : la story ne
+        // relisait que les SÉRIES de muscu — un HIIT, un tapis ou une
+        // piscine n'avaient AUCUNE rangée, la page Détails restait vide et
+        // son titre, seul dans une colonne rétrécie, partait au centre.
+        // Les lignes viennent du MÊME constructeur que l'ardoise
+        // (`SlateGroupe.lignes`) : séries, intervalles faits ou longueurs.
         groupes = workout.orderedExercises.compactMap { le in
-            guard let exo = le.exercise, !le.orderedSets.isEmpty
-            else { return nil }
-            return SlateGroupe(
-                id: le.exerciseID, exercise: exo,
-                rows: le.orderedSets.map {
-                    SlateLigne(reps: $0.reps, kilos: $0.weight,
-                               seconds: $0.isDone ? $0.durationSeconds
-                                                  : le.restSeconds,
-                               done: $0.isDone)
-                })
+            guard let exo = le.exercise else { return nil }
+            let rows = SlateGroupe.lignes(de: le, restSeconds: le.restSeconds)
+            guard !rows.isEmpty else { return nil }
+            return SlateGroupe(id: le.exerciseID, exercise: exo, rows: rows)
         }
     }
 
@@ -653,6 +674,22 @@ struct StoryLab: View {
             s.top = .muscu
         } else if CommandLine.arguments.contains("-storyTop") {
             s.top = .cardio
+        }
+        // `-storyCardio` : une séance HIIT seule — pas une série, six
+        // intervalles faits : la page Détails doit les écrire (bug 20-09).
+        if CommandLine.arguments.contains("-storyCardio"),
+           let tapis = ExerciseCatalog.exercise(id: "hiit-tapis") {
+            s.title = "HIIT"
+            s.sets = []
+            s.series = 0
+            s.exos = 1
+            s.groupes = [SlateGroupe(
+                id: tapis.id, exercise: tapis,
+                rows: (0..<6).map { i in
+                    SlateLigne(genre: .intervalle(vitesse: 12 + Double(i % 3),
+                                                  niveau: false),
+                               seconds: 40, done: true)
+                })]
         }
         // `-storyDouble` : la deuxième séance du jour — la page « ×2 ».
         if CommandLine.arguments.contains("-storyDouble") {
