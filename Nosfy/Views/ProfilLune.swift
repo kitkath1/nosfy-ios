@@ -12,12 +12,12 @@ private enum ReposDecorProfil {
 }
 
 /// La refonte du 14-08 (« on va s'amuser un peu !! ») : l'ancienne page à
-/// trois cartes est morte. À sa place : le halo de la home versé depuis la
-/// DROITE (`bgAuroraProfil`, le champ miroité), le rond aux initiales en
-/// dégradé néon sous son fil blanc animé, la pastille
-/// moonCoin des pièces (tap → elle s'anime, puis le coffre), les réglages
-/// dans leur overlay de verre, et LA COLLECTION : les quatre registres en
-/// lignes, du plus petit au légendaire, avec les dos vides qui attendent.
+/// trois cartes est morte. Refaite le 20-09 (« plus Apple ») : la bannière
+/// noire au galet de verre venu du bord droit, le médaillon de verre à la
+/// première lettre du prénom et le prénom sur une ligne, les quatre pills
+/// sur la ligne dessous, les réglages dans leur overlay de verre, et LA
+/// COLLECTION : les quatre registres en lignes, du plus petit au
+/// légendaire, avec les dos vides qui attendent. Aucun orange.
 ///
 /// Banc : `-profilLab` — la page seule, plein écran.
 struct ProfilLuneView: View {
@@ -46,6 +46,17 @@ struct ProfilLuneView: View {
     /// `-profilReglages` ouvre l'overlay réglages au lancement (captures).
     private static let reglagesNow =
         CommandLine.arguments.contains("-profilReglages")
+    /// `-sansPiano` : la page arrive en silence (bancs, captures).
+    private static let sansPiano = CommandLine.arguments.contains("-sansPiano")
+    /// `-sansNosfyPenche` : la page arrive sans Nosfy (bancs, captures).
+    private static let sansNosfyPenche =
+        CommandLine.arguments.contains("-sansNosfyPenche")
+    /// NOSFY PENCHÉ (20-09) : il est là à l'arrivée sur la page, il joue UNE
+    /// fois (il pend, se déplie, s'envole) et ne revient pas — tant qu'on
+    /// reste. Il revient quand on quitte l'onglet et qu'on y revient.
+    @State private var nosfyPenche = false
+    /// L'onglet affiché ou non — l'arrivée sur la page joue le piano.
+    @Environment(\.ongletCache) private var ongletCache
 
     /// LE DÉPLIEMENT DE LA CARTE (le geste wahou du 15-08) : on TIRE la
     /// bannière vers le bas, elle grandit et s'arrête juste au-dessus de
@@ -63,14 +74,16 @@ struct ProfilLuneView: View {
     /// suivre le serveur ; « Kathryn » n'est plus écrit nulle part.
     @AppStorage(ProfilServeur.clePrenom) private var prenomProfil: String = ""
     private var prenomAffiche: String { prenomProfil.isEmpty ? "—" : prenomProfil }
-    /// Les initiales du rond (« KD » n'est plus en dur) et la ligne sous le nom :
-    /// il n'existe AUCUN pseudo dans Woop (le profil, c'est langue / prénom / but) —
-    /// « @kathrynd » était un décor ; la ligne dit le prénom en minuscules, en
+    /// LA LETTRE DU MÉDAILLON (20-09) : la PREMIÈRE lettre du prénom tapé à
+    /// l'onboarding — celui que le serveur garde (`profils.prenom`), relu ici
+    /// par sa clé locale. Une seule lettre, jamais deux (« K », pas « KD »).
+    /// La ligne sous le nom : il n'existe AUCUN pseudo dans Nosfy (le profil,
+    /// c'est langue / prénom / but) — elle dit le prénom en minuscules, en
     /// attendant qu'un pseudo existe pour de vrai (ou qu'elle décide de l'ôter).
-    private var initialesProfil: String {
-        let lettres = prenomProfil.split(separator: " ").compactMap(\.first).prefix(2)
-        let s = String(lettres).uppercased()
-        return s.isEmpty ? "·" : s
+    private var initialeProfil: String {
+        let s = prenomProfil.trimmingCharacters(in: .whitespaces)
+        guard let l = s.first else { return "·" }
+        return String(l).uppercased()
     }
     private var pseudoProfil: String {
         prenomProfil.isEmpty ? "@—"
@@ -89,9 +102,6 @@ struct ProfilLuneView: View {
     /// l'est).
     @State private var boosterPlanque =
         (ProfilLuneView.carteFreeze ?? 0) > 0.04
-
-    /// L'embrasement secret de KD (tap sur le rond, lot C).
-    @State private var flambe: CGFloat = 0
 
     // ---- L'ACCUEIL DU SACRE (le raccord de la collection) ----
     /// Le store v1 mémoire — Supabase se branchera AVEC Kathryn.
@@ -175,9 +185,8 @@ struct ProfilLuneView: View {
                         // s'éteint vite — la bande sous la carte ouverte
                         // ne doit jamais montrer un lambeau de texte.
                         Group {
-                            nomBloc
                             ongletCartes
-                                .padding(.top, 26)
+                                .padding(.top, 34)
                             registres
                                 .padding(.top, 16)
                         }
@@ -336,6 +345,22 @@ struct ProfilLuneView: View {
         // du fil principal, publiée une fois — la réinstallation ne vide
         // plus « Cartes collectées ». Sans session, il reste la mémoire.
         .task { await collection.relire() }
+        // LE PIANO (20-09, « un petit bruit de piano joli quand on arrive
+        // sur la page ») : deux notes feutrées, une tierce qui monte,
+        // synthétisées (`tools/profil/piano_profil.py`), jouées à chaque
+        // arrivée sur l'onglet — jamais au retour d'un cover ni au scroll.
+        // Session ambiante, mixée : sa musique continue.
+        .onChange(of: ongletCache, initial: true) { _, cache in
+            if !cache && !Self.sansPiano {
+                CarillonIle.tinter("profil-piano", volume: 0.38)
+            }
+            // Nosfy : présent à l'arrivée, démonté quand on quitte — il
+            // rejouera au retour. Jamais sous protection thermique ni
+            // Reduce Motion : la page se passe de lui.
+            nosfyPenche = !cache && !Self.sansNosfyPenche
+                && !ReposDecorProfil.actif
+                && !UIAccessibility.isReduceMotionEnabled
+        }
         .onAppear {
             if Self.reglagesNow { showReglages = true }
             // LE FILET DE L'ONGLET PARESSEUX : quand l'envol bascule sur
@@ -520,12 +545,17 @@ struct ProfilLuneView: View {
         .allowsHitTesting(false)
     }
 
-    // MARK: L'identité — la bannière, KD à cheval, le nom, le trésor
+    // MARK: L'identité — la bannière, le médaillon, le nom, le trésor
 
-    /// LA BANNIÈRE (la référence Adobe) : l'aurora vivante ENFERMÉE dans
-    /// un rectangle de ~20 % de l'écran — le reste de la page est rendu au
-    /// noir profond. KD est collé À CHEVAL sur son bord bas, la pastille
-    /// des pièces posée sur le côté droit.
+    /// LA BANNIÈRE, REFAITE LE 20-09 (« plus Apple ») : les halos orange
+    /// sont MORTS — la dalle est noire, et le galet de verre noir de la
+    /// sortie de Nosfy (`duo-galet-noir`, « la pill qui bouge, trop beau »)
+    /// vient du bord droit, en plus petit, sa lumière cuite dans le fichier.
+    /// Dessous, sur UNE ligne : le médaillon (la première lettre du prénom
+    /// de l'onboarding, dans le même verre que les pills) et le prénom ;
+    /// puis, sur UNE ligne, les quatre pills. Aucune couleur hors le blanc,
+    /// le noir et l'argent — les sachets gardent leur robe, ce sont des
+    /// objets.
     private func banniere(_ geo: GeometryProxy) -> some View {
         // La coque : les coins HAUTS au rayon de l'iPhone (55,
         // concentrique au châssis derrière le liseré de 5 pt), le bas
@@ -541,55 +571,87 @@ struct ProfilLuneView: View {
         // taille + les deux insets.
         let ecranH = geo.size.height + geo.safeAreaInsets.top
             + geo.safeAreaInsets.bottom
-        let base = max(230, geo.size.height * 0.30)
+        // Fermée, la bannière loge trois étages sous la ligne des chips :
+        // le vide, la ligne médaillon + prénom, la ligne des pills.
+        let base = max(272, geo.size.height * 0.36)
         let cible = ecranH - 5 - 128
         let hauteur = base + (cible - base) * carteP
         let swoop = Self.sstep(min(carteP, 1))
-        // KD LE VOYAGEUR, ACTE II : fermé il chevauche le bord bas ;
-        // déplié il TRÔNE au centre, sous la ligne chevron/réglages.
-        // Comme le bord bas descend avec le doigt, sa trajectoire est
-        // une parabole vivante — il suit l'arête, puis remonte au trône
-        // en grossissant d'un souffle. Une seule vue (la leçon
-        // morphPhoto), jamais deux.
-        let taille = 72 + 18 * swoop
-        let ax = 18 + ((geo.size.width - 10 - taille) / 2 - 18) * swoop
-        let ay = (hauteur - taille / 2) * (1 - swoop) + 112 * swoop
-        // Le nom naît au CENTRE quand la carte est presque ouverte —
-        // jamais deux « Kathryn » à l'écran (celui du corps s'éteint
-        // bien avant).
+        let largeur = geo.size.width - 10
+        // LE MÉDAILLON VOYAGEUR : fermé, il ouvre la ligne du prénom,
+        // au-dessus des pills ; déplié il TRÔNE au centre, sous la ligne
+        // chevron/réglages. Une seule vue (la leçon morphPhoto), jamais
+        // deux.
+        let taille = 60 + 30 * swoop
+        let pillsH: CGFloat = 38
+        let ax = 18 + ((largeur - taille) / 2 - 18) * swoop
+        let ayFerme = hauteur - 16 - pillsH - 18 - taille
+        let ay = ayFerme * (1 - swoop) + 112 * swoop
+        // Le nom : à droite du médaillon fermé ; il naît au CENTRE quand
+        // la carte est presque ouverte — jamais deux « Kathryn » à
+        // l'écran (celui de la ligne s'éteint bien avant).
         let nomCentre = min(max((carteP - 0.62) / 0.38, 0), 1)
-        // Les halos ne grandissent qu'à 55 % du dépliement : la lumière
-        // reste en haut, le bas de la carte ouverte redevient braise
-        // profonde — la nuit orangée, jamais une page blanche.
-        return BanniereHalos(norme: base + 0.55 * (hauteur - base))
-            // L'ANTI-BRUN (la loi de la maison : tenir la SATURATION) :
-            // dépliée, la traîne du halo blanc délave l'orange du bas en
-            // beige — la saturation remonte AVEC le dépliement et le
-            // brun redevient braise. Fermée : intacte au pixel.
-            .saturation(1 + 0.45 * Double(min(carteP, 1)))
+        let nomLigne = 1 - min(1, Double(carteP) * 2.4)
+        // LE GALET, COUCHÉ SUR LE CÔTÉ (« la pill plus orientée sur le
+        // côté ») : le fichier est debout, on le tourne d'un quart de tour
+        // — son ventre (la partie qui brille, 0,62–0,88 de sa hauteur)
+        // pointe vers la gauche, à droite de la ligne du médaillon, et sa
+        // tête sort par le bord droit. Petit : 0,40 × la hauteur de la
+        // bannière d'épaisseur, posé ENTRE la chip Réglages et les pills —
+        // il ne passe sous AUCUN verre (un verre sur une vidéo refait son
+        // flou à chaque image, 24 fois par seconde). Il grandit avec la
+        // carte dépliée.
+        let galetL = hauteur * 0.40
+        let galetH = galetL * 1560 / 1206
+        return ZStack {
+            Color.black
+            GaletProfil(arriveeDepuis: CGSize(width: 0, height: -64))
+                .frame(width: galetL, height: galetH)
+                .rotationEffect(.degrees(90))
+                // EN MODE ÉCRAN le noir du fichier n'ajoute rien : seules
+                // les arêtes claires du verre s'impriment, le rectangle
+                // n'existe pas (mesuré sur son téléphone le 13-09).
+                .blendMode(.screen)
+                // Couché, il s'étend sur galetH en largeur : le bout de son
+                // ventre à ≈ 0,60 de la largeur, le reste au-delà du bord.
+                .position(x: largeur * 0.60 + galetH * 0.38,
+                          y: hauteur * 0.56)
+                .allowsHitTesting(false)
+            // LE SPOT (20-09) : la lumière de l'angle haut-gauche, qui
+            // respire — voir `SpotProfil`.
+            SpotProfil(portee: largeur * 0.72)
+                .allowsHitTesting(false)
+            // NOSFY PENCHÉ EN ARRIÈRE, pendu sous la Dynamic Island, au
+            // centre entre les deux chips : 125 pt de haut (le fichier est
+            // encodé à cette taille, 668 × 376, 7 s, muet — jamais le 4K).
+            // Il joue une fois puis la vue est DÉMONTÉE (pas cachée) : plus
+            // de lecteur, plus de couche, zéro coût après son envol.
+            if nosfyPenche {
+                NosfyPencheProfil { nosfyPenche = false }
+                    .frame(width: 125 * 668 / 376, height: 125)
+                    .blendMode(.screen)
+                    .position(x: largeur / 2, y: 20 + 62.5)
+                    .allowsHitTesting(false)
+                    .transition(.opacity)
+            }
+        }
             // Tout le HAUT de l'écran, Dynamic Island comprise (le
-            // scroll ignore le safe area) — ~30 % de la page.
+            // scroll ignore le safe area).
             .frame(height: hauteur)
             .clipShape(coque)
-            // LA DALLE DE VERRE (la référence des capsules) : le
-            // Glass.clear du panneau réglages, posé en couvercle SUR les
-            // halos — la lumière dessous, la lentille dessus, les arêtes
-            // qui accrochent le blanc. KD et la pastille vivent AU-DESSUS
-            // du verre.
-            .overlay(
-                coque
-                    .fill(Color.clear)
-                    .glassEffect(.clear, in: coque)
-                    .allowsHitTesting(false))
+            // Plus de dalle de verre en couvercle (20-09) : un verre posé
+            // sur une vidéo ne met rien en cache, et le noir n'a rien à
+            // réfracter. Reste l'arête.
             .overlay(coque
                 .strokeBorder(Color.white.opacity(0.09), lineWidth: 1))
-            // LE TRÉSOR SUR LA BANNIÈRE : la flamme, les deux réserves
-            // de sachets, l'argent et l'or — TOUJOURS visibles, même à 0
-            // (verdict 30-08). La pill booster est LA RÉCUPÉRATION du
-            // parcours : dire « Plus tard » à la pop-up ne perd jamais un
-            // sachet, on revient le chercher ici par sa page du coffre,
-            // dont le bouton ouvre le manège de la bonne couleur.
-            .overlay(alignment: .bottomTrailing) {
+            // LE TRÉSOR SUR LA BANNIÈRE : les deux réserves de sachets,
+            // l'argent et l'or, sur UNE ligne, pleine largeur — TOUJOURS
+            // visibles, même à 0 (verdict 30-08). La pill booster est LA
+            // RÉCUPÉRATION du parcours : dire « Plus tard » à la pop-up ne
+            // perd jamais un sachet, on revient le chercher ici — par le
+            // coffre, ouvert sur SA page (15-09), dont « Ouvrir » monte le
+            // Manège.
+            .overlay(alignment: .bottom) {
                 tresorBanniere
             }
             // L'identité au centre de la carte ouverte — le SLOT du
@@ -598,19 +660,14 @@ struct ProfilLuneView: View {
             .overlay(alignment: .top) {
                 if nomCentre > 0.001 {
                     VStack(spacing: 3) {
-                        // L'ENCRE SOMBRE : le haut de la carte est un
-                        // cœur de lumière — le blanc y est invisible.
                         Text(prenomAffiche)
                             .font(.inter(20, .bold))
                             .tracking(-0.2)
-                            .foregroundStyle(
-                                Color(red: 0.18, green: 0.10, blue: 0.04))
+                            .foregroundStyle(Color.inkPrimary)
                         Text(pseudoProfil)
                             .font(.inter(12, .semibold))
                             .tracking(0.3)
-                            .foregroundStyle(
-                                Color(red: 0.18, green: 0.10, blue: 0.04)
-                                    .opacity(0.55))
+                            .foregroundStyle(Color.inkMuted)
                     }
                     .padding(.top, 112 + taille + 14)
                     .opacity(nomCentre)
@@ -618,18 +675,29 @@ struct ProfilLuneView: View {
                     .allowsHitTesting(false)
                 }
             }
+            // La ligne fermée : le prénom et sa ligne, à droite du
+            // médaillon, alignés sur son centre.
             .overlay(alignment: .topLeading) {
-                RondAvatar(initiales: initialesProfil, taille: taille,
-                           flambe: flambe)
-                    .offset(x: ax, y: ay)
-                    .onTapGesture {
-                        UIImpactFeedbackGenerator(style: .light)
-                            .impactOccurred(intensity: 0.7)
-                        withAnimation(.easeOut(duration: 0.22)) { flambe = 1 }
-                        withAnimation(.easeOut(duration: 0.9).delay(0.25)) {
-                            flambe = 0
-                        }
+                if nomLigne > 0.001 {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(prenomAffiche)
+                            .font(.inter(19, .bold))
+                            .tracking(-0.2)
+                            .foregroundStyle(Color.inkPrimary)
+                        Text(pseudoProfil)
+                            .font(.inter(12, .semibold))
+                            .tracking(0.3)
+                            .foregroundStyle(Color.inkMuted)
                     }
+                    .frame(height: 60, alignment: .center)
+                    .offset(x: 18 + 60 + 14, y: ayFerme)
+                    .opacity(nomLigne)
+                    .allowsHitTesting(false)
+                }
+            }
+            .overlay(alignment: .topLeading) {
+                MedaillonProfil(lettre: initialeProfil, taille: taille)
+                    .offset(x: ax, y: ay)
             }
             // Le petit liseré NOIR autour (la référence) : 5 pt de nuit
             // entre la bannière et les bords physiques de l'écran —
@@ -708,86 +776,59 @@ struct ProfilLuneView: View {
         }
     }
 
-    /// Le nom, réduit, avec l'identifiant dessous — aligné sous KD.
-    private var nomBloc: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(prenomAffiche)
-                .font(.inter(17, .bold))
-                .tracking(-0.2)
-                .foregroundStyle(Color.inkPrimary)
-            Text(pseudoProfil)
-                .font(.inter(12, .semibold))
-                .tracking(0.3)
-                .foregroundStyle(Color.inkMuted)
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 44)
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
     // MARK: Le trésor sur la bannière
 
-    /// LES CINQ PASTILLES (30-08, `tools/annonces/PLAN-COFFRE-ANNONCES.md`
-    /// §0 « le profil ») : la pièce d'or, la pièce d'argent, le booster
-    /// noir, le booster orange et la flamme — **toujours visibles, même à
-    /// 0** : « sinon on ne sait pas qu'il existe ». Le géant, lui, vit
-    /// dans le sol (`TirageBooster`), pas ici.
+    /// LES QUATRE PASTILLES (30-08, `tools/annonces/PLAN-COFFRE-ANNONCES.md`
+    /// §0 « le profil ») : le booster noir, le booster orange, la pièce
+    /// d'argent, la pièce d'or — **toujours visibles, même à 0** : « sinon
+    /// on ne sait pas qu'il existe ». Le géant, lui, vit dans le sol
+    /// (`TirageBooster`), pas ici.
     ///
-    /// ⚠️ DEUX RANGS, pas un : cinq pastilles en ligne font ~410 pt, et à
-    /// droite de KD la bannière n'en offre ~270 (383 − 14 − 90). Le rang du
-    /// haut dit l'ÉTAT (la flamme) et les RÉSERVES (noir, orange) ; le rang
-    /// du bas, ancré où l'or a toujours été, dit les MONNAIES (argent, or).
+    /// UNE LIGNE (15-09, verdict : « mettre les pills sur la même ligne et
+    /// mettre juste la pièce en or et pas son wording »), PLEINE LARGEUR
+    /// depuis le 20-09 (sa capture) : la ligne vit SOUS celle du médaillon,
+    /// les quatre pills réparties d'un bord à l'autre. L'or reste le plus
+    /// près du pouce, où il a toujours été ; l'ordre, de droite à gauche,
+    /// est celui du manège du coffre (or · Lune · argent · noir).
+    ///
+    /// ET LES QUATRE OUVRENT LE COFFRE, AU BON CRAN (« au clic des 4
+    /// pastilles liquid glass ça ramène sur la page coffre au bon item ») :
+    /// plus de manège direct depuis une pill — le coffre est LA porte, son
+    /// bouton « Ouvrir » monte le manège (le chemin qui existe déjà), et une
+    /// pill à 0 ne fait plus rien de spécial : elle mène à sa page, qui
+    /// dit ce qui manque.
     /// Les `.transition` des pills restent : rien n'apparaît plus, mais le
     /// jour où une pill se cache elles diront la sortie.
     private var tresorBanniere: some View {
-        VStack(alignment: .trailing, spacing: 6) {
-            rangReserves
-            rangMonnaies
+        HStack(spacing: 0) {
+            PillBooster(nombre: SacreEtat.shared.boostersNoirsEnAttente,
+                        robe: .noire) {
+                ouvrirCoffre(cran: 3)
+            }
+            .accessibilityIdentifier("profil-booster-noir")
+            .transition(.scale(scale: 0.7).combined(with: .opacity))
+            Spacer(minLength: 6)
+            PillBooster(nombre: SacreEtat.shared.boostersEnAttente) {
+                ouvrirCoffre(cran: 1)
+            }
+            .accessibilityIdentifier("profil-booster-orange")
+            .transition(.scale(scale: 0.7).combined(with: .opacity))
+            Spacer(minLength: 6)
+            pastilleArgent
+            Spacer(minLength: 6)
+            pastillePieces
         }
         .animation(.spring(response: 0.42, dampingFraction: 0.8),
                    value: SacreEtat.shared.boostersEnAttente)
         .animation(.spring(response: 0.42, dampingFraction: 0.8),
                    value: SacreEtat.shared.boostersNoirsEnAttente)
-        .padding(.trailing, 14)
-        .padding(.bottom, 14)
+        .padding(.horizontal, 18)
+        .padding(.bottom, 16)
     }
 
-    /// Le rang du haut : les deux réserves de sachets. (La pastille de la
-    /// flamme qui ouvrait ce rang est RETIRÉE le 15-09 sur son verdict :
-    /// « il sert à rien » — le serveur compte toujours la flamme,
-    /// `etat_coffre().flamme`, personne ne l'affiche plus.)
-    /// LA RÉSERVE NOIRE A SA PROPRE PILL, et elle passe devant l'orange :
-    /// deux réserves qui ne se mélangent jamais (verdict 28-08) — une
-    /// pastille sur la pill jaune aurait dit « des boosters, dont des
-    /// noirs », alors que ce sont deux portes et deux manèges.
-    private var rangReserves: some View {
-        HStack(spacing: 8) {
-            PillBooster(nombre: SacreEtat.shared.boostersNoirsEnAttente,
-                        robe: .noire) {
-                ouvrirReserve(.noire)
-            }
-            .accessibilityIdentifier("profil-booster-noir")
-            .transition(.scale(scale: 0.7).combined(with: .opacity))
-            PillBooster(nombre: SacreEtat.shared.boostersEnAttente) {
-                ouvrirReserve(.lune)
-            }
-            .accessibilityIdentifier("profil-booster-orange")
-            .transition(.scale(scale: 0.7).combined(with: .opacity))
-        }
-    }
-
-    /// Le rang du bas : l'argent, puis l'or.
-    private var rangMonnaies: some View {
-        HStack(spacing: 8) {
-            pastilleArgent
-            pastillePieces
-        }
-    }
-
-    /// Les réserves ouvrent leur page du coffre, même à zéro.
-    /// La destination porte ensemble le cran et la présentation.
-    private func ouvrirReserve(_ robe: RobeBooster) {
-        destinationCoffre = DestinationCoffre(id: robe == .noire ? 3 : 1)
+    /// La pastille présente le coffre avec sa destination indivisible.
+    private func ouvrirCoffre(cran: Int) {
+        destinationCoffre = DestinationCoffre(id: cran)
     }
 
     /// LA PIÈCE D'ARGENT (30-08) — la sœur de la pastille d'or : même
@@ -805,7 +846,7 @@ struct ProfilLuneView: View {
                 argentKick = 0
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
-                destinationCoffre = DestinationCoffre(id: 2)
+                ouvrirCoffre(cran: 2)
             }
         } label: {
             HStack(spacing: 7) {
@@ -828,7 +869,8 @@ struct ProfilLuneView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(
-            "\(economie.argent) pièces d'argent — ouvrir le coffre")
+            L("\(economie.argent) pièces d'argent — ouvrir le coffre",
+              "\(economie.argent) silver coins — open the vault"))
     }
 
     /// La pastille de la page BRAVO, en petit, posée SUR la bannière. Au
@@ -844,7 +886,7 @@ struct ProfilLuneView: View {
                 coinKick = 0
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
-                destinationCoffre = DestinationCoffre(id: 0)
+                ouvrirCoffre(cran: 0)
             }
         } label: {
             HStack(spacing: 7) {
@@ -869,14 +911,13 @@ struct ProfilLuneView: View {
                            height: 11 * MoonCoinView.hostScale)
                     .frame(width: 24, height: 24)
                     .rotationEffect(.degrees(Double(coinKick) * -14))
+                // Le nombre, sans le mot (15-09 : « juste la pièce en or et
+                // pas son wording ») — la pièce dit laquelle c'est, comme
+                // pour l'argent.
                 Text("\(pieces)")
                     .font(.inter(15, .bold))
                     .foregroundStyle(Color.inkPrimary)
                     .contentTransition(.numericText())
-                Text("pièces")
-                    .font(.inter(11, .semibold))
-                    .tracking(0.6)
-                    .foregroundStyle(Color.inkSecondary)
             }
             .padding(.horizontal, 13)
             .padding(.vertical, 7)
@@ -886,7 +927,8 @@ struct ProfilLuneView: View {
             .scaleEffect(1 + 0.10 * coinKick)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(pieces) pièces — ouvrir le coffre")
+        .accessibilityLabel(L("\(pieces) pièces — ouvrir le coffre",
+                              "\(pieces) coins — open the vault"))
     }
 
     // MARK: Le titre de la collection
@@ -1032,9 +1074,10 @@ struct ProfilLuneView: View {
 /// coupé, ses gestes internes dorment) posé sur le voile du footer. On le
 /// TIRE vers le haut : passé le seuil — ou d'un geste vif — le sheet de
 /// verre s'ouvre et le sachet SAUTE dans son en-tête (UNE seule vue qui
-/// voyage, la leçon morphPhoto). « Utiliser 20 pièces pour ouvrir un
-/// booster ? » — Oui ouvre le Manège à la racine (`SacreEtat`) ; sinon
-/// l'overlay descend et le sachet RESAUTILLE (ressort + haptique).
+/// voyage, la leçon morphPhoto). Le panneau dit « N sachets à ouvrir »
+/// (OUVRIR monte le Manège à la racine, `SacreEtat`) ou, sans sachet, la
+/// jauge du coffre vers le prochain (15-09) ; RETOUR : l'overlay descend et
+/// le sachet RESAUTILLE (ressort + haptique).
 /// `-profilTirage` ouvre le sheet au lancement (captures).
 struct TirageBooster: View {
     @Environment(\.ongletCache) private var ongletCache
@@ -1393,35 +1436,43 @@ struct TirageBooster: View {
         }
     }
 
-    /// LA PORTE DU MANÈGE — et c'est ici que l'argent change de main.
-    ///
-    /// ⚠️ **UN SACHET EN RÉSERVE S'OUVRE GRATUITEMENT.** C'est tout l'intérêt
-    /// de l'avoir gagné : un booster de fin de séance ne se rachète pas.
-    /// Le débit ne part que pour un sachet qu'on n'a pas.
-    ///
-    /// ⚠️ **ON N'OUVRE LA CÉRÉMONIE QU'APRÈS LA RÉPONSE.** Monter le manège
-    /// puis débiter, ce serait ouvrir un sachet qu'on n'a peut-être pas — et
-    /// il n'y a pas de marche arrière une fois la roue posée. La demi-seconde
-    /// d'attente est le prix de ne jamais mentir.
-    private func ouvrirOuAcheter() {
-        if economie.boosters > 0 {
-            // Le Manège se monte à la RACINE : on pose l'état partagé,
-            // personne n'a besoin d'écouter (la leçon de l'onglet paresseux
-            // — cf. `BoosterPopup.swift`).
-            SacreEtat.shared.ouvrirManege()
-            fermer()
-            return
-        }
-        // ⚠️ L'ACHAT EST MORT (30-08 soir, Q9) : `claim_booster` est révoquée
-        // au serveur, la conversion automatique fait naître le sachet à 100
-        // pièces. À 0 sachet, le panneau dit déjà « Il te manque N pièces » ;
-        // le tap ne fait que le confirmer du bout du doigt.
-        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+    /// LA PORTE DU MANÈGE — un sachet en réserve s'ouvre, gratuitement :
+    /// c'est tout l'intérêt de l'avoir gagné. Le Manège se monte à la
+    /// RACINE : on pose l'état partagé, personne n'a besoin d'écouter (la
+    /// leçon de l'onglet paresseux — cf. `BoosterPopup.swift`). Sans sachet,
+    /// le bouton n'existe pas (le mat du coffre à sa place) : rien à
+    /// ouvrir, rien à acheter — l'ACHAT EST MORT (30-08 soir, Q9 :
+    /// `claim_booster` révoquée, les 100 pièces deviennent un sachet toutes
+    /// seules).
+    private func ouvrirReserve() {
+        guard economie.boosters > 0 else { return }
+        SacreEtat.shared.ouvrirManege()
+        fermer()
     }
 
+    /// LE PANNEAU, EN DEUX VARIANTS (15-09, tranché par Kathryn : « deux
+    /// variants : N SACHETS À OUVRIR ; et en cas de pas possible, la jauge —
+    /// même composant que dans le coffre — pour dire le nombre de pièces
+    /// qu'il faut »).
+    ///
+    /// ⚠️ Il disait « Utiliser 100 pièces pour ouvrir un booster ? » depuis
+    /// le 29-08 — un texte qui promettait une transaction MORTE depuis le
+    /// 30-08 (la conversion) : avec un sachet en réserve, OUVRIR l'ouvrait
+    /// gratuitement ; sans, le tap ne faisait qu'une vibration. Un 🔴 posé
+    /// sur le site (b-rg-le-geant), fermé ici. Et « Il t'en restera N » ne
+    /// pouvait plus jamais s'écrire : le solde ne dépasse plus 99.
+    ///
+    /// Le vocabulaire est celui de la page du sachet Lune du coffre
+    /// (`PiedCoffre`) : le compte en titre, la barre fine `BarreFine` avec
+    /// la mini pièce d'or (« 43 / 100 »), le primaire quand il y a quelque
+    /// chose à ouvrir, le MAT quand il n'y a rien (la 5ᵉ loi d'Opal : même
+    /// place, même hauteur, le bijou en moins). Dans les deux langues.
     private func sheet(W: CGFloat) -> some View {
         let forme = RoundedRectangle(cornerRadius: 28, style: .continuous)
-        let manque = prix - pieces
+        let sachets = economie.boosters
+        // Ce qu'il manque vers le PROCHAIN sachet — le solde est déjà la
+        // jauge (`reste = solde`, < prix par construction depuis le 30-08).
+        let manque = max(prix - economie.reste, 0)
         return VStack(spacing: 0) {
             Spacer()
             VStack(spacing: 10) {
@@ -1447,38 +1498,60 @@ struct TirageBooster: View {
                     .combined(with: .opacity))
                 .frame(height: 250)
                 .padding(.top, 2)
-                Text("Utiliser \(prix) pièces\npour ouvrir un booster ?")
+                // LE COMPTE, EN TITRE : ce qu'il y a à ouvrir — ou ce qui
+                // manque vers le prochain sachet. Le nombre vient du
+                // serveur (`etat_coffre` : sachets, reste, prix), jamais
+                // d'ici.
+                Text(sachets > 0
+                     ? L(sachets == 1 ? "1 sachet à ouvrir"
+                                      : "\(sachets) sachets à ouvrir",
+                         sachets == 1 ? "1 pack to open"
+                                      : "\(sachets) packs to open")
+                     : L("Il te manque \(manque) pièces",
+                         "\(manque) more coins to go"))
                     .font(.inter(20, .bold))
                     .tracking(-0.2)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(Color.inkPrimary)
-                Text(manque > 0
-                     ? "Il te manque \(manque) pièces."
-                     : "Il t'en restera \(pieces - prix).")
-                    .font(.inter(13, .regular))
-                    .foregroundStyle(Color.inkMuted)
+                    .contentTransition(.numericText())
 
-                // NOTRE bouton primary — le diamant du trio auth, fumée
-                // dorée (la page est de braise), et le retour de la
-                // maison en secondaire.
-                DiamondPrimaryButton(title: "OUVRIR",
-                                     smokeWarmth: 0.6) {
-                    ouvrirOuAcheter()
+                if sachets > 0 {
+                    // NOTRE bouton primary — le diamant du trio auth, fumée
+                    // dorée (la page est de braise). Il n'existe que s'il y
+                    // a quelque chose à ouvrir.
+                    DiamondPrimaryButton(title: L("OUVRIR", "OPEN"),
+                                         smokeWarmth: 0.6) {
+                        ouvrirReserve()
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 6)
+                } else {
+                    // LA JAUGE DU COFFRE, telle quelle : la barre fine, la
+                    // légende « 43 / 100 » avec la mini pièce d'or, la
+                    // lueur de la page du sachet Lune (`PiedCoffre`).
+                    BarreFine(jauge: .compte(courant: economie.reste,
+                                             cible: prix, monnaie: .or),
+                              lueur: CoffreV2Page.lueurSachetLune,
+                              remplie: 1)
+                        .padding(.top, 8)
+                        .padding(.bottom, 10)
+                    // LE MAT DU COFFRE (la 5ᵉ loi d'Opal, `PiedCoffre.bouton`) :
+                    // même place, même hauteur que le primaire, le bijou en
+                    // moins — jamais un bouton grisé qui a l'air cassé.
+                    // `.clear` et pas `.regular` : le givré est interdit.
+                    Text(L("Verrouillé", "Locked"))
+                        .font(.inter(18, .semibold))
+                        .tracking(-0.2)
+                        .foregroundStyle(.white.opacity(0.55))
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 58)
+                        .glassEffect(.clear, in: .capsule)
+                        .padding(.horizontal, 24)
                 }
-                // ⚠️⚠️ **LE VERROU EXISTE ENFIN.** Le commentaire qui vivait
-                // ici disait « DÉMO : le verrou des pièces NE FERME JAMAIS la
-                // porte » — et c'était vrai à la lettre : ce bouton posait
-                // l'état partagé et rien d'autre. Aucun débit, aucune garde.
-                // On pouvait ouvrir des sachets à l'infini avec zéro pièce
-                // pendant que l'écran promettait « Utiliser N pièces ».
-                //
-                // Il ne débite QUE s'il n'y a pas déjà un sachet en réserve :
-                // un booster gagné en fin de séance s'ouvre gratuitement,
-                // c'est tout l'intérêt de l'avoir gagné.
-                .padding(.horizontal, 24)
                 // Le retour en LIEN nu — pas de fond (verdict).
                 Button(action: fermer) {
-                    Text("RETOUR")
+                    Text(L("RETOUR", "BACK"))
                         .font(.inter(13, .semibold))
                         .tracking(2.2)
                         .foregroundStyle(Color.inkMuted)
@@ -1499,270 +1572,109 @@ struct TirageBooster: View {
     }
 }
 
-// MARK: - Le rond aux initiales
+// MARK: - Le médaillon et le galet
 
-/// Le rond centré : KD très FIN, habillé d'un dégradé de braises
-/// SOMBRES qui voyage lentement dans les lettres, posé sur une matière
-/// d'obsidienne — noir mat traversé d'un reflet poli qui tourne. Le fil
-/// blanc animé de 0,7 pt reste, seul bijou. `taille` pilote TOUT
-/// (lettres, lueurs, fil) : c'est la même vue qui voyage du trône au
-/// dock du header.
-struct RondAvatar: View {
-    var initiales: String
-    var taille: CGFloat = 72
-    /// L'embrasement secret (0 → 1) : les braises sombres montent au
-    /// rouge-or une seconde.
-    var flambe: CGFloat = 0
-    /// L'anneau d'XP éphémère (0 → 1) : un arc fin autour du rond.
-    var anneau: CGFloat = 0
+/// LE MÉDAILLON (20-09, « le design médaillon comme le bouton stop ») : le
+/// MÊME dessin que `MedaillonStop` (WorkoutPill.swift) — le disque laqué
+/// dont la lumière prend en haut-gauche, le liseré aux crans du médaillon,
+/// la bague qui flare dehors du bord — sans son halo chaud (aucun orange
+/// sur cette page), et dedans la PREMIÈRE lettre du prénom tapé à
+/// l'onboarding, en blanc. Rien ne bouge tant que le doigt ne bouge pas.
+/// Il remplace le rond aux initiales orange (« hors sujet, pas assez
+/// Apple »).
+struct MedaillonProfil: View {
+    var lettre: String
+    var taille: CGFloat = 60
 
-    // ⚠️ LE ROND NE SE REDESSINE PLUS, IL S'ANIME (05-09, voir
-    // `LisereRespirant`) : l'horloge refabriquait le Text, les deux passes
-    // du neonGlow, la bille de verre et l'anneau vingt fois par seconde
-    // pour DEUX rotations pures. On tourne LA PEINTURE, jamais le dessin :
-    // le fil = un conique tourné sous un masque strokeBorder (exact — un
-    // conique tourné de θ EST le conique à l'angle θ) ; les braises = un
-    // carré de dégradé tourné sous le masque des lettres.
-    // ⚠️ Écart DÉCLARÉ : la dérive d'origine des lettres vivait dans
-    // l'espace unitaire du cadre du TEXTE (pas carré) — son étalement
-    // « respirait » avec l'orientation ; la peinture tournée est isotrope.
-    // Subtil mais pas nul : à trancher sur capture.
-    // `-souffleHorloge` rejoue l'ancienne forme.
     var body: some View {
-        if SouffleBanc.horloge { corpsHorloge } else {
-            RondAvatarAnime(initiales: initiales, taille: taille,
-                            flambe: flambe, anneau: anneau)
+        let k = taille / 34
+        ZStack {
+            // Le disque laqué — la lumière prend en haut-gauche (les
+            // rayons de MedaillonStop, à l'échelle).
+            Circle()
+                .fill(RadialGradient(
+                    colors: [Color(white: 0.105), Color(white: 0.035)],
+                    center: UnitPoint(x: 0.38, y: 0.30),
+                    startRadius: 2 * k, endRadius: 24 * k))
+            Text(lettre)
+                .font(.inter(taille * 0.40, .semibold))
+                // Blanc pur, pas le blanc chaud du player : aucune
+                // chaleur sur cette page.
+                .foregroundStyle(Color.white.opacity(0.94))
         }
-    }
-
-    private var corpsHorloge: some View {
-        TimelineView(.animation(minimumInterval: RythmeEcran.pas,
-                                paused: RythmeEcran.dort("profile"))) { tl in
-            let t = tl.date.timeIntervalSinceReferenceDate
-            let tour = Angle.degrees(
-                t.truncatingRemainder(dividingBy: 8.0) / 8.0 * 360.0)
-            // Le dégradé des lettres DÉRIVE : son axe tourne sur 13 s —
-            // des braises profondes, jamais criardes.
-            let phase = t.truncatingRemainder(dividingBy: 13.0) / 13.0
-                * 2.0 * .pi
-            let ax = 0.5 + 0.5 * cos(phase)
-            let ay = 0.5 + 0.5 * sin(phase)
-            let k = taille / 72
-            let f = Double(flambe)
-            // L'écho du halo : blanc chaud, jaune, orange — la palette de
-            // la bannière, qui dérive dans les lettres.
-            Text(initiales)
-                .font(.inter(22 * k, .light))
-                .tracking(3.5 * k)
-                .foregroundStyle(LinearGradient(
-                    colors: [Color(red: 1.00, green: 0.96, blue: 0.90),
-                             Color(red: 1.00, green: 0.80, blue: 0.32),
-                             Color(red: 1.00, green: 0.48 + 0.20 * f,
-                                   blue: 0.14 + 0.20 * f)],
-                    startPoint: UnitPoint(x: ax, y: ay),
-                    endPoint: UnitPoint(x: 1 - ax, y: 1 - ay)))
-                .neonGlow(.profilBraise, radius: 7 * k,
-                          opacity: 0.30 + 0.50 * f)
-                .frame(width: taille, height: taille)
-                .background {
-                    // LE VERRE NOIR (verdict : « verre noir sublime et
-                    // reflet blanc ») : la profondeur sombre d'une bille
-                    // de verre, la calotte de reflet blanc en haut, et
-                    // l'éclat spéculaire qui la signe.
-                    ZStack {
-                        Circle().fill(RadialGradient(
-                            colors: [Color(white: 0.17),
-                                     Color(white: 0.05),
-                                     Color(white: 0.01)],
-                            center: UnitPoint(x: 0.38, y: 0.24),
-                            startRadius: 1, endRadius: taille * 0.85))
-                        // La calotte : le reflet d'une fenêtre lointaine.
-                        Ellipse()
-                            .fill(LinearGradient(
-                                colors: [.white.opacity(0.30),
-                                         .white.opacity(0.0)],
-                                startPoint: .top, endPoint: .bottom))
-                            .frame(width: taille * 0.70,
-                                   height: taille * 0.32)
-                            .offset(y: -taille * 0.27)
-                            .blur(radius: 1)
-                        // L'éclat : un point de blanc pur, à peine flou.
-                        Circle()
-                            .fill(Color.white.opacity(0.55))
-                            .frame(width: taille * 0.055)
-                            .offset(x: -taille * 0.17, y: -taille * 0.31)
-                            .blur(radius: 0.4)
-                    }
-                }
-                .clipShape(Circle())
-                .overlay(
-                    Circle().strokeBorder(
-                        AngularGradient(stops: [
-                            .init(color: .white.opacity(0.05), location: 0.0),
-                            .init(color: .white.opacity(0.85), location: 0.12),
-                            .init(color: .white.opacity(0.10), location: 0.30),
-                            .init(color: .white.opacity(0.05), location: 0.55),
-                            .init(color: .white.opacity(0.45), location: 0.78),
-                            .init(color: .white.opacity(0.05), location: 1.0),
-                        ], center: .center, angle: tour),
-                        lineWidth: 0.7))
-                // L'anneau d'XP : un arc de braise ultra-fin, éphémère —
-                // il n'existe qu'au tap du badge (jamais un bijou de plus
-                // en permanence). Le tiers plein = l'XP du niveau, en dur
-                // tant que la mécanique n'existe pas.
-                .overlay(
-                    Circle()
-                        .trim(from: 0, to: 0.30 * anneau)
-                        .stroke(LinearGradient(
-                            colors: [.profilBraise,
-                                     Color(red: 1.0, green: 0.75,
-                                           blue: 0.40)],
-                            startPoint: .leading, endPoint: .trailing),
-                            style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                        .frame(width: taille + 12, height: taille + 12)
-                        .opacity(Double(anneau)))
+        .frame(width: taille, height: taille)
+        // Le liseré premium, aux crans du médaillon.
+        .overlay {
+            Circle()
+                .stroke(AngularGradient(stops: LisereMedaillon.crans,
+                                        center: .center, angle: .zero),
+                        lineWidth: 0.8)
         }
+        // La bague : `stroke` centré, elle déborde DEHORS du disque.
+        .overlay {
+            Circle()
+                .stroke(AngularGradient(stops: LisereMedaillon.bague,
+                                        center: .center, angle: .zero),
+                        lineWidth: 2.4)
+                .frame(width: taille + 2.5, height: taille + 2.5)
+                .blur(radius: 1.0)
+                .blendMode(.plusLighter)
+                .opacity(0.85)
+        }
+        .accessibilityLabel(L("Profil de \(lettre)", "\(lettre)'s profile"))
     }
 }
 
-/// La forme animée du rond : tout est construit UNE fois, deux phases de
-/// rotation vivent ICI (la feuille — le body du trône est ré-évalué au
-/// scroll, un `repeatForever` posé chez lui serait avalé). Le wrap
-/// 360° → 0° d'un `linear.repeatForever(autoreverses: false)` est
-/// invisible (360° ≡ 0°) ; périodes 8 s et 13 s au degré près.
-private struct RondAvatarAnime: View {
-    var initiales: String
-    var taille: CGFloat = 72
-    var flambe: CGFloat = 0
-    var anneau: CGFloat = 0
+/// LE SPOT (20-09, « un petit halo spotlight qui vient de l'angle gauche,
+/// en diagonale, en haut » puis « plus marqué et animé ») : un cône de
+/// lumière blanche né dans l'angle haut-gauche, ouvert sur la diagonale
+/// descendante (45°), qui meurt avant le milieu de la bannière. Le cône =
+/// un angulaire centré sur l'angle, sa portée = un radial en masque,
+/// aplatis UNE fois en texture (`drawingGroup`).
+///
+/// IL RESPIRE, IL NE BALAIE PAS : sa source ne bouge pas, son bord ne
+/// tourne pas — seule son intensité monte et descend (opacité) et sa
+/// portée s'étire d'un souffle (échelle depuis l'angle), période 4,5 s.
+/// Deux valeurs ANIMABLES sur une texture fixe : rien n'est redessiné
+/// (la loi « ne pas redessiner pour animer »). La phase vit ICI, dans la
+/// feuille, ré-armée par `task(id:)` — le body de la bannière est
+/// ré-évalué au scroll, un `repeatForever` posé chez lui serait avalé.
+/// Il dort avec la page (onglet caché, arrière-plan, Reduce Motion,
+/// protection thermique) : au repos, pleine lumière, immobile.
+private struct SpotProfil: View {
+    var portee: CGFloat
 
     @Environment(\.ongletCache) private var ongletCache
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var monte = false
-    @State private var visibleDansScroll = true
+    /// 1 = pleine lumière (le repos), 0 = le creux du souffle.
+    @State private var souffle: Double = 1
 
     private var immobile: Bool {
-        !monte || !visibleDansScroll || ongletCache
-            || scenePhase != .active || reduceMotion
+        !monte || ongletCache || scenePhase != .active || reduceMotion
             || RythmeEcran.dort("profile") || ReposDecorProfil.actif
     }
 
-    /// Les deux phases — les seules choses qui bougent.
-    @State private var tourFil: Double = 0
-    @State private var tourBraise: Double = 0
-    /// La boîte des lettres, mesurée sur un jumeau caché : la rampe de
-    /// l'original vivait dans l'espace du TEXTE — la peinture tournée doit
-    /// étaler la rampe sur la même largeur, pas sur tout le rond.
-    @State private var boiteLettres: CGSize = .zero
-
     var body: some View {
-        let k = taille / 72
-        let f = Double(flambe)
-        // LES BRAISES : la peinture tournée sous le masque des lettres —
-        // le masque est construit une fois. Le carré couvre la boîte à
-        // toute rotation (côté = sa diagonale) et la rampe s'étale sur la
-        // LARGEUR de la boîte (= la phase 0 exacte de l'original).
-        // ⚠️ Écart déclaré : l'original étirait la rampe selon l'axe
-        // instantané dans une boîte non carrée (l'étalement « respirait ») ;
-        // la peinture tournée garde un étalement constant.
-        let boite = boiteLettres == .zero
-            ? CGSize(width: taille * 0.55, height: 22 * k)
-            : boiteLettres
-        let cote = max(hypot(boite.width, boite.height), 1)
-        let demi = (boite.width / cote) / 2
         Rectangle()
-            .fill(LinearGradient(
-                colors: [Color(red: 1.00, green: 0.96, blue: 0.90),
-                         Color(red: 1.00, green: 0.80, blue: 0.32),
-                         Color(red: 1.00, green: 0.48 + 0.20 * f,
-                               blue: 0.14 + 0.20 * f)],
-                startPoint: UnitPoint(x: 0.5 + demi, y: 0.5),
-                endPoint: UnitPoint(x: 0.5 - demi, y: 0.5)))
-            .frame(width: cote, height: cote)
-            .rotationEffect(.degrees(tourBraise))
-            .frame(width: taille, height: taille)
-            .mask {
-                Text(initiales)
-                    .font(.inter(22 * k, .light))
-                    .tracking(3.5 * k)
-            }
-            .background {
-                // Le jumeau caché qui mesure la boîte des lettres.
-                Text(initiales)
-                    .font(.inter(22 * k, .light))
-                    .tracking(3.5 * k)
-                    .hidden()
-                    .onGeometryChange(for: CGSize.self,
-                                      of: { $0.size }) { boiteLettres = $0 }
-            }
-            .neonGlow(.profilBraise, radius: 7 * k,
-                      opacity: 0.30 + 0.50 * f)
-            .frame(width: taille, height: taille)
-            .background {
-                // LE VERRE NOIR (verdict : « verre noir sublime et
-                // reflet blanc ») — inchangé, sorti du temps.
-                ZStack {
-                    Circle().fill(RadialGradient(
-                        colors: [Color(white: 0.17),
-                                 Color(white: 0.05),
-                                 Color(white: 0.01)],
-                        center: UnitPoint(x: 0.38, y: 0.24),
-                        startRadius: 1, endRadius: taille * 0.85))
-                    Ellipse()
-                        .fill(LinearGradient(
-                            colors: [.white.opacity(0.30),
-                                     .white.opacity(0.0)],
-                            startPoint: .top, endPoint: .bottom))
-                        .frame(width: taille * 0.70,
-                               height: taille * 0.32)
-                        .offset(y: -taille * 0.27)
-                        .blur(radius: 1)
-                    Circle()
-                        .fill(Color.white.opacity(0.55))
-                        .frame(width: taille * 0.055)
-                        .offset(x: -taille * 0.17, y: -taille * 0.31)
-                        .blur(radius: 0.4)
-                }
-            }
-            .clipShape(Circle())
-            // LE FIL : le conique construit à angle zéro, TOURNÉ — le
-            // carré couvre son cercle inscrit à toute rotation (côté ≥
-            // taille + 2) ; le masque strokeBorder porte SEUL
-            // l'anti-crénelage du filet, construit une fois.
-            .overlay {
-                Rectangle()
-                    .fill(AngularGradient(stops: [
-                        .init(color: .white.opacity(0.05), location: 0.0),
-                        .init(color: .white.opacity(0.85), location: 0.12),
-                        .init(color: .white.opacity(0.10), location: 0.30),
-                        .init(color: .white.opacity(0.05), location: 0.55),
-                        .init(color: .white.opacity(0.45), location: 0.78),
-                        .init(color: .white.opacity(0.05), location: 1.0),
-                    ], center: .center, angle: .zero))
-                    .frame(width: taille + 2, height: taille + 2)
-                    .rotationEffect(.degrees(tourFil))
-                    .mask {
-                        Circle().strokeBorder(.white, lineWidth: 0.7)
-                    }
-            }
-            .overlay(
-                Circle()
-                    .trim(from: 0, to: 0.30 * anneau)
-                    .stroke(LinearGradient(
-                        colors: [.profilBraise,
-                                 Color(red: 1.0, green: 0.75,
-                                       blue: 0.40)],
-                        startPoint: .leading, endPoint: .trailing),
-                        style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                    .frame(width: taille + 12, height: taille + 12)
-                    .opacity(Double(anneau)))
-            // La trace du 15-09 montre encore les deux rotations après
-            // défilement hors écran. Remplacer le dessin à la fermeture
-            // de sa porte retire aussi les interpolations déjà installées.
-            .id(immobile)
+            .fill(AngularGradient(stops: [
+                .init(color: .white.opacity(0.00), location: 0.000),
+                .init(color: .white.opacity(0.00), location: 0.040),
+                .init(color: .white.opacity(0.14), location: 0.090),
+                .init(color: .white.opacity(0.34), location: 0.125),
+                .init(color: .white.opacity(0.14), location: 0.160),
+                .init(color: .white.opacity(0.00), location: 0.210),
+                .init(color: .white.opacity(0.00), location: 1.000),
+            ], center: .topLeading, angle: .zero))
+            .mask(RadialGradient(
+                colors: [.white, .white.opacity(0.55), .clear],
+                center: .topLeading,
+                startRadius: 0, endRadius: portee))
+            .drawingGroup()
+            .blendMode(.plusLighter)
+            .opacity(0.55 + 0.45 * souffle)
+            .scaleEffect(0.94 + 0.06 * souffle, anchor: .topLeading)
             .task(id: immobile) {
                 guard !Task.isCancelled else { return }
                 armer(immobile)
@@ -1770,31 +1682,190 @@ private struct RondAvatarAnime: View {
             .onAppear { monte = true }
             .onDisappear {
                 monte = false
-                // Annuler la task ne retire pas un repeatForever déjà
-                // installé : ses deux valeurs doivent aussi se reposer.
                 armer(true)
-            }
-            .onGeometryChange(for: Bool.self) { geo in
-                guard let viewport = geo.bounds(of: .scrollView(axis: .vertical))
-                else { return true }
-                let visible = CGRect(origin: .zero, size: geo.size)
-                    .intersection(viewport)
-                return !visible.isNull && !visible.isEmpty
-            } action: { visibleDansScroll = $0 }
-            .onChange(of: immobile, initial: true) { _, repos in
-                NavDiagnostic.noter("avatar-repos", destination: repos ? "1" : "0")
             }
     }
 
     private func armer(_ immobile: Bool) {
         var tr = Transaction()
         tr.disablesAnimations = true
-        withTransaction(tr) { tourFil = 0; tourBraise = 0 }
+        withTransaction(tr) { souffle = 1 }
         guard !immobile else { return }
-        withAnimation(.linear(duration: 8)
-            .repeatForever(autoreverses: false)) { tourFil = 360 }
-        withAnimation(.linear(duration: 13)
-            .repeatForever(autoreverses: false)) { tourBraise = 360 }
+        withAnimation(.easeInOut(duration: 4.5)
+            .repeatForever(autoreverses: true)) { souffle = 0 }
+    }
+}
+
+/// NOSFY PENCHÉ (20-09, « la vidéo de Nosfy penché en arrière, qui
+/// disparaît et ne revient pas ») — `profil-nosfy-penche.mp4`, le fichier
+/// `nosfy_penché.mp4` de ses Téléchargements ré-encodé à la taille d'écran
+/// (668 × 376, H.264, sans piste son, 324 ko). Il joue UNE fois, finit dans
+/// son propre noir, et prévient : l'hôte le démonte alors — le lecteur, la
+/// couche et l'observateur meurent avec la vue. Aucune boucle, aucune
+/// horloge.
+struct NosfyPencheProfil: UIViewRepresentable {
+    var onFin: () -> Void
+
+    final class Vue: UIView {
+        override static var layerClass: AnyClass { AVPlayerLayer.self }
+        var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
+        var lecteur: AVPlayer?
+        var finObservee: NSObjectProtocol?
+    }
+
+    func makeUIView(context: Context) -> Vue {
+        let v = Vue()
+        v.backgroundColor = .black
+        v.clipsToBounds = true
+        v.playerLayer.masksToBounds = true
+        v.playerLayer.videoGravity = .resizeAspect
+        guard let url = Bundle.main.url(forResource: "profil-nosfy-penche",
+                                        withExtension: "mp4") else {
+            DispatchQueue.main.async(execute: onFin)
+            return v
+        }
+        let item = AVPlayerItem(url: url)
+        let lecteur = AVPlayer(playerItem: item)
+        lecteur.isMuted = true
+        lecteur.actionAtItemEnd = .pause
+        lecteur.preventsDisplaySleepDuringVideoPlayback = false
+        let fin = onFin
+        v.finObservee = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime, object: item,
+            queue: .main) { _ in fin() }
+        v.lecteur = lecteur
+        v.playerLayer.player = lecteur
+        lecteur.play()
+        return v
+    }
+
+    func updateUIView(_ uiView: Vue, context: Context) {}
+
+    static func dismantleUIView(_ uiView: Vue, coordinator: ()) {
+        if let o = uiView.finObservee {
+            NotificationCenter.default.removeObserver(o)
+        }
+        uiView.lecteur?.pause()
+        uiView.playerLayer.player = nil
+    }
+}
+
+/// LE GALET DE VERRE NOIR DU PROFIL (20-09) : `duo-galet-noir.mp4`, le
+/// fichier même de la sortie de Nosfy (« la pill qui bouge, en gros sur le
+/// côté, en continu, trop beau »), joué ici EN PLUS PETIT, son centre
+/// au-delà du bord droit de la bannière. Il GLISSE depuis le bord à chaque
+/// arrivée sur l'onglet (un offset et une opacité, jamais une taille).
+///
+/// Il DORT dès qu'on ne le voit pas — onglet caché, app en arrière-plan,
+/// bannière hors du viewport, réduction des animations, protection
+/// thermique : le lecteur est mis en pause, pas seulement caché (le piège
+/// du rideau). Barreau : `-sansGaletProfil` (le poster à sa place).
+struct GaletProfil: View {
+    /// D'où il glisse à l'arrivée, dans SON repère (avant la rotation de
+    /// l'hôte) : couché d'un quart de tour, un −y devient un +x, le bord
+    /// droit.
+    var arriveeDepuis = CGSize(width: 64, height: 0)
+    private static let sansVideo =
+        CommandLine.arguments.contains("-sansGaletProfil")
+
+    @Environment(\.ongletCache) private var ongletCache
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var monte = false
+    @State private var visibleDansScroll = true
+    /// L'arrivée depuis le bord (0 → 1), rejouée à chaque retour sur
+    /// l'onglet.
+    @State private var arrive = false
+
+    private var dort: Bool {
+        !monte || !visibleDansScroll || ongletCache
+            || scenePhase != .active || reduceMotion
+            || RythmeEcran.dort("profile") || ReposDecorProfil.actif
+    }
+
+    var body: some View {
+        Group {
+            if Self.sansVideo || reduceMotion {
+                Image("duo-galet-noir-poster")
+                    .resizable().aspectRatio(contentMode: .fit)
+            } else {
+                GaletProfilVideo(joue: !dort)
+            }
+        }
+        .opacity(arrive ? 1 : 0)
+        .offset(x: arrive ? 0 : arriveeDepuis.width,
+                y: arrive ? 0 : arriveeDepuis.height)
+        .onAppear { monte = true }
+        .onDisappear { monte = false }
+        .onGeometryChange(for: Bool.self) { geo in
+            guard let viewport = geo.bounds(of: .scrollView(axis: .vertical))
+            else { return true }
+            let visible = CGRect(origin: .zero, size: geo.size)
+                .intersection(viewport)
+            return !visible.isNull && !visible.isEmpty
+        } action: { visibleDansScroll = $0 }
+        // L'arrivée : quand l'onglet se montre, le galet glisse depuis le
+        // bord ; quand il se cache, il repart au bord, prêt à revenir.
+        .onChange(of: ongletCache, initial: true) { _, cache in
+            if cache {
+                var tr = Transaction()
+                tr.disablesAnimations = true
+                withTransaction(tr) { arrive = false }
+            } else {
+                withAnimation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 1.4)) {
+                    arrive = true
+                }
+            }
+        }
+        .onChange(of: dort, initial: true) { _, repos in
+            NavDiagnostic.noter("galet-profil-repos", destination: repos ? "1" : "0")
+        }
+    }
+}
+
+/// Le lecteur du galet : une couche AVPlayerLayer en boucle, muette, que
+/// l'hôte met en pause quand il dort. Démonté, le lecteur s'arrête et la
+/// boucle meurt avec lui.
+struct GaletProfilVideo: UIViewRepresentable {
+    var joue: Bool
+
+    final class Vue: UIView {
+        override static var layerClass: AnyClass { AVPlayerLayer.self }
+        var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
+        var lecteur: AVQueuePlayer?
+        var boucle: AVPlayerLooper?
+    }
+
+    func makeUIView(context: Context) -> Vue {
+        let v = Vue()
+        v.backgroundColor = .black
+        v.clipsToBounds = true
+        v.playerLayer.masksToBounds = true
+        v.playerLayer.videoGravity = .resizeAspect
+        guard let url = Bundle.main.url(forResource: "duo-galet-noir",
+                                        withExtension: "mp4") else { return v }
+        let item = AVPlayerItem(url: url)
+        let lecteur = AVQueuePlayer()
+        v.boucle = AVPlayerLooper(player: lecteur, templateItem: item)
+        lecteur.isMuted = true
+        lecteur.preventsDisplaySleepDuringVideoPlayback = false
+        v.lecteur = lecteur
+        v.playerLayer.player = lecteur
+        if joue { lecteur.play() }
+        return v
+    }
+
+    func updateUIView(_ uiView: Vue, context: Context) {
+        guard let lecteur = uiView.lecteur else { return }
+        let enCours = lecteur.rate > 0
+        if joue && !enCours { lecteur.play() }
+        if !joue && enCours { lecteur.pause() }
+    }
+
+    static func dismantleUIView(_ uiView: Vue, coordinator: ()) {
+        uiView.lecteur?.pause()
+        uiView.boucle = nil
+        uiView.playerLayer.player = nil
     }
 }
 
@@ -1820,13 +1891,12 @@ struct ReglagesOverlay: View {
     @State private var showCGU = false
     @State private var confirmeSuppression = false
 
-    /// Le prénom de la personne, et ses initiales (« KD » n'est plus en dur).
+    /// Le prénom de la personne, et sa première lettre — celle du médaillon.
     private var prenom: String { ProfilServeur.prenomLocal ?? "—" }
-    private var initiales: String {
-        let p = ProfilServeur.prenomLocal ?? ""
-        let lettres = p.split(separator: " ").compactMap(\.first).prefix(2)
-        let s = String(lettres).uppercased()
-        return s.isEmpty ? "·" : s
+    private var initiale: String {
+        let p = (ProfilServeur.prenomLocal ?? "").trimmingCharacters(in: .whitespaces)
+        guard let l = p.first else { return "·" }
+        return String(l).uppercased()
     }
 
     var body: some View {
@@ -1858,10 +1928,9 @@ struct ReglagesOverlay: View {
                 // Le compte — l'échafaudage d'atelier ; le compte Apple
                 // prendra cette place au chantier connexion.
                 HStack(spacing: 12) {
-                    Text(initiales)
-                        .font(.inter(14, .bold))
-                        .tracking(1)
-                        .foregroundStyle(Color.profilBraise)
+                    Text(initiale)
+                        .font(.inter(16, .semibold))
+                        .foregroundStyle(Color.inkPrimary)
                         .frame(width: 40, height: 40)
                         .background(Circle().fill(Color.black.opacity(0.55)))
                         .overlay(Circle().strokeBorder(
@@ -2412,84 +2481,17 @@ struct ProfilFondNoir: View {
     var body: some View {
         ZStack {
             Color.black
+            // Le fond : gris neutre, plus de chaleur brune (20-09, « on
+            // remove le orange ») — la page est noire, argent, blanche.
             LinearGradient(stops: [
-                .init(color: Color(red: 0.075, green: 0.062, blue: 0.052),
-                      location: 0.0),
-                .init(color: Color(red: 0.030, green: 0.026, blue: 0.023),
-                      location: 0.38),
+                .init(color: Color(white: 0.066), location: 0.0),
+                .init(color: Color(white: 0.028), location: 0.38),
                 .init(color: .black, location: 1.0),
             ], startPoint: .top, endPoint: .bottom)
             WoopGrain()
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
-    }
-}
-
-/// L'hôte des halos de la bannière : trois grands foyers blanc/jaune/
-/// orange qui naviguent et se fondent — jamais de noir (30 Hz, la
-/// cadence des fonds).
-/// PARTAGÉE (15-08) : la fiche d'exercice l'emploie comme ÉCRIN de sa
-/// carte des séries — même shader, même lumière, la consistance demandée.
-/// Ne jamais en faire une copie : deux exemplaires divergeraient au
-/// premier réglage.
-struct BanniereHalos: View {
-    /// La hauteur de RÉFÉRENCE passée au shader à la place de la vraie
-    /// (il normalise tout par size.y) : la carte dépliée garde des halos
-    /// à l'échelle de la bannière — sans elle, ils s'étirent avec la
-    /// carte et tout le haut devient un blanc soufflé. L'arité du
-    /// stitchable ne bouge pas (le piège de la page blanche).
-    var norme: CGFloat? = nil
-
-    /// La cadence du champ. 30 img/s au repos ; la fiche exo la baisse
-    /// PENDANT la course de sa carte — la lumière évolue sur des périodes
-    /// de 17 à 31 s, son frémissement est proprement invisible sous une
-    /// coque qui grandit, et c'est autant de passes de shader en moins.
-    var cadence: Double = 1.0 / 30.0
-
-    @Environment(\.ongletCache) private var ongletCache
-    @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var monte = false
-    // Hors ScrollView, la vue reste visible. Dans le profil, seule cette
-    // feuille reçoit les franchissements du viewport : aucun offset de
-    // défilement ni recalcul par image ne remonte à toute la page.
-    @State private var visibleDansScroll = true
-
-    private var dort: Bool {
-        !monte || !visibleDansScroll || ongletCache
-            || scenePhase != .active || reduceMotion
-            || RythmeEcran.dort("profile") || ReposDecorProfil.actif
-    }
-
-    var body: some View {
-        GeometryReader { geo in
-            TimelineView(.animation(minimumInterval: cadence,
-                                    paused: dort)) { tl in
-                let t = Float(tl.date.timeIntervalSinceReferenceDate
-                    .truncatingRemainder(dividingBy: 900))
-                Rectangle()
-                    .fill(.white)
-                    .colorEffect(ShaderLibrary.banniereHalos(
-                        .float2(geo.size.width,
-                                norme ?? geo.size.height),
-                        .float(t)))
-            }
-        }
-        .onAppear { monte = true }
-        .onDisappear { monte = false }
-        // Mesurer cette feuille dans le viewport, y compris lorsqu'elle
-        // est le fond d'un enfant du VStack du profil.
-        .onGeometryChange(for: Bool.self) { geo in
-            guard let viewport = geo.bounds(of: .scrollView(axis: .vertical))
-            else { return true }
-            let visible = CGRect(origin: .zero, size: geo.size)
-                .intersection(viewport)
-            return !visible.isNull && !visible.isEmpty
-        } action: { visibleDansScroll = $0 }
-        .onChange(of: dort, initial: true) { _, repos in
-            NavDiagnostic.noter("banniere-repos", destination: repos ? "1" : "0")
-        }
     }
 }
 
@@ -2504,6 +2506,9 @@ struct ProfilLab: View {
         ProfilLuneView(selection: $selection)
             .statusBarHidden()
             .preferredColorScheme(.dark)
+            // Au banc, personne ne pose l'onglet affiché : sans lui, les
+            // portes `dort("profile")` disent oui et le galet reste figé.
+            .onAppear { RythmeEcran.shared.ongletActif = "profile" }
     }
 }
 
