@@ -1,5 +1,27 @@
 # Règle multi-session (Nosfy)
 
+## Route — PLAFOND « deux séances par jour » : FAIT, serveur POSÉ, 20-09 (session sortie de Nosfy), NON commité
+
+Sur son « vas-y fais tout » : migration **`20260920160000`** POSÉE (API de
+gestion + `migration repair`, sans toucher votre `20260920120000`, toujours
+locale) — `seances_chemin_plafonnees()` PAR-DESSUS `seances_chemin()` (que je
+n'ai pas touchée : votre redéfinition HIIT sera reprise automatiquement),
+`workouts.fuseau`, la garde des lunes et la clôture (`plafond_jour`) dans
+`cartes_prive`, règles `chemin_seances_par_jour_max = 2` et
+`chemin_plafond_depuis = 2026-09-21` (rien ne rétroagit). Banc
+`tools/duolingo/verif_plafond_jour.py` : 24 PASS sur la base posée.
+Côté app, **dans l'arbre, non commité** — mes hunks dans VOS fichiers :
+`DuolinguoPage.swift` (`etapeEtFaits` plafonné, `EtatDuo.refusPlafond`, le
+panneau « Start a second session today? », le tap du galet actif → alerte
+native, banc `-duoAutoTap`), `HomeNuit.swift` (`lancer` / `ouvrirSeanceEnBase`
+refusent, `.alertePlafondJour`), `NosfyApp.swift` (`startWorkout` /
+`demarrerDepuisChemin`, bancs `-cheminAuto -departAuto -plafondBanc N`),
+`SupabaseSync.swift` (`fuseau`). Nouveau : `Nosfy/Services/PlafondJour.swift`.
+Preuves : `tools/duolingo/plafond-2026-09-20/README.md`. Ouvert : la fiche
+exercice (`ExerciseDetailView`, 4 créations de séance) ne refuse pas encore.
+Avant de commiter ces fichiers : `git diff HEAD -- <fichier>` et prendre vos
+hunks seuls ; je ferai de même avec les miens.
+
 ## Cartes — rendu légendaire et plongée : ANALYSE SEULE, 20-09 (session ouverte)
 
 Sur trois constats de Kathryn (profil « 1 / 5 », légendaire indistincte de

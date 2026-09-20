@@ -17,6 +17,10 @@ actor SupabaseSync {
         let started_at: String
         let ended_at: String?
         let notes: String
+        /// LE FUSEAU DU TÉLÉPHONE (20-09, le plafond du jour) : le serveur compte
+        /// les séances par jour LOCAL, le même que la Route ici. Identifiant IANA
+        /// (`Europe/Paris`), lu à la synchronisation ; `workouts.fuseau`.
+        let fuseau: String
     }
 
     private struct LoggedExerciseRow: Encodable {
@@ -132,7 +136,8 @@ actor SupabaseSync {
                     WorkoutRow(id: $0.id, user_id: userID,
                                started_at: iso.string(from: $0.startedAt),
                                ended_at: $0.endedAt.map(iso.string(from:)),
-                               notes: $0.notes)
+                               notes: $0.notes,
+                               fuseau: TimeZone.current.identifier)
                 }
                 let exercises = lot.flatMap { snapshot in
                     snapshot.exercises.map {

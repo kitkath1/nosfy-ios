@@ -1,0 +1,25 @@
+PASS règle chemin_seances_par_jour_max = 2 · 2
+PASS règle chemin_plafond_depuis posée · "2026-09-21"
+PASS fuseau enregistré sur la séance
+PASS seances_chemin : les trois séances avec travail · 3
+PASS seances_chemin_plafonnees : deux seulement · 2
+PASS les deux premières du jour comptent (rangs 1 et 2)
+PASS le jour est le jour de Paris
+PASS clôture 1 : payée · 20
+PASS clôture 2 : payée · 20
+PASS clôture 3 : plafond_jour, zéro pièce, pas de sachet · {"ok": true, "faits": [], "rejeu": false, "reste": 40, "solde": 40, "argent": false, "coffre": {"jour": "2026-09-20", "reste": 40, "flamme": {"jours": 1, "aujou
+PASS clôture 3 : le solde ne bouge pas · 40 → 40
+PASS clôture 3 : le solde renvoyé est le vrai (pas 0) · 40
+PASS clôture 3 : aucun événement de gain
+PASS clôture 3 rejouée : même réponse, rejeu
+PASS lune du rang 3 refusée avec 2 séances comptées · progression_insuffisante
+PASS une séance d'hier compte : trois séances comptées · 3
+PASS lune du rang 3 accordée avec 3 séances comptées (aucun refus) · raison=∅ deja_reclame=false sachets=1 booster_ids=["6233fd9c-de2c-41e0-beb7-4272301532e6"]
+PASS séance Pago Pago : rattachée à un autre jour que Paris · 2026-09-19 rang 2
+PASS fuseau inconnu ignoré (null), séance acceptée
+PASS fuseau inconnu → jour de Paris → au-delà du plafond, non comptée
+PASS séance vide : le compte ne bouge pas · 4
+PASS séance vide : clôture sans plafond_jour ni pièce · {"faits": [], "rejeu": false, "reste": 82, "solde": 82, "argent": false, "coffre": {"jour": "2026-09
+PASS avant chemin_plafond_depuis : toutes les séances avec travail comptent · 6
+PASS compte étranger : progression vide
+Plafond du jour : 24 PASS, 0 FAIL (migration posée, transaction annulée)

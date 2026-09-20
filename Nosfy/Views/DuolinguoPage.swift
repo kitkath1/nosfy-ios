@@ -279,10 +279,14 @@ struct EcranSpec: Equatable, Identifiable {
 
     /// Un galet par séance terminée avec du travail (filtre de la Home).
     /// Les pauses calendaires ne font pas avancer le chemin ; deux séances le
-    /// même jour restent deux séances. Après35, le dernier chapitre est accompli.
+    /// même jour restent deux séances — et PAS TROIS (20-09, sa règle : « maximum
+    /// deux séances par jour, pour pas tricher ») : `PlafondJour.comptees` ne garde
+    /// que les deux premières de chaque jour local, la même règle que
+    /// `seances_chemin_plafonnees()` au serveur. Après35, le dernier chapitre est accompli.
     static func etapeEtFaits(seancesFinies: [Date], aujourdhui: Date = Date())
         -> (etape: Int, faits: Set<Int>, dates: [Int: Date]) {
-        let finies = seancesFinies.filter { $0 <= aujourdhui }.sorted().prefix(seances.count)
+        let finies = PlafondJour.comptees(seancesFinies.filter { $0 <= aujourdhui })
+            .map(\.date).prefix(seances.count)
         var faits: Set<Int> = []
         var dates: [Int: Date] = [:]
         for (rang, date) in finies.enumerated() {
@@ -567,6 +571,12 @@ extension EcranSpec {
     /// actif, il porte AUJOURD'HUI, calculé à l'affichage (elle ne se fige
     /// qu'à la complétion).
     var datesFaites: [Int: Date] = [:]
+    /// LE PLAFOND DU JOUR (20-09) : le tap sur le galet actif quand les deux
+    /// séances du jour sont faites — la pop-up native du refus, pas le panneau.
+    var refusPlafond = false
+    /// Combien de séances comptées aujourd'hui (les dates des galets faits).
+    var faitesAujourdhui: Int { PlafondJour.faitesAujourdhui(Array(datesFaites.values)) }
+    var plafondAtteint: Bool { PlafondJour.atteint(Array(datesFaites.values)) }
     /// Les nœuds spéciaux (lune, trésor, pièce) déjà RÉCLAMÉS — mémoire de
     /// session en attendant la source des rewards (`coin_ledger`,
     /// `user_boosters`) ; sans elle, une lune re-tapable à chaque
@@ -1331,8 +1341,14 @@ private struct CheminDuo: View {
                     // « Nosfy has something for you » et le panneau de séance :
                     // un panneau moitié français moitié anglais se voit
                     // immédiatement.
+                    // LE PLAFOND DU JOUR (20-09) : une séance déjà comptée
+                    // aujourd'hui → le galet actif propose LA DEUXIÈME, et le
+                    // dit (« lancer une deuxième séance aujourd'hui ? ») ; à
+                    // deux, il ne s'ouvre plus (voir le tap : la pop-up native).
                     titre: e.special ? "Nosfy has something for you"
-                        : (cEst ? "Today's session" : "Session done"),
+                        : (cEst ? (etat.faitesAujourdhui == 1 ? "Start a second session today?"
+                                                             : "Today's session")
+                                : "Session done"),
                     cta: e.special
                         ? (recompensePrete ? "Claim" : nil)
                         : (cEst ? "Start" : "View"),
@@ -1506,6 +1522,15 @@ private struct CheminDuo: View {
         // l'overlay avec le petit calendrier »). Un jour raté aussi : il n'a
         // rien à montrer, mais il dit au moins de quel jour il s'agit.
         if etat.branchee, e.id <= etat.etape {
+            // LE PLAFOND DU JOUR (20-09, sa règle) : deux séances comptées
+            // aujourd'hui → le galet actif ne propose plus rien, il REFUSE —
+            // la pop-up native Apple (sa demande), jamais le panneau « Start ».
+            if e.id == etat.etape, etat.plafondAtteint {
+                NavDiagnostic.noter("route.plafond-jour")
+                UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                etat.refusPlafond = true
+                return
+            }
             withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) {
                 etat.panneauSur = e.id
             }
@@ -1950,6 +1975,9 @@ struct DuolinguoPage: View {
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         .sondeCadence("duo")
+        // LE PLAFOND DU JOUR (20-09) : le refus est une alerte NATIVE Apple —
+        // la même qu'aux autres portes de départ (`PlafondJour`).
+        .alertePlafondJour($etat.refusPlafond)
     }
 
     private func validerCelebration(_ id: Int) {
@@ -2005,6 +2033,21 @@ struct DuolinguoPage: View {
             withTransaction(tx) { etat.nees.formUnion(ailleurs.map(\.id)) }
         }
         if etat.branchee {
+            // banc : `-duoAutoTap` (20-09, le plafond du jour) — le galet ACTIF
+            // se tape seul à +3 s : le panneau (« Start » / « Start a second
+            // session today? ») ou, à deux séances comptées, la pop-up native.
+            if CommandLine.arguments.contains("-duoAutoTap") {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                    if etat.plafondAtteint {
+                        NavDiagnostic.noter("route.plafond-jour", destination: "banc")
+                        etat.refusPlafond = true
+                    } else {
+                        withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) {
+                            etat.panneauSur = etat.etape
+                        }
+                    }
+                }
+            }
             // banc : `-duoAutoDepart` — le primary se confirme seul à
             // +3,8 s (le film du départ sans doigt).
             if CommandLine.arguments.contains("-duoAutoDepart") {

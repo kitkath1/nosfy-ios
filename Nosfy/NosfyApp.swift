@@ -579,6 +579,9 @@ struct RootView: View {
     /// des pièces (+20/série), et la pop-up booster qui propose le
     /// sachet gagné.
     @State private var erreurFinSeance = false
+    /// LE PLAFOND DU JOUR (20-09, sa règle) : deux séances comptées aujourd'hui,
+    /// une troisième est REFUSÉE à toutes les portes — la pop-up native Apple.
+    @State private var refusPlafondJour = false
     @State private var recompensesApresRoute = false
 
     private func terminerSeance() {
@@ -758,9 +761,29 @@ struct RootView: View {
     /// qui se suivent, jamais ensemble). ⚠️ Pas `startWorkout()` : il rouvre
     /// la vieille feuille noire si une séance existe déjà. La home, elle,
     /// lève sa card en voyant `enSeance` basculer.
+    /// LE PLAFOND DU JOUR (20-09) : les séances finies AVEC travail, comptées
+    /// comme la Route les compte (`PlafondJour.comptees`, la règle du serveur).
+    /// Vrai = plus de séance comptée aujourd'hui : on refuse, on ne crée rien.
+    private func plafondDuJourAtteint() -> Bool {
+        let finies = ((try? modelContext.fetch(FetchDescriptor<Workout>())) ?? [])
+            .filter { $0.endedAt != nil && $0.faitPourRoute }
+            .compactMap(\.endedAt)
+        return PlafondJour.atteint(finies)
+    }
+
+    private func refuserPlafondDuJour(porte: String) {
+        NavDiagnostic.noter("depart.plafond-jour", destination: porte)
+        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        refusPlafondJour = true
+    }
+
     private func demarrerDepuisChemin() {
         NavDiagnostic.noter("depart.racine", destination: filmDepart == nil ? "libre" : "film-en-cours")
         guard filmDepart == nil else { return }
+        // Une séance déjà ouverte se poursuit toujours ; une NOUVELLE au-delà du
+        // plafond du jour est refusée (la Route refuse déjà avant d'appeler ici :
+        // ceci est la garde de la porte elle-même).
+        if active == nil, plafondDuJourAtteint() { refuserPlafondDuJour(porte: "route"); return }
         // Lire aussi le contexte : la @Query peut attendre le prochain rendu
         // après le premier tap. Un deuxième callback ne crée pas de doublon.
         let ouverte = active ?? (try? modelContext.fetch(FetchDescriptor<Workout>(
@@ -1000,6 +1023,9 @@ struct RootView: View {
             sheetWorkout = active
             return
         }
+        // LE PLAFOND DU JOUR (20-09) : la troisième séance est refusée ici
+        // aussi — la Home et les Exercices passent par cette porte.
+        if plafondDuJourAtteint() { refuserPlafondDuJour(porte: "home"); return }
         let workout = Workout()
         modelContext.insert(workout)
         try? modelContext.save()
@@ -2177,6 +2203,47 @@ struct RootView: View {
         .onChange(of: showAuth || showSplash || nosfyOuvert || filmNosfy,
                   initial: true) { _, tient in
             compte.enPorte = tient
+        }
+        // LE PLAFOND DU JOUR (20-09) : le refus d'une troisième séance, en
+        // alerte native — la même que sur la Route (`PlafondJour`).
+        .alertePlafondJour($refusPlafondJour)
+        // Les bancs du plafond (20-09) : `-cheminAuto` ouvre la Route tout seul
+        // 7 s après l'arrivée (avec `-duoAutoTap`, le galet actif se tape) ;
+        // `-departAuto` presse la porte de départ de la Home à 7 s (le refus).
+        .task {
+            let a = CommandLine.arguments
+            guard a.contains("-cheminAuto") || a.contains("-departAuto") else { return }
+            // `-plafondBanc` : trois séances FINIES AVEC TRAVAIL aujourd'hui (une
+            // série cochée chacune — la démo n'en coche aucune, donc aucun galet),
+            // semées une fois : la Route en compte deux, la troisième est refusée.
+            if let i = a.firstIndex(of: "-plafondBanc") {
+                // `-plafondBanc 1` : une seule séance (le panneau « deuxième séance »).
+                let combien = i + 1 < a.count ? (Int(a[i + 1]) ?? 3) : 3
+                let deja = ((try? modelContext.fetch(FetchDescriptor<Workout>())) ?? [])
+                    .contains { $0.endedAt.map(Calendar.current.isDateInToday) == true && $0.faitPourRoute }
+                if !deja {
+                    for minutes in [-300, -180, -30].prefix(combien) {
+                        let fin = Date().addingTimeInterval(Double(minutes) * 60)
+                        let w = Workout(startedAt: fin.addingTimeInterval(-12 * 60), endedAt: fin)
+                        modelContext.insert(w)
+                        let e = LoggedExercise(exerciseID: "hip-thrust", order: 0)
+                        e.workout = w
+                        modelContext.insert(e)
+                        let s = StrengthSet(reps: 10, weight: 40, order: 0)
+                        s.isDone = true
+                        s.loggedExercise = e
+                        modelContext.insert(s)
+                    }
+                    try? modelContext.save()
+                }
+            }
+            try? await Task.sleep(for: .seconds(7))
+            if a.contains("-departAuto") { startWorkout(); return }
+            let finies = ((try? modelContext.fetch(FetchDescriptor<Workout>())) ?? [])
+                .filter { $0.endedAt != nil && $0.faitPourRoute }
+                .compactMap(\.endedAt)
+            let route = EcranSpec.etapeEtFaits(seancesFinies: finies)
+            depart.ouvrirChemin(etape: route.etape, faits: route.faits, dates: route.dates)
         }
         .alert(L("Séance non enregistrée", "Session not saved"), isPresented: $erreurFinSeance) {
             Button(L("Réessayer", "Try again")) { terminerSeance() }

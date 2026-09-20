@@ -2324,6 +2324,9 @@ struct HomeNuitPage: View {
     /// (le banc nu) : les cards gardent leurs défauts.
     @Query private var workoutsBruts: [Workout]
     @State private var stats: SemaineStats?
+    /// LE PLAFOND DU JOUR (20-09, sa règle) : deux séances comptées aujourd'hui,
+    /// « Commencer » ne s'ouvre plus — la pop-up native Apple, avant tout film.
+    @State private var refusPlafond = false
     /// L'ÉTAT DU CHEMIN POUR LA CARD ROUTE — calculé UNE fois, comme les
     /// stats. ⚠️ `cheminEtat` est une propriété CALCULÉE sur les séances :
     /// lue depuis un `body`, elle re-dérivait tout le chemin à chaque image
@@ -2747,6 +2750,9 @@ struct HomeNuitPage: View {
         // ci-dessus reste vraie, seul le POSTE a changé.
         // `-fps` : la sonde de cadence (le SEUL juge fiable du « ça lag »).
         .sondeCadence("home")
+        // LE PLAFOND DU JOUR (20-09) : le refus, en alerte native — la même
+        // que sur la Route et aux autres portes (`PlafondJour`).
+        .alertePlafondJour($refusPlafond)
         // L'OBJECTIF A CHANGÉ (13-09) — dans la chambre longue, ou chez Nosfy :
         // la clé unique `objectifHebdo` bouge, la card « / N » suit seule
         // (@AppStorage), mais le pied (« 2 sessions left… ») et les fantômes
@@ -4391,7 +4397,23 @@ struct HomeNuitPage: View {
     /// scène : `gDepart` vaut 0 au tap, et toutes les fenêtres du mobilier sont
     /// écrites en `max(gCran, …)`, donc la partition fait elle-même le travail
     /// que le doigt aurait fait.
+    /// LE PLAFOND DU JOUR (20-09) : les séances finies avec travail, comptées
+    /// comme la Route (`PlafondJour`) ; vrai = plus de séance aujourd'hui.
+    private var plafondDuJourAtteint: Bool {
+        PlafondJour.atteint(workoutsBruts.filter(\.faitPourRoute).compactMap(\.endedAt))
+    }
+
+    private func refuserPlafond() {
+        guard !refusPlafond else { return }
+        NavDiagnostic.noter("depart.plafond-jour", destination: "home")
+        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        refusPlafond = true
+    }
+
     private func lancer(gDepart: Double) {
+        // LE PLAFOND DU JOUR (20-09, sa règle) : la porte ne s'ouvre pas, aucun
+        // film — la pop-up native dit « revenez demain ».
+        if plafondDuJourAtteint { refuserPlafond(); return }
         gCran = gDepart
         // ⚠️ ON REPREND OÙ LE DOIGT A GELÉ. En reculant la date de naissance de
         // l'horloge de ce qui est déjà joué, la reprise est CONTINUE : un
@@ -4735,6 +4757,9 @@ struct HomeNuitPage: View {
         let ouverts = (try? modelContext.fetch(FetchDescriptor<Workout>(
             predicate: #Predicate { $0.endedAt == nil }))) ?? []
         guard ouverts.isEmpty else { return }
+        // LE PLAFOND DU JOUR (20-09) : la garde de la porte elle-même (le
+        // chemin embarqué passe par ici sans `lancer`).
+        if plafondDuJourAtteint { refuserPlafond(); return }
         let seance = Workout()
         modelContext.insert(seance)
         try? modelContext.save()
