@@ -26,6 +26,14 @@ rien à faire à la main par carte, mais prévoir l'étape dans
 `publier_catalogue.py` ; le monde de chaque carte (Forêt/Cimes/Bois) doit être
 lisible dans le catalogue, il règle la météo.
 
+Musiques des manèges (20-09, son ordre) : l'ORANGE chante désormais
+`manege-noir.caf` (la boîte à musique grave du 18-09), le NOIR une nouvelle
+piste `manege-noir-drame.caf` (`tools/sacre/cuire_manege_noir_drame.py` :
+bourdon, cordes, cœur, chœur, piano dramatique — « pas de carillon »).
+Deux constantes dans `BoosterAmbience` (`BoosterLab.swift`), rien d'autre ;
+`manege-nappe.caf` reste dans le bundle. Non compilé, non installé sur iPhone.
+
+
 ## ⚠️ Sortie de Nosfy — commit posé par index TEMPORAIRE, 20-09 : relisez votre index sur `NosfyOnboarding.swift`
 
 `Nosfy/Views/NosfyOnboarding.swift` : la sortie du film refaite (« Let's go,

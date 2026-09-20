@@ -300,17 +300,24 @@ final class BoosterHaptics {
 /// se bat pas contre la playlist de séance.
 final class BoosterAmbience {
     /// Les pistes et leur volume de croisière — celles du manège ORANGE.
-    static let manege = "manege-nappe"
+    /// LE MANÈGE ORANGE CHANTE LA BOÎTE À MUSIQUE GRAVE (Kathryn, 20-09 :
+    /// « remplace la musique actuelle du manège orange par celle du manège
+    /// noir, je préfère ») — `manege-noir.caf` (cuire_manege_noir.py, 18-09).
+    /// L'ancienne nappe (`manege-nappe.caf`) reste dans le bundle, débranchée.
+    static let manege = "manege-noir"
     static let veille = "braise-veille"
     static let sacre = "sacre-lune"
-    /// LE MANÈGE NOIR A SA MUSIQUE (Kathryn, 18-09, sur son iPhone :
-    /// « musique autre, car c'est légendaire ») : une boîte à musique plus
-    /// lente et plus grave, en mineur, sur un bourdon
-    /// (`tools/sacre/cuire_manege_noir.py`) ; et SON sacre quand la carte se
-    /// présente — « un truc plus beau, plus légendaire » : un chœur qui
-    /// s'élève, une pluie de cloches (`tools/sacre/cuire_sacre_noir.py`).
+    /// LE MANÈGE NOIR A SA MUSIQUE (Kathryn, 18-09 : « musique autre, car
+    /// c'est légendaire » ; 20-09 : « une autre musique plus dramatique pour
+    /// le booster noir ») : la veillée de cathédrale — bourdon en ré, cordes
+    /// sombres i·VI·iv·V, tambour en battement de cœur, chœur qui entre à
+    /// la moitié, cloches basses, montée qui se coupe sur le grand coup
+    /// (`tools/sacre/cuire_manege_noir_drame.py`, 24 s sans couture) ; et
+    /// SON sacre quand la carte se présente — « un truc plus beau, plus
+    /// légendaire » : un chœur qui s'élève, une pluie de cloches
+    /// (`tools/sacre/cuire_sacre_noir.py`).
     /// `sacre-legendaire.caf` (15-08, jamais branché) reste dans le bundle.
-    static let manegeNoir = "manege-noir"
+    static let manegeNoir = "manege-noir-drame"
     static let sacreNoir = "sacre-noir"
     private static let levels: [String: Float] = [
         manege: 0.22, veille: 0.30, sacre: 0.30,
