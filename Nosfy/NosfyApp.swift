@@ -309,6 +309,11 @@ struct RootView: View {
     /// au gyroscope en main. `-luneTilt <tx,ty>` fige l'inclinaison,
     /// `-luneStill` coupe le balancement propre.
     private static let luneLab = CommandLine.arguments.contains("-luneLab")
+    /// Banc du MONDE OUVERT d'une légendaire : `-mondeLab` — le tap qui
+    /// dissout le cadre et étend la scène bord à bord, la profondeur VRAIE,
+    /// le doigt qui conduit (glisser, pincer ×2), le glissé vers le bas
+    /// qui referme (plan du 20-09, § 4). Kit dans Documents, sinon carte-lune-1.
+    private static let mondeLab = CommandLine.arguments.contains("-mondeLab")
     /// Banc de la page profil-collection : `-profilLab` — le halo versé de
     /// la droite, l'avatar-pastille, le trésor et les dos vides.
     private static let profilLab = CommandLine.arguments.contains("-profilLab")
@@ -1109,6 +1114,8 @@ struct RootView: View {
             StoryLab()
         } else if Self.setLab {
             SetEntryLab()
+        } else if Self.mondeLab {
+            MondeCarteLab()
         } else if Self.luneLab {
             CarteLuneLab()
         } else if Self.profilLab {

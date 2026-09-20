@@ -1,0 +1,32 @@
+[
+ {
+  "fichier": "le-passage-plan-1.png",
+  "profondeur": 0.996,
+  "nom": "le ciel et la lune"
+ },
+ {
+  "fichier": "le-passage-plan-2.png",
+  "profondeur": 0.892,
+  "nom": "les nuages"
+ },
+ {
+  "fichier": "le-passage-plan-3.png",
+  "profondeur": 0.652,
+  "nom": "le lointain"
+ },
+ {
+  "fichier": "le-passage-plan-4.png",
+  "profondeur": 0.443,
+  "nom": "le moyen"
+ },
+ {
+  "fichier": "le-passage-plan-5.png",
+  "profondeur": 0.4,
+  "nom": "le premier plan"
+ },
+ {
+  "fichier": "le-passage-plan-6.png",
+  "profondeur": 0.18,
+  "nom": "la créature"
+ }
+]

@@ -1,0 +1,27 @@
+[
+ {
+  "fichier": "dragon-d-obsidienne-plan-1.png",
+  "profondeur": 0.996,
+  "nom": "le ciel et la lune"
+ },
+ {
+  "fichier": "dragon-d-obsidienne-plan-2.png",
+  "profondeur": 0.851,
+  "nom": "les nuages"
+ },
+ {
+  "fichier": "dragon-d-obsidienne-plan-3.png",
+  "profondeur": 0.475,
+  "nom": "le lointain"
+ },
+ {
+  "fichier": "dragon-d-obsidienne-plan-4.png",
+  "profondeur": 0.424,
+  "nom": "le moyen"
+ },
+ {
+  "fichier": "dragon-d-obsidienne-plan-5.png",
+  "profondeur": 0.265,
+  "nom": "le premier plan"
+ }
+]

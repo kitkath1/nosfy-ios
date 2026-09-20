@@ -47,7 +47,11 @@ l'empile pas. Ce qui suit lie toutes les sessions, sans exception.
    tombent + lave ; Bois = nacre qui monte, **pas de feu**.
 5. **Le doigt conduit, jamais un film** : la caméra ne zoome pas au-delà des
    pixels de la peinture (×2 maximum), ne se pose jamais seule sur un
-   détail, ne dure pas.
+   détail, ne dure pas. **Jamais de vidéo** non plus (« en vidéo ce n'est pas
+   possible, c'est cheap », 20-09) : la créature vit par le shader et ses
+   masques cuits (respiration, feu, paillettes), pas par une boucle filmée.
+   **Sa musique est à part** : majestueuse, au piano, très belle — jamais de
+   carillon (`tools/sacre/PLAN-MUSIQUE-LEGENDAIRE-2026-09-20.md`).
 6. **Rien ne se juge à taille de carte seule** : crops ×3 obligatoires sur
    toute planche montrée — elle les regarde. **Rien ne se pose sans mesure
    chauffe sur son iPhone** (le profil est 🔴) ; chaque effet arrive avec son

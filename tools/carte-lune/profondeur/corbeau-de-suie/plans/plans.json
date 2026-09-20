@@ -1,0 +1,27 @@
+[
+ {
+  "fichier": "corbeau-de-suie-plan-1.png",
+  "profondeur": 0.989,
+  "nom": "le ciel et la lune"
+ },
+ {
+  "fichier": "corbeau-de-suie-plan-2.png",
+  "profondeur": 0.769,
+  "nom": "les nuages"
+ },
+ {
+  "fichier": "corbeau-de-suie-plan-3.png",
+  "profondeur": 0.61,
+  "nom": "le lointain"
+ },
+ {
+  "fichier": "corbeau-de-suie-plan-4.png",
+  "profondeur": 0.421,
+  "nom": "le moyen"
+ },
+ {
+  "fichier": "corbeau-de-suie-plan-5.png",
+  "profondeur": 0.239,
+  "nom": "le premier plan"
+ }
+]

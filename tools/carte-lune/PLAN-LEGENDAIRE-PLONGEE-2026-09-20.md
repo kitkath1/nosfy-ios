@@ -376,11 +376,16 @@ Tap sur la carte ouverte :
   qui montent des bois** (le masque E2, plus une coordonnée fixe) ; la neige
   tombe devant tous les plans.
 - **La lampe marche dedans** : le pouce sur le cerf éclaire sa gravure.
-- **La créature vit** (à trancher sur UN essai, après E2/E3/E7 qui la font
-  déjà respirer) : une boucle vidéo de 4-6 s générée en atelier à partir de
-  la scène validée — décodage matériel, coût processeur quasi nul — jouée
-  sous la gravure. Risque : le « fake » d'une vidéo générée ; verdict en
-  crop et en mouvement avant d'en demander une deuxième.
+- **La créature vit — jamais par une vidéo** (son verdict du 20-09 après le
+  banc : « en vidéo ce n'est pas possible, c'est cheap »). Elle vit par le
+  shader et ses masques cuits : la respiration (le champ de déplacement du
+  sujet), le feu qui vacille aux sources, les paillettes du poil qui
+  clignotent, un catch-light dans l'œil (masque des yeux dans le kit). Rien
+  de filmé, rien de généré en mouvement.
+- **Sa musique est à part** : majestueuse, au piano, très belle — le plan
+  `tools/sacre/PLAN-MUSIQUE-LEGENDAIRE-2026-09-20.md` (un vrai piano
+  échantillonné, une seule pièce pour la présentation et l'entrée dans la
+  carte, la veillée reste au manège).
 - **Pas de durée.** Glisser vers le bas → la scène se recompose, le cadre se
   reforme, le verre se referme.
 - **Le dos.** Glisser sur le côté → la carte se retourne, le chant passe

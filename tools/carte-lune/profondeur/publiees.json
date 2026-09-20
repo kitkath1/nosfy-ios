@@ -1,0 +1,86 @@
+[
+ {
+  "reference": "foret-des-veilles/la-veille/1",
+  "rarete": "common",
+  "monde": "foret-des-veilles",
+  "fichier": "tools/carte-lune/references-2026-09-18/01-commune-la-veille-v2.png"
+ },
+ {
+  "reference": "foret-des-veilles/les-veilleuses/1",
+  "rarete": "rare",
+  "monde": "foret-des-veilles",
+  "fichier": "tools/carte-lune/references-2026-09-18/02-rare-les-veilleuses-v3.png"
+ },
+ {
+  "reference": "foret-des-veilles/le-passage/1",
+  "rarete": "epic",
+  "monde": "foret-des-veilles",
+  "fichier": "tools/carte-lune/references-2026-09-18/03-epique-le-passage-v2.png"
+ },
+ {
+  "reference": "foret-des-veilles/le-souverain/1",
+  "rarete": "legendary",
+  "monde": "foret-des-veilles",
+  "fichier": "tools/carte-lune/references-2026-09-18/04-legendaire-le-souverain-v3.png"
+ },
+ {
+  "reference": "cimes-eteintes/corbeau-de-suie/1",
+  "rarete": "common",
+  "monde": "cimes-eteintes",
+  "fichier": "tools/carte-lune/cimes-eteintes-2026-09-18/01-commune-corbeau-de-suie-v3.png"
+ },
+ {
+  "reference": "cimes-eteintes/aile-d-ambre/1",
+  "rarete": "rare",
+  "monde": "cimes-eteintes",
+  "fichier": "tools/carte-lune/cimes-eteintes-2026-09-18/02-rare-aile-d-ambre-v3.png"
+ },
+ {
+  "reference": "cimes-eteintes/loup-de-cendre/1",
+  "rarete": "epic",
+  "monde": "cimes-eteintes",
+  "fichier": "tools/carte-lune/cimes-eteintes-2026-09-18/03-epique-loup-de-cendre-v3.png"
+ },
+ {
+  "reference": "cimes-eteintes/dragon-d-obsidienne/1",
+  "rarete": "legendary",
+  "monde": "cimes-eteintes",
+  "fichier": "tools/carte-lune/cimes-eteintes-2026-09-18/04-legendaire-dragon-d-obsidienne-v3.png"
+ },
+ {
+  "reference": "cimes-eteintes/la-faille-ardente/1",
+  "rarete": "common",
+  "monde": "cimes-eteintes",
+  "fichier": "tools/carte-lune/cimes-eteintes-2026-09-18/05-commune-la-faille-ardente-v1.png"
+ },
+ {
+  "reference": "cimes-eteintes/le-col-des-cendres/1",
+  "rarete": "common",
+  "monde": "cimes-eteintes",
+  "fichier": "tools/carte-lune/cimes-eteintes-2026-09-18/06-commune-le-col-des-cendres-v1.png"
+ },
+ {
+  "reference": "bois-sans-lune/la-clairiere-muette/1",
+  "rarete": "common",
+  "monde": "bois-sans-lune",
+  "fichier": "tools/carte-lune/bois-sans-lune-2026-09-18/01-commune-la-clairiere-muette-v2.png"
+ },
+ {
+  "reference": "bois-sans-lune/aile-de-brume/1",
+  "rarete": "rare",
+  "monde": "bois-sans-lune",
+  "fichier": "tools/carte-lune/bois-sans-lune-2026-09-18/02-rare-aile-de-brume-v3.png"
+ },
+ {
+  "reference": "bois-sans-lune/loup-des-racines/1",
+  "rarete": "epic",
+  "monde": "bois-sans-lune",
+  "fichier": "tools/carte-lune/bois-sans-lune-2026-09-18/03-epique-loup-des-racines-v3.png"
+ },
+ {
+  "reference": "bois-sans-lune/le-grand-silence/1",
+  "rarete": "legendary",
+  "monde": "bois-sans-lune",
+  "fichier": "tools/carte-lune/bois-sans-lune-2026-09-18/04-legendaire-le-grand-silence-v3.png"
+ }
+]

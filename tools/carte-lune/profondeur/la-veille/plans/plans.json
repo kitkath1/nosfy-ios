@@ -1,0 +1,27 @@
+[
+ {
+  "fichier": "la-veille-plan-1.png",
+  "profondeur": 0.996,
+  "nom": "le ciel et la lune"
+ },
+ {
+  "fichier": "la-veille-plan-2.png",
+  "profondeur": 0.941,
+  "nom": "les nuages"
+ },
+ {
+  "fichier": "la-veille-plan-3.png",
+  "profondeur": 0.757,
+  "nom": "le lointain"
+ },
+ {
+  "fichier": "la-veille-plan-4.png",
+  "profondeur": 0.396,
+  "nom": "le moyen"
+ },
+ {
+  "fichier": "la-veille-plan-5.png",
+  "profondeur": 0.291,
+  "nom": "le premier plan"
+ }
+]

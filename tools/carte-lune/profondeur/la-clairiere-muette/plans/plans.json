@@ -1,0 +1,27 @@
+[
+ {
+  "fichier": "la-clairiere-muette-plan-1.png",
+  "profondeur": 0.949,
+  "nom": "le ciel et la lune"
+ },
+ {
+  "fichier": "la-clairiere-muette-plan-2.png",
+  "profondeur": 0.773,
+  "nom": "les nuages"
+ },
+ {
+  "fichier": "la-clairiere-muette-plan-3.png",
+  "profondeur": 0.615,
+  "nom": "le lointain"
+ },
+ {
+  "fichier": "la-clairiere-muette-plan-4.png",
+  "profondeur": 0.365,
+  "nom": "le moyen"
+ },
+ {
+  "fichier": "la-clairiere-muette-plan-5.png",
+  "profondeur": 0.2,
+  "nom": "le premier plan"
+ }
+]

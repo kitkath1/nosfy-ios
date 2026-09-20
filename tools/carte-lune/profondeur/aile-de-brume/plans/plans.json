@@ -1,0 +1,32 @@
+[
+ {
+  "fichier": "aile-de-brume-plan-1.png",
+  "profondeur": 0.958,
+  "nom": "le ciel et la lune"
+ },
+ {
+  "fichier": "aile-de-brume-plan-2.png",
+  "profondeur": 0.898,
+  "nom": "les nuages"
+ },
+ {
+  "fichier": "aile-de-brume-plan-3.png",
+  "profondeur": 0.646,
+  "nom": "le lointain"
+ },
+ {
+  "fichier": "aile-de-brume-plan-4.png",
+  "profondeur": 0.443,
+  "nom": "le moyen"
+ },
+ {
+  "fichier": "aile-de-brume-plan-5.png",
+  "profondeur": 0.447,
+  "nom": "la créature"
+ },
+ {
+  "fichier": "aile-de-brume-plan-6.png",
+  "profondeur": 0.277,
+  "nom": "le premier plan"
+ }
+]

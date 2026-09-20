@@ -55,6 +55,34 @@ bourdon, cordes, cœur, chœur, piano dramatique — « pas de carillon »).
 Deux constantes dans `BoosterAmbience` (`BoosterLab.swift`), rien d'autre ;
 `manege-nappe.caf` reste dans le bundle. Non compilé, non installé sur iPhone.
 
+Banc du MONDE OUVERT (20-09, sur son « vas ») : `-mondeLab` — nouveaux
+fichiers `Nosfy/Views/MondeCarteLab.swift`, `Nosfy/CarteMonde.metal`, hunk
+`mondeLab` dans `NosfyApp.swift` (mixte : mon seul hunk), kit de profondeur
+`tools/carte-lune/cuire_profondeur.py` + `profondeur/souverain/`. Le kit se
+copie dans Documents de l'app (sim : simctl get_app_container ; iPhone :
+devicectl copy to). **iPhone : je le prends dès que le sim est validé** —
+signaler ici si quelqu'un en a besoin. Quatre xcodebuild simultanés sur le
+Mac ce matin : les builds durent 20-30 min au lieu de 5.
+Soir : son ordre « travaille qu'au simulateur, tes rendus sont horribles —
+avant de venir me voir » → **plus aucune installation sur son iPhone** par cette
+session tant que le sim n'est pas validé par elle (l'app normale y est
+relancée). Au sim (23 h) : relief SceneKit juste (rayon de vue, créature non
+occultée), six plans justes avec LaMa (ONNX par tuiles) ; planches et films
+dans `tools/carte-lune/maquette-legendaire-2026-09-20/`. Nouveau fichier
+`Nosfy/Views/MondeRelief.swift`. Sous-titres des registres retirés dans
+`ProfilLune.swift` (son ordre, mon seul hunk là-dedans).
+Nuit : kits cuits pour les 14 références publiées (`tools/carte-lune/cuire_kits.sh`,
+`profondeur/publiees.json`), banc `-mondeCarte <nom>`, sept cartes capturées au
+sim en relief et plans (`maquette…/cartes/`). **Pour les sessions Compte /
+Profil / back-end, lu au serveur en lecture seule** : `cards` = 9 anciennes
+`retiree` + 14 `publiee` ; `user_cards` = 28 acquisitions ANCIENNES sur le seul
+compte be69f505… (dont « L'oiseau souverain » légendaire ×2 — le « corbeau
+moche » qu'elle voit au profil) ; les comptes Apple n'ont aucune acquisition.
+Deux décisions à lui poser : le profil masque-t-il les cartes `retiree` ?
+et une règle serveur « les inconnues d'abord » pour toutes les raretés (les
+trois rares publiées sont trois chauves-souris → doublons précoces). Je ne
+touche ni au tirage ni aux comptes. Détail : `ANALYSE-KIT-TOUTES-CARTES-2026-09-20.md`.
+
 
 ## ⚠️ Sortie de Nosfy — commit posé par index TEMPORAIRE, 20-09 : relisez votre index sur `NosfyOnboarding.swift`
 

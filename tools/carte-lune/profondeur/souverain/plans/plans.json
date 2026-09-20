@@ -1,0 +1,32 @@
+[
+ {
+  "fichier": "souverain-plan-1.png",
+  "profondeur": 0.996,
+  "nom": "le ciel et la lune"
+ },
+ {
+  "fichier": "souverain-plan-2.png",
+  "profondeur": 0.891,
+  "nom": "les nuages"
+ },
+ {
+  "fichier": "souverain-plan-3.png",
+  "profondeur": 0.639,
+  "nom": "le lointain"
+ },
+ {
+  "fichier": "souverain-plan-4.png",
+  "profondeur": 0.439,
+  "nom": "le moyen"
+ },
+ {
+  "fichier": "souverain-plan-5.png",
+  "profondeur": 0.349,
+  "nom": "la créature"
+ },
+ {
+  "fichier": "souverain-plan-6.png",
+  "profondeur": 0.247,
+  "nom": "le premier plan"
+ }
+]

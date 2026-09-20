@@ -991,15 +991,11 @@ struct ProfilLuneView: View {
                             }
                         }
                         .frame(width: 44, alignment: .leading)
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(reg.nom)
-                                .font(.inter(15, .semibold))
-                                .foregroundStyle(Color.inkPrimary)
-                            Text(reg.sous)
-                                .font(.inter(11, .regular))
-                                .tracking(0.4)
-                                .foregroundStyle(Color.inkMuted)
-                        }
+                        // Le titre seul : les sous-titres (« Normal », « Plus rare »…)
+                        // alourdissaient la page (Kathryn, 20-09) — retirés.
+                        Text(reg.nom)
+                            .font(.inter(15, .semibold))
+                            .foregroundStyle(Color.inkPrimary)
                         Spacer()
                         Text("\(collectees.count) / \(collection.totaux[reg.cle].map(String.init) ?? "—")")
                             .font(.inter(13, .semibold))

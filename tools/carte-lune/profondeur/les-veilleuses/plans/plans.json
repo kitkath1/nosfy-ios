@@ -1,0 +1,32 @@
+[
+ {
+  "fichier": "les-veilleuses-plan-1.png",
+  "profondeur": 0.996,
+  "nom": "le ciel et la lune"
+ },
+ {
+  "fichier": "les-veilleuses-plan-2.png",
+  "profondeur": 0.962,
+  "nom": "les nuages"
+ },
+ {
+  "fichier": "les-veilleuses-plan-3.png",
+  "profondeur": 0.789,
+  "nom": "le lointain"
+ },
+ {
+  "fichier": "les-veilleuses-plan-4.png",
+  "profondeur": 0.355,
+  "nom": "le moyen"
+ },
+ {
+  "fichier": "les-veilleuses-plan-5.png",
+  "profondeur": 0.224,
+  "nom": "la créature"
+ },
+ {
+  "fichier": "les-veilleuses-plan-6.png",
+  "profondeur": 0.205,
+  "nom": "le premier plan"
+ }
+]

@@ -1,0 +1,32 @@
+[
+ {
+  "fichier": "aile-d-ambre-plan-1.png",
+  "profondeur": 0.935,
+  "nom": "le ciel et la lune"
+ },
+ {
+  "fichier": "aile-d-ambre-plan-2.png",
+  "profondeur": 0.792,
+  "nom": "les nuages"
+ },
+ {
+  "fichier": "aile-d-ambre-plan-3.png",
+  "profondeur": 0.559,
+  "nom": "le lointain"
+ },
+ {
+  "fichier": "aile-d-ambre-plan-4.png",
+  "profondeur": 0.416,
+  "nom": "le moyen"
+ },
+ {
+  "fichier": "aile-d-ambre-plan-5.png",
+  "profondeur": 0.369,
+  "nom": "la créature"
+ },
+ {
+  "fichier": "aile-d-ambre-plan-6.png",
+  "profondeur": 0.324,
+  "nom": "le premier plan"
+ }
+]
