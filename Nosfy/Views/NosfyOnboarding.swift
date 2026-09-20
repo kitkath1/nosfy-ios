@@ -23,8 +23,27 @@ struct NosfyOnboarding: View {
 
     typealias Reponses = InscriptionCompte.Reponses
 
+    /// LE MODE « SOUVENIR » (20-09, la revisite depuis le médaillon du profil,
+    /// `tools/profil/ANALYSE-REVISITE-NOSFY-2026-09-20.md` § 6) : posé, le film
+    /// RÉCITE au lieu de questionner — la langue dite, le prénom rappelé et
+    /// modifiable, le but rappelé ; pas de jours, pas de page de sortie ; la
+    /// vidéo de fin se dissout vers le profil ; un chevron ramène au profil à
+    /// tout moment sans rien écrire. Le film d'inscription ne change pas d'une
+    /// ligne : chaque différence vit derrière `revisite`.
+    var souvenir: RevisiteNosfy.Souvenir? = nil
     var onFini: (Reponses) async throws -> Void = { _ in }
+    /// Le chevron de la revisite : le film se ferme, rien n'est écrit.
+    var onFermer: () -> Void = {}
+    private var revisite: Bool { souvenir != nil }
     @State private var enregistrement = false
+    /// LE SUCCÈS DE LA REVISITE (20-09, « un message succès après
+    /// enregistrement, loading effect ») : vrai quand le serveur a répondu ;
+    /// le message se montre 1,8 s, puis le film se ferme lui-même.
+    @State private var enregistre = false
+    /// Le souvenir tel qu'il était EN ENTRANT : `souvenir` est relu par la
+    /// racine à chaque rendu (le cache change dès que le serveur répond), le
+    /// message de succès compare avec celui-ci, jamais avec le courant.
+    @State private var souvenirInitial: RevisiteNosfy.Souvenir?
     /// La panne d'enregistrement, dite par `EcranErreur` (18-09) ; nil = rien.
     @State private var panneEnregistrement: ErreurNosfy.Cas?
     @State private var sortieDemandee = false
@@ -47,6 +66,8 @@ struct NosfyOnboarding: View {
     @State private var prenomRefuse = false
     /// Le champ n'existe qu'une fois la question posée.
     @State private var champOuvert = false
+    /// Les cards de la langue, en revisite, une fois la question posée.
+    @State private var cardsLangue = false
     /// Le halo s'embrase quand il parle — c'est la respiration du film.
     @State private var embrase = false
     /// La sortie : le halo se penche en projecteur, l'anneau flashe une fois.
@@ -150,6 +171,17 @@ struct NosfyOnboarding: View {
     private var en: Bool { reponses.langue == "en" }
     private func L(_ fr: String, _ en: String) -> String { self.en ? en : fr }
 
+    /// Le but tel qu'il le récite (« être plus fort. ») — les mots des cards de
+    /// la question 2, à la première personne de l'écoute.
+    static func butTexte(_ but: String?, en: Bool) -> String {
+        switch but {
+        case "force": return en ? "get stronger." : "être plus fort."
+        case "poids": return en ? "lose weight." : "perdre du poids."
+        case "forme": return en ? "stay in shape." : "être en forme."
+        default: return en ? "train." : "vous entraîner."
+        }
+    }
+
     /// « Quatre fois. » / « Four times. » — il parle, il ne compte pas en chiffres.
     static func fois(_ n: Int, en: Bool) -> String {
         if en {
@@ -224,6 +256,23 @@ struct NosfyOnboarding: View {
                 .opacity(allume ? 1 : 0)
         }
         .preferredColorScheme(.dark)
+        // LE CHEVRON DE LA REVISITE : présent à toutes les étapes, l'intro
+        // comprise (ce n'est pas un saut, c'est une sortie). LE MÊME que sur
+        // toutes les pages (`ChipVerre`, sa demande du 20-09 : « même design
+        // que les autres chevrons ») — à sa place canonique, celle de
+        // `RangeeChips`. Déclaré : c'est un verre au-dessus des vidéos du
+        // film (un flou refait à chaque image sous lui, 44 pt) ; à lire à la
+        // sonde, pas à deviner.
+        .overlay(alignment: .topLeading) {
+            if revisite {
+                ChipVerre(symbole: "chevron.left", label: L("Retour au profil", "Back to profile")) {
+                    NosfySon.musique(false, fondu: 0.4)
+                    onFermer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 4)
+            }
+        }
         .overlay {
             if sortieDemandee {
                 ZStack {
@@ -231,12 +280,27 @@ struct NosfyOnboarding: View {
                     VStack(spacing: 20) {
                         if enregistrement {
                             ProgressView().tint(.white)
-                            Text(L("Enregistrement de ton profil…", "Saving your profile…"))
+                            Text(revisite
+                                 ? L("Enregistrement…", "Saving…")
+                                 : L("Enregistrement de ton profil…", "Saving your profile…"))
+                        } else if enregistre {
+                            // Le succès : la coche, puis la phrase dans la langue
+                            // qu'elle vient de choisir — le prénom qu'elle vient
+                            // de taper.
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 44, weight: .regular))
+                                .foregroundStyle(.white)
+                                .symbolEffect(.bounce, value: enregistre)
+                            Text(messageSucces)
+                                .font(.inter(20, .semibold))
+                                .multilineTextAlignment(.center)
                         }
                     }
                     .font(.inter(16))
                     .foregroundStyle(.white)
                     .padding(32)
+                    .transition(.fonduFlou)
+                    .id(enregistre)
                     // 18-09 : la panne se dit avec l'écran d'erreur de la maison
                     // (la bête, Réessayer, le mode avion lu). Il bloque : les
                     // réponses sont gardées, la home attend la confirmation.
@@ -252,6 +316,9 @@ struct NosfyOnboarding: View {
             // LE PRÉNOM EST OBLIGATOIRE (13-09, sa règle) : un tap à côté du champ
             // vide ne ferme pas le clavier, il REFUSE — le message passe au rouge.
             if etape == .prenom, champOuvert, prenomVide { refuserPrenom(); return }
+            // En revisite, taper à côté du champ avec un prénom = « je garde »
+            // (« je peux saisir ou pas ») : le film avance.
+            if revisite, etape == .prenom, champOuvert { avancer(passe: false); return }
             prenomActif = false
             // L'accueil et la fin se SAUTENT d'un tap : Apple laisse toujours
             // passer. PAS L'INTRO (13-09, son verdict : « on ne peut pas passer
@@ -259,7 +326,16 @@ struct NosfyOnboarding: View {
             if etape == .accueil || etape == .fin { avancer(passe: true) }
         }
         .onAppear {
-            if !AppleAuth.Maquette.active, let gardees = InscriptionCompte.brouillon {
+            if let s = souvenir {
+                // La revisite part de ce que le téléphone sait ; elle ne lit
+                // JAMAIS le brouillon d'inscription (il rouvrirait la sortie).
+                souvenirInitial = s
+                reponses.langue = s.langue
+                reponses.prenom = s.prenom
+                reponses.but = s.but
+                prenomSaisi = s.prenom
+                if Self.revisiteAuto { jouerSeulRevisite() }
+            } else if !AppleAuth.Maquette.active, let gardees = InscriptionCompte.brouillon {
                 reponses = gardees
                 prenomSaisi = gardees.prenom ?? ""
                 etape = .bienvenue
@@ -399,6 +475,31 @@ struct NosfyOnboarding: View {
             }
 
         // ── LE SEUIL : une voix sans nom, dans les deux langues à la fois ──
+        case .langue where revisite:
+            // LE SOUVENIR (20-09, « pareil pour la langue ») : il dit la langue
+            // dans laquelle on se parle, demande si elle veut changer, et les
+            // deux cards reviennent — la sienne marquée. Changer ici change
+            // TOUTE l'app (la suite du film d'abord : `en` lit la réponse).
+            VStack(alignment: .leading, spacing: 30) {
+                Tirade(blocs: [
+                    [(L("Nous nous parlons en français.", "We speak English."), true)],
+                    [(L("Vous souhaitez changer ?", "Would you like to change?"), false)]
+                ], onMot: battre) {
+                    withAnimation(.easeOut(duration: 0.7)) { cardsLangue = true }
+                }
+                if cardsLangue {
+                    VStack(spacing: 11) {
+                        CardVerre(titre: "Français", marquee: reponses.langue == "fr") {
+                            reponses.langue = "fr"; avancer(passe: false)
+                        }
+                        CardVerre(titre: "English", marquee: reponses.langue == "en") {
+                            reponses.langue = "en"; avancer(passe: false)
+                        }
+                    }
+                    .transition(.fonduFlou)
+                }
+            }
+
         case .langue:
             VStack(alignment: .leading, spacing: 30) {
                 // LA LUMIÈRE AVANT LE TEXTE (13-09) : le premier mot part à
@@ -428,12 +529,14 @@ struct NosfyOnboarding: View {
                 // (13-09) L'accueil l'a déjà présenté — « Bonjour, je me présente »
                 // redisait tout. Ici il ENCHAÎNE sur la langue qu'elle vient de
                 // choisir : on se comprend, donc on peut se parler.
-                Tirade(blocs: [
-                    [(L("Top.", "Great."), true),
-                     (L("J'ai trois questions pour vous.", "I have three questions for you."), false)],
-                    [(L("La première :", "First:"), false),
-                     (L("comment dois-je vous appeler ?", "what should I call you?"), true)]
-                ], onMot: battre) {
+                Tirade(blocs: revisite
+                    ? [[(L("Je vous appelle \(souvenir?.prenom ?? "").", "I call you \(souvenir?.prenom ?? "")."), true)],
+                       [(L("Vous souhaitez changer ?", "Would you like to change it?"), false)]]
+                    : [[(L("Top.", "Great."), true),
+                        (L("J'ai trois questions pour vous.", "I have three questions for you."), false)],
+                       [(L("La première :", "First:"), false),
+                        (L("comment dois-je vous appeler ?", "what should I call you?"), true)]],
+                       onMot: battre) {
                     withAnimation(.easeOut(duration: 0.7)) { champOuvert = true }
                 }
 
@@ -488,6 +591,19 @@ struct NosfyOnboarding: View {
             }
 
         // ── QUESTION 2 SUR 3 : l'objectif ──
+        case .but where revisite:
+            // LE SOUVENIR : « Vous êtes venu pour être plus fort. » — le but
+            // du cache ; sans but connu, cette étape n'est jamais montée
+            // (voir `avancer`). Le film avance seul.
+            MotsFlou([(L("Vous êtes venu pour", "You came to"), false),
+                      (Self.butTexte(reponses.but, en: en), true)],
+                     taille: 30, onMot: battre)
+                .task {
+                    try? await Task.sleep(for: .seconds(3.0))
+                    guard etape == .but else { return }
+                    avancer(passe: false)
+                }
+
         case .but:
             VStack(alignment: .leading, spacing: 30) {
                 MotsFlou([(L("Deuxième question.", "Second question."), true),
@@ -561,6 +677,9 @@ struct NosfyOnboarding: View {
                 NosfySon.musique(false)                       // elle se retire, 1,2 s
                 try? await Task.sleep(for: .seconds(8.1))
                 guard etape == .fin else { return }
+                // En revisite il n'y a pas de sortie : le noir de la fin est
+                // celui d'où le profil sort du flou.
+                if revisite { finir(); return }
                 withAnimation(.easeInOut(duration: 0.55)) { etape = .bienvenue }
             }
 
@@ -598,7 +717,7 @@ struct NosfyOnboarding: View {
     private var pied: some View {
         if etape == .bienvenue {
             EmptyView()          // le projecteur porte son propre « Entrer »
-        } else if etape == .but || etape == .jours {
+        } else if !revisite, etape == .but || etape == .jours {
             // « Passer » n'existe que sur le BUT et les JOURS — pas sur un plan (vu
             // au sim le 13-09 : il s'affichait sur la vidéo de fin), et PLUS SUR LE
             // PRÉNOM (13-09, sa règle : « le user ne peut pas passer le prénom »).
@@ -642,9 +761,31 @@ struct NosfyOnboarding: View {
     }
 
     private func finir() {
-        guard !enregistrement else { return }
+        guard !enregistrement, !enregistre else { return }
         sortieDemandee = true
-        Task { @MainActor in await enregistrer() }
+        Task { @MainActor in
+            guard await enregistrer(), revisite else { return }
+            // La revisite : le succès se lit, puis le profil ressort du noir.
+            withAnimation(.easeOut(duration: 0.45)) { enregistre = true }
+            Haptique.moyen()
+            try? await Task.sleep(for: .milliseconds(1800))
+            onFermer()
+        }
+    }
+
+    /// « C'est enregistré, Kiki. » — dans la langue choisie, avec ce qui a
+    /// changé ; rien de changé : « À bientôt, Kiki. »
+    private var messageSucces: String {
+        let avant = souvenirInitial ?? souvenir
+        let p = reponses.prenom ?? avant?.prenom ?? ""
+        let prenomChange = reponses.prenom != avant?.prenom
+        let langueChangee = reponses.langue != avant?.langue
+        switch (prenomChange, langueChangee) {
+        case (false, false): return L("À bientôt, \(p).", "See you soon, \(p).")
+        case (true, false):  return L("C'est enregistré, \(p).", "Saved, \(p).")
+        case (false, true):  return L("C'est enregistré. On se parle en français.", "Saved. We speak English now.")
+        case (true, true):   return L("C'est enregistré, \(p). On se parle en français.", "Saved, \(p). We speak English now.")
+        }
     }
 
     /// Enregistrer le profil ; vrai si le serveur a confirmé. En panne, l'écran
@@ -678,6 +819,7 @@ struct NosfyOnboarding: View {
             withAnimation(.easeInOut(duration: 0.7)) { etape = .accueil }
             return
         case .fin:
+            if revisite { finir(); return }
             withAnimation(.easeInOut(duration: 0.55)) { etape = .bienvenue }
             return
         case .accueil:
@@ -694,10 +836,14 @@ struct NosfyOnboarding: View {
             } else {
                 let p = prenomSaisi.trimmingCharacters(in: .whitespaces)
                 reponses.prenom = p
-                mot = L("Enchanté, \(p).", "Nice to meet you, \(p).")
+                // En revisite, garder son prénom n'est pas une rencontre.
+                mot = revisite && p == souvenir?.prenom
+                    ? L("Très bien, \(p).", "Very well, \(p).")
+                    : L("Enchanté, \(p).", "Nice to meet you, \(p).")
             }
         case .but:
-            if passe { reponses.but = nil; mot = L("Comme vous voulez.", "As you wish.") }
+            if revisite { mot = nil }                        // il récite, il ne répond pas
+            else if passe { reponses.but = nil; mot = L("Comme vous voulez.", "As you wish.") }
             else { mot = L("Bien. Je sais où on va.", "Good. I know where we're going.") }
         case .jours:
             if passe {
@@ -714,7 +860,17 @@ struct NosfyOnboarding: View {
             return
         }
 
-        guard let suivante = Etape(rawValue: etape.rawValue + 1) else { return }
+        var prochaine = Etape(rawValue: etape.rawValue + 1)
+        if revisite {
+            // Le chemin du souvenir : langue → prénom → (but) → « Bien. » → la
+            // vidéo. Pas de jours, pas de sortie ; sans but connu, pas de but.
+            switch etape {
+            case .prenom: prochaine = reponses.but == nil ? .bien : .but
+            case .but: prochaine = .bien
+            default: break
+            }
+        }
+        guard let suivante = prochaine else { return }
 
         // ELLE répond : un coup sec, tout de suite — MOYEN depuis le 13-09
         // (« l'haptique plus fort ») ; le fort est à lui.
@@ -772,18 +928,42 @@ struct NosfyOnboarding: View {
     /// elle s'est perdue sur les jours à l'arrivée de l'intro. Ici il ATTEND
     /// d'être à l'étape, laisse le temps qu'elle se dise, puis agit. Les jours
     /// passent par la vraie minuterie (2,2 s après le « dernier tap »).
+    /// Attendre une étape, puis un délai — vrai si on y est encore.
+    private func attendre(_ e: Etape, puis s: Double) async -> Bool {
+        var n = 0
+        while etape != e {
+            try? await Task.sleep(for: .milliseconds(200))
+            n += 1
+            if n > 600 { return false }              // 2 min : on abandonne
+        }
+        try? await Task.sleep(for: .seconds(s))
+        return etape == e
+    }
+
+    /// `-revisiteAuto [prénom]` (20-09) : la revisite se joue seule — l'intro
+    /// et l'accueil sautés, le prénom remplacé par celui donné (ou gardé) ;
+    /// la langue et le but avancent d'eux-mêmes. Sert à capturer et à
+    /// mesurer l'appel serveur du prénom.
+    static let revisiteAuto = CommandLine.arguments.contains("-revisiteAuto")
+
+    private func jouerSeulRevisite() {
+        Task { @MainActor in
+            if await attendre(.intro, puis: 4)   { avancer(passe: true) }
+            if await attendre(.accueil, puis: 6) { avancer(passe: true) }
+            if await attendre(.langue, puis: 6) {
+                // `-revisiteLangue en` : la langue changée depuis le film.
+                if let l = Self.argument("-revisiteLangue"), l == "fr" || l == "en" { reponses.langue = l }
+                avancer(passe: false)
+            }
+            if await attendre(.prenom, puis: 6) {
+                if let p = Self.argument("-revisiteAuto"), !p.hasPrefix("-") { prenomSaisi = p }
+                avancer(passe: false)
+            }
+        }
+    }
+
     private func jouerSeul() {
         Task { @MainActor in
-            func attendre(_ e: Etape, puis s: Double) async -> Bool {
-                var n = 0
-                while etape != e {
-                    try? await Task.sleep(for: .milliseconds(200))
-                    n += 1
-                    if n > 600 { return false }              // 2 min : on abandonne
-                }
-                try? await Task.sleep(for: .seconds(s))
-                return etape == e
-            }
             if await attendre(.intro, puis: 6)   { avancer(passe: true) }
             if await attendre(.accueil, puis: 8) { avancer(passe: true) }
             if await attendre(.langue, puis: 5)  { reponses.langue = "fr"; avancer(passe: false) }
@@ -2122,6 +2302,9 @@ private struct Retarde: ViewModifier {
 /// redimensionne image par image tombe à 14 img/s (loi mesurée).
 private struct CardVerre: View {
     var titre: String
+    /// Le choix ACTUEL (la revisite) : liseré plein, lettres pleines — elle
+    /// se lit comme déjà choisie, sans être allumée.
+    var marquee: Bool = false
     var action: () -> Void
 
     @State private var allumee = false
@@ -2134,7 +2317,7 @@ private struct CardVerre: View {
         } label: {
             Text(titre)
                 .font(.inter(17, .semibold))
-                .foregroundStyle(.white.opacity(allumee ? 1 : 0.82))
+                .foregroundStyle(.white.opacity(allumee || marquee ? 1 : 0.82))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
                 .padding(.vertical, 19)
@@ -2147,7 +2330,7 @@ private struct CardVerre: View {
                             startPoint: .topLeading, endPoint: .bottomTrailing))
                         .overlay {
                             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .strokeBorder(.white.opacity(allumee ? 0.50 : 0.14), lineWidth: 1)
+                                .strokeBorder(.white.opacity(allumee ? 0.50 : (marquee ? 0.42 : 0.14)), lineWidth: 1)
                         }
                         .shadow(color: .white.opacity(allumee ? 0.16 : 0), radius: 16)
                 }

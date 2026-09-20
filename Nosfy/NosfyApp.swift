@@ -369,6 +369,8 @@ struct RootView: View {
     @State private var showAuth = !CommandLine.arguments.contains("-skipAuth")
         && (CommandLine.arguments.contains("-porteForcee") || !SupabaseSession.sessionGardee()
             || InscriptionCompte.aReprendre || InscriptionCompte.aVerifier)
+    /// La langue de l'app, observée : le TabView renaît quand elle change.
+    @AppStorage(Langue.cle) private var langueApp: String = Langue.courante
     @State private var verificationCompte = !CommandLine.arguments.contains("-skipAuth")
         && SupabaseSession.sessionGardee() && InscriptionCompte.aVerifier
     /// L'état du compte (Compte.swift) : la porte demandée, « la porte tient
@@ -405,6 +407,55 @@ struct RootView: View {
         ChambreEtat.shared.objectif = p.objectifHebdo
         PremiereArrivee.poserPremiereFois(p.seances == 0)
         print("[NOSFY] definir_profil → existe=\(p.existe) onboarding_termine=\(p.onboardingTermine) prenom=\(p.prenom ?? "—") objectif=\(p.objectifHebdo)")
+    }
+
+    /// LA FIN DE LA REVISITE (20-09, analyse § 6, puis « pareil pour la
+    /// langue ») : le prénom et la langue au serveur, SEULEMENT ce qui a
+    /// changé — et rien d'autre. Surtout pas `ecrireProfil` : il poserait le
+    /// brouillon d'inscription (le film se rouvrirait à la sortie au prochain
+    /// lancement), remettrait la première arrivée de la home et relancerait
+    /// l'arrivée cinématique. `definir_profil` garde les champs omis (mesuré
+    /// le 20-09, 32 PASS) ; le cache `woop.prenom` est posé par la réponse,
+    /// `woop.langue` ici — et TOUTE l'app change de langue : le TabView est
+    /// reconstruit sur `langueApp` (les trois pages renaissent dans la
+    /// nouvelle langue, comme après le film d'inscription).
+    private func reecrireRevisite(_ reponses: NosfyOnboarding.Reponses) async throws {
+        let prenom = reponses.prenom?.trimmingCharacters(in: .whitespaces)
+        let nouveauPrenom = (prenom?.isEmpty == false && prenom != ProfilServeur.prenomLocal) ? prenom : nil
+        let nouvelleLangue = reponses.langue != Langue.courante ? reponses.langue : nil
+        guard nouveauPrenom != nil || nouvelleLangue != nil else {
+            print("[NOSFY] revisite : prénom et langue inchangés, rien n'est écrit")
+            return
+        }
+        if AppleAuth.Maquette.active {
+            if let p = nouveauPrenom { UserDefaults.standard.set(p, forKey: ProfilServeur.clePrenom) }
+            Langue.poser(nouvelleLangue)
+            print("[NOSFY] maquette : prénom/langue en cache seulement")
+            return
+        }
+        do {
+            let profil = try await ProfilServeur.definirProfil(langue: nouvelleLangue, prenom: nouveauPrenom,
+                                                               but: nil, objectifHebdo: nil)
+            Langue.poser(profil.langue)
+            NavDiagnostic.noter("revisite-ecrite", destination: "prenom=\(nouveauPrenom != nil);langue=\(nouvelleLangue ?? "-")")
+            print("[NOSFY] revisite : definir_profil → prenom=\(profil.prenom ?? "—") langue=\(profil.langue ?? "—") but=\(profil.but ?? "—") objectif=\(profil.objectifHebdo)")
+        } catch {
+            // ÉCRIT MAIS PAS ENTENDU (20-09, sur son iPhone : « kiki » refusé
+            // par un écran d'erreur, et l'app pourtant à « kiki ») : quand la
+            // réponse se perd (réseau lent, délai), le serveur peut avoir
+            // écrit. On le RELIT avant d'accuser : si le profil porte déjà le
+            // nouveau prénom et la nouvelle langue, c'est un succès.
+            NavDiagnostic.noter("revisite-erreur", destination: "\(error)")
+            if let p = try? await ProfilServeur.profil(),
+               nouveauPrenom == nil || p.prenom == nouveauPrenom,
+               nouvelleLangue == nil || p.langue == nouvelleLangue {
+                Langue.poser(p.langue)
+                NavDiagnostic.noter("revisite-recuperee", destination: "prenom=\(p.prenom ?? "—");langue=\(p.langue ?? "—")")
+                print("[NOSFY] revisite : l'appel a échoué (\(error)) mais le serveur porte déjà le changement — succès")
+                return
+            }
+            throw error
+        }
     }
 
     // MARK: - LE FILM DE NOSFY (06-09)
@@ -1494,7 +1545,14 @@ struct RootView: View {
             // lisent `homeDort` en direct (HomeNuit) et ne reçoivent RIEN
             // d'ici : les endormir sous un onglet caché est l'item 7,
             // NON fait.
-            .environment(\.dort, depart.homeDort || selection != .home || filmDepart != nil)
+            .environment(\.dort, depart.homeDort || selection != .home || filmDepart != nil
+                         || RythmeEcran.shared.storyVisible)
+            .allowsHitTesting(!RythmeEcran.shared.storyVisible)
+            // LA LANGUE CHANGE TOUT (20-09) : les textes de l'app passent
+            // par `L()` lu au rendu ; pour qu'une langue changée depuis le
+            // profil se voie PARTOUT, les trois pages renaissent — une fois,
+            // sur un geste rare, jamais au rythme de l'écran.
+            .id(langueApp)
             // NAV DU BAS (intégration §6) : le PONT nav ↔ onglet. Un tap sur
             // un glyphe écrit `NavEtat.page` ; ce pont le porte à la sélection
             // du TabView, et l'inverse allume le bon glyphe quand l'onglet
@@ -2110,6 +2168,24 @@ struct RootView: View {
                     withAnimation(.easeInOut(duration: 0.9)) { filmNosfy = false }
                 }
                 .transition(.opacity.combined(with: .scale(scale: 1.06)))
+                .zIndex(11)
+            }
+
+            // LA REVISITE DE NOSFY (20-09) — le médaillon du profil DEMANDE, la
+            // racine MONTE : le film en mode « souvenir », au-dessus de tout
+            // (la barre bijou comprise), la page profil endormie dessous
+            // (`couvreLaHome`, la discipline des covers du 18-09). Il se
+            // dissout vers le profil à la fin de sa vidéo, ou au chevron.
+            if RevisiteNosfy.shared.demandee {
+                NosfyOnboarding(souvenir: RevisiteNosfy.souvenir(), onFini: { reponses in
+                    // Le film montre « Enregistrement… » puis son succès, et
+                    // se ferme lui-même par `onFermer`.
+                    try await reecrireRevisite(reponses)
+                }, onFermer: {
+                    withAnimation(.easeInOut(duration: 0.9)) { RevisiteNosfy.shared.demandee = false }
+                })
+                .couvreLaHome()
+                .transition(.fonduFlou)
                 .zIndex(11)
             }
 

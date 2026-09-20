@@ -164,7 +164,7 @@ enum Compte {
 
         let d = UserDefaults.standard
         let cles = [
-            ProfilServeur.clePrenom, Langue.cle, ProfilServeur.clePhrases,
+            ProfilServeur.clePrenom, ProfilServeur.cleBut, Langue.cle, ProfilServeur.clePhrases,
             PremiereArrivee.clePremiereFois, PremiereArrivee.cleVue, PremiereArrivee.cleVisite,
             "woop.onboarding.du",
             Goal.cleHebdo, "woop.chambre.objectif.attente",

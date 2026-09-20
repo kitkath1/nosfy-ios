@@ -75,8 +75,19 @@ enum ProfilServeur {
         let p = UserDefaults.standard.string(forKey: clePrenom)
         return (p?.isEmpty ?? true) ? nil : p
     }
+    /// LE BUT, EN CACHE (20-09, la revisite de Nosfy depuis le médaillon) : le
+    /// film en mode « souvenir » dit « Vous êtes venu pour être plus fort. » —
+    /// il lui faut le but sans attendre le réseau. Même contrat que le prénom :
+    /// le serveur (`profils.but`) est la source, ceci son cache, posé à chaque
+    /// lecture ou écriture du profil, effacé à la déconnexion.
+    static let cleBut = "woop.but"
+    static var butLocal: String? {
+        let b = UserDefaults.standard.string(forKey: cleBut)
+        return (b?.isEmpty ?? true) ? nil : b
+    }
     private static func garder(_ p: Profil) {
         if let n = p.prenom, !n.isEmpty { UserDefaults.standard.set(n, forKey: clePrenom) }
+        if let b = p.but, !b.isEmpty { UserDefaults.standard.set(b, forKey: cleBut) }
     }
 
     /// Rafraîchit le prénom depuis le serveur, en silence : sans session, sans

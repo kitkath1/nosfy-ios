@@ -9,6 +9,17 @@ private enum ReposDecorProfil {
         ProtectionThermique.shared.ambianceAuRepos
             || CommandLine.arguments.contains("-profilRepos")
     }
+    /// LES DÉCORS LÉGERS DE LA BANNIÈRE (20-09 : sur son iPhone, « rien n'est
+    /// animé, je ne vois pas Nosfy ») : le téléphone était à « fair », et le
+    /// filet `actif` — taillé pour les halos shader à 30 Hz d'avant — coupait
+    /// le galet (une couche vidéo de 200 × 110 pt), le spot (une texture qui
+    /// respire) et Nosfy pendu (7 s, puis démonté). Ces trois-là ne dorment
+    /// qu'à « serious », comme le petit repère du chapitre (`appelAuRepos`).
+    /// Le reste du profil (le géant, les flèches, la poignée) garde `actif`.
+    static var banniere: Bool {
+        ProtectionThermique.shared.appelAuRepos
+            || CommandLine.arguments.contains("-profilRepos")
+    }
 }
 
 /// La refonte du 14-08 (« on va s'amuser un peu !! ») : l'ancienne page à
@@ -358,7 +369,7 @@ struct ProfilLuneView: View {
             // rejouera au retour. Jamais sous protection thermique ni
             // Reduce Motion : la page se passe de lui.
             nosfyPenche = !cache && !Self.sansNosfyPenche
-                && !ReposDecorProfil.actif
+                && !ReposDecorProfil.banniere
                 && !UIAccessibility.isReduceMotionEnabled
         }
         .onAppear {
@@ -696,7 +707,16 @@ struct ProfilLuneView: View {
                 }
             }
             .overlay(alignment: .topLeading) {
+                // LE TAP DU MÉDAILLON (20-09) : il demande la revisite de
+                // Nosfy — le film en mode « souvenir », monté à la racine
+                // (`RevisiteNosfy`). Jamais pendant le dépliement de la carte.
                 MedaillonProfil(lettre: initialeProfil, taille: taille)
+                    .contentShape(Circle())
+                    .onTapGesture {
+                        guard carteP < 0.05 else { return }
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.7)
+                        RevisiteNosfy.demander()
+                    }
                     .offset(x: ax, y: ay)
             }
             // Le petit liseré NOIR autour (la référence) : 5 pt de nuit
@@ -1653,7 +1673,7 @@ private struct SpotProfil: View {
 
     private var immobile: Bool {
         !monte || ongletCache || scenePhase != .active || reduceMotion
-            || RythmeEcran.dort("profile") || ReposDecorProfil.actif
+            || RythmeEcran.dort("profile") || ReposDecorProfil.banniere
     }
 
     var body: some View {
@@ -1780,7 +1800,7 @@ struct GaletProfil: View {
     private var dort: Bool {
         !monte || !visibleDansScroll || ongletCache
             || scenePhase != .active || reduceMotion
-            || RythmeEcran.dort("profile") || ReposDecorProfil.actif
+            || RythmeEcran.dort("profile") || ReposDecorProfil.banniere
     }
 
     var body: some View {
