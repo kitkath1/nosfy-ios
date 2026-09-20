@@ -51,6 +51,8 @@ struct MondeCarteLab: View {
     @State private var zoom: CGFloat = 1
     @State private var zoomBase: CGFloat = 1
     @State private var glisseVersLeBas = false
+    /// La bouffée : la vitesse du geste (0 → 1), pour les salves de braises.
+    @State private var bouffee: CGFloat = 0
 
     private static let zoomMax: CGFloat = 2.0
     /// `-mondeAuto` : le banc joue le tap seul à 1,2 s et referme à 9 s —
@@ -61,6 +63,11 @@ struct MondeCarteLab: View {
     private static let diag = CommandLine.arguments.contains("-mondeDiag")
     /// `-mondeRelief` : la variante « photo 3D » (SceneKit) au lieu des six plans.
     private static let relief = CommandLine.arguments.contains("-mondeRelief")
+    /// `-mondeVie` : LA VIE VIOLENTE de la légendaire (plan du 20-09 nuit) — le
+    /// feu qui flambe, la chaleur, les braises en salves, la lave qui pulse ;
+    /// un seul passage de shader sur le monde (plans). `-sansFeu` l'éteint.
+    private static let vie = CommandLine.arguments.contains("-mondeVie")
+        && !CommandLine.arguments.contains("-sansFeu")
 
     /// Sans gyroscope (simulateur), la carte se balance seule : une
     /// Lissajous lente, deux périodes premières entre elles.
@@ -82,8 +89,13 @@ struct MondeCarteLab: View {
             // L'art plein écran : aspect-fill de l'écran.
             let s = max(ecran.width / kit.art.size.width, ecran.height / kit.art.size.height)
             let artPlein = CGSize(width: kit.art.size.width * s, height: kit.art.size.height * s)
-            let taille = CGSize(width: artDansCarte.width + (artPlein.width - artDansCarte.width) * ouvert,
-                                height: artDansCarte.height + (artPlein.height - artDansCarte.height) * ouvert)
+            // LA FLUIDITÉ (son « saccadé au zoom ») : le monde naît à sa taille
+            // d'écran et n'anime que des valeurs animables — échelle, décalage,
+            // opacité — jamais son cadre : six images de 1024×1536 remises en
+            // page à chaque image, c'était « redessiner pour animer ».
+            let taille = artPlein
+            let echelleOuverture = artDansCarte.width / artPlein.width
+                + (1 - artDansCarte.width / artPlein.width) * ouvert
             // Le centre de la fenêtre du cadre est un peu au-dessus du
             // centre du canvas : la couture de l'ouverture le suit.
             let decalageFenetre = ((fen.midY - 0.5) * LuneForge.canvas.height) * echelleCarte * (1 - ouvert)
@@ -110,7 +122,6 @@ struct MondeCarteLab: View {
                                         creature: kit.creature?.image, creatureProfondeur: kit.creature?.profondeur ?? 0.35,
                                         tilt: tilt, ouvert: ouvert, pan: pan, zoom: zoom, ecran: ecran)
                                 .frame(width: ecran.width, height: ecran.height)
-                                .scaleEffect(artDansCarte.width / artPlein.width + (1 - artDansCarte.width / artPlein.width) * ouvert)
                         } else if kit.plans.isEmpty {
                             Image(uiImage: kit.art)
                                 .resizable()
@@ -127,10 +138,14 @@ struct MondeCarteLab: View {
                                 .offset(pan)
                         } else {
                             MondePlans(plans: kit.plans, taille: taille, tilt: tilt,
-                                       ouvert: ouvert, pan: pan, zoom: zoom)
+                                       ouvert: ouvert, pan: pan, zoom: zoom, t: Self.vie ? t : 0)
                         }
                     }
                     .frame(width: ecran.width, height: ecran.height)
+                    .modifier(VieModifier(kit: kit, actif: Self.vie && !Self.relief, ecran: ecran,
+                                          art: artPlein, echelle: echelleOuverture, zoom: zoom, pan: pan,
+                                          t: t, ouvert: ouvert, bouffee: bouffee))
+                    .scaleEffect(echelleOuverture)
                     .clipped()
                     .offset(y: decalageFenetre)
                     .opacity(Double(min(1, ouvert * 1.6)))
@@ -169,6 +184,7 @@ struct MondeCarteLab: View {
             // DEDANS, C'EST ELLE QUI CONDUIT.
             .simultaneousGesture(glisser(ecran: ecran, art: artPlein))
             .simultaneousGesture(pincer())
+            .animation(.interactiveSpring(response: 0.14, dampingFraction: 0.92), value: zoom)
             .onTapGesture(count: 2) { if estOuvert { fermer() } }
             .onAppear {
                 print("[mondeLab] écran \(Int(ecran.width))×\(Int(ecran.height)) · safe \(geo.safeAreaInsets) · carte \(Int(carte.width))×\(Int(carte.height)) · art plein \(Int(artPlein.width))×\(Int(artPlein.height))")
@@ -195,6 +211,7 @@ struct MondeCarteLab: View {
                 let brut = CGSize(width: panBase.width + v.translation.width,
                                   height: panBase.height + v.translation.height)
                 pan = Self.borner(brut, ecran: ecran, art: art, zoom: zoom)
+                bouffee = min(1, abs(v.velocity.width) / 900 + abs(v.velocity.height) / 900)
                 // Le verre se referme si le geste est un glissé FRANC vers
                 // le bas, à l'échelle 1 : le mouvement d'une photo qu'on rend.
                 glisseVersLeBas = zoom < 1.08 && v.translation.height > 140
@@ -216,6 +233,7 @@ struct MondeCarteLab: View {
                 }
                 panBase = Self.borner(fin, ecran: ecran, art: art, zoom: zoom)
                 glisseVersLeBas = false
+                withAnimation(.easeOut(duration: 1.2)) { bouffee = 0 }
             }
     }
 
@@ -290,6 +308,11 @@ struct KitMonde {
     /// Pour le RELIEF : le fond sans la créature et sa profondeur continue.
     let fond: UIImage?
     let fondDepth: UIImage?
+    /// LA VIE (kit v3, `cuire_vie.py`) : R = feu, G = émissif (lave), B = ciel ; et le bruit cuit du monde.
+    let vie: UIImage?
+    let bruit: UIImage?
+    /// La lune (x, y, rayon dans l'art), 0 = pas de lune — `monde-vie.json`.
+    let lune: SIMD3<Float>
     var creature: (image: UIImage, profondeur: Float, nom: String)? { plans.first { $0.nom == "la créature" } }
 
     /// `-mondeCarte <nom>` : le kit de CETTE carte, dans `Documents/monde/<nom>/`
@@ -306,6 +329,12 @@ struct KitMonde {
             guard let p = Bundle.main.path(forResource: nom, ofType: "png") else { return nil }
             return UIImage(contentsOfFile: p)
         }
+        var lune = SIMD3<Float>(0, 0, 0)
+        if let data = try? Data(contentsOf: docs.appending(path: "monde-vie.json")),
+           let j = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let l = j["lune"] as? [String: Double] {
+            lune = SIMD3(Float(l["x"] ?? 0), Float(l["y"] ?? 0), Float(l["r"] ?? 0))
+        }
         var plans: [(image: UIImage, profondeur: Float, nom: String)] = []
         if let data = try? Data(contentsOf: docs.appending(path: "monde-plans.json")),
            let liste = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
@@ -320,12 +349,13 @@ struct KitMonde {
             let dc = doc("monde-depth.png") ?? habit.depth
             print("[mondeLab] kit \(carte ?? "racine") : art \(Int(art.size.width))×\(Int(art.size.height)), profondeur vraie, \(plans.count) plans")
             return KitMonde(art: art, depthNue: dn, carte: habit.art, depthCarte: dc, plans: plans,
-                            fond: doc("monde-fond.png"), fondDepth: doc("monde-fond-depth.png"))
+                            fond: doc("monde-fond.png"), fondDepth: doc("monde-fond-depth.png"),
+                            vie: doc("monde-vie.png"), bruit: doc("monde-bruit.png"), lune: lune)
         }
         let c = media("carte-lune-1") ?? UIImage()
         let d = media("carte-lune-1-depth") ?? UIImage()
         print("[mondeLab] pas de kit dans Documents : carte-lune-1 et sa rampe")
-        return KitMonde(art: c, depthNue: d, carte: c, depthCarte: d, plans: [], fond: nil, fondDepth: nil)
+        return KitMonde(art: c, depthNue: d, carte: c, depthCarte: d, plans: [], fond: nil, fondDepth: nil, vie: nil, bruit: nil, lune: SIMD3(0, 0, 0))
     }
 }
 
@@ -351,6 +381,9 @@ struct MondePlans: View {
     var ouvert: CGFloat
     var pan: CGSize
     var zoom: CGFloat
+    /// Le temps, pour ce qui VIT dans les plans (M2 les nuages qui roulent,
+    /// M3 la créature qui respire) ; 0 = immobile.
+    var t: Float = 0
 
     /// Le pivot : ce qui est à cette profondeur ne bouge pas.
     private static let pivot: CGFloat = 0.45
@@ -373,12 +406,67 @@ struct MondePlans: View {
                 let dx = -CGFloat(tilt.x) * rel * c - pan.width * rel * 0.30
                 let dy = -CGFloat(tilt.y * 0.72) * rel * c - pan.height * rel * 0.30
                     + ouvert * proche * 70          // le proche descend : on passe au-dessus
+                // M3 · LA CRÉATURE RESPIRE FORT : sa cage se soulève de 2,8 % sur
+                // 3,6 s (ancre en bas : les pattes ne bougent pas) — et un rien de
+                // largeur en opposition, comme un flanc. M2 · LES NUAGES ROULENT :
+                // le plan des nuages dérive lentement.
+                let respire = t > 0 && p.nom == "la créature"
+                let souffle = CGFloat(sin(Double(t) * 2 * .pi / 3.6))
+                let nuage = t > 0 && p.nom == "les nuages"
+                let derive = nuage ? CGFloat(sin(Double(t) * 2 * .pi / 22.0)) * 10 * ouvert : 0
                 Image(uiImage: p.image)
                     .resizable()
                     .frame(width: taille.width, height: taille.height)
+                    .scaleEffect(x: respire ? 1 + 0.010 * souffle : 1,
+                                 y: respire ? 1 + 0.028 * souffle : 1,
+                                 anchor: .bottom)
                     .scaleEffect(echelle)
-                    .offset(x: dx + pan.width, y: dy + pan.height)
+                    .offset(x: dx + pan.width + derive, y: dy + pan.height)
             }
+        }
+    }
+}
+
+
+// MARK: - La vie violente (M1 : le feu)
+
+/// Un seul passage de shader posé sur le MONDE COMPOSÉ (les six plans) :
+/// les flammes sortent des pixels chauds de la peinture (masque cuit), la
+/// chaleur ondule au-dessus, les braises jaillissent en salves, la lave
+/// pulse. Les masques vivent dans l'espace de l'ART : le shader reçoit où
+/// l'art est posé dans la vue (origine, taille) pour retrouver ses uv.
+struct VieModifier: ViewModifier {
+    var kit: KitMonde
+    var actif: Bool
+    var ecran: CGSize
+    var art: CGSize
+    var echelle: CGFloat
+    var zoom: CGFloat
+    var pan: CGSize
+    var t: Float
+    var ouvert: CGFloat
+    var bouffee: CGFloat
+
+    func body(content: Content) -> some View {
+        if actif, let vie = kit.vie, let bruit = kit.bruit {
+            // l'art plein écran est centré dans la vue, puis pan / zoom (le
+            // conteneur porte l'échelle d'ouverture, hors de ce calcul)
+            let w = art.width * zoom, h = art.height * zoom
+            let x0 = (ecran.width - w) / 2 + pan.width
+            let y0 = (ecran.height - h) / 2 + pan.height
+            content.layerEffect(ShaderLibrary.carteVie(
+                .float2(ecran.width, ecran.height),
+                .float2(x0, y0),
+                .float2(w, h),
+                .float(t),
+                .float(0.55 + 0.45 * ouvert),
+                .float(bouffee),
+                .float3(CGFloat(kit.lune.x), CGFloat(kit.lune.y), CGFloat(kit.lune.z)),
+                .image(Image(uiImage: vie)),
+                .image(Image(uiImage: bruit))),
+                maxSampleOffset: CGSize(width: 12, height: 12))
+        } else {
+            content
         }
     }
 }

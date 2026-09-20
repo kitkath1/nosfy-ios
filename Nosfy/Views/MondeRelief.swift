@@ -49,6 +49,7 @@ struct MondeRelief: UIViewRepresentable {
     func makeUIView(context: Context) -> SCNView {
         let v = SCNView(frame: .zero)
         v.backgroundColor = .black
+        v.delegate = context.coordinator
         v.antialiasingMode = .none
         v.preferredFramesPerSecond = 60
         v.rendersContinuously = true
@@ -84,8 +85,24 @@ struct MondeRelief: UIViewRepresentable {
         }
     }
 
-    final class Coordinator {
+    final class Coordinator: NSObject, SCNSceneRendererDelegate {
         let scene = SCNScene()
+        /// La cible de la caméra (écrite par SwiftUI) et sa position lissée
+        /// (écrite dans le rendu SceneKit, à chaque image) : un ressort
+        /// exponentiel de ~90 ms — le geste devient « lourd », donc naturel.
+        private var cible = SCNVector3(0, 0, MondeRelief.distance)
+        private var lisse = SCNVector3(0, 0, MondeRelief.distance)
+        private var derniere: TimeInterval = 0
+
+        func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
+            let dt = derniere == 0 ? 1.0 / 60 : min(0.05, time - derniere)
+            derniere = time
+            let k = Float(1 - exp(-dt / 0.09))
+            lisse.x += (cible.x - lisse.x) * k
+            lisse.y += (cible.y - lisse.y) * k
+            lisse.z += (cible.z - lisse.z) * k
+            camera.position = lisse
+        }
         let camera = SCNNode()
         let relief: SCNNode
         let plaqueCreature: SCNNode?
@@ -190,7 +207,7 @@ struct MondeRelief: UIViewRepresentable {
             let px = Float(pan.width / max(ecran.width, 1)) * 0.9 * ouvert
             let py = Float(pan.height / max(ecran.height, 1)) * 1.3 * ouvert
             let z = MondeRelief.distance - (zoom - 1) * 1.0
-            camera.position = SCNVector3(-tilt.x * course - px, tilt.y * 0.72 * course + py, z)
+            cible = SCNVector3(-tilt.x * course - px, tilt.y * 0.72 * course + py, z)
             SCNTransaction.commit()
         }
 
