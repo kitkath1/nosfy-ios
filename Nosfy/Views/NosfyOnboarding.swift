@@ -16,7 +16,8 @@ import SwiftUI
 /// qui donne le millénaire, pas le corps de la fonte.
 ///
 /// **AUCUN BOUTON, sauf le dernier.** La réponse EST l'action : toucher une card
-/// avance le film. Seule la sortie garde un « Entrer » — parce qu'on ne pousse
+/// avance le film. Seule la sortie garde un bouton (« Commencer ma première
+/// séance », le primaire de la maison, depuis le 20-09) — parce qu'on ne pousse
 /// pas quelqu'un dans son app, on l'y invite.
 struct NosfyOnboarding: View {
 
@@ -261,6 +262,13 @@ struct NosfyOnboarding: View {
             if !AppleAuth.Maquette.active, let gardees = InscriptionCompte.brouillon {
                 reponses = gardees
                 prenomSaisi = gardees.prenom ?? ""
+                etape = .bienvenue
+            }
+            if Self.sortieSeule {
+                reponses.prenom = Self.argument("-nosfyPrenom") ?? "Kathryn"
+                reponses.langue = Self.argument("-nosfyLangue") ?? "fr"
+                reponses.jours = [0, 2, 4]
+                prenomSaisi = reponses.prenom ?? ""
                 etape = .bienvenue
             }
             if etape == .accueil { allumer() }          // (si un jour on entre par là)
@@ -557,7 +565,7 @@ struct NosfyOnboarding: View {
         // ── LA SORTIE : LE PROJECTEUR ──
         case .bienvenue:
             SortieProjecteur(prenom: reponses.prenom,
-                             seances: reponses.jours.count,
+                             jours: reponses.jours.count,
                              en: en,
                              onInterrupteur: {
                                  // L'INTERRUPTEUR : le flash de l'anneau, sa voix
@@ -743,6 +751,19 @@ struct NosfyOnboarding: View {
     /// simulateur ne tape pas, et elle ne le voit pas depuis le remote).
     static let autoBanc = CommandLine.arguments.contains("-nosfyAuto")
 
+    /// `-nosfySortie` (20-09) : le film s'ouvre DIRECTEMENT sur la sortie — le
+    /// prénom de `-nosfyPrenom` (« Kathryn » sinon), la langue de `-nosfyLangue`
+    /// (fr) : la boucle courte pour régler l'écran de fin sans rejouer 70 s de
+    /// film. Avec `-nosfy` (le film au banc, maquette : rien ne part au réseau).
+    static let sortieSeule = CommandLine.arguments.contains("-nosfySortie")
+
+    /// La valeur qui suit un drapeau (`-nosfyPrenom Margaux`), s'il y en a une.
+    private static func argument(_ nom: String) -> String? {
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: nom), i + 1 < a.count else { return nil }
+        return a[i + 1]
+    }
+
     /// ⚠️ PILOTÉ PAR L'ÉTAPE, plus par des durées (13-09 soir) : la version aux
     /// `sleep` fixes tapait au mauvais écran dès qu'un plan s'ajoutait au film —
     /// elle s'est perdue sur les jours à l'arrivée de l'intro. Ici il ATTEND
@@ -776,235 +797,288 @@ struct NosfyOnboarding: View {
     }
 }
 
-// MARK: - LA SORTIE : LE PROJECTEUR (06-09)
+// MARK: - LA SORTIE : LE PROJECTEUR (06-09 · refaite le 20-09)
 
 /// ⚠️ **LA FIN D'UN FILM NE RESSEMBLE PAS À SES QUESTIONS.** Les quatre écrans
 /// précédents sont éclairés par une braise au-dessus de la tête — on est dans
 /// l'univers noir de Nosfy. Ici la lumière **change de camp** : elle vient d'en
-/// face, elle est blanche, elle est sur ELLE. Le halo et l'île s'effacent ; le
-/// projecteur ne s'ajoute pas à eux, il les remplace.
+/// face, elle est blanche, elle est sur ELLE. Le projecteur est le halo
+/// lui-même, penché depuis l'île (`HaloIle`) — la continuité du 13-09, gardée.
 ///
-/// Rien n'est inventé — c'est la robe « YOU MADE IT » (`RewardCard.spotlight`),
-/// recomposée avec ses propres pièces publiques :
-///   · `NightSpotlight` — le shader plein écran (CounterLab.swift:41)
-///   · `WoopGrain`      — le grain de la maison (Atmosphere.swift:294)
-///   · `TexteGeant`     — les mots géants (RewardCard.swift:1830)
-///
-/// On ne passe PAS par `RewardCard` elle-même : elle n'expose pas ses lignes
-/// (elle les fabrique depuis son `count`), et lui ajouter un paramètre pour nous
-/// toucherait une robe réglée au pixel qui sert ailleurs. Les pièces sont
-/// publiques, on les compose.
+/// **LE 20-09, SUR SON ANCIENNE CAPTURE « Let's go, Kathryn »** : la pop-up s'en
+/// va — la robe « You Made It », le chiffre de verre, la pluie de diamant
+/// (« plus minimal, Apple style »). Ce qui reste, et rien d'autre :
+///   · le spotlight qui descend du haut de la page — inchangé ;
+///   · « YOU'RE READY / Let's go, / Kathryn » en blanc dégradé, à gauche — en
+///     anglais dans les deux langues (sa règle : seul le bouton se traduit) ;
+///   · le nombre de séances par semaine entre deux traits fins, comme sur la
+///     capture (ses jours, pas des « reps ») ;
+///   · LE GALET DE VERRE NOIR en grand sur le côté droit, coupé par le bord, en
+///     boucle (`duo-galet-noir`, le fichier même de l'écran 1 de la route —
+///     il était déjà sur cet écran, en petit, au ras du bas) ;
+///   · un petit sticker flamme qu'on a déjà (`FlammeVive`) : au tap, les
+///     flammes sortent ;
+///   · le bouton primaire de la maison, en bas.
+/// L'apparition « wahou » (mon choix, à montrer) : le cône descend, le galet
+/// GLISSE depuis le bord droit dans sa lumière, les mots se posent un à un, la
+/// flamme naît et crache sa première gerbe toute seule, le bouton monte.
 private struct SortieProjecteur: View {
     var prenom: String?
-    var seances: Int
-    /// La langue du film — « LET'S / MARGAUX / GO ! » et « Enter ».
+    /// Les jours choisis par semaine (0 = passé : le serveur posera 5, et Nosfy
+    /// l'a dit — « Cinq, alors. On verra. »).
+    var jours: Int
+    /// La langue du film. ⚠️ Sa règle du 20-09 : sur cet écran, SEUL LE BOUTON
+    /// se traduit — « YOU'RE READY », « Let's go, », « sessions a week » restent
+    /// en anglais dans les deux langues, comme les mots géants de la story.
     var en: Bool = false
     /// L'île s'allume (t = 0,25 s) : le parent flashe l'anneau, vibre, et
     /// penche le halo en projecteur. Un seul événement déclenche tout.
     var onInterrupteur: () -> Void
     var onEntrer: () -> Void
 
-    /// LES TEMPS DE L'APPARITION (PLAN-SORTIE-POPUP § 11) : 0 = le halo seul ·
-    /// 1 = l'île allumée, le cône descend, le galet monte du bord · 2 = LA POP-UP
-    /// DE BASE est montée (elle arrive par sa propre rampe, 1,45 s) · 3 = elle est
-    /// posée : la pluie de diamant. Une horloge qui MEURT au dernier temps.
+    /// LES TEMPS DE L'APPARITION : 0 = le halo seul · 1 = l'île allumée, le cône
+    /// descend, le galet glisse depuis le bord · 2 = les mots se posent, la
+    /// flamme naît · 3 = posée : le bouton monte. Une horloge qui MEURT au
+    /// dernier temps ; un tap avant la fin y saute d'un coup.
     @State private var temps = 0
-    /// Le galet de verre noir monte du bord bas (fondu 0,9 s).
-    @State private var galet = false
     /// La sortie est engagée (un seul départ).
     @State private var dissipe = false
-    /// Le zoom cinématique — APRÈS que la card est partie : rien de vivant n'est
-    /// jamais redimensionné (le verre se retire, la caméra avance ensuite).
+    /// Le zoom cinématique — la caméra avance vers les mots : une transformation
+    /// de toute la page, jamais une taille (la vidéo n'est pas redimensionnée).
     @State private var zoom = false
-    /// La coupe sur blanc (§4) : la caméra entre dans la lumière.
+    /// La coupe sur blanc (§4 du plan) : la caméra entre dans la lumière.
     @State private var voile: Double = 0
-    /// LA PLUIE — la poudre de diamant sur TOUT l'écran, quand la fin est là.
-    @State private var pluie: Date?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// « ALLEZ / MARGAUX / GO ! » — le prénom AU MILIEU, encadré par les deux
-    /// mots. C'est lui qu'on doit lire en premier.
-    ///
-    /// ⚠️ **« ON / COMMENCE / MARGAUX » NE TENAIT PAS** (verdict au téléphone,
-    /// 07-09 : « on voit pas le mot COMMENCE et le nom »). Huit lettres à
-    /// 112 pt réclament 464 pt sur un écran de 393 : même échelonné, le bloc
-    /// devenait si petit que les trois lignes se perdaient. Des mots COURTS
-    /// sont la seule vraie réponse — 5, 7 et 4 lettres tiennent en grand.
-    ///
-    /// Sans prénom (elle a passé la question), il reste deux lignes — et
-    /// `TexteGeant` passe alors tout seul de 112 à 128 pt.
-    private var lignes: [String] {
-        guard let p = prenom?.trimmingCharacters(in: .whitespaces), !p.isEmpty else {
-            return en ? ["LET'S", "GO !"] : ["ALLEZ", "GO !"]
-        }
-        return en ? ["LET'S", p.uppercased(), "GO !"] : ["ALLEZ", p.uppercased(), "GO !"]
+    private func L(_ fr: String, _ en: String) -> String { self.en ? en : fr }
+
+    private var prenomPropre: String? {
+        guard let p = prenom?.trimmingCharacters(in: .whitespaces), !p.isEmpty else { return nil }
+        return p
     }
 
+    /// Le nombre affiché : ses jours, ou le défaut du serveur quand elle a passé.
+    private var seances: Int { jours > 0 ? jours : 5 }
+
+    /// Le corps des deux grandes lignes — celui de la capture (≈ 14 % de la
+    /// largeur). Le prénom, seul sur sa ligne, RÉTRÉCIT s'il ne tient pas
+    /// (`minimumScaleFactor`) : un mot géant à palier unique couperait un prénom
+    /// long (b-st-mots-geants), et un `Flot` ne rétrécit pas un mot trop large.
+    private static let corps: CGFloat = 54
+
     var body: some View {
-        ZStack {
-            // ⚠️ PLUS DE `NightSpotlight` ICI (13-09). Sa source est codée en
-            // dur en haut à GAUCHE (`EclipseHalo.metal:236` : size.x × 0,17,
-            // ~61° vers le bas-droite) — la lumière sautait dans un coin après
-            // quatre écrans centrés sur l'île. Et c'était une TimelineView à
-            // 30 Hz qui REDESSINE : la retirer est un gain, pas un coût. Le
-            // projecteur est désormais le halo lui-même, penché (`HaloIle`).
-            Color.clear
+        // ⚠️ PLUS DE `NightSpotlight` ICI (13-09) : sa source est codée en dur
+        // en haut à GAUCHE et c'était une TimelineView à 30 Hz qui REDESSINE.
+        // Le projecteur est le halo lui-même, penché (`HaloIle`, chez le parent).
+        // Toute la page (bords compris) : le galet dépasse à droite, le bouton
+        // se pose au-dessus du bord bas.
+        GeometryReader { g in
+            ZStack(alignment: .topLeading) {
+                Color.clear
 
-            // TEMPS 1 — LE GALET DE VERRE NOIR (13-09, sa consigne : « la pilule
-            // noire / blanche du chapitre 1 "le verre noir" de la route, debout,
-            // coupée, fondue, en bas de la page ») : il monte du bord, sous la card.
-            // ⚠️ AVANT le grain : sur l'appareil la vidéo couvre ce qu'elle a sous
-            // elle, et un grain dessous faisait une marche de plus au bord du fichier.
-            galetDuBas
+                // TEMPS 1 — LE GALET, à droite. ⚠️ SOUS le grain et les mots :
+                // sur l'appareil la vidéo couvre ce qu'elle a sous elle.
+                galetDuCote(g)
 
-            WoopGrain(density: 0.028, lightAlpha: 0.022, darkAlpha: 0.028)
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
+                WoopGrain(density: 0.028, lightAlpha: 0.022, darkAlpha: 0.028)
+                    .allowsHitTesting(false)
 
-            // TEMPS 2 — LA POP-UP DE BASE (PLAN-SORTIE-POPUP § 11) : la robe
-            // « You Made It » telle qu'elle est — sa lampe, sa matrice, le chiffre
-            // en vrai Liquid Glass posé SUR les mots — avec nos mots, la capsule
-            // « Entrer », et le scrim à 0 (le cône reste visible ; le scrim,
-            // transparent, porte le « tap partout = entrer »). Elle arrive par sa
-            // propre rampe, se ferme par sa propre sortie, et `onClose` nous rend
-            // la main pour le zoom et la coupe.
-            if temps >= 2 {
-                RewardPopup(count: seances, title: "", subtitle: "", unit: "",
-                            style: .spotlight,
-                            onClose: { partir() },
-                            lignesGeantes: lignes,
-                            bouton: .capsule(en ? "Enter" : "Entrer"),
-                            scrim: 0)
-                    // (13-09, son verdict : « animation, transition, plus de blur »)
-                    // Elle sort du flou en montant, comme tout ce qui apparaît dans
-                    // le film — par-dessus sa propre rampe d'arrivée.
-                    .transition(.fonduFlou)
-            }
-
-            // LA PLUIE DE DIAMANT — partout, quand l'écran de fin est complet.
-            // ⚠️ Elle tombe SUR le verre : la poudre de la maison (RewardCard:911)
-            // est validée sur cette card même ; l'interdit n° 2 de la lentille
-            // vise les particules-points, pas ses facettes.
-            if let pluie {
-                GeometryReader { geo in
-                    PoudreDiamant(largeur: geo.size.width, hauteur: geo.size.height,
-                                  naissance: pluie)
+                // TEMPS 2 — LES MOTS ET LA FLAMME, dans le cône. Montés d'un
+                // bloc (pas de saut de mise en page) ; chacun naît à son heure.
+                if temps >= 2 {
+                    mots
+                        .padding(.leading, 30)
+                        .padding(.trailing, 24)
+                        .padding(.top, g.size.height * 0.255)
+                        .transition(.identity)
                 }
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
-            }
 
-            // LA COUPE SUR BLANC (§4 du plan) — on ne passe pas par le noir, on
-            // passe par la lumière qu'on a tenue tout le film. Le voile reste
-            // blanc : c'est la racine qui fera arriver la home depuis lui
-            // (jalon 3) — le banc s'arrête ici, sur du blanc pur.
-            Color.white
-                .ignoresSafeArea()
-                .opacity(voile)
-                .allowsHitTesting(false)
+                // TEMPS 3 — LE BOUTON, en bas.
+                pied(g)
+
+                // LA COUPE SUR BLANC (§4 du plan) — on ne passe pas par le noir,
+                // on passe par la lumière qu'on a tenue tout le film. Le voile
+                // reste blanc : c'est la racine qui fait arriver la home depuis lui.
+                Color.white
+                    .opacity(voile)
+                    .allowsHitTesting(false)
+            }
+            .frame(width: g.size.width, height: g.size.height, alignment: .topLeading)
         }
-        // Toute la page est tappable. Avant la pop-up, un tap l'appelle d'un coup ;
-        // une fois là, c'est SON scrim (transparent) qui prend les taps → fermer.
+        .ignoresSafeArea()
+        // Un tap n'importe où AVANT la pose y saute (13-09, son verdict : « même
+        // si j'appuie plusieurs fois, ça doit m'amener à l'écran de fin ») ; une
+        // fois posée, c'est le bouton qui fait entrer — la flamme, elle, crache.
         .contentShape(Rectangle())
-        .onTapGesture { if temps < 2 { NosfySon.tap(); arriverALaFin() } }
-        // LE ZOOM CINÉMATIQUE : la caméra AVANCE vers la place de la card (l'ancre
-        // est son centre, pas celui de l'écran). La card a déjà été retirée (voir
-        // `partir`) : rien de vivant n'est redimensionné.
-        .scaleEffect(zoom ? 1.38 : 1, anchor: UnitPoint(x: 0.5, y: 0.43))
+        .onTapGesture { if temps < 3 { NosfySon.tap(); sauter() } }
+        // LE ZOOM CINÉMATIQUE : la caméra AVANCE vers les mots (l'ancre est sur
+        // eux, pas au centre de l'écran). Une transformation de la page entière :
+        // la vidéo est transformée, jamais redimensionnée.
+        .scaleEffect(zoom ? 1.38 : 1, anchor: UnitPoint(x: 0.42, y: 0.40))
         .animation(.easeIn(duration: 0.55), value: zoom)
         .preferredColorScheme(.dark)
         .task { await jouer() }
     }
 
+    // MARK: Les couches
+
+    /// « YOU'RE READY / Let's go, / Kathryn » puis le nombre entre ses traits et
+    /// la flamme — la colonne de gauche de sa capture. La petite ligne en
+    /// capitales espacées, les deux grandes en blanc dégradé
+    /// (`MotsFlou.blancDegrade`), le prénom seul sur la sienne. Des naissances
+    /// échelonnées à la courbe des mots du film.
+    private var mots: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("YOU'RE READY")
+                .font(.inter(12.5, .medium))
+                .tracking(3.6)
+                .foregroundStyle(.white.opacity(0.46))
+                .modifier(Naissance(apres: 0))
+                .padding(.bottom, 22)
+
+            MotsFlou([("Let's go,", true)], taille: Self.corps, base: 0.22)
+
+            Text(prenomPropre ?? "it's time.")
+                .font(.inter(Self.corps, .semibold))
+                .tracking(-Self.corps * 0.026)
+                .foregroundStyle(MotsFlou.blancDegrade)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .modifier(Naissance(apres: 0.58))
+                .padding(.top, -6)
+
+            nombre
+                .modifier(Naissance(apres: 0.95))
+                .padding(.top, 26)
+
+            FlammeVive(corps: 62, premierJet: 1.25)
+                .padding(.top, 24)
+                .padding(.leading, 4)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// LE NOMBRE CHOISI, ENTRE DEUX TRAITS (20-09, « le nombre de séances avec
+    /// les traits Apple-like comme le screenshot ») : le chiffre en grand et
+    /// léger, la légende en petit et sourd, un trait d'un point au-dessus et
+    /// au-dessous, à la largeur du bloc. Ses jours par semaine — le seul chiffre
+    /// de l'écran, et il est à elle.
+    private var nombre: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text("\(seances)")
+                .font(.inter(50, .light))
+                .tracking(-1)
+                .foregroundStyle(MotsFlou.blancDegrade)
+            Text("sessions a week")
+                .font(.inter(17))
+                .foregroundStyle(.white.opacity(0.55))
+        }
+        .padding(.vertical, 13)
+        .padding(.leading, 6)
+        .padding(.trailing, 28)
+        .overlay(alignment: .top) { Self.trait }
+        .overlay(alignment: .bottom) { Self.trait }
+        .fixedSize()
+    }
+
+    private static var trait: some View {
+        Rectangle().fill(.white.opacity(0.22)).frame(height: 1)
+    }
+
+    /// Le bouton primaire de la maison (`BoutonPrimaire`, le noir aux halos),
+    /// au bas de l'écran : il MONTE quand la scène est posée, et lui seul fait
+    /// entrer.
+    private func pied(_ g: GeometryProxy) -> some View {
+        VStack(spacing: 0) {
+            Spacer(minLength: 0)
+            BoutonPrimaire(title: L("Commencer ma première séance", "Start my first session")) {
+                partir()
+            }
+            .padding(.horizontal, 22)
+            .padding(.bottom, g.safeAreaInsets.bottom + 22)
+            .opacity(temps >= 3 ? 1 : 0)
+            .offset(y: temps >= 3 ? 0 : 22)
+            .animation(.easeOut(duration: 0.7), value: temps)
+            .allowsHitTesting(temps >= 3 && !dissipe)
+        }
+        .frame(width: g.size.width, height: g.size.height)
+    }
+
+    /// LE GALET DE VERRE NOIR, EN GRAND SUR LE CÔTÉ (20-09, sa capture : « la
+    /// pill qui bouge, en gros sur le côté, en continu, trop beau ») —
+    /// `duo-galet-noir.mp4`, debout, son centre au-delà du bord droit : on en
+    /// voit le flanc gauche et le ventre ; la lumière qui le traverse est CUITE
+    /// dans le fichier. Plus de `.mask` (un masque sur une couche vidéo = un
+    /// rendu hors écran de tout le plan à chaque image) : l'extinction de sa
+    /// tête est dans le fichier, et en mode ÉCRAN le noir n'ajoute rien — seules
+    /// les arêtes claires du verre s'impriment, le rectangle n'existe pas
+    /// (mesuré sur son téléphone le 13-09, sur ce même fichier). Il GLISSE
+    /// depuis le bord au temps 1 : un offset et une opacité, jamais une taille.
+    /// Barreau : `-sansNosfyVideo` (le poster à sa place).
+    private func galetDuCote(_ g: GeometryProxy) -> some View {
+        // Le fichier fait 1206 × 1560 ; son galet finit à ≈ 88 % de sa hauteur.
+        // Aussi large que possible (1,42 × l'écran), borné par la hauteur pour
+        // que son pied s'arrête au-dessus du bouton sur tous les écrans.
+        let bas = g.safeAreaInsets.bottom + 22 + BoutonPrimaire.hauteur + 24
+        let h = min(g.size.width * 1.42 * 1560 / 1206, (g.size.height - bas) / 0.88)
+        let l = h * 1206 / 1560
+        return Group {
+            if NosfyOnboarding.sansVideo {
+                Image("duo-galet-noir-poster").resizable().aspectRatio(contentMode: .fit)
+            } else {
+                NosfyReel(nom: "duo-galet-noir", boucle: true, muet: true)
+            }
+        }
+        .frame(width: l, height: h)
+        .blendMode(.screen)
+        .opacity(temps >= 1 ? 1 : 0)
+        .offset(x: temps >= 1 ? 0 : 96)
+        .animation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 1.6), value: temps)
+        // Le pied du galet (0,88 h) juste au-dessus du bouton ; son centre à
+        // 0,37 l à droite du milieu : on voit ≈ 45 % du galet (le flanc et le
+        // ventre), comme sur sa capture — à 0,42 il n'en restait que le flanc.
+        .position(x: g.size.width * 0.5 + l * 0.37,
+                  y: g.size.height - bas - h * 0.38)
+        .allowsHitTesting(false)
+    }
+
     // MARK: Les quatre temps
 
-    /// L'APPARITION « WAHOU » (§3 du plan), 2,4 s à l'horloge. Un seul événement
-    /// déclenche tout — l'île s'allume — et le reste en découle dans l'ordre
-    /// d'une scène réelle : la lampe, puis ce qu'elle éclaire, puis l'objet
-    /// précieux sous la lampe. Deux voix d'haptique : *moyen* = lui, *léger* =
-    /// elle. L'horloge meurt au dernier temps.
+    /// L'APPARITION « WAHOU », 2,4 s à l'horloge. Un seul événement déclenche
+    /// tout — l'île s'allume — et le reste en découle dans l'ordre d'une scène
+    /// réelle : la lampe, puis l'objet qui glisse dans sa lumière, puis ce
+    /// qu'elle dit, puis la porte. L'horloge meurt au dernier temps. Les
+    /// animations sont déclarées sur les couches (`.animation(value: temps)`) :
+    /// changer le temps suffit, et un saut joue tout, dans l'ordre des retards.
     @MainActor
     private func jouer() async {
         try? await Task.sleep(for: .milliseconds(250))
         guard temps < 1 else { return }                           // elle a sauté à la fin
         onInterrupteur()                                          // 0,25 · l'île s'allume · fort
-        temps = 1
-        try? await Task.sleep(for: .milliseconds(600))
+        temps = 1                                                 //        le cône, le galet
+        try? await Task.sleep(for: .milliseconds(850))
         guard temps < 2 else { return }
-        arriverALaFin()                                           // 0,85 · la pop-up naît
+        temps = 2                                                 // 1,10 · les mots, la flamme
+        try? await Task.sleep(for: .milliseconds(1300))
+        guard temps < 3 else { return }
+        temps = 3                                                 // 2,40 · le bouton
+        // Le banc : `-nosfySortieAuto` presse le bouton tout seul, 5 s après la
+        // pose — pour filmer la coupe sur blanc et l'arrivée sur la home.
+        guard CommandLine.arguments.contains("-nosfySortieAuto") else { return }
+        try? await Task.sleep(for: .seconds(5))
+        partir()
     }
 
-    /// LA POP-UP ARRIVE — à 0,85 s, ou d'un tap avant (13-09, son verdict :
-    /// « même si j'appuie plusieurs fois, ça doit m'amener à l'écran de fin avec
-    /// des paillettes partout ; et seulement là, dès que j'appuie, la home »).
-    /// Elle se pose seule (sa rampe de 1,45 s : count-up, secousse, boum) ; à la
-    /// pose, LA PLUIE de diamant tombe sur tout l'écran — c'est la fête.
-    private func arriverALaFin() {
-        guard temps < 2 else { return }
+    /// Un tap avant la pose : tout arrive d'un coup, dans l'ordre (les retards
+    /// tiennent), l'île allumée si elle ne l'était pas encore.
+    private func sauter() {
+        guard temps < 3 else { return }
         if temps < 1 { onInterrupteur() }
-        withAnimation(.easeOut(duration: 0.7)) { temps = 2 }     // la pop-up, en fondu-flou
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(1450))
-            guard temps == 2 else { return }
-            temps = 3
-            if !reduceMotion { pluie = Date() }
-            // LE GALET NE MONTE QU'APRÈS la pop-up (13-09, son verdict : « le
-            // galet est déjà présent avant l'apparition de la page ! »).
-            galet = true
-        }
+        temps = 3
     }
 
-    /// LE GALET DE VERRE NOIR — `duo-galet-noir.mp4`, le fichier même de l'écran 1
-    /// de la route (déjà cuit, déjà dans le bundle) : debout, AU RAS DU BAS —
-    /// ≈ 110 pt émergent du bord, le reste est sous l'écran, sa tête fondue dans
-    /// le noir (13-09, son verdict : « coupée, fondue vers le bas de l'écran, pas
-    /// au niveau de la pop-up »). Il ne s'approche jamais de la pop-up : un verre
-    /// posé sur une vidéo ne met rien en cache (loi mesurée).
-    /// Barreau : `-sansNosfyVideo` (celui de `NosfyReel`).
-    private var galetDuBas: some View {
-        GeometryReader { g in
-            // Assez petit pour vivre SOUS la card (son bas est à ≈ 645 pt), assez
-            // grand pour qu'on voie le verre : 50 % de large, 254 pt de haut.
-            let l = g.size.width * 0.50
-            let h = l * 1560 / 1206
-            NosfyReel(nom: "duo-galet-noir", boucle: true, muet: true)
-                .frame(width: l, height: h)
-                // La tête se fond dans le noir (elle passe sous la card, invisible),
-                // et le pied se fond VERS LE BAS DE L'ÉCRAN — après le ventre.
-                .mask(
-                    LinearGradient(
-                        stops: [
-                            .init(color: .clear, location: 0),
-                            .init(color: .white.opacity(0.7), location: 0.26),
-                            .init(color: .white, location: 0.42),
-                            .init(color: .white, location: 0.93),
-                            .init(color: .clear, location: 1)
-                        ],
-                        startPoint: .top, endPoint: .bottom))
-                // ⚠️ SON RECTANGLE SE VOYAIT (son téléphone, 13-09 : « un problème
-                // avec le footer, le background du bas et la pilule ») : le noir
-                // du fichier est pur, la page au-dessus est un noir grainé éclairé
-                // par le pied du cône — le bord haut de la vidéo faisait une marche.
-                // En ÉCRAN, le noir n'ajoute rien : seules les arêtes claires du
-                // verre s'impriment, le rectangle n'existe plus. ⚠️ Et en écran,
-                // ce qu'on VOIT du galet, c'est son VENTRE (le reflet) : à 110 pt
-                // visibles il restait sous le bord (« on ne voit pas la pilule »).
-                // Le ventre vit à 85-92 % de la hauteur : il est à ~25 pt du bas.
-                .blendMode(.screen)
-                .opacity(galet ? 0.95 : 0)
-                .offset(y: galet ? 0 : 34)
-                .animation(.easeOut(duration: 1.1), value: galet)
-                .position(x: g.size.width / 2, y: g.size.height + 12 - h / 2)
-        }
-        .ignoresSafeArea()
-        .allowsHitTesting(false)
-    }
-
-    /// LA SORTIE (§ 11 du plan) — appelée par `onClose` de la pop-up, donc APRÈS
-    /// sa propre sortie de 0,42 s (le verre s'est retiré, il n'est jamais
-    /// transformé) : la caméra avance 0,55 s, le voile monte au blanc, et c'est
-    /// la coupe — sur du blanc pur. (Un tap avant la pose ne ferme rien : la
-    /// pop-up garde ses taps tant qu'elle n'est pas posée — sa loi.)
+    /// LA SORTIE (§4 du plan) — le bouton : la caméra avance 0,55 s, le voile
+    /// monte au blanc, et c'est la coupe — sur du blanc pur. Un seul départ.
     private func partir() {
         guard !dissipe else { return }
         dissipe = true
@@ -1024,6 +1098,216 @@ private struct SortieProjecteur: View {
         }
     }
 
+}
+
+// MARK: - LE PETIT STICKER FLAMME QUI CRACHE (20-09)
+
+/// « Un petit sticker flamme qu'on a déjà — quand on appuie, les flammes
+/// sortent, j'aime bien. » C'est la flamme noire laquée de la card reward
+/// (`RewardCard.FlammeSticker`, privée là-bas), en petit, et refaite SANS
+/// horloge au repos : la card la faisait respirer dans une `TimelineView` à
+/// 60 Hz — redessiner pour animer, ce que la loi du 05-09 chiffre 3 à 8 fois
+/// trop cher. Ici le repos, c'est deux valeurs animées en `repeatForever` sur
+/// la feuille (une inclinaison, une respiration — des attributs disjoints, une
+/// animation chacun, la phase dans la feuille) ; la GERBE — des dizaines de
+/// petites flammes orange (`sticker-flamme`) qui jaillissent et retombent —
+/// est un `Canvas` qui n'existe que pendant ses 2,4 s, puis meurt. Elle part
+/// au tap, et UNE première fois toute seule à la naissance : on découvre le
+/// geste en le voyant. Sous Reduce Motion : ni repos animé, ni première gerbe.
+private struct FlammeVive: View {
+    /// La hauteur du sticker noir.
+    var corps: CGFloat = 62
+    /// Le premier jet, tout seul, N secondes après le montage (nil = jamais).
+    var premierJet: Double? = 1.0
+
+    @State private var nee = false
+    @State private var penche = false
+    @State private var respire = false
+    @State private var jet: Date?
+    /// Compte les jets : c'est lui qui déclenche le SAUT du sticker.
+    @State private var boum = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// La gerbe déborde largement du sticker : son canvas est posé sous lui,
+    /// le foyer au cœur du sticker, `dessous` points de chute sous son pied.
+    private static let canvas = CGSize(width: 440, height: 460)
+    private static let dessous: CGFloat = 160
+
+    /// LE SAUT (20-09, « anime la flamme qui sort des petites ») : quand elle
+    /// crache, elle s'ÉCRASE, se détend vers le haut en bondissant, et retombe
+    /// — trois images-clés sur l'échelle et la hauteur, ancrées à son pied.
+    private struct Saut {
+        var x: CGFloat = 1
+        var y: CGFloat = 1
+        var dy: CGFloat = 0
+    }
+
+    var body: some View {
+        Image("sticker-flamme-noir")
+            .resizable()
+            .scaledToFit()
+            .frame(height: corps)
+            // La braise sous le sticker : il ne flotte pas dans le noir, il
+            // COUVE. Un flou peint une fois, jamais animé.
+            .background {
+                Ellipse()
+                    .fill(RadialGradient(
+                        colors: [Color(red: 1, green: 0.34, blue: 0.08).opacity(0.36), .clear],
+                        center: .center, startRadius: 0, endRadius: corps * 0.55))
+                    .frame(width: corps * 1.3, height: corps * 0.9)
+                    .blur(radius: 10)
+                    .blendMode(.screen)
+                    .offset(y: corps * 0.12)
+                    .allowsHitTesting(false)
+            }
+            // LE SAUT à chaque jet — une animation à images-clés, jouée une fois
+            // par déclenchement, qui ne touche pas aux animations du repos.
+            .keyframeAnimator(initialValue: Saut(), trigger: boum) { content, s in
+                content
+                    .scaleEffect(x: s.x, y: s.y, anchor: .bottom)
+                    .offset(y: s.dy)
+            } keyframes: { _ in
+                KeyframeTrack(\.y) {
+                    SpringKeyframe(0.78, duration: 0.09)
+                    SpringKeyframe(1.26, duration: 0.15)
+                    SpringKeyframe(1.0, duration: 0.5, spring: .bouncy)
+                }
+                KeyframeTrack(\.x) {
+                    SpringKeyframe(1.18, duration: 0.09)
+                    SpringKeyframe(0.88, duration: 0.15)
+                    SpringKeyframe(1.0, duration: 0.5, spring: .bouncy)
+                }
+                KeyframeTrack(\.dy) {
+                    LinearKeyframe(0, duration: 0.09)
+                    SpringKeyframe(-16, duration: 0.17)
+                    SpringKeyframe(0, duration: 0.45, spring: .bouncy)
+                }
+            }
+            // LE REPOS : elle penche depuis son pied et respire — à peine (« un
+            // sticker qui vibre en permanence fait cheap », verdict de la jauge).
+            .scaleEffect(y: respire ? 1.03 : 0.985, anchor: .bottom)
+            .rotationEffect(.degrees(penche ? 3 : -3), anchor: .bottom)
+            // LA NAISSANCE : elle POP sur un ressort, depuis son pied.
+            .scaleEffect(nee ? 1 : 0.35, anchor: .bottom)
+            .opacity(nee ? 1 : 0)
+            .animation(.spring(response: 0.6, dampingFraction: 0.6), value: nee)
+            .overlay(alignment: .bottom) {
+                if let jet {
+                    GerbeFlammes(naissance: jet, dessous: Self.dessous + corps / 2)
+                        .frame(width: Self.canvas.width, height: Self.canvas.height)
+                        .offset(y: Self.dessous)
+                        .allowsHitTesting(false)
+                }
+            }
+            .contentShape(Rectangle().inset(by: -14))
+            .onTapGesture { cracher() }
+            .accessibilityLabel("Flamme")
+            .task {
+                if !reduceMotion {
+                    withAnimation(.easeInOut(duration: 3.1).repeatForever(autoreverses: true)) { penche = true }
+                    withAnimation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true)) { respire = true }
+                }
+                if let premierJet { try? await Task.sleep(for: .seconds(premierJet)) }
+                nee = true
+                guard premierJet != nil, !reduceMotion else { return }
+                try? await Task.sleep(for: .milliseconds(320))
+                cracher()
+            }
+            // La gerbe MEURT à 2,5 s : plus de Canvas, plus d'horloge.
+            .task(id: jet) {
+                guard jet != nil else { return }
+                try? await Task.sleep(for: .seconds(2.5))
+                guard !Task.isCancelled else { return }
+                jet = nil
+            }
+            // Le banc : `-fireAuto` (celui de la card reward) crache tout seul
+            // toutes les 3,4 s — le simulateur ne tape pas.
+            .task {
+                guard CommandLine.arguments.contains("-fireAuto") else { return }
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(3.4))
+                    cracher()
+                }
+            }
+    }
+
+    private func cracher() {
+        jet = Date()
+        boum += 1
+        Haptique.fort()
+    }
+}
+
+/// La gerbe : chaque grain part en éventail vers le haut, tourne, retombe et
+/// s'éteint — trajectoire déterministe par hash, le sprite résolu UNE fois par
+/// image (jamais par grain — la loi PoudreBooster). L'école de la card reward,
+/// aux vitesses d'un petit sticker. Une `TimelineView` qui ne vit que le temps
+/// de la gerbe : son hôte la démonte.
+private struct GerbeFlammes: View {
+    let naissance: Date
+    /// Le foyer, mesuré depuis le BAS du canvas.
+    let dessous: CGFloat
+
+    private static let grains = 40
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { tl in
+            Canvas { ctx, size in
+                let age = tl.date.timeIntervalSince(naissance)
+                guard age >= 0, age < 2.4 else { return }
+                let sprite = ctx.resolve(Image("sticker-flamme"))
+                let cx = size.width / 2
+                let cy = size.height - dessous
+                for i in 0 ..< Self.grains {
+                    let retard = Self.hash(i, 9) * 0.20
+                    let u = age - retard
+                    guard u > 0, u < 2.2 else { continue }
+                    let angle = -Double.pi / 2 + (Self.hash(i, 1) - 0.5) * 1.7
+                    let vitesse = 170 + 250 * Self.hash(i, 2)
+                    let x = cx + CGFloat(cos(angle) * vitesse * u)
+                    let y = cy + CGFloat(sin(angle) * vitesse * u + 300 * u * u)
+                    let taille = CGFloat(11 + 20 * Self.hash(i, 3))
+                    let vie = 1.2 + 0.7 * Self.hash(i, 4)
+                    let a = max(0, 1 - u / vie)
+                    guard a > 0.02 else { continue }
+                    var couche = ctx
+                    couche.opacity = a
+                    couche.translateBy(x: x, y: y)
+                    couche.rotate(by: .radians((Self.hash(i, 5) - 0.5) * 5
+                                               + u * 3.4 * (Self.hash(i, 6) - 0.5)))
+                    couche.draw(sprite, in: CGRect(x: -taille / 2, y: -taille / 2,
+                                                   width: taille, height: taille))
+                }
+            }
+        }
+    }
+
+    private static func hash(_ i: Int, _ k: Int) -> Double {
+        let s = sin(Double(i) * 12.9898 + Double(k) * 78.233) * 43758.5453
+        return s - floor(s)
+    }
+}
+
+/// La naissance d'UN texte à la courbe des mots du film (`MotsFlou`) : il sort
+/// du flou en se posant, après son retard. Pour les lignes qui ne passent pas
+/// par `MotsFlou` — le prénom, qui doit pouvoir RÉTRÉCIR (un `Flot` ne rétrécit
+/// pas un mot trop large), et la petite ligne en capitales espacées.
+private struct Naissance: ViewModifier {
+    var apres: Double
+    @State private var posee = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
+            .blur(radius: posee ? 0 : 8)
+            .opacity(posee ? 1 : 0)
+            .scaleEffect(posee ? 1 : 0.96)
+            .offset(y: posee ? 0 : 5)
+            .animation(reduceMotion ? nil
+                       : .timingCurve(0.2, 0.8, 0.2, 1, duration: 0.9).delay(apres),
+                       value: posee)
+            .onAppear { posee = true }
+    }
 }
 
 // MARK: - L'ÎLE : la jauge autour du trou, et la voix
