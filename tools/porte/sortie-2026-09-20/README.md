@@ -76,3 +76,13 @@ prénom de `-nosfyPrenom` — banc seulement.
   haptiques (fort au jet), le doigt sur la flamme et le bouton.
 - Sur le sim, le fond derrière le film au banc `-nosfy` est la porte (aucun
   compte) : dans le vrai parcours, c'est la home.
+
+## Le serveur, rejoué le 20-09
+
+`python3 tools/serveur/verif_compte.py` → **32 PASS, 0 FAIL**
+(`verif_compte-2026-09-20.log`) : prénom vide refusé, « Camille QA » rogné et
+confirmé, langue et objectif conservés au rejeu, home neuve au prénom et dans
+la langue du profil, reconnexion, suppression ; deux comptes temporaires
+effacés. Côté app : une seule clé `woop.prenom` (posée depuis la réponse du
+serveur, vidée à la déconnexion) lue par la home et la page profil ; la story
+page 1 — correctif dans l'arbre, session retours TestFlight, non commité.
