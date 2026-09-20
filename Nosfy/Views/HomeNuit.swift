@@ -577,12 +577,34 @@ struct PhraseVue: View, Animatable {
     @AppStorage(HomeTextes.cleRevision) private var revisionVoix = ""
     @AppStorage(ProfilServeur.clePrenom) private var prenomVoix = ""
 
+    private var signatureVoix: String {
+        "\(langueVoix)|\(revisionVoix)|\(prenomVoix)|\(etatVoix ?? "")|\(palierVoix)"
+    }
+    /// LA LECTURE PEUT PARLER : la page est là, au premier plan, et rien ne
+    /// la couvre (coffre, chemin, fiche, réglage, menu, welcome, player,
+    /// foyer). Quand c'est faux, la lecture se COUPE et les mots se posent
+    /// nets — elle ne reprend pas au retour.
     private var contexteVoix: HomeLecture.Contexte {
-        .init(visible: montee && paroleActive && p > 0.04 && phaseVoix == .active
-                && !RythmeEcran.dortHome && !DepartEtat.shared.homeDort
+        .init(visible: visiteVoix.visible && paroleActive
+                && !DepartEtat.shared.homeDort
                 && !DepartEtat.shared.welcomeOuverte && !DepartEtat.shared.welcomePremiereOuverte
                 && !PlayerEtat.shared.couvre && !CouvertureFoyer.shared.recouvert,
-              signature: "\(langueVoix)|\(revisionVoix)|\(prenomVoix)|\(etatVoix ?? "")|\(palierVoix)")
+              signature: signatureVoix)
+    }
+    /// UNE VISITE — ce qui vaut une NOUVELLE phrase. ⚠️ **Pas les pages
+    /// internes** (verdict 20-09, retours TestFlight : « quand je rentre dans
+    /// le coffre et que je reviens, le temps que le texte s'anime ça fait
+    /// beuggé »). Avant, `lecture.actualiser` lisait le contexte de la
+    /// parole : chaque cover refermé — coffre, chemin, fiche, réglage du
+    /// galet — comptait pour une arrivée, tirait une phrase neuve et rejouait
+    /// l'entrée floue mot par mot, pile au moment où toute la home se
+    /// réveille. Une visite, c'est : le lancement, le retour d'arrière-plan
+    /// (`scenePhase`), l'arrivée sur l'onglet (`dortHome`). Le reste est une
+    /// pause de lecture, jamais une arrivée.
+    private var visiteVoix: HomeLecture.Contexte {
+        .init(visible: montee && p > 0.04 && phaseVoix == .active
+                && !RythmeEcran.dortHome,
+              signature: signatureVoix)
     }
     private var fragmentsDits: [PhraseFragment] {
         guard etatVoix != nil, let variante = lecture.variante else { return fragments }
@@ -671,9 +693,11 @@ struct PhraseVue: View, Animatable {
         .opacity(etatVoix != nil && contexteVoix.visible && !lecture.presente ? 0 : 1)
         .onAppear { montee = true }
         .onDisappear { montee = false }
-        .onChange(of: contexteVoix, initial: true) { _, contexte in
+        // La visite décide de la phrase ; la parole (`contexteVoix`) ne fait
+        // que jouer ou se taire. Voir `visiteVoix`.
+        .onChange(of: visiteVoix, initial: true) { _, visite in
             guard let etatVoix else { return }
-            lecture.actualiser(contexte) { HomeTextes.prochainePhrase(etatVoix) }
+            lecture.actualiser(visite) { HomeTextes.prochainePhrase(etatVoix) }
         }
     }
 
@@ -2202,9 +2226,16 @@ struct HomeNuitPage: View {
     /// qu'un geste est encore censé être en cours (donc armer le chien de
     /// garde).
     @State private var tirageDebut: CGPoint?
-    /// Le jeton du chien de garde — l'école de `SliderObsidienne.stale` : une
-    /// vérification différée n'agit que si elle est encore la dernière.
-    @State private var tirageJeton = 0
+    /// LE DOIGT EST POSÉ — tenu par le SYSTÈME, pas par nous. Un
+    /// `@GestureState` est remis à `false` par SwiftUI quand le geste finit
+    /// OU quand il est ANNULÉ (arrière-plan, Reachability, présentation) :
+    /// c'est le seul signal fiable d'un geste volé. L'ancien chien de garde
+    /// (jeton + `asyncAfter` 0,30 s) prenait un pouce IMMOBILE pour un geste
+    /// mort : la card repartait sous le doigt, et le lâcher qui suivait
+    /// trouvait l'axe déverrouillé, sortait sans `lancer`/`fermer` et laissait
+    /// `eGele` orphelin — la scène figée à mi-film, floue et sourde. Verdict
+    /// TestFlight du 20-09 : « quand je remonte, ça reste bloqué en blur ».
+    @GestureState private var doigtTirage = false
     /// LE PORTE-DEMANDES DE LA RANGÉE DE WIDGETS — créé UNE fois, jamais
     /// recréé : c'est son identité qui rend la rangée prouvablement égale.
     @State private var demandes = DemandesCards()
@@ -3139,6 +3170,16 @@ struct HomeNuitPage: View {
                 // faire, il ne peut que nuire. On le démonte, on ne remonte
                 // pas son seuil — la fluidité du pull a été payée en mesures.
                 .simultaneousGesture(enSeance ? nil : tirageGeste)
+                // LE GESTE VOLÉ (voir `doigtTirage`) : SwiftUI remet le drapeau
+                // à `false` à la fin comme à l'annulation. Un tour de boucle
+                // plus tard, si `onEnded` a couru, `gesteVole()` ne fait rien.
+                .onChange(of: doigtTirage) { _, pose in
+                    // Lâcher propre : `onEnded` a déjà vidé `tirageDebut`,
+                    // il n'y a rien à rattraper. Sinon, c'est CE geste-là
+                    // (par son point de départ) qu'on remet à plat.
+                    guard !pose, let debut = tirageDebut else { return }
+                    DispatchQueue.main.async { gesteVole(debut: debut) }
+                }
             }
 
     }
@@ -4078,6 +4119,9 @@ struct HomeNuitPage: View {
         // descend à 2 et la décision d'axe à 4 (voir plus bas) : la card suit
         // dès le premier point franchi.
         DragGesture(minimumDistance: 2)
+            // Le doigt posé, tenu par SwiftUI : retombe à `false` tout seul
+            // à la fin ET à l'annulation du geste (voir `doigtTirage`).
+            .updating($doigtTirage) { _, pose, _ in pose = true }
             .onChanged { g in
                 // ⚠️ **LE GESTE ANNULÉ NE LAISSE PLUS SON ÉTAT DERRIÈRE LUI**
                 // (26-08). Un drag qui meurt sans `onEnded` — l'app passe en
@@ -4095,7 +4139,6 @@ struct HomeNuitPage: View {
                     cranSenti = false
                     luneSentie = false
                 }
-                armerChienDeGarde()
                 // LE MODE ÉDITION TIENT LA PAGE : un doigt qui dérive
                 // pendant l'édition (ou la vitrine) ne nourrit pas le
                 // tirage — sinon le wiggle et le film se disputent l'écran.
@@ -4211,12 +4254,14 @@ struct HomeNuitPage: View {
                 }
             }
             .onEnded { fin in
-                // Le geste s'est terminé PROPREMENT : le chien de garde n'a
-                // plus rien à surveiller.
+                // Le geste s'est terminé PROPREMENT : `gesteVole()` (qui suit
+                // la remise à `false` de `doigtTirage`) n'a plus rien à faire.
                 tirageDebut = nil
-                tirageJeton &+= 1
                 guard !edition, vitrineSlot == nil else {
                     axeVertical = nil
+                    // Une scène gelée avant l'entrée en édition reçoit quand
+                    // même son horloge — l'invariant ne souffre aucune sortie.
+                    rendreHorloge()
                     return
                 }
                 luneSentie = false
@@ -4224,8 +4269,10 @@ struct HomeNuitPage: View {
                 let vertical = axeVertical == true
                 axeVertical = nil
                 // Un geste horizontal n'a jamais touché au tiroir : il n'a
-                // rien à décider en partant.
-                guard vertical else { return }
+                // rien à décider en partant — SAUF si une scène est restée
+                // gelée (`eGele`) : sortir ici la laisserait floue à jamais,
+                // sans horloge. C'était le trou exact du bug TestFlight 20-09.
+                guard vertical else { rendreHorloge(); return }
                 // LE CRAN. Au-delà de 95 pt il s'aimante, en deçà de 42 il se
                 // referme. Entre les deux il garde son état — une hystérésis,
                 // sinon il claque au moindre frémissement.
@@ -4283,32 +4330,60 @@ struct HomeNuitPage: View {
     /// qui ne lâche pas le téléphone.
     private static var coursePouce: CGFloat { 80 }
 
-    /// LE CHIEN DE GARDE DE PÉREMPTION. Un `DragGesture` peut mourir sans
-    /// jamais appeler `onEnded` : l'app passe en arrière-plan, une présentation
-    /// démarre, ou le SYSTÈME lui vole le doigt — c'est exactement ce qui se
-    /// passe quand la Reachability d'iOS se déclenche au bord bas, là où le
-    /// pouce commence naturellement ce geste-ci. Sans filet, la page restait
-    /// figée à mi-course, l'axe verrouillé, et le tirage suivant ne répondait
-    /// plus.
+    /// LE GESTE VOLÉ. Un `DragGesture` peut mourir sans jamais appeler
+    /// `onEnded` : l'app passe en arrière-plan, une présentation démarre, ou
+    /// le SYSTÈME lui vole le doigt — c'est exactement ce qui se passe quand
+    /// la Reachability d'iOS se déclenche au bord bas, là où le pouce commence
+    /// naturellement ce geste-ci. Sans filet, la page restait figée à
+    /// mi-course, l'axe verrouillé, et le tirage suivant ne répondait plus.
     ///
-    /// Réarmé à chaque événement ; seule la dernière vérification agit (le
-    /// jeton). 0,30 s : plus long qu'un trou d'événements normal, plus court
-    /// qu'un blocage perceptible.
-    private func armerChienDeGarde() {
-        tirageJeton &+= 1
-        let mien = tirageJeton
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.30) {
-            guard tirageJeton == mien, tirageDebut != nil else { return }
-            tirageDebut = nil
-            axeVertical = nil
-            cranSenti = false
-            luneSentie = false
-            // On rejoint l'état STABLE le plus proche — jamais un état
-            // inventé : `reposCard` sait déjà lequel (séance, tiroir, repos).
-            guard depart == nil, ferme == nil, abs(tirage - reposCard) > 0.5
-            else { return }
-            withAnimation(.easeOut(duration: 0.26)) { tirage = reposCard }
+    /// ⚠️ **PLUS DE MINUTEUR** (20-09). L'ancien chien de garde tirait 0,30 s
+    /// après le dernier événement — or un `DragGesture` ne publie RIEN tant
+    /// que le pouce ne bouge pas : un doigt qui marque une pause (tirer vers
+    /// le bas, s'arrêter, remonter) passait pour un geste mort. Voir
+    /// `doigtTirage` : c'est SwiftUI qui dit maintenant que le geste est fini,
+    /// et lui seul le sait. Appelé un tour de boucle après la remise à `false`
+    /// — si `onEnded` a couru, `tirageDebut` est déjà nil et il n'y a rien à
+    /// faire.
+    private func gesteVole(debut: CGPoint) {
+        // Seul LE geste volé compte : si un nouveau tirage a déjà commencé
+        // (autre `startLocation`), on ne lui coupe pas la main.
+        guard tirageDebut == debut else { return }
+        NavDiagnostic.noter("tirage-vole", destination: "e=\(eNow(Date()))")
+        tirageDebut = nil
+        axeVertical = nil
+        cranSenti = false
+        luneSentie = false
+        // ⚠️ LA SCÈNE GELÉE REÇOIT SON HORLOGE. Si le doigt avait pris le film
+        // en vol (`eGele` posé, `depart`/`ferme` éteints), la laisser là,
+        // c'est la laisser floue à jamais — personne d'autre ne la relance.
+        if rendreHorloge() { return }
+        // On rejoint l'état STABLE le plus proche — jamais un état
+        // inventé : `reposCard` sait déjà lequel (séance, tiroir, repos).
+        guard depart == nil, ferme == nil, abs(tirage - reposCard) > 0.5
+        else { return }
+        withAnimation(.easeOut(duration: 0.26)) {
+            tirage = reposCard
+            if PhraseHorloge.forceScroll == nil { scroll = 0 }
         }
+    }
+
+    /// L'INVARIANT DU GESTE : **une scène gelée ne survit jamais au doigt
+    /// levé sans horloge.** `eGele` n'est écrit que sous le doigt (le film
+    /// pris en vol, puis piloté 1:1) ; chaque sortie du geste — lâcher
+    /// propre, lâcher en édition, geste volé — passe ici. Le même choix que
+    /// le lâcher « pas assez loin » : on retourne à l'état d'où l'on vient,
+    /// en reprenant le film là où il en est (`lancer` recule la naissance de
+    /// l'horloge de `eGele`, `fermer` part de `eNow`).
+    ///
+    /// En séance, `eNow` ignore `eGele` (il vaut 0) et `rendreLaHome()` le
+    /// vide à la clôture : on ne relance rien, la card a son propre repos.
+    /// Retourne `true` si une horloge a été rendue.
+    @discardableResult
+    private func rendreHorloge() -> Bool {
+        guard eGele != nil, !enSeance else { return false }
+        if tiroirOuvert { lancer(gDepart: g) } else { fermer() }
+        return true
     }
 
     /// LE DÉPART — **un seul site d'appel pour le cran ET pour le tap.** C'est
