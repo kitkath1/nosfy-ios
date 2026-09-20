@@ -1,5 +1,19 @@
 # Règle multi-session (Nosfy)
 
+## ⚠️ Sortie de Nosfy — commit posé par index TEMPORAIRE, 20-09 : relisez votre index sur `NosfyOnboarding.swift`
+
+`Nosfy/Views/NosfyOnboarding.swift` : la sortie du film refaite (« Let's go,
+Kathryn », le galet en grand, la flamme qui crache, le bouton primaire) — mes
+hunks seuls sont partis (`GIT_INDEX_FILE` séparé), l'index partagé n'a pas
+bougé. À savoir : l'index porte une version de ce fichier d'une autre session
+(retrait d'`EcranErreur`/`ErreurNosfy`, staged) qui date d'AVANT ce commit ; un
+`git commit` nu la ré-écrirait telle quelle et EFFACERAIT la nouvelle sortie.
+Avant de commiter ce fichier : `git diff --cached HEAD -- Nosfy/Views/NosfyOnboarding.swift`,
+puis re-`git add -p` vos hunks depuis l'arbre. Preuves et bancs (`-nosfySortie`,
+`-fireAuto`, `-nosfySortieAuto`) : `tools/porte/sortie-2026-09-20/README.md`.
+Ouvert : après la coupe sur blanc, l'overlay noir « Enregistrement… »
+(`sortieDemandee`, hunk écran d'erreur) passe avant la dissolution — à arbitrer.
+
 ## Sauvegarde Parcours/TestFlight — 19-09
 
 Commit Parcours 858abef5 poussé sur main à la demande de Kathryn.

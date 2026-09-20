@@ -34,8 +34,11 @@ la pluie de diamant, le petit galet au ras du bas.
 
 ## Le prénom et la langue — la chaîne, lue
 
-L'écran affiche `reponses.prenom` (posé à la question du prénom :
-`prenomSaisi` rogné) et parle la langue de `reponses.langue` (le seuil). Le bouton
+**Le prénom n'est jamais en dur.** L'écran affiche `reponses.prenom` — ce que
+la personne a tapé à la question 1 (`prenomSaisi` rogné, posé dans `avancer`) ;
+« Kathryn » sur les captures est ce que le banc a reçu par `-nosfyPrenom`, et le
+défaut du banc est « Margaux » (la persona de `-nosfyAuto`), pas un vrai
+prénom. L'écran parle la langue de `reponses.langue` (le seuil). Le bouton
 appelle `finir()` → `onFini(reponses)` → `NosfyApp.ecrireProfil` →
 `ProfilServeur.definirProfil(langue:prenom:…)` → RPC `definir_profil`
 (`p_prenom`, `p_langue` tels quels) → `Langue.poser(p.langue)` avec la langue
@@ -47,7 +50,7 @@ prénom de `-nosfyPrenom` — banc seulement.
 ## Bancs
 
 ```
--nosfy -nosfySortie -parcoursMaquette -nosfyPrenom Kathryn -nosfyLangue en
+-nosfy -nosfySortie -parcoursMaquette -nosfyPrenom Margaux -nosfyLangue en
         -fireAuto          # la flamme crache toutes les 3,4 s (le sim ne tape pas)
         -nosfySortieAuto   # le bouton se presse seul 5 s après la pose
         -sansNosfyVideo    # le poster à la place du galet

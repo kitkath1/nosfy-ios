@@ -265,7 +265,9 @@ struct NosfyOnboarding: View {
                 etape = .bienvenue
             }
             if Self.sortieSeule {
-                reponses.prenom = Self.argument("-nosfyPrenom") ?? "Kathryn"
+                // BANC SEULEMENT : dans le vrai parcours, le prénom est celui
+                // qu'elle tape à la question 1 (`avancer`, case .prenom).
+                reponses.prenom = Self.argument("-nosfyPrenom") ?? "Margaux"
                 reponses.langue = Self.argument("-nosfyLangue") ?? "fr"
                 reponses.jours = [0, 2, 4]
                 prenomSaisi = reponses.prenom ?? ""
@@ -752,7 +754,8 @@ struct NosfyOnboarding: View {
     static let autoBanc = CommandLine.arguments.contains("-nosfyAuto")
 
     /// `-nosfySortie` (20-09) : le film s'ouvre DIRECTEMENT sur la sortie — le
-    /// prénom de `-nosfyPrenom` (« Kathryn » sinon), la langue de `-nosfyLangue`
+    /// prénom de `-nosfyPrenom` (« Margaux » sinon, la persona des bancs comme
+    /// `-nosfyAuto` ; jamais un prénom en dur dans le parcours), la langue de `-nosfyLangue`
     /// (fr) : la boucle courte pour régler l'écran de fin sans rejouer 70 s de
     /// film. Avec `-nosfy` (le film au banc, maquette : rien ne part au réseau).
     static let sortieSeule = CommandLine.arguments.contains("-nosfySortie")
@@ -809,8 +812,10 @@ struct NosfyOnboarding: View {
 /// va — la robe « You Made It », le chiffre de verre, la pluie de diamant
 /// (« plus minimal, Apple style »). Ce qui reste, et rien d'autre :
 ///   · le spotlight qui descend du haut de la page — inchangé ;
-///   · « YOU'RE READY / Let's go, / Kathryn » en blanc dégradé, à gauche — en
-///     anglais dans les deux langues (sa règle : seul le bouton se traduit) ;
+///   · « YOU'RE READY / Let's go, / [le prénom qu'elle a tapé] » en blanc
+///     dégradé, à gauche — en anglais dans les deux langues (sa règle : seul le
+///     bouton se traduit) ; ⚠️ LE PRÉNOM N'EST JAMAIS EN DUR : c'est
+///     `reponses.prenom`, saisi à la question 1, celui qui part au serveur ;
 ///   · le nombre de séances par semaine entre deux traits fins, comme sur la
 ///     capture (ses jours, pas des « reps ») ;
 ///   · LE GALET DE VERRE NOIR en grand sur le côté droit, coupé par le bord, en
@@ -823,6 +828,8 @@ struct NosfyOnboarding: View {
 /// GLISSE depuis le bord droit dans sa lumière, les mots se posent un à un, la
 /// flamme naît et crache sa première gerbe toute seule, le bouton monte.
 private struct SortieProjecteur: View {
+    /// LE PRÉNOM SAISI à la question 1 (`reponses.prenom`, posé dans `avancer`
+    /// depuis le champ) — celui que `definir_profil` reçoit. Jamais une constante.
     var prenom: String?
     /// Les jours choisis par semaine (0 = passé : le serveur posera 5, et Nosfy
     /// l'a dit — « Cinq, alors. On verra. »).
@@ -922,7 +929,7 @@ private struct SortieProjecteur: View {
 
     // MARK: Les couches
 
-    /// « YOU'RE READY / Let's go, / Kathryn » puis le nombre entre ses traits et
+    /// « YOU'RE READY / Let's go, / [prénom] » puis le nombre entre ses traits et
     /// la flamme — la colonne de gauche de sa capture. La petite ligne en
     /// capitales espacées, les deux grandes en blanc dégradé
     /// (`MotsFlou.blancDegrade`), le prénom seul sur la sienne. Des naissances
@@ -938,6 +945,9 @@ private struct SortieProjecteur: View {
 
             MotsFlou([("Let's go,", true)], taille: Self.corps, base: 0.22)
 
+            // LE NOM DE LA PERSONNE — `prenomPropre` = `reponses.prenom` rogné,
+            // ce qu'elle a tapé. Sans prénom (un brouillon d'avant le 13-09), une
+            // phrase, jamais un prénom inventé.
             Text(prenomPropre ?? "it's time.")
                 .font(.inter(Self.corps, .semibold))
                 .tracking(-Self.corps * 0.026)
