@@ -1,5 +1,7 @@
 # LA SORTIE DU FILM DE NOSFY — LE PROJECTEUR DESCEND DE L'ÎLE
 
+> ⚠️ **PARTIELLEMENT REMPLACÉ le 20-09-2026.** Le §1 (le halo qui se penche en projecteur) et le §4 (zoom + coupe sur blanc) tiennent toujours ; le nombre en liquid glass (§2), la pop-up et la pluie (§3) sont partis — la sortie est « Let's go, [prénom] » avec le galet en grand et la flamme qui crache. État vérifié : `tools/porte/sortie-2026-09-20/README.md`.
+
 *13-09-2026 · plan, rien n'est codé · suite de `PLAN-ILE-HALO.html` §04*
 
 Le verdict sur `p4-sortie.png` (ALLEZ / MARGAUX / GO !, le 4 sous un galet, Entrer) :

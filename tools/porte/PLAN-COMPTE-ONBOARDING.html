@@ -1314,30 +1314,43 @@ La première : comment dois-je vous appeler ?"></p>
       </div>
     </article>
 
-    <!-- ÉCRAN 5 -->
+    <!-- ÉCRAN 5 — refait le 20-09 (« Let's go, [prénom] ») -->
     <article class="scene">
       <figure class="tel">
-        <div class="ecran">
+        <div class="ecran" style="background:radial-gradient(60% 34% at 50% -6%, rgba(255,255,255,0.34), rgba(255,255,255,0.05) 60%, transparent 100%), #000; position:relative; overflow:hidden">
           <div class="ile" aria-hidden="true"></div>
-          <div class="toile">
-            <div style="flex:1"></div>
-            <h2 class="tel-titre reveler">Bienvenue,<br>Margaux.<br><br>Quatre fois par<br>semaine. On commence<br>quand vous voulez.</h2>
-            <div style="flex:1"></div>
-            <div class="primaire">Entrer</div>
+          <div aria-hidden="true" style="position:absolute; right:-38%; top:16%; width:78%; height:62%; border-radius:999px; border:1px solid rgba(255,255,255,0.55); box-shadow: inset -18px -30px 40px -20px rgba(255,255,255,0.55), inset 10px 0 24px -16px rgba(255,255,255,0.35); background:linear-gradient(200deg, rgba(255,255,255,0.10), transparent 55%)"></div>
+          <div class="toile" style="padding-left:16px; padding-right:16px; position:relative">
+            <div style="flex:0.9"></div>
+            <p style="margin:0 0 8px; font-size:8px; letter-spacing:0.28em; color:rgba(255,255,255,0.46)">YOU'RE READY</p>
+            <h2 class="tel-titre reveler" style="font-size:30px">Let's go,<br>Margaux</h2>
+            <div style="margin-top:14px; padding:8px 14px 8px 3px; border-top:1px solid rgba(255,255,255,0.22); border-bottom:1px solid rgba(255,255,255,0.22); display:inline-flex; align-items:baseline; gap:7px; align-self:flex-start">
+              <span class="tel-titre" style="font-size:26px; font-weight:300">4</span>
+              <span style="font-size:9px; color:rgba(255,255,255,0.55)">sessions a week</span>
+            </div>
+            <div style="margin-top:12px; font-size:22px; line-height:1; filter:grayscale(1) brightness(0.55) drop-shadow(0 0 6px rgba(255,120,40,0.45))">🔥</div>
+            <div style="flex:1.4"></div>
+            <div class="primaire">Commencer ma première séance</div>
           </div>
         </div>
       </figure>
 
       <div class="scene-corps">
-        <p class="scene-num">ÉCRAN 05 — LA SORTIE</p>
-        <h3>Il rend ce qu'elle vient de dire</h3>
-        <p>Un dernier écran de texte, court. Il ne félicite pas — il <em>récapitule</em>, et c'est ce qui
-           prouve qu'on a écouté : le prénom, et le rythme qu'elle a choisi. Puis la même transition floutée,
-           et la home est là.</p>
+        <p class="scene-num">ÉCRAN 05 — LA SORTIE · refaite le 20-09</p>
+        <h3>Il l'éclaire, et la laisse partir</h3>
+        <p>Plus de pop-up (la robe « You Made It », le chiffre de verre et la pluie de diamant du 13-09 sont
+           partis — « plus minimal, Apple style »). Le projecteur descend toujours de l'île ; dessous, à gauche,
+           <strong>« YOU'RE READY / Let's go, / [le prénom qu'elle a tapé] »</strong> en blanc dégradé, le nombre de
+           séances par semaine entre deux traits fins, un petit sticker flamme noir ; à droite, le galet de
+           verre noir en grand, coupé par le bord, en boucle ; en bas, le bouton primaire de la maison.
+           Preuves et bancs : <span class="chemin">tools/porte/sortie-2026-09-20/README.md</span>.</p>
         <ul class="gestes">
-          <li><b>L'île</b><span>La bordure s'éteint doucement — l'avancement n'a plus rien à dire.</span></li>
-          <li><b>La sortie</b><span>Elle réutilise la cérémonie qui existe : le nuage de braises passe au-dessus de tout, la page change <em>derrière</em> lui, et il ne bronche pas d'un pixel (<span class="chemin">MoonDustOverlay</span>, WoopApp.swift:1739).</span></li>
-          <li><b>Verrou</b><span>À cet instant seulement, <span class="chemin">onboarding_fait_le</span> est écrit. Une sortie forcée avant la fin ⇒ le film se rejoue.</span></li>
+          <li><b>Le prénom</b><span>C'est <span class="chemin">reponses.prenom</span>, la réponse à la question 1 — celle que <span class="chemin">definir_profil</span> reçoit. Jamais un prénom en dur ; « Margaux » n'est que la persona des bancs.</span></li>
+          <li><b>La langue</b><span>Tout reste en anglais dans les deux langues — sa règle du 20-09 — <em>sauf le bouton</em> : « Commencer ma première séance » / « Start my first session ».</span></li>
+          <li><b>L'apparition</b><span>0,25 s l'île s'allume et le cône descend, le galet glisse depuis le bord droit ; 1,1 s les mots se posent un à un, le nombre, la flamme naît et crache toute seule une première fois ; 2,4 s le bouton monte. Un tap avant la pose saute tout.</span></li>
+          <li><b>La flamme</b><span>Au tap elle saute et des dizaines de petites flammes orange jaillissent (<span class="chemin">FlammeVive</span>, <span class="chemin">GerbeFlammes</span> — un Canvas qui ne vit que 2,5 s ; zéro horloge au repos).</span></li>
+          <li><b>La sortie</b><span>Le bouton seul fait entrer : zoom 1,38, coupe sur blanc, puis la home (la racine dissout le film). Ouvert : l'overlay noir « Enregistrement… » passe avant la dissolution.</span></li>
+          <li><b>Verrou</b><span>À cet instant seulement, <span class="chemin">definir_profil</span> confirme le profil ; une panne garde les réponses et l'écran d'erreur rejoue.</span></li>
         </ul>
       </div>
     </article>

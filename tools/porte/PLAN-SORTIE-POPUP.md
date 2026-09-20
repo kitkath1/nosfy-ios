@@ -1,5 +1,7 @@
 # LA SORTIE EN POP-UP — le projecteur reste, les mots et le nombre entrent dans une card
 
+> ⚠️ **REMPLACÉ le 20-09-2026.** La sortie n'a plus de pop-up : « YOU'RE READY / Let's go, [prénom] », le nombre entre deux traits, le galet de verre noir en grand à droite, la flamme qui crache, le bouton primaire. État vérifié : `tools/porte/sortie-2026-09-20/README.md`. Ce plan reste l'histoire du 13-09.
+
 *13-09-2026, nuit. « Fais un plan, ne code pas. » Rien de ce qui suit n'est codé.*
 
 ## 0. Sa consigne, mot pour mot
