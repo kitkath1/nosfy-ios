@@ -240,8 +240,15 @@ struct RecompenseBoosters: View {
     /// bloc. `REWARD` vit dans 0,40→0,27, le chiffre dans 0,22→0,15,
     /// `BOOSTERS` dans 0,12→0,08 : une décroissance de ~1,8× par ligne, sans
     /// un seul masque ajouté. C'est l'écart TWICE / TODAY de sa référence.
+    ///
+    /// ⚠️ **« REWARD » EST RETIRÉ, LE CHIFFRE RESTE AU CENTRE** (20-09, sur sa
+    /// capture TestFlight : « enlève le mot REWARD, laisse "2 BOOSTER", le 2
+    /// au centre pas en haut »). Deux lignes : le chiffre, puis BOOSTERS —
+    /// et le bloc descend de ce qu'il faut pour que le chiffre garde la
+    /// place qu'il avait à trois lignes (le cœur de la card, sous la lampe),
+    /// BOOSTERS restant au pied.
     private var lignes: [String] {
-        ["REWARD", "\(tirage.boosters.count)", "BOOSTERS"]
+        ["\(tirage.boosters.count)", "BOOSTERS"]
     }
 
     var body: some View {
@@ -290,7 +297,9 @@ struct RecompenseBoosters: View {
                 // haut, donc trois lignes en remplissent 90 % et la première est
                 // COLLÉE à la lampe. 26 pt de plus, et elle en reçoit
                 // franchement moins — c'est physique, pas cosmétique.
-                .offset(y: -18)
+                // 20-09, deux lignes : +52 pour que le chiffre reste au
+                // centre de la card (là où vivait la 2e ligne des trois).
+                .offset(y: 52)
             // ⚠️ **BAISSER LA LAMPE N'EST PAS POSER UN VOILE.** Le commentaire
             // de la robe interdit le voile général et le fondu par le haut,
             // parce qu'ils ÉTEIGNENT le mot. Une source moins forte, elle,

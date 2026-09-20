@@ -1791,8 +1791,10 @@ struct RootView: View {
             // la feuille prend tout, la nav revient en fondu à la fermeture.
             // Route est une page plein écran : la demande de la Home
             // encore montée dessous ne doit pas y faire apparaître la nav.
+            // 20-09 : ni sous une card de récompense (sa capture TestFlight :
+            // la nav restait allumée sous la pop-up « BOOSTERS »).
             if NavEtat.shared.bandeVisiblePubliee, ChambreEtat.shared.ouverte == nil,
-               !depart.cheminOuvert {
+               !depart.cheminOuvert, recompenses.ouverte == nil {
                 // ⚠️ CENTRÉE DANS LE NOIR (04-09 : « centre la nav au
                 // milieu de l'espace noir » — collée au bas elle mordait
                 // l'indicateur, posée sur la zone sûre elle était trop

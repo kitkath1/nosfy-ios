@@ -398,7 +398,12 @@ struct RewardCheminHote: View {
                         unit: "", style: .neon, onClose: {})
         } else if etat.ouverte != nil, let t = etat.tirage {
             ZStack {
-                Color.black.opacity(0.62)
+                // ⚠️ 20-09, sa capture TestFlight : à 0,62 la Home restait
+                // lisible derrière (« Bonjour Kathryn… », et la pilule « tire
+                // pour commencer » juste sous « Fermer ») — la card semblait
+                // posée sur un écran encore vivant. Le noir monte : la card et
+                // sa lueur seules, la Home n'est plus qu'une ombre.
+                Color.black.opacity(0.88)
                     .ignoresSafeArea()
                     .transition(.opacity)
                 // ⚠️ **LA LUEUR VIT ICI, DERRIÈRE LA CARD, AU BAS DE L'ÉCRAN**
