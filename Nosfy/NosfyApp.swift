@@ -490,6 +490,13 @@ struct RootView: View {
     /// route : montée dans un cover, elle masquerait la route et la pop-up
     /// booster (la loi payée au jalon 1).
     private let recompenses = RewardCheminEtat.shared
+    /// « VIEW » DEPUIS LA ROUTE (20-09, plan § 2.5) : la story d'une séance
+    /// faite, ouverte par le MÊME chemin que le widget Regularity
+    /// (`HistoriqueStories.ouvrir(_:)` → `restaurerBilans` → `StoryLaunch`).
+    /// L'hôte est posé sur la route elle-même (`cheminEnArbre`) : son
+    /// `fullScreenCover` couvre tout, comme celui de la chambre Régularité.
+    /// ⚠️ Payé sur TestFlight 81 (19-09) : « View » ne faisait que fermer.
+    @State private var historiqueRoute = HistoriqueStories()
     /// Banc de mesure (jalon 1) : la home démontée sous la route.
     private static let cheminSeul = CommandLine.arguments.contains("-cheminSeul")
     /// LA HOME ÉCLIPSÉE sous le Sacre — EN DIFFÉRÉ : démonter le TabView
@@ -749,8 +756,12 @@ struct RootView: View {
     /// du serveur (`EconomieWoop.appliquer` pousse la dalle), pas d'ici.
     @State private var storyCardio = false
 
-    /// La story rend le chemin accompli. Les annonces restent retenues
-    /// jusqu'au chevron de retour, pour être réellement vues sur l'accueil.
+    /// La story rend le chemin accompli. Les annonces (pièces, sachets,
+    /// cardio, argent) restent retenues jusqu'à ce que LE GALET SOIT
+    /// ACCOMPLI sur la Route : elles défilent là, sur le sceau (son retour
+    /// TestFlight du 20-09 : « c'est ici qu'on doit voir les toasters, on
+    /// est obligé de revenir sur la page d'accueil pour les avoir »). La
+    /// pop-up booster, elle, attend toujours la sortie de la Route.
     private func enchainerApresStory(_ workout: Workout) {
         guard !compte.enPorte else { return }
         let gain = storyGain
@@ -900,13 +911,33 @@ struct RootView: View {
                               faits: depart.cheminFaits,
                               dates: depart.cheminDates,
                               reclamees: depart.reclamees,
+                              // RÉCLAMÉ ≠ GRATTÉ (20-09, § 5.5) : les nœuds
+                              // dont la card n'a jamais été révélée — le
+                              // panneau y propose « Scratch ».
+                              aOuvrir: recompenses.nonReveles,
                               celebration: depart.cheminCelebration,
                               onLune: cheminLune,
                               onPiece: cheminPiece,
                               onRetour: { depart.fermerChemin() },
-                              onDemarrer: { demarrerDepuisChemin() })
+                              onDemarrer: { demarrerDepuisChemin() },
+                              // « View » (20-09, § 2.5) : la story de la
+                              // séance dont c'est la date de fin.
+                              onVoir: { voirSeanceDepuisChemin($0) },
+                              // « Scratch » : la card se rouvre sur le tirage
+                              // stocké — aucun serveur, aucun nouveau tirage.
+                              onOuvrir: { recompenses.rouvrir($0) },
+                              // Le galet accompli : les gains défilent sur la Route
+                              // (le drapeau tombe à la sortie, libererFinSeance).
+                              onCelebrationJouee: {
+                                  guard recompensesApresRoute else { return }
+                                  EconomieWoop.shared.viderFinSeance()
+                              })
                     .onAppear { print("[SONDE-CHEMIN] la page du chemin est MONTÉE") }
             }
+            // L'HÔTE DE LA STORY « View » (20-09) : dialogue de choix, voile
+            // de chargement et `fullScreenCover` de la story — posé sur la
+            // route, il vit et meurt avec elle.
+            .modifier(HistoriqueStoriesHote(historique: historiqueRoute))
             // ⚠️ **L'ARRIVÉE EST UN FONDU, LA SORTIE UN GLISSEMENT** (28-08,
             // « on voit encore un petit décalage qui vient du bas, l'animation
             // d'arrivée n'est pas assez fluide »).
@@ -962,6 +993,26 @@ struct RootView: View {
         let ok = await recompenses.reclamer(id, pieces: true)
         if ok { depart.reclamer(id) }
         return ok
+    }
+
+    /// « VIEW » SUR UN GALET FAIT (20-09, plan § 2.5). Le galet ne connaît que
+    /// sa date de fin (`Workout.endedAt`, posée dans `datesFaites` par
+    /// `etapeEtFaits`) : on retrouve la séance terminée avec travail dont la
+    /// fin est la plus proche (± 2 s — la même estampille, jamais une
+    /// voisine), puis on ouvre sa story par le chemin du widget Regularity
+    /// (`HistoriqueStories.ouvrir(_:)` : le reçu est relu au serveur ou
+    /// reconstruit depuis le carnet, puis `StoryLaunch`). Aucune écriture.
+    private func voirSeanceDepuisChemin(_ date: Date) {
+        let finies = ((try? modelContext.fetch(FetchDescriptor<Workout>())) ?? [])
+            .filter { $0.endedAt != nil && $0.faitPourRoute }
+        guard let w = finies.min(by: {
+            abs($0.endedAt!.timeIntervalSince(date)) < abs($1.endedAt!.timeIntervalSince(date))
+        }), let fin = w.endedAt, abs(fin.timeIntervalSince(date)) <= 2 else {
+            NavDiagnostic.noter("route.voir-introuvable")
+            return
+        }
+        NavDiagnostic.noter("route.voir")
+        historiqueRoute.ouvrir(w, contexte: modelContext)
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -1749,6 +1800,7 @@ struct RootView: View {
                 series: active?.seriesPayantes ?? 0,
                 gain: (active?.seriesPayantes ?? 0)
                     * EconomieWoop.shared.piecesParSerie,
+                cardio: active?.cardioFait ?? false,
                 onTerminer: { terminerSeance() },
                 onContinuer: {
                     // La card a DÉJÀ joué sa sortie avant d'appeler : on ne
@@ -2645,10 +2697,19 @@ struct RootView: View {
         let purgeTout = CommandLine.arguments.contains("-fermeSeances")
         let borneDouzeHeures: Date = Date.now.addingTimeInterval(-43_200)
         let borneTroisHeures: Date = Date.now.addingTimeInterval(-10_800)
+        // ⚠️ 20-09 (retour TestFlight 1, plan de debug § 1.2) : « vide » se
+        // juge sur LE TRAVAIL de la Route (`faitPourRoute` : séries cochées,
+        // longueurs, ou intervalles d'effort), plus sur `setCount` (les séries
+        // de muscu seules) — une séance HIIT laissée ouverte par un crash
+        // n'est plus supprimée avec ses phases. Et une séance AVEC travail
+        // ouverte depuis plus de 12 h n'est plus effacée : elle rejoint les
+        // abandonnées, qui sont désormais RÉGLÉES.
         let fantomes: [Workout] = workouts.filter { workout in
             guard workout.endedAt == nil else { return false }
-            if purgeTout || workout.startedAt < borneDouzeHeures { return true }
-            return workout.setCount == 0 && workout.startedAt < borneTroisHeures
+            if purgeTout { return true }
+            if workout.faitPourRoute { return false }
+            return workout.startedAt < borneDouzeHeures
+                || (workout.setCount == 0 && workout.startedAt < borneTroisHeures)
         }
         if !fantomes.isEmpty {
             fantomes.forEach {
@@ -2663,12 +2724,18 @@ struct RootView: View {
         // pas de célébration) — elle ne tient plus le galet en
         // « en cours » au retour du lendemain.
         let abandonnees = workouts.filter {
-            $0.endedAt == nil && $0.setCount > 0
+            $0.endedAt == nil && ($0.setCount > 0 || $0.faitPourRoute)
                 && $0.startedAt < Date.now.addingTimeInterval(-3 * 3600)
         }
         if !abandonnees.isEmpty {
             abandonnees.forEach {
                 $0.endedAt = $0.startedAt.addingTimeInterval(3600)
+                // 20-09 : une séance abandonnée AVEC travail est RÉGLÉE comme
+                // une séance terminée (le même marqueur que `terminerSeance`,
+                // lu par `ReglementSeance.reprendre()` juste en dessous) —
+                // jusqu'ici elle comptait pour un galet sans jamais être
+                // payée, et sa story disait « Récompenses en attente » à vie.
+                $0.recompenseARegler = $0.faitPourRoute && EconomieWoop.possible
             }
             try? modelContext.save()
         }

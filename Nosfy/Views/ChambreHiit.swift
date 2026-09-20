@@ -502,7 +502,15 @@ struct PaliersVue: View {
         let gout: CGFloat = n <= 12 ? 2 : (n <= 16 ? 1.5 : 1)
         let utile = champ - gout * CGFloat(n - 1)
         let total = CGFloat(segments.reduce(0) { $0 + $1.secondes })
-        guard total > 0, utile > 0 else { return Largeurs(l: [], x: []) }
+        // ⚠️ PAYÉ SUR TESTFLIGHT 81 (19-09, deux rapports Apple, « Index out of
+        // range » dans laque/barres) : à largeur nulle — la fiche cède sa place
+        // pendant une séance, une passe de mise en page arrive à 0 pt — ou
+        // avec des durées à 0, ce tableau rendait [] et les ForEach sur
+        // `segments` lisaient L.l[i]. On rend UNE entrée par segment, à zéro :
+        // rien ne se dessine, rien ne trappe.
+        guard total > 0, utile > 0 else {
+            return Largeurs(l: Array(repeating: 0, count: n), x: Array(repeating: 0, count: n))
+        }
         var l = segments.map { CGFloat($0.secondes) / total * utile }
         var deficit: CGFloat = 0
         for i in l.indices where l[i] < Self.plancher { deficit += Self.plancher - l[i]; l[i] = Self.plancher }

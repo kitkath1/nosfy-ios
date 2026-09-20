@@ -56,6 +56,12 @@ enum EtapeEtat: Equatable {
 struct DateGalet: Equatable {
     let jour: Int
     let mois: String
+    // ⚠️ 20-09 : un « TODAY » à la place de la date sur le galet actif a été
+    // essayé (retour TestFlight 81 « plusieurs fois le jour 19 ») et REFUSÉ
+    // par Kathryn le jour même : « c'est la date et basta ». L'actif porte
+    // la date du jour comme les galets faits ; le 2e galet du même jour se
+    // distingue par le sticker ×2, et le plafond de deux séances par jour
+    // borne la répétition.
 
     /// ⚠️ **LE MOIS EST LU CHEZ LA MINI-CARD, PAS REFORMATÉ ICI** — et c'est
     /// un écart que j'ai créé puis mesuré à la capture : mon premier jet
@@ -156,6 +162,17 @@ struct GaletEtape: View {
     /// card n'a pas besoin : elle montre trois jours voisins, pas un
     /// calendrier.
     var jourSeul: Bool = false
+    /// ⚠️ **LE STICKER ×2** (20-09, retour TestFlight 81 : « le badge ×2,
+    /// celui qu'on a déjà »). Deux séances avec travail le même jour local =
+    /// deux galets datés pareil ; le 2e porte le sticker `WoopSticker.fois2`
+    /// en coin bas-droit — il s'AJOUTE à la date, il ne remplace rien (règle
+    /// du 27-08). `nil` ou 1 = rien ; 2 = le sticker ; au-delà, RIEN (son
+    /// verdict du 20-09 : « max deux séances par jour et le sticker, basta »
+    /// — la Route ne compte plus de 3e galet le même jour, `PlafondJour`, et
+    /// une capsule « ×3 » avait été essayée puis refusée). Le rang vient de
+    /// `EcranSpec.Lecture.multiple(_:)` — la route et la card de la home
+    /// lisent le même calcul.
+    var multiple: Int? = nil
     /// LE JOUET (27-08, point 7 tranché « en mode jouet : on peut les
     /// déplacer partout et ils reviennent à leur place ») : le galet se
     /// porte après un MAINTIEN, suit le doigt au bout d'un élastique, et
@@ -243,8 +260,13 @@ struct GaletEtape: View {
     var body: some View {
         // Un nœud-lune VERROUILLÉ refuse comme un caillou : l'immobilité est
         // la grammaire du refus dans cette maison.
+        // ⚠️ 20-09, retour TestFlight (« il faut vraiment appuyer ») : une
+        // lune / pièce PAS ENCORE ATTEINTE n'est plus verrouillée ici — le tap
+        // court refusait sans `onTap()` alors que l'appui tenu (le port)
+        // ré-émettait `onTap()` et ouvrait le panneau-promesse « Reach this
+        // step to unlock your reward ». Les deux chemins font désormais la
+        // même chose : le panneau, et c'est lui qui dit « pas encore ».
         let verrouille = etat == .verrouille || etat == .prochain
-            || etat == .lune(dispo: false) || etat == .piece(dispo: false)
         // Le temps ne redessine la matière que pendant le geste. Au repos,
         // les deux poses de lumière sont constantes : leur opacité respire
         // côté rendu. Le témoin conserve la Timeline continue pour l'A/B.
@@ -641,6 +663,16 @@ struct GaletEtape: View {
             // LE GLYPHE LAQUÉ — l'encre vit AU-DESSUS du verre peint.
             glypheVue
                 .position(x: centre.x, y: centre.y + 1)
+            // LE STICKER ×2 (20-09) — posé en coin bas-droit, par-dessus
+            // l'encre, à l'alpha de l'état (un galet éteint par le
+            // projecteur l'éteint avec lui : l'opacité vient du parent).
+            if multiple == 2 {
+                stickerFois2(D: D)
+                    .position(x: centre.x + D * 0.34, y: centre.y + D * 0.34)
+                    .opacity(alphaEncre)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
         }
         .compositingGroup()
         // LA FUMÉE DU PRESS — trois volutes pâles qui s'échappent du
@@ -793,29 +825,49 @@ struct GaletEtape: View {
         return (x: vy / n, y: -vx / n, z: 0)
     }
 
+    /// L'ALPHA DE L'ENCRE PAR ÉTAT — partagé par le glyphe et le sticker ×2 :
+    /// ce qui est posé sur un galet s'éteint avec lui.
+    private var alphaEncre: Double {
+        switch etat {
+        case .verrouille: return 0.85
+        case .prochain: return 0.90
+        case .actif: return 1.0
+        case .accompli, .parfait: return 0.92
+        // ⚠️ **PRESQUE FANTÔME** : 0,22 contre 0,92 pour un jour réussi.
+        // C'est un rapport de QUATRE — au verdict, « beaucoup plus
+        // éteints » ne se joue pas sur une marge fine. La matière, elle,
+        // reste : ce n'est pas un trou dans le chemin, c'est un jour
+        // qu'on n'a pas rempli.
+        case .rate: return 0.22
+        case .lune(let dispo): return dispo ? 1.0 : 0.42
+        case .piece(let dispo): return dispo ? 1.0 : 0.42
+        case .reclame: return 0.45
+        }
+    }
+
+    /// La laque des chiffres : blanche, droite, un dégradé de deux blancs.
+    private var laque: LinearGradient {
+        LinearGradient(colors: [Color(white: 0.92), Color(white: 0.74)],
+                       startPoint: .top, endPoint: .bottom)
+    }
+
+    /// LE STICKER ×2 — l'objet de la maison (`sticker-fois2`, 768 px carré,
+    /// liseré blanc), à ≈ 19 pt sur un galet de route (Ø 62) et ≈ 15 pt sur
+    /// une pierre de la card (Ø 48) : proportionnel, borné 14…20. Le seul
+    /// multiple qui existe : deux séances par jour, pas plus (20-09).
+    private func stickerFois2(D: CGFloat) -> some View {
+        let cote = max(14, min(20, D * 0.31))
+        return Image(WoopSticker.fois2.asset)
+            .resizable()
+            .scaledToFit()
+            .frame(width: cote, height: cote)
+            .rotationEffect(.degrees(-8))
+    }
+
     @ViewBuilder private var glypheVue: some View {
         // La réf : des chiffres BLANCS, droits, poids moyen — jamais
         // rounded (le chiffre de la réf est un SF droit).
-        let laque = LinearGradient(
-            colors: [Color(white: 0.92), Color(white: 0.74)],
-            startPoint: .top, endPoint: .bottom)
-        let alpha: Double = {
-            switch etat {
-            case .verrouille: return 0.85
-            case .prochain: return 0.90
-            case .actif: return 1.0
-            case .accompli, .parfait: return 0.92
-            // ⚠️ **PRESQUE FANTÔME** : 0,22 contre 0,92 pour un jour réussi.
-            // C'est un rapport de QUATRE — au verdict, « beaucoup plus
-            // éteints » ne se joue pas sur une marge fine. La matière, elle,
-            // reste : ce n'est pas un trou dans le chemin, c'est un jour
-            // qu'on n'a pas rempli.
-            case .rate: return 0.22
-            case .lune(let dispo): return dispo ? 1.0 : 0.42
-            case .piece(let dispo): return dispo ? 1.0 : 0.42
-            case .reclame: return 0.45
-            }
-        }()
+        let alpha = alphaEncre
         // L'or du glyphe : la lune disponible et la pièce disponible sont
         // les seuls glyphes colorés du chemin ; réclamé, l'or est sourd.
         let or = LinearGradient(

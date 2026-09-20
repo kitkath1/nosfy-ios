@@ -426,7 +426,35 @@ extension EcranSpec {
         /// afficherait sa date promettrait un contenu qu'on n'a pas : le verdict
         /// dit « ne pas donner l'impression que le contenu est déjà accessible ».
         func date(_ e: EtapeSpec) -> DateGalet? {
+            // ⚠️ 20-09 : un « TODAY » sur l'actif (retour TestFlight 81,
+            // « plusieurs fois le jour 19 ») a été essayé et REFUSÉ par
+            // Kathryn : « c'est la date et basta ». L'actif porte la date
+            // du jour ; le 2e galet du jour se distingue par le sticker ×2
+            // (`multiple`), et le plafond de deux séances par jour borne
+            // la répétition (`PlafondJour`).
             dateReelle(e).map(DateGalet.depuis)
+        }
+
+        /// LE RANG D'UN GALET FAIT DANS SA JOURNÉE LOCALE (20-09, le sticker
+        /// ×2 de la route) : `nil` pour la première séance du jour (ou un nœud
+        /// sans date), 2 pour la deuxième, 3 pour la troisième… Le jour est le
+        /// jour LOCAL du téléphone (`Calendar.current`), la définition de la
+        /// Route depuis le 18-09 — pas le fait serveur `double_jour` (Paris,
+        /// séances vides comprises), qui sert à la story. Deux séances à la
+        /// même seconde se départagent par l'id du galet.
+        ///
+        /// Un seul calcul, deux surfaces : la route et la card Route de la
+        /// home l'appellent toutes deux (la loi de la source unique). Coût :
+        /// une passe sur les dates faites (35 au plus) par galet dessiné.
+        func multiple(_ e: EtapeSpec) -> Int? {
+            guard !e.special, let d = datesFaites[e.id] else { return nil }
+            let cal = Calendar.current
+            var rang = 1
+            for (id, autre) in datesFaites where id != e.id {
+                guard cal.isDate(autre, inSameDayAs: d) else { continue }
+                if autre < d || (autre == d && id < e.id) { rang += 1 }
+            }
+            return rang >= 2 ? rang : nil
         }
 
         /// LE FUTUR NE PORTE PLUS UN RANG, IL PORTE UNE PROMESSE : « une petite
@@ -544,6 +572,17 @@ extension EcranSpec {
     var celebration: Int?
     var celebrationValidee = false
     var celebrationOnde = false
+    /// LA CINÉMATIQUE DU GALET ACCOMPLI (20-09, sa demande : « une grosse
+    /// animation cinématique sur le galet, avec des halos, et après il se
+    /// dézoome pour montrer que la session a été faite ») : le galet zoomé
+    /// (la colonne entière grossit autour de lui, `ZoomCine`), l'ancre du
+    /// zoom (sa place dans les cinq écrans), les deux rampes de halos
+    /// (`HaloFete`). Hors fête : `nil`, 1, 0, 0. Barreau `-sansCineGalet`.
+    var cineGalet: Int?
+    var cineZoom: CGFloat = 1
+    var cineAncre: UnitPoint = .center
+    var cineHalo: CGFloat = 0
+    var cineHalo2: CGFloat = 0
     /// L'écran posé (pour le titre de la dalle) et le geste en cours
     /// (la dalle s'efface pendant le scroll).
     var ecranCourant = 0
@@ -582,6 +621,13 @@ extension EcranSpec {
     /// `user_boosters`) ; sans elle, une lune re-tapable à chaque
     /// lancement = boosters infinis (audit §4).
     var reclamees: Set<Int> = []
+    /// ⚠️ **RÉCLAMÉ ≠ GRATTÉ** (20-09, plan § 5.5). Les nœuds réclamés dont
+    /// la card à gratter n'a jamais été révélée (« Later », l'app tuée, une
+    /// réponse perdue) : la racine les lit chez `RewardCheminEtat.nonReveles`.
+    /// Sur un tel nœud, le panneau propose « Scratch » au lieu de « Reward
+    /// already claimed » sans bouton — la branche « la card se rouvre sans se
+    /// re-tirer » redevient joignable depuis l'écran.
+    var aOuvrir: Set<Int> = []
     /// LE JOUET (27-08, point 7 tranché « en mode jouet ») : l'id du galet
     /// PORTÉ au doigt, ou nil. Écrit deux fois par port (prise / lâcher),
     /// jamais par image : le parent le lit pour le `zIndex` (un galet
@@ -1144,6 +1190,50 @@ private struct SceauFinSeance: ViewModifier {
     }
 }
 
+/// LES HALOS DE LA FÊTE (20-09, « avec des halos ») — un anneau d'or qui
+/// naît au galet accompli, s'élargit et s'éteint ; deux exemplaires décalés
+/// font la cinématique. Une rampe `h` ANIMABLE : SwiftUI interpole les
+/// SORTIES d'un modificateur, pas ses entrées (la loi payée des rampes sous
+/// `withAnimation`) — donc `Animatable` sur `h`, et l'échelle comme l'opacité
+/// se déduisent de la valeur interpolée, image par image. Le dégradé est
+/// une constante : rien n'est refabriqué, seuls deux attributs bougent.
+/// Aucun `blendMode` (il vit SOUS les galets, sur le noir : l'additif ne
+/// changerait rien et coûterait une passe). Monté seulement pendant la
+/// cinématique — on démonte, on n'éteint pas.
+private struct HaloFete: View, Animatable {
+    var h: CGFloat
+    var animatableData: CGFloat {
+        get { h }
+        set { h = newValue }
+    }
+    private static let or = Color(red: 1, green: 0.86, blue: 0.60)
+    private static let peinture = RadialGradient(
+        colors: [or.opacity(0), or.opacity(0.42), or.opacity(0)],
+        center: .center, startRadius: 16, endRadius: 70)
+
+    var body: some View {
+        // Monte vite (18 % de la rampe), s'éteint sur le reste.
+        let voile = h < 0.18 ? h / 0.18 : (1 - h) / 0.82
+        Circle()
+            .fill(Self.peinture)
+            .frame(width: 140, height: 140)
+            .scaleEffect(0.5 + 1.9 * h)
+            .opacity(Double(max(0, voile)) * 0.75)
+    }
+}
+
+/// LE ZOOM DE LA CINÉMATIQUE — la colonne du scroll grossit autour du galet
+/// accompli (l'ancre = sa place dans les cinq écrans), puis revient. Un seul
+/// attribut animable, une transformation sur un calque déjà composé : rien
+/// n'est redessiné. ⚠️ SEUL ce modificateur relit l'état (l'école
+/// `OffsetVol`) : le corps de la page n'en lit rien, il n'est pas rejoué.
+private struct ZoomCine: ViewModifier {
+    let etat: EtatDuo
+    func body(content: Content) -> some View {
+        content.scaleEffect(etat.cineZoom, anchor: etat.cineAncre)
+    }
+}
+
 private struct CheminDuo: View {
     let etat: EtatDuo
     let hauteur: CGFloat
@@ -1156,6 +1246,13 @@ private struct CheminDuo: View {
     /// qui RÉPOND (`false` = pas réclamé, le galet se dégrave).
     var onLune: ((Int) async -> Bool)? = nil
     var onPiece: ((Int) async -> Bool)? = nil
+    /// « View » sur un galet fait (20-09, plan § 2.5) : la page transmet la
+    /// DATE du galet (`datesFaites[id]`) ; la racine retrouve la séance et
+    /// ouvre sa story par le chemin du widget Regularity.
+    var onVoir: ((Date) -> Void)? = nil
+    /// « Scratch » sur un nœud réclamé mais jamais gratté (§ 5.5) : la
+    /// racine rouvre la card sur le tirage stocké, sans serveur.
+    var onOuvrir: ((Int) -> Void)? = nil
     var onEcranSuivant: (Int) -> Void = { _ in }
 
     var body: some View {
@@ -1181,6 +1278,20 @@ private struct CheminDuo: View {
                     .frame(width: largeur, height: hauteur * 5)
                     .contentShape(Rectangle())
                     .onTapGesture { fermerPanneau() }
+            }
+            // LES HALOS DE LA CINÉMATIQUE — SOUS les galets (frères, avant
+            // le ForEach), ancrés au galet accompli, montés le temps de la
+            // fête seulement.
+            if let id = etat.cineGalet, id < EcranSpec.etapes.count {
+                let e = EcranSpec.etapes[id]
+                ZStack {
+                    HaloFete(h: etat.cineHalo)
+                    HaloFete(h: etat.cineHalo2)
+                }
+                .position(x: largeur / 2 + e.dx,
+                          y: (CGFloat(e.ecran) * 874 + e.y) * k)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
             }
             ForEach(EcranSpec.etapes) { e in
                 let quel = etatDe(e)
@@ -1222,11 +1333,19 @@ private struct CheminDuo: View {
                            // écrans voisins. Au cœur du noir, le natif ne
                            // fait qu'un voile gris (mesuré v11). Panneau
                            // ouvert, le verre des autres se coupe (le natif
-                           // ignore l'opacité du projecteur).
+                           // ignore l'opacité du projecteur). Pendant la
+                           // cinématique, TOUT le verre s'éteint : un verre
+                           // qui bouge (ici, zoomé) refait son flou à
+                           // chaque image (la loi mesurée du 05-09).
                            lentille: abs(e.ecran - etat.ecranCourant) <= 1
                                && (e.n <= 1 || e.n >= 7 || e.special)
-                               && !(etat.panneauSur != nil && etat.panneauSur != e.id),
+                               && !(etat.panneauSur != nil && etat.panneauSur != e.id)
+                               && etat.cineGalet == nil,
                            date: d,
+                           // LE STICKER ×2 (20-09) : le rang du galet dans
+                           // sa journée locale — la source unique, la card
+                           // de la home lit le même calcul.
+                           multiple: lecture.multiple(e),
                            // LE JOUET : seuls l'actif, les faits et les
                            // spéciaux disponibles se portent — un verrouillé
                            // refuse par l'immobilité (la loi du refus).
@@ -1265,11 +1384,15 @@ private struct CheminDuo: View {
                     .allowsHitTesting(etat.celebration == nil || etat.celebrationValidee)
                     .scaleEffect(nee ? 1 : 0.92)
                     // LE PROJECTEUR : panneau ouvert, la route s'éteint
-                    // autour du couple galet + panneau (0,45).
-                    .opacity(nee ? (etat.panneauSur != nil
-                                    && etat.panneauSur != e.id ? 0.45 : 1) : 0)
+                    // autour du couple galet + panneau (0,45) ; pendant la
+                    // cinématique, autour du seul galet accompli.
+                    .opacity(nee ? ((etat.panneauSur != nil && etat.panneauSur != e.id)
+                                    || (etat.cineGalet != nil && etat.cineGalet != e.id)
+                                    ? 0.45 : 1) : 0)
                     .animation(.easeInOut(duration: 0.35),
                                value: etat.panneauSur)
+                    .animation(.easeInOut(duration: 0.5),
+                               value: etat.cineGalet)
                     // opacité 0 n'est pas « absent » : un galet non né ne
                     // prend pas le doigt.
                     .allowsHitTesting(nee)
@@ -1309,7 +1432,32 @@ private struct CheminDuo: View {
                 // occupe ~130 en base 874 → il faut e.y > 370.
                 let dessous = e.y < 380
                 let xp = min(max(px, 148 + 12), largeur - 148 - 12)
-                let yp = dessous ? py + 138 * k : py - 130 * k
+                let ypBrut = dessous ? py + 138 * k : py - 130 * k
+                // ⚠️ **LE PANNEAU NE COUVRE JAMAIS UNE RÉCOMPENSE** (20-09,
+                // plan § 6.3). Payé sur TestFlight 81 (19-09) : l'actif aux
+                // rangs 4-6, le panneau « Today's session » (ouvert seul à
+                // l'arrivée, 130 pt au-dessus du galet) chevauchait la
+                // récompense du rang 3 — moitié haute au rang 4, ENTIÈRE au
+                // rang 5 — et sa coque de verre, hit-testable sans geste,
+                // avalait le tap : « la lune ne répond pas ». Si le rectangle
+                // du panneau mord le disque tactile d'un nœud spécial du même
+                // écran, il monte de ce qu'il faut + 8 pt — jamais vers le
+                // bas (il couvre le passé, pas l'avenir, règle du 28-08) — et
+                // s'arrête 12 pt sous la dalle.
+                // Mesuré au sim le 20-09 (actif au rang 6) : remonter jusqu'à
+                // dégager la récompense envoyait le panneau ~180 pt au-dessus
+                // de son galet, détaché de lui — alors qu'il NAÎT du galet.
+                // Quand la récompense est dans le chemin du panneau, il
+                // bascule DESSOUS (138 × k, comme sous la dalle) tant que
+                // l'écran le permet ; sinon seulement il monte.
+                let ypDegage = dessous ? ypBrut
+                    : degagerRecompenses(xp: xp, yp: ypBrut, autour: e, k: k)
+                let basEcran = (CGFloat(e.ecran + 1) * 874) * k - 59 - 12
+                let yp: CGFloat = {
+                    guard !dessous, ypDegage != ypBrut else { return ypDegage }
+                    let ypBas = py + 138 * k
+                    return ypBas <= basEcran ? ypBas : ypDegage
+                }()
                 // LA LUMIÈRE PARTAGÉE : le halo de l'actif s'étire jusqu'à
                 // l'arête du panneau — un dégradé PEINT, sous le verre
                 // (jamais faire respirer le verre lui-même).
@@ -1323,9 +1471,16 @@ private struct CheminDuo: View {
                 //   · récompense loin  → Nosfy · PAS de bouton, une promesse
                 //   · récompense prise → Nosfy · PAS de bouton (sans ce cas,
                 //     retaper une lune éteinte n'ouvrirait plus rien)
+                //   · récompense prise MAIS JAMAIS GRATTÉE (20-09, § 5.5)
+                //     → Nosfy · « Your reward is waiting » · « Scratch » :
+                //     la card se rouvre sur le tirage stocké. Payé sur
+                //     TestFlight 81 : « Later » ou l'app tuée après le Claim
+                //     laissaient « Reward already claimed » sans bouton, et
+                //     le résultat n'était jamais montré.
                 let dispo = lecture.peutReclamer(e)
                 let prise = etat.reclamees.contains(e.id)
                 let recompensePrete = e.special && dispo && !prise
+                let aGratter = e.special && prise && etat.aOuvrir.contains(e.id)
                 Circle()
                     .fill(RadialGradient(
                         colors: [.white.opacity(0.22), .white.opacity(0.06),
@@ -1350,11 +1505,12 @@ private struct CheminDuo: View {
                                                              : "Today's session")
                                 : "Session done"),
                     cta: e.special
-                        ? (recompensePrete ? "Claim" : nil)
+                        ? (recompensePrete ? "Claim" : (aGratter ? "Scratch" : nil))
                         : (cEst ? "Start" : "View"),
                     sousTitre: !e.special || recompensePrete ? nil
-                        : (prise ? "Reward already claimed"
-                           : "Reach this step to unlock your reward"),
+                        : (aGratter ? "Your reward is waiting"
+                           : (prise ? "Reward already claimed"
+                              : "Reach this step to unlock your reward")),
                     nosfy: e.special,
                     secondaire: e.special ? "Close" : "Later",
                     // ⚠️ **LE HALO DE L'OVERLAY** (27-08 : « celui en cours,
@@ -1366,15 +1522,36 @@ private struct CheminDuo: View {
                     // 28-08 : une récompense PRÊTE l'allume aussi — le liseré
                     // n'appelle que là où il y a quelque chose à faire, jamais
                     // sur une promesse hors de portée.
-                    halo: cEst || recompensePrete,
+                    halo: cEst || recompensePrete || aGratter,
                     onCTA: {
-                        if e.special { reclamer(e) }
-                        else if cEst { fermerEtDemarrer() }
-                        // « Voir » : la story de cette séance — à brancher
-                        // quand elle le dira. D'ici là, le panneau se ferme.
-                        else { fermerPanneau() }
+                        if e.special {
+                            // « Scratch » : la card se rouvre chez la racine
+                            // sur le tirage déjà fait — aucun nouveau tirage,
+                            // aucun serveur. Sinon, la réclamation.
+                            if aGratter {
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                onOuvrir?(e.id)
+                                fermerPanneau()
+                            } else {
+                                reclamer(e)
+                            }
+                        } else if cEst {
+                            fermerEtDemarrer()
+                        } else {
+                            // « View » (20-09, § 2.5) : la story de CETTE
+                            // séance. La page ne connaît pas les Workout :
+                            // elle donne la date du galet, la racine retrouve
+                            // la séance et l'ouvre comme le widget Regularity.
+                            // ⚠️ Payé sur TestFlight 81 (19-09) : le bouton
+                            // ne faisait que fermer le panneau.
+                            if let d = etat.datesFaites[e.id] { onVoir?(d) }
+                            fermerPanneau()
+                        }
                     },
-                    onPlusTard: { fermerPanneau() })
+                    onPlusTard: { fermerPanneau() },
+                    // « N'importe où ferme » vaut aussi SUR le panneau
+                    // (20-09) : sa coque prenait le doigt sans rien en faire.
+                    onFond: { fermerPanneau() })
                         .position(x: xp, y: yp)
                         // LA NAISSANCE : le panneau GRANDIT depuis le galet.
                         // ⚠️ Posée APRÈS `.position`, la transition enveloppe
@@ -1395,6 +1572,40 @@ private struct CheminDuo: View {
 
     private func fermerPanneau() {
         withAnimation(.easeOut(duration: 0.22)) { etat.panneauSur = nil }
+    }
+
+    /// LE PANNEAU DÉGAGE LES RÉCOMPENSES (20-09, plan § 6.3). Le rectangle du
+    /// panneau (296 × 118, centré en xp/yp) est testé contre le disque
+    /// tactile (Ø + 4) de chaque nœud spécial du MÊME écran — la récompense
+    /// du rang 3 et le trésor du rang 8 — sauf celui qu'il commente. S'il le
+    /// mord, il monte jusqu'à laisser 8 pt d'air sous lui ; toujours vers le
+    /// haut (il couvre le passé, jamais l'avenir), et jamais au-dessus de
+    /// 12 pt sous la dalle (~130 pt en base 874, sous l'île). Le rendu ne
+    /// change pas d'un pixel quand rien ne se touche : la valeur revient telle
+    /// quelle.
+    ///
+    /// Mesuré à la géométrie de la table (base 874, k = 1) : actif au rang 4,
+    /// le bord bas du panneau descend à 399 et la lune du rang 3 monte à 361
+    /// → il remonte de 46 pt ; au rang 5 elle était entièrement dessous.
+    private func degagerRecompenses(xp: CGFloat, yp: CGFloat,
+                                    autour e: EcranSpec.EtapeSpec,
+                                    k: CGFloat) -> CGFloat {
+        let demiL: CGFloat = 148
+        let demiH: CGFloat = 59
+        let plancher = (CGFloat(e.ecran) * 874 + 130) * k + 12 + demiH
+        var y = yp
+        for s in EcranSpec.etapes
+        where s.ecran == e.ecran && s.special && s.id != e.id {
+            let cx = largeur / 2 + s.dx
+            let cy = (CGFloat(s.ecran) * 874 + s.y) * k
+            let r: CGFloat = ((s.moon ? 78 : 53) + 4) / 2
+            // le point du rectangle le plus proche du centre du disque
+            let qx = min(max(cx, xp - demiL), xp + demiL)
+            let qy = min(max(cy, y - demiH), y + demiH)
+            guard hypot(cx - qx, cy - qy) < r else { continue }
+            y = min(y, cy - r - 8 - demiH)
+        }
+        return max(y, plancher)
     }
 
     /// LA RÉCLAMATION — l'ancien corps du tap sur un nœud spécial, déplacé sur
@@ -1685,6 +1896,10 @@ struct DuolinguoPage: View {
     var dates: [Int: Date]? = nil
     /// Les nœuds spéciaux déjà réclamés (l'hôte les persiste).
     var reclamees: Set<Int>? = nil
+    /// Les nœuds réclamés dont la card n'a jamais été grattée (20-09, § 5.5)
+    /// — `RewardCheminEtat.nonReveles` chez la racine. Sur eux, le panneau
+    /// propose « Scratch » et `onOuvrir` rouvre la card.
+    var aOuvrir: Set<Int> = []
     /// Uniquement la séance qui vient de se terminer, jamais un nœud cadeau.
     var celebration: Int? = nil
     @Environment(\.scenePhase) private var scenePhase
@@ -1705,6 +1920,20 @@ struct DuolinguoPage: View {
     /// `onDemarrer`. `nil` = le banc `-duoLab`, rien ne change.
     var onRetour: (() -> Void)? = nil
     var onDemarrer: (() -> Void)? = nil
+    /// « View » sur un galet fait (20-09, § 2.5) : la DATE du galet
+    /// (`endedAt` de la séance) — la racine retrouve la séance et ouvre sa
+    /// story. `nil` = le banc, le bouton ne fait que fermer.
+    var onVoir: ((Date) -> Void)? = nil
+    /// « Scratch » sur un nœud réclamé jamais gratté (§ 5.5) : l'id du nœud,
+    /// la racine rouvre la card sur le tirage stocké.
+    var onOuvrir: ((Int) -> Void)? = nil
+    /// LE GALET EST ACCOMPLI (20-09, son retour TestFlight : « c'est ici
+    /// qu'on doit voir les toasters de pièces et de boosters défiler ») —
+    /// appelé une fois, quand la fête du galet a joué (ou a été posée
+    /// directement : arrière-plan, animations réduites, téléphone chaud).
+    /// La racine y relâche les gains de la séance ; jusqu'ici ils
+    /// attendaient le chevron de retour et ne se voyaient que sur la Home.
+    var onCelebrationJouee: (() -> Void)? = nil
 
     var body: some View {
         // LE PROXY EST DEHORS, seul le défilement fuit la zone sûre (école
@@ -1833,7 +2062,8 @@ struct DuolinguoPage: View {
                     CheminDuo(etat: etat, hauteur: hauteur,
                               largeur: g.size.width,
                               onDemarrer: { onDemarrer?() },
-                              onLune: onLune, onPiece: onPiece) { ecran in
+                              onLune: onLune, onPiece: onPiece,
+                              onVoir: onVoir, onOuvrir: onOuvrir) { ecran in
                         withAnimation(.easeInOut(duration: 0.7)) {
                             ordre.scrollTo(y: CGFloat(ecran) * hauteur)
                         }
@@ -1841,6 +2071,11 @@ struct DuolinguoPage: View {
                             .impactOccurred(intensity: 0.9)
                     }
                 }
+                // LA CINÉMATIQUE DU GALET ACCOMPLI (20-09) : toute la
+                // colonne — feux, capsules, chemin — grossit autour du
+                // galet, puis revient. Posé EN DERNIER, sur le calque
+                // composé : une transformation, pas un redessin.
+                .modifier(ZoomCine(etat: etat))
             }
             .scrollTargetBehavior(.paging)
             // (Pas de `.scrollDisabled` pendant le port : basculé en plein
@@ -1901,6 +2136,7 @@ struct DuolinguoPage: View {
                 if let celebration { etat.faits.remove(celebration) }
                 if let dates { etat.datesFaites = dates }
                 if let reclamees { etat.reclamees = reclamees }
+                etat.aOuvrir = aOuvrir
                 // La page NAÎT POSÉE sur l'écran de l'actif : `piloter`
                 // d'abord (les lecteurs de la cible sont réveillés avant
                 // le premier rendu), puis un scrollTo NON animé — jamais un
@@ -1919,6 +2155,31 @@ struct DuolinguoPage: View {
                     naissance(ecran: ecranDepart)
                 }
             }
+            // ⚠️ **L'ÉTAT SE RELIT SANS REFERMER LA ROUTE** (20-09, plan
+            // § 6.4). `faits` / `reclamees` n'étaient lus qu'à `onAppear` : une
+            // route ouverte avant la fin de la relecture serveur gardait une
+            // lune sombre — ou un nœud réclamé disponible — jusqu'à
+            // fermeture-réouverture (« il faut insister »). Chaque paramètre
+            // relu remplace l'état sans rejouer la fête : la célébration en
+            // attente reste retirée des faits tant qu'elle n'est pas validée
+            // (c'est `validerCelebration` qui la pose), et rien ne touche à
+            // `celebration` / `celebrationJouee`.
+            .onChange(of: faits) { _, neuf in
+                guard let neuf else { return }
+                etat.faits = neuf
+                if let celebration, !etat.celebrationValidee {
+                    etat.faits.remove(celebration)
+                }
+            }
+            .onChange(of: dates) { _, neuf in
+                if let neuf { etat.datesFaites = neuf }
+            }
+            .onChange(of: reclamees) { _, neuf in
+                if let neuf { etat.reclamees = neuf }
+            }
+            .onChange(of: aOuvrir) { _, neuf in
+                etat.aOuvrir = neuf
+            }
             .task(id: scenePhase) {
                 guard let celebration, !celebrationJouee else { return }
                 // En arrière-plan, on pose directement l'état final. La reprise
@@ -1927,21 +2188,57 @@ struct DuolinguoPage: View {
                       !CommandLine.arguments.contains("-sansFeteRoute"),
                       ProcessInfo.processInfo.thermalState != .serious,
                       ProcessInfo.processInfo.thermalState != .critical else {
+                    retomberCine()
                     validerCelebration(celebration)
                     etat.celebrationOnde = true
                     ordre.scrollTo(y: CGFloat(EcranSpec.etapes[etat.etape].ecran) * hauteur)
                     celebrationJouee = true
+                    onCelebrationJouee?()
                     return
                 }
+                // LA CINÉMATIQUE (20-09, sa demande : « une grosse animation
+                // cinématique sur le galet, avec des halos, et après il se
+                // dézoome pour montrer que la session a été faite, et après
+                // le reste de l'expérience ») : approche (la colonne grossit
+                // 1,6× autour du galet, 0,6 s) → le sceau + le premier halo
+                // + l'haptique → l'onde → le second halo → le dézoom (0,7 s)
+                // → l'écran suivant → les gains. Barreau `-sansCineGalet` :
+                // la fête d'avant (sceau + onde), sans zoom ni halos.
+                let cine = !CommandLine.arguments.contains("-sansCineGalet")
+                    && celebration < EcranSpec.etapes.count
                 do {
                     try await Task.sleep(for: .milliseconds(550))
+                    if cine {
+                        let e = EcranSpec.etapes[celebration]
+                        let largeur = max(g.size.width, 1)
+                        etat.cineAncre = UnitPoint(
+                            x: (largeur / 2 + e.dx) / largeur,
+                            y: (CGFloat(e.ecran) * 874 + e.y) / (5 * 874))
+                        etat.cineGalet = celebration
+                        withAnimation(.easeInOut(duration: 0.6)) { etat.cineZoom = 1.6 }
+                        try await Task.sleep(for: .milliseconds(650))
+                    }
                     withAnimation(.spring(response: 0.32, dampingFraction: 0.72)) {
                         validerCelebration(celebration)
                     }
                     UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    if cine {
+                        withAnimation(.easeOut(duration: 1.0)) { etat.cineHalo = 1 }
+                    }
                     try await Task.sleep(for: .milliseconds(180))
                     withAnimation(.easeOut(duration: 0.85)) { etat.celebrationOnde = true }
-                    try await Task.sleep(for: .milliseconds(1050))
+                    if cine {
+                        try await Task.sleep(for: .milliseconds(420))
+                        withAnimation(.easeOut(duration: 1.0)) { etat.cineHalo2 = 1 }
+                        try await Task.sleep(for: .milliseconds(630))
+                        // Le dézoom : la route revient, le galet reste posé
+                        // avec son sceau — « la session a été faite ».
+                        withAnimation(.easeInOut(duration: 0.7)) { etat.cineZoom = 1 }
+                        try await Task.sleep(for: .milliseconds(700))
+                        retomberCine()
+                    } else {
+                        try await Task.sleep(for: .milliseconds(1050))
+                    }
                     let suivant = EcranSpec.etapes[etat.etape].ecran
                     if suivant != EcranSpec.etapes[celebration].ecran {
                         withAnimation(.easeInOut(duration: 0.65)) {
@@ -1949,7 +2246,14 @@ struct DuolinguoPage: View {
                         }
                     }
                     celebrationJouee = true
-                } catch { /* Le démontage ou le passage en arrière-plan annule la partition. */ }
+                    // Le sceau est posé, l'onde a joué : les gains défilent
+                    // ICI, sur la Route, pendant qu'elle regarde son galet.
+                    onCelebrationJouee?()
+                } catch {
+                    // Le démontage ou le passage en arrière-plan annule la
+                    // partition : la colonne retombe à sa taille, sans halo.
+                    retomberCine()
+                }
             }
         }
         .background(Color.black.ignoresSafeArea())
@@ -1978,6 +2282,20 @@ struct DuolinguoPage: View {
         // LE PLAFOND DU JOUR (20-09) : le refus est une alerte NATIVE Apple —
         // la même qu'aux autres portes de départ (`PlafondJour`).
         .alertePlafondJour($etat.refusPlafond)
+    }
+
+    /// La cinématique retombe d'un coup (sans animation) : colonne à 1,
+    /// halos à zéro, verre et projecteur rendus. Appelée au dézoom fini,
+    /// à l'annulation, et avant tout état final posé directement.
+    private func retomberCine() {
+        var t = Transaction()
+        t.disablesAnimations = true
+        withTransaction(t) {
+            etat.cineGalet = nil
+            etat.cineZoom = 1
+            etat.cineHalo = 0
+            etat.cineHalo2 = 0
+        }
     }
 
     private func validerCelebration(_ id: Int) {
@@ -2118,6 +2436,13 @@ private struct PanneauDepartChemin: View {
     var halo: Bool = false
     var onCTA: () -> Void
     var onPlusTard: () -> Void
+    /// ⚠️ **LA COQUE FERME AUSSI** (20-09, plan § 6.3). Payé sur TestFlight
+    /// 81 (19-09) : le verre du panneau était hit-testable sans aucun geste —
+    /// un tap dessus mourait (ni panneau, ni fermeture), alors que le
+    /// rattrapeur « n'importe où ferme » vit SOUS les galets et ne reçoit
+    /// jamais ce doigt. Les deux `Button` gardent la priorité (un enfant qui
+    /// a un geste bat le tap de son parent). `nil` = comme « Plus tard ».
+    var onFond: (() -> Void)? = nil
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -2130,6 +2455,17 @@ private struct PanneauDepartChemin: View {
                     .foregroundStyle(LinearGradient(
                         colors: [Color(white: 1.0), Color(white: 0.84)],
                         startPoint: .top, endPoint: .bottom))
+                if let sousTitre {
+                    // L'ANNONCE : sans bouton elle prend sa place, au même
+                    // corps que le secondaire, sur deux lignes au plus —
+                    // c'est une promesse, pas une action. Avec un bouton
+                    // (« Your reward is waiting » · « Scratch », 20-09),
+                    // elle le précède : la promesse, puis le geste.
+                    Text(sousTitre)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.62))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 if let cta {
                     Button(action: onCTA) {
                         Text(cta)
@@ -2140,14 +2476,6 @@ private struct PanneauDepartChemin: View {
                             .background(Capsule().fill(Color(white: 0.96)))
                     }
                     .buttonStyle(.plain)
-                } else if let sousTitre {
-                    // L'ANNONCE : elle prend la place du bouton, au même
-                    // corps que le secondaire, sur deux lignes au plus —
-                    // c'est une promesse, pas une action.
-                    Text(sousTitre)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.62))
-                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Button(action: onPlusTard) {
                     Text(secondaire)
@@ -2173,6 +2501,11 @@ private struct PanneauDepartChemin: View {
                     .fill(Color.black.opacity(0.32))
             }
         }
+        // « N'IMPORTE OÙ FERME » — la coque aussi (20-09). Posé APRÈS le
+        // fond, AVANT le liseré (qui est sourd au doigt) : l'air entre le
+        // titre et les boutons ferme, les boutons agissent.
+        .contentShape(RoundedRectangle(cornerRadius: 28))
+        .onTapGesture { (onFond ?? onPlusTard)() }
         // LE HALO DU JOUR EN COURS — un liseré de lumière qui SUIT la coque
         // (jamais un rectangle flouté : le flou laisse son calque), posé
         // AU-DESSUS de la pellicule pour ne pas être mangé par elle. Il

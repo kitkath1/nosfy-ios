@@ -26,6 +26,9 @@ struct StopCardHote: View {
     var duree: String
     var series: Int
     var gain: Int
+    /// 20-09 : la séance porte du cardio (intervalles ou longueurs) — le
+    /// barème vit au serveur, la card ne chiffre jamais ce qu'elle ne sait pas.
+    var cardio: Bool = false
     var onTerminer: () -> Void = {}
     var onContinuer: () -> Void = {}
 
@@ -47,7 +50,7 @@ struct StopCardHote: View {
             Color.clear
             if montee {
                 StopCard(p: p, duree: duree, series: series, gain: gain,
-                         naissance: naissance,
+                         cardio: cardio, naissance: naissance,
                          onStop: commettre,
                          onCancel: { fermer(puis: onContinuer) })
             }
@@ -130,6 +133,7 @@ struct StopCard: View, Animatable {
     var duree: String
     var series: Int
     var gain: Int
+    var cardio: Bool = false
     var naissance: Date
     var onStop: () -> Void
     var onCancel: () -> Void
@@ -348,7 +352,16 @@ struct StopCard: View, Animatable {
     // MARK: l'encre
 
     private var bilan: String {
-        "\(series) \(series == 1 ? "set" : "sets") · \(duree) · +\(gain) coins"
+        // 20-09 (plan cardio §, jamais codé jusqu'ici) : en cardio le montant
+        // n'est connu qu'à la clôture, par le serveur — la card ne dit plus
+        // « +0 coins » pour une séance qui sera payée 100 à 300.
+        let sets = "\(series) \(series == 1 ? "set" : "sets")"
+        if cardio {
+            return series > 0
+                ? "\(sets) · \(duree) · +\(gain) coins · cardio paid at the end"
+                : "cardio · \(duree) · paid at the end"
+        }
+        return "\(sets) · \(duree) · +\(gain) coins"
     }
 
     private func encre(largeur l: CGFloat, hauteur h: CGFloat) -> some View {

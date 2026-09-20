@@ -1,0 +1,392 @@
+Incident Identifier: 41707C3D-77F9-4E5B-8913-5D8F422F8C63
+Distributor ID:      com.apple.TestFlight
+Hardware Model:      iPhone15,4
+Process:             Nosfy [9472]
+Path:                /private/var/containers/Bundle/Application/900ECCD9-3DE4-46EB-B9FC-07F06C210F70/Nosfy.app/Nosfy
+Identifier:          fr.kathryn.woop
+Version:             1.0 (81)
+AppStoreTools:       27A261
+AppVariant:          1:iPhone15,4:26
+Beta:                YES
+Code Type:           ARM-64 (Native)
+Role:                Foreground
+Parent Process:      launchd [1]
+Coalition:           fr.kathryn.woop [942]
+
+Date/Time:           2026-09-19 14:34:28.4092 +0200
+Launch Time:         2026-09-19 14:33:41.6685 +0200
+OS Version:          iPhone OS 26.6.1 (23G83)
+Release Type:        User
+Baseband Version:    3.70.01
+Report Version:      104
+
+Exception Type:  EXC_BREAKPOINT (SIGTRAP)
+Exception Codes: 0x0000000000000001, 0x00000001002cb96c
+Termination Reason: SIGNAL 5 Trace/BPT trap: 5
+Terminating Process: exc handler [9472]
+
+Triggered by Thread:  0
+
+
+Thread 0 name:
+Thread 0 Crashed:
+0   Nosfy                         	0x00000001002cb96c Swift runtime failure: Index out of range + 4 (/<compiler-generated>:0)
+1   Nosfy                         	0x00000001002cb96c specialized Array._checkSubscript(_:wasNativeTypeChecked:) + 4 (/<compiler-generated>:0)
+2   Nosfy                         	0x00000001002cb96c specialized Array.subscript.getter + 4 (/<compiler-generated>:0)
+3   Nosfy                         	0x00000001002cb96c closure #1 in PaliersVue.laque(_:sol:) + 1088 (ChambreHiit.swift:440)
+4   Nosfy                         	0x00000001002cb6dc LinearGradient.init(colors:startPoint:endPoint:) + 32 (/<compiler-generated>:0)
+5   Nosfy                         	0x00000001002cb6dc closure #1 in PaliersVue.laque(_:sol:) + 432 (ChambreHiit.swift:438)
+6   Nosfy                         	0x00000001002cf6a0 <deduplicated_symbol> + 76
+7   SwiftUICore                   	0x000000019bb8800c closure #1 in ForEachState.item(at:offset:) + 712 (:-1)
+8   SwiftUICore                   	0x000000019bb88068 partial apply for closure #1 in ForEachState.item(at:offset:) + 20 (:-1)
+9   SwiftUICore                   	0x000000019bb555b0 closure #1 in ObservationCenter._withObservation<A>(do:) + 48 (:-1)
+10  SwiftUICore                   	0x000000019bb55d64 partial apply for closure #1 in ObservationCenter._withObservation<A>(do:) + 28 (:-1)
+11  SwiftUICore                   	0x000000019bb04730 withUnsafeMutablePointer<A, B, C>(to:_:) + 160 (:-1)
+12  SwiftUICore                   	0x000000019bb8a10c specialized ObservationCenter._withObservation<A>(do:) + 212 (:-1)
+13  SwiftUICore                   	0x000000019bb8a10c ForEachState.item(at:offset:) + 3136 (:-1)
+14  SwiftUICore                   	0x000000019bb61978 ForEachState.forEachItem(from:style:do:) + 1632 (:-1)
+15  SwiftUICore                   	0x000000019bb61b50 specialized ForEachState.applyNodes(from:style:list:transform:to:) + 52 (:-1)
+16  SwiftUICore                   	0x000000019bb61b50 specialized ForEachState.applyNodes(from:style:list:transform:to:) + 52 (:-1)
+17  SwiftUICore                   	0x000000019bb61b50 specialized ForEachList.applyNodes(from:style:list:transform:to:) + 84 (:-1)
+18  SwiftUICore                   	0x000000019bb61bac specialized ForEachList.applyNodes(from:style:list:transform:to:) + 40 (:-1)
+19  SwiftUICore                   	0x000000019bb61bac protocol witness for ViewList.applyNodes(from:style:list:transform:to:) in conformance ForEachList<A, B, C> + 72
+20  SwiftUICore                   	0x000000019bb537f4 _ViewList_Group.applyNodes(from:style:transform:to:) + 180 (:-1)
+21  SwiftUICore                   	0x000000019bb537f4 _ViewList_Node.applySublists(from:style:transform:to:) + 480 (:-1)
+22  SwiftUICore                   	0x000000019bb53dc0 partial apply for closure #1 in _ViewList_Node.applySublists(from:style:transform:to:) + 72
+23  SwiftUICore                   	0x000000019bb4b640 _ViewList_Group.applyNodes(from:style:list:transform:to:) + 72 (:-1)
+24  SwiftUICore                   	0x000000019bb4b640 protocol witness for ViewList.applyNodes(from:style:list:transform:to:) in conformance _ViewList_Group + 108 (:-1)
+25  SwiftUICore                   	0x000000019bb28578 ViewList.applySublists(from:style:list:transform:to:) + 20 (:-1)
+26  SwiftUICore                   	0x000000019bb28578 ViewList.applySublists(from:style:list:to:) + 20 (:-1)
+27  SwiftUICore                   	0x000000019bb28578 ViewList.applySublists(from:list:to:) + 104 (:-1)
+28  SwiftUICore                   	0x000000019bb28b0c DynamicLayoutViewAdaptor.foreachItem(items:_:) + 48 (:-1)
+29  SwiftUICore                   	0x000000019bb28b0c protocol witness for DynamicContainerAdaptor.foreachItem(items:_:) in conformance DynamicLayoutViewAdaptor + 48 (:-1)
+30  SwiftUICore                   	0x000000019bb28b0c specialized DynamicContainerInfo.updateItems(disableTransitions:) + 412 (:-1)
+31  SwiftUICore                   	0x000000019bb29978 specialized DynamicContainerInfo.updateValue() + 452 (:-1)
+32  SwiftUICore                   	0x000000019c4d61a8 specialized protocol witness for StatefulRule.updateValue() in conformance DynamicContainerInfo<A> + 8 (:-1)
+33  SwiftUICore                   	0x000000019c4d61a8 specialized implicit closure #1 in closure #1 in closure #1 in Attribute.init<A>(_:) + 24 (:-1)
+34  AttributeGraph                	0x00000001c4f98914 AG::ClosureFunctionGU<void, void*, unsigned int>::operator()(void*, unsigned int) const + 12 (:-1)
+35  AttributeGraph                	0x00000001c4f98914 AG::Graph::UpdateStack::update() + 496 (:-1)
+36  AttributeGraph                	0x00000001c4f9852c AG::Graph::update_attribute(AG::data::ptr<AG::Node>, unsigned int) + 352 (:-1)
+37  AttributeGraph                	0x00000001c4f97e68 AG::Graph::input_value_ref_slow(AG::data::ptr<AG::Node>, AG::AttributeID, unsigned int, unsigned int, AGSwiftMetadata const*, unsigned char&, long) + 680 (:-1)
+38  AttributeGraph                	0x00000001c4f922a8 AG::Graph::input_value_ref(AG::data::ptr<AG::Node>, AG::AttributeID, unsigned int, unsigned int, AGSwiftMetadata const*, unsigned char&) + 128 (:-1)
+39  AttributeGraph                	0x00000001c4f922a8 AGGraphGetValue + 232 (:-1)
+40  SwiftUICore                   	0x000000019bb27ebc specialized OptionalAttribute.wrappedValue.getter + 60 (:-1)
+41  SwiftUICore                   	0x000000019bb27ebc DynamicPreferenceCombiner.info.getter + 88 (:-1)
+42  SwiftUICore                   	0x000000019bb2806c DynamicPreferenceCombiner.value.getter + 220 (:-1)
+43  SwiftUICore                   	0x000000019c2970ac specialized implicit closure #1 in closure #1 in closure #1 in Attribute.init<A>(_:) + 260 (:-1)
+44  SwiftUICore                   	0x000000019c2970ac implicit closure #1 in closure #1 in closure #1 in Attribute.init<A>(_:) + 324 (:-1)
+45  AttributeGraph                	0x00000001c4f98914 AG::ClosureFunctionGU<void, void*, unsigned int>::operator()(void*, unsigned int) const + 12 (:-1)
+46  AttributeGraph                	0x00000001c4f98914 AG::Graph::UpdateStack::update() + 496 (:-1)
+47  AttributeGraph                	0x00000001c4f9852c AG::Graph::update_attribute(AG::data::ptr<AG::Node>, unsigned int) + 352 (:-1)
+48  AttributeGraph                	0x00000001c4f97e68 AG::Graph::input_value_ref_slow(AG::data::ptr<AG::Node>, AG::AttributeID, unsigned int, unsigned int, AGSwiftMetadata const*, unsigned char&, long) + 680 (:-1)
+49  AttributeGraph                	0x00000001c4f922a8 AG::Graph::input_value_ref(AG::data::ptr<AG::Node>, AG::AttributeID, unsigned int, unsigned int, AGSwiftMetadata const*, unsigned char&) + 128 (:-1)
+50  AttributeGraph                	0x00000001c4f922a8 AGGraphGetValue + 232 (:-1)
+51  SwiftUICore                   	0x000000019bb28314 specialized Attribute.wrappedValue.unsafeAddressor + 20 (:-1)
+52  SwiftUICore                   	0x000000019bb28314 DynamicPreferenceCombiner.value.getter + 900 (:-1)
+53  SwiftUICore                   	0x000000019c2970ac specialized implicit closure #1 in closure #1 in closure #1 in Attribute.init<A>(_:) + 260 (:-1)
+54  SwiftUICore                   	0x000000019c2970ac implicit closure #1 in closure #1 in closure #1 in Attribute.init<A>(_:) + 324 (:-1)
+55  AttributeGraph                	0x00000001c4f98914 AG::ClosureFunctionGU<void, void*, unsigned int>::operator()(void*, unsigned int) const + 12 (:-1)
+56  AttributeGraph                	0x00000001c4f98914 AG::Graph::UpdateStack::update() + 496 (:-1)
+57  AttributeGraph                	0x00000001c4f9852c AG::Graph::update_attribute(AG::data::ptr<AG::Node>, unsigned int) + 352 (:-1)
+141 AttributeGraph                	0x00000001c4f97e68 AG::Graph::input_value_ref_slow(AG::data::ptr<AG::Node>, AG::AttributeID, unsigned int, unsigned int, AGSwiftMetadata const*, unsigned char&, long) + 680 (:-1)
+142 AttributeGraph                	0x00000001c4f922a8 AG::Graph::input_value_ref(AG::data::ptr<AG::Node>, AG::AttributeID, unsigned int, unsigned int, AGSwiftMetadata const*, unsigned char&) + 128 (:-1)
+143 AttributeGraph                	0x00000001c4f922a8 AGGraphGetValue + 232 (:-1)
+144 SwiftUICore                   	0x000000019bb289d0 specialized Attribute.changedValue(options:) + 40 (:-1)
+145 SwiftUICore                   	0x000000019bb289d0 DynamicLayoutViewAdaptor.updatedItems() + 44 (:-1)
+146 SwiftUICore                   	0x000000019bb289d0 protocol witness for DynamicContainerAdaptor.updatedItems() in conformance DynamicLayoutViewAdaptor + 44 (:-1)
+147 SwiftUICore                   	0x000000019bb289d0 specialized DynamicContainerInfo.updateItems(disableTransitions:) + 96 (:-1)
+148 SwiftUICore                   	0x000000019bb29978 specialized DynamicContainerInfo.updateValue() + 452 (:-1)
+149 SwiftUICore                   	0x000000019c4d61a8 specialized protocol witness for StatefulRule.updateValue() in conformance DynamicContainerInfo<A> + 8 (:-1)
+150 SwiftUICore                   	0x000000019c4d61a8 specialized implicit closure #1 in closure #1 in closure #1 in Attribute.init<A>(_:) + 24 (:-1)
+151 AttributeGraph                	0x00000001c4f98914 AG::ClosureFunctionGU<void, void*, unsigned int>::operator()(void*, unsigned int) const + 12 (:-1)
+152 AttributeGraph                	0x00000001c4f98914 AG::Graph::UpdateStack::update() + 496 (:-1)
+153 AttributeGraph                	0x00000001c4f9852c AG::Graph::update_attribute(AG::data::ptr<AG::Node>, unsigned int) + 352 (:-1)
+154 AttributeGraph                	0x00000001c4f97e68 AG::Graph::input_value_ref_slow(AG::data::ptr<AG::Node>, AG::AttributeID, unsigned int, unsigned int, AGSwiftMetadata const*, unsigned char&, long) + 680 (:-1)
+155 AttributeGraph                	0x00000001c4f922a8 AG::Graph::input_value_ref(AG::data::ptr<AG::Node>, AG::AttributeID, unsigned int, unsigned int, AGSwiftMetadata const*, unsigned char&) + 128 (:-1)
+156 AttributeGraph                	0x00000001c4f922a8 AGGraphGetValue + 232 (:-1)
+157 SwiftUICore                   	0x000000019bb27ebc specialized OptionalAttribute.wrappedValue.getter + 60 (:-1)
+158 SwiftUICore                   	0x000000019bb27ebc DynamicPreferenceCombiner.info.getter + 88 (:-1)
+159 SwiftUICore                   	0x000000019bb2806c DynamicPreferenceCombiner.value.getter + 220 (:-1)
+160 SwiftUICore                   	0x000000019c2970ac specialized implicit closure #1 in closure #1 in closure #1 in Attribute.init<A>(_:) + 260 (:-1)
+161 SwiftUICore                   	0x000000019c2970ac implicit closure #1 in closure #1 in closure #1 in Attribute.init<A>(_:) + 324 (:-1)
+162 AttributeGraph                	0x00000001c4f98914 AG::ClosureFunctionGU<void, void*, unsigned int>::operator()(void*, unsigned int) const + 12 (:-1)
+163 AttributeGraph                	0x00000001c4f98914 AG::Graph::UpdateStack::update() + 496 (:-1)
+164 AttributeGraph                	0x00000001c4f9852c AG::Graph::update_attribute(AG::data::ptr<AG::Node>, unsigned int) + 352 (:-1)
+165 AttributeGraph                	0x00000001c4f97e68 AG::Graph::input_value_ref_slow(AG::data::ptr<AG::Node>, AG::AttributeID, unsigned int, unsigned int, AGSwiftMetadata const*, unsigned char&, long) + 680 (:-1)
+166 AttributeGraph                	0x00000001c4f922a8 AG::Graph::input_value_ref(AG::data::ptr<AG::Node>, AG::AttributeID, unsigned int, unsigned int, AGSwiftMetadata const*, unsigned char&) + 128 (:-1)
+167 AttributeGraph                	0x00000001c4f922a8 AGGraphGetValue + 232 (:-1)
+168 SwiftUICore                   	0x000000019bb74bc8 specialized Attribute.wrappedValue.unsafeAddressor + 52 (:-1)
+169 SwiftUICore                   	0x000000019bb74bc8 PairPreferenceCombiner.value.getter + 100 (:-1)
+170 SwiftUICore                   	0x000000019c2970ac specialized implicit closure #1 in closure #1 in closure #1 in Attribute.init<A>(_:) + 260 (:-1)
+171 SwiftUICore                   	0x000000019c2970ac implicit closure #1 in closure #1 in closure #1 in Attribute.init<A>(_:) + 324 (:-1)
+172 AttributeGraph                	0x00000001c4f98914 AG::ClosureFunctionGU<void, void*, unsigned int>::operator()(void*, unsigned int) const + 12 (:-1)
+173 AttributeGraph                	0x00000001c4f98914 AG::Graph::UpdateStack::update() + 496 (:-1)
+174 AttributeGraph                	0x00000001c4f9852c AG::Graph::update_attribute(AG::data::ptr<AG::Node>, unsigned int) + 352 (:-1)
+175 AttributeGraph                	0x00000001c4f92560 AG::Graph::value_ref(AG::AttributeID, unsigned int, AGSwiftMetadata const*, unsigned char&) + 296 (:-1)
+176 AttributeGraph                	0x00000001c4f9acbc AGGraphGetWeakValue + 372 (:-1)
+177 SwiftUICore                   	0x000000019bb21284 specialized WeakAttribute.wrappedValue.getter + 16 (:-1)
+178 SwiftUICore                   	0x000000019bb21284 GraphHost.preferenceValues() + 48 (:-1)
+179 SwiftUICore                   	0x000000019bb21284 GraphHost.preferenceValue<A>(_:) + 336 (:-1)
+180 SwiftUICore                   	0x000000019bb21128 closure #1 in ViewGraphRootValueUpdater._preferenceValue<A>(_:) + 8 (:-1)
+181 SwiftUICore                   	0x000000019bb21128 partial apply for closure #1 in ViewGraphRootValueUpdater._preferenceValue<A>(_:) + 36 (:-1)
+182 SwiftUICore                   	0x000000019bb12934 closure #1 in ViewGraphRootValueUpdater._updateViewGraph<A>(body:) + 36 (:-1)
+183 SwiftUICore                   	0x000000019bb12934 specialized static AGGraphRef.withoutUpdate<A>(_:) + 44 (:-1)
+184 SwiftUICore                   	0x000000019bb12934 ViewGraphRootValueUpdater._updateViewGraph<A>(body:) + 232 (:-1)
+185 SwiftUICore                   	0x000000019bb21000 ViewGraphRootValueUpdater._preferenceValue<A>(_:) + 312 (:-1)
+186 SwiftUI                       	0x000000019b416424 specialized ViewRendererHost.preferenceValue<A>(_:) + 40 (:-1)
+187 SwiftUI                       	0x000000019b416424 specialized UIHostingController.transitionContent.getter + 156 (:-1)
+188 SwiftUI                       	0x000000019aaa8c78 specialized UIHostingController.configurePreferredTransition(pushingFrom:enablePreemption:) + 56 (:-1)
+189 SwiftUI                       	0x000000019b5d4440 specialized closure #3 in NavigationStackCoordinator.update(to:from:navigationController:transaction:transparentBackground:) + 496
+190 SwiftUI                       	0x000000019b5d71b8 partial apply for specialized closure #3 in NavigationStackCoordinator.update(to:from:navigationController:transaction:transparentBackground:) + 60
+191 SwiftUI                       	0x000000019aaa8480 specialized NavigationHostingControllerCache_UIKit._viewControllers<A>(forEntering:isBorrowing:request:insert:) + 4192 (:-1)
+192 SwiftUI                       	0x000000019aa96078 specialized NavigationStackCoordinator.update(to:from:navigationController:transaction:transparentBackground:) + 2932
+193 SwiftUI                       	0x000000019aa953cc specialized closure #3 in NavigationStackCoordinator.updateNavigationController(_:environment:transaction:seeds:transparentBackground:strategy:) + 512 (:-1)
+194 SwiftUICore                   	0x000000019bb08054 Update.Action.callAsFunction() + 144 (:-1)
+195 SwiftUICore                   	0x000000019bb08054 closure #1 in closure #1 in static Update.dispatchActions() + 144 (:-1)
+196 SwiftUICore                   	0x000000019bb08054 closure #1 in static Update.dispatchActions() + 144 (:-1)
+197 SwiftUICore                   	0x000000019bb08054 onMainThread(do:) + 144 (:-1)
+198 SwiftUICore                   	0x000000019bb08054 static Update.dispatchActions() + 1648 (:-1)
+199 SwiftUICore                   	0x000000019bb14bc0 closure #2 in closure #1 in ViewGraphRootValueUpdater.render(interval:updateDisplayList:targetTimestamp:) + 28 (:-1)
+200 SwiftUICore                   	0x000000019bb14bc0 closure #1 in ViewGraphRootValueUpdater.render(interval:updateDisplayList:targetTimestamp:) + 856 (:-1)
+201 SwiftUICore                   	0x000000019bb14818 ViewGraphRootValueUpdater.render(interval:updateDisplayList:targetTimestamp:) + 584 (:-1)
+202 UIKitCore                     	0x00000001975b6d04 UIHostingViewBase.layoutSubviews() + 424 (:-1)
+203 SwiftUI                       	0x000000019a83dbbc _UIHostingView.layoutSubviews() + 116 (:-1)
+204 SwiftUI                       	0x000000019a83db24 @objc _UIHostingView.layoutSubviews() + 36 (:-1)
+205 UIKitCore                     	0x000000019741c1a0 closure #1 in UIView._layoutSubviewsWithObservationTracking() + 8 (:-1)
+206 UIKitCore                     	0x000000019741c1a0 specialized closure #1 in _withObservation<A>(do:) + 40 (:-1)
+207 UIKitCore                     	0x000000019741c1a0 specialized closure #1 in _withObservation<A>(do:) + 40 (:-1)
+208 UIKitCore                     	0x000000019741c1a0 specialized withUnsafeMutablePointer<A, B, C>(to:_:) + 40 (:-1)
+209 UIKitCore                     	0x000000019741c1a0 specialized _withObservation<A>(do:) + 92 (:-1)
+210 UIKitCore                     	0x000000019741c1a0 specialized withObservation<A, B>(by:of:_:do:onChange:) + 112 (:-1)
+211 UIKitCore                     	0x000000019741c1a0 UIView._layoutSubviewsWithObservationTracking() + 688 (:-1)
+212 UIKitCore                     	0x000000019741caec @objc UIView._layoutSubviewsWithObservationTracking() + 36 (:-1)
+213 UIKitCore                     	0x000000019741b0a0 -[UIView(CALayerDelegate) layoutSublayersOfLayer:] + 2684 (:-1)
+214 QuartzCore                    	0x000000019243c8a4 CA::Layer::perform_update_(CA::Layer*, CALayer*, unsigned int, CA::LayerUpdateReason, CA::Transaction*) + 460 (:-1)
+215 QuartzCore                    	0x000000019243c3f4 CA::Layer::update_if_needed(CA::Transaction*, unsigned int, unsigned int, CA::LayerUpdateReason) + 512 (:-1)
+216 QuartzCore                    	0x000000019243c3f4 CA::Layer::update_if_needed_(CA::Transaction*, CA::LayerUpdateReason) + 664 (:-1)
+217 QuartzCore                    	0x000000019222e800 CA::Layer::layout_and_display_if_needed(CA::Transaction*) + 180 (:-1)
+218 QuartzCore                    	0x00000001921ed198 CA::Context::commit_transaction(CA::Transaction*, double, double*) + 560 (:-1)
+219 QuartzCore                    	0x0000000192219520 CA::Transaction::commit() + 620 (:-1)
+220 QuartzCore                    	0x0000000192228074 CA::Transaction::flush_as_runloop_observer(bool) + 88 (:-1)
+221 UIKitCore                     	0x00000001974b65f0 _UIApplicationFlushCATransaction + 52 (:-1)
+222 UIKitCore                     	0x00000001974b6524 performCATransactionCommitAction + 308 (:-1)
+223 UIKitCore                     	0x00000001974b6524 __setupUpdateSequence_block_invoke_2 + 352 (:-1)
+224 UIKitCore                     	0x00000001974cf6d4 _UIUpdateSequenceRunNext + 128 (:-1)
+225 UIKitCore                     	0x00000001974ccc60 schedulerStepScheduledMainSectionContinue + 60 (:-1)
+226 UpdateCycle                   	0x00000002a6ede56c UC::DriverCore::continueProcessing() + 84 (:-1)
+227 CoreFoundation                	0x00000001917b51d8 __CFMachPortPerform + 168 (:-1)
+228 CoreFoundation                	0x00000001917f7854 __CFRUNLOOP_IS_CALLING_OUT_TO_A_SOURCE1_PERFORM_FUNCTION__ + 60 (:-1)
+229 CoreFoundation                	0x00000001917f777c __CFRunLoopDoSource1 + 504 (:-1)
+230 CoreFoundation                	0x00000001917c26e4 __CFRunLoopRun + 2168 (:-1)
+231 CoreFoundation                	0x00000001917c154c _CFRunLoopRunSpecificWithOptions + 532 (:-1)
+232 GraphicsServices              	0x0000000237791498 GSEventRunModal + 120 (:-1)
+233 UIKitCore                     	0x00000001974f5670 -[UIApplication _run] + 796 (:-1)
+234 UIKitCore                     	0x0000000197460158 UIApplicationMain + 332 (:-1)
+235 SwiftUI                       	0x000000019a84f570 closure #1 in KitRendererCommon(_:) + 168 (:-1)
+236 SwiftUI                       	0x000000019a84c0f4 specialized UnsafeMutablePointer<>.withMemoryRebound<A, B, C>(to:capacity:_:) + 12 (:-1)
+237 SwiftUI                       	0x000000019a84c0f4 KitRendererCommon(_:) + 16 (:-1)
+238 SwiftUI                       	0x000000019a84c0f4 runApp<A>(_:) + 112 (:-1)
+239 SwiftUI                       	0x000000019a84bc48 static App.main() + 172 (:-1)
+240 Nosfy                         	0x00000001008f2978 static NosfyApp.$main() + 52 (NosfyApp.swift:0)
+241 Nosfy                         	0x00000001008f2978 main + 64
+242 dyld                          	0x000000018e3cdc1c start + 6928 (:-1)
+
+Thread 1 name:
+Thread 1:
+0   libsystem_kernel.dylib        	0x0000000240e00cd4 mach_msg2_trap + 8 (:-1)
+1   libsystem_kernel.dylib        	0x0000000240e0430c mach_msg2_internal + 76 (:-1)
+2   libsystem_kernel.dylib        	0x0000000240e0422c mach_msg2 + 4 (:-1)
+3   libsystem_kernel.dylib        	0x0000000240e0422c mach_msg_overwrite + 424 (:-1)
+4   libsystem_kernel.dylib        	0x0000000240e04078 mach_msg + 24 (:-1)
+5   CoreFoundation                	0x00000001917f8374 __CFRunLoopServiceMachPort + 160 (:-1)
+6   CoreFoundation                	0x00000001917c2310 __CFRunLoopRun + 1188 (:-1)
+7   CoreFoundation                	0x00000001917c154c _CFRunLoopRunSpecificWithOptions + 532 (:-1)
+8   Foundation                    	0x000000018ea2ecf0 -[NSRunLoop(NSRunLoop) runMode:beforeDate:] + 212 (:-1)
+9   Foundation                    	0x000000018ea2ebd8 -[NSRunLoop(NSRunLoop) runUntilDate:] + 64 (:-1)
+10  UIKitCore                     	0x00000001974baeac -[UIEventFetcher threadMain] + 420 (:-1)
+11  Foundation                    	0x000000018eab2914 __NSThread__start__ + 732 (:-1)
+12  libsystem_pthread.dylib       	0x00000001f1142438 _pthread_start + 136 (:-1)
+13  libsystem_pthread.dylib       	0x00000001f113e8cc thread_start + 8 (:-1)
+
+Thread 2 name:
+Thread 2:
+0   libsystem_kernel.dylib        	0x0000000240e00c68 semaphore_timedwait_trap + 8 (:-1)
+1   libdispatch.dylib             	0x00000001cc2ef7d8 _dispatch_sema4_timedwait + 64 (:-1)
+2   libdispatch.dylib             	0x00000001cc2bca68 _dispatch_semaphore_wait_slow + 76 (:-1)
+3   libdispatch.dylib             	0x00000001cc2cc6fc _dispatch_worker_thread + 324 (:-1)
+4   libsystem_pthread.dylib       	0x00000001f1142438 _pthread_start + 136 (:-1)
+5   libsystem_pthread.dylib       	0x00000001f113e8cc thread_start + 8 (:-1)
+
+Thread 3 name:
+Thread 3:
+0   libsystem_kernel.dylib        	0x0000000240e00c50 semaphore_wait_trap + 8 (:-1)
+1   caulk                         	0x00000002abd0fc6c caulk::mach::semaphore::wait_or_error() + 8 (:-1)
+2   caulk                         	0x00000002abd0fc6c caulk::semaphore::timed_wait(double) + 224 (:-1)
+3   caulk                         	0x00000002abd0fcb8 caulk::semaphore::wait() + 12 (:-1)
+4   caulk                         	0x00000002abd0fcb8 caulk::concurrent::details::worker_thread::run() + 32 (:-1)
+5   caulk                         	0x00000002abd13f54 std::__1::__invoke_result_impl<void, void (caulk::concurrent::details::worker_thread::*&)(), caulk::concurrent::details::worker_thread*&>::type std::__1::__invoke[abi:nqe210106]<void (caulk::concur... + 72 (:-1)
+6   caulk                         	0x00000002abd13f54 decltype(auto) std::__1::__apply_tuple_impl[abi:nqe210106]<void (caulk::concurrent::details::worker_thread::*&)(), std::__1::tuple<caulk::concurrent::details::worker_thread*>&, 0ul>(void (caulk::co... + 72 (:-1)
+7   caulk                         	0x00000002abd13f54 decltype(auto) std::__1::apply[abi:nqe210106]<void (caulk::concurrent::details::worker_thread::*&)(), std::__1::tuple<caulk::concurrent::details::worker_thread*>&>(void (caulk::concurrent::details:... + 72 (:-1)
+8   caulk                         	0x00000002abd13f54 void* caulk::thread_proxy<std::__1::tuple<caulk::thread::attributes, void (caulk::concurrent::details::worker_thread::*)(), std::__1::tuple<caulk::concurrent::details::worker_thread*>>>(void*) + 96 (:-1)
+9   libsystem_pthread.dylib       	0x00000001f1142438 _pthread_start + 136 (:-1)
+10  libsystem_pthread.dylib       	0x00000001f113e8cc thread_start + 8 (:-1)
+
+Thread 4 name:
+Thread 4:
+0   libsystem_kernel.dylib        	0x0000000240e00c50 semaphore_wait_trap + 8 (:-1)
+1   caulk                         	0x00000002abd0fc6c caulk::mach::semaphore::wait_or_error() + 8 (:-1)
+2   caulk                         	0x00000002abd0fc6c caulk::semaphore::timed_wait(double) + 224 (:-1)
+3   caulk                         	0x00000002abd0fcb8 caulk::semaphore::wait() + 12 (:-1)
+4   caulk                         	0x00000002abd0fcb8 caulk::concurrent::details::worker_thread::run() + 32 (:-1)
+5   caulk                         	0x00000002abd13f54 std::__1::__invoke_result_impl<void, void (caulk::concurrent::details::worker_thread::*&)(), caulk::concurrent::details::worker_thread*&>::type std::__1::__invoke[abi:nqe210106]<void (caulk::concur... + 72 (:-1)
+6   caulk                         	0x00000002abd13f54 decltype(auto) std::__1::__apply_tuple_impl[abi:nqe210106]<void (caulk::concurrent::details::worker_thread::*&)(), std::__1::tuple<caulk::concurrent::details::worker_thread*>&, 0ul>(void (caulk::co... + 72 (:-1)
+7   caulk                         	0x00000002abd13f54 decltype(auto) std::__1::apply[abi:nqe210106]<void (caulk::concurrent::details::worker_thread::*&)(), std::__1::tuple<caulk::concurrent::details::worker_thread*>&>(void (caulk::concurrent::details:... + 72 (:-1)
+8   caulk                         	0x00000002abd13f54 void* caulk::thread_proxy<std::__1::tuple<caulk::thread::attributes, void (caulk::concurrent::details::worker_thread::*)(), std::__1::tuple<caulk::concurrent::details::worker_thread*>>>(void*) + 96 (:-1)
+9   libsystem_pthread.dylib       	0x00000001f1142438 _pthread_start + 136 (:-1)
+10  libsystem_pthread.dylib       	0x00000001f113e8cc thread_start + 8 (:-1)
+
+Thread 5 name:
+Thread 5:
+0   libsystem_kernel.dylib        	0x0000000240e00cd4 mach_msg2_trap + 8 (:-1)
+1   libsystem_kernel.dylib        	0x0000000240e0430c mach_msg2_internal + 76 (:-1)
+2   libsystem_kernel.dylib        	0x0000000240e0422c mach_msg2 + 4 (:-1)
+3   libsystem_kernel.dylib        	0x0000000240e0422c mach_msg_overwrite + 424 (:-1)
+4   libsystem_kernel.dylib        	0x0000000240e04078 mach_msg + 24 (:-1)
+5   CoreFoundation                	0x00000001917f8374 __CFRunLoopServiceMachPort + 160 (:-1)
+6   CoreFoundation                	0x00000001917c2310 __CFRunLoopRun + 1188 (:-1)
+7   CoreFoundation                	0x00000001917c154c _CFRunLoopRunSpecificWithOptions + 532 (:-1)
+8   CFNetwork                     	0x00000001a6cd1b54 -[__CFN_CoreSchedulingSetRunnable runForever] + 24 (:-1)
+9   CFNetwork                     	0x00000001a6cd1b54 +[__CFN_CoreSchedulingSetRunnable _run:] + 416 (:-1)
+10  Foundation                    	0x000000018eab2914 __NSThread__start__ + 732 (:-1)
+11  libsystem_pthread.dylib       	0x00000001f1142438 _pthread_start + 136 (:-1)
+12  libsystem_pthread.dylib       	0x00000001f113e8cc thread_start + 8 (:-1)
+
+Thread 6 name:
+Thread 6:
+0   libsystem_kernel.dylib        	0x0000000240e00c68 semaphore_timedwait_trap + 8 (:-1)
+1   libdispatch.dylib             	0x00000001cc2ef7d8 _dispatch_sema4_timedwait + 64 (:-1)
+2   libdispatch.dylib             	0x00000001cc2bca68 _dispatch_semaphore_wait_slow + 76 (:-1)
+3   libdispatch.dylib             	0x00000001cc2cc6fc _dispatch_worker_thread + 324 (:-1)
+4   libsystem_pthread.dylib       	0x00000001f1142438 _pthread_start + 136 (:-1)
+5   libsystem_pthread.dylib       	0x00000001f113e8cc thread_start + 8 (:-1)
+
+Thread 7:
+
+Thread 8:
+
+Thread 9:
+
+Thread 10:
+
+Thread 11 name:
+Thread 11:
+0   libsystem_kernel.dylib        	0x0000000240e00c50 semaphore_wait_trap + 8 (:-1)
+1   libdispatch.dylib             	0x00000001cc2bc410 _dispatch_sema4_wait + 28 (:-1)
+2   libdispatch.dylib             	0x00000001cc2bcaa0 _dispatch_semaphore_wait_slow + 132 (:-1)
+3   UIKitCore                     	0x00000001977ae1f8 0x1973d4000 + 4039160
+4   UIKitCore                     	0x00000001977ae1b0 closure #2 in InProcessAnimationManager.startAdvancing(_:) + 308 (:-1)
+5   UIKitCore                     	0x00000001974145c4 <deduplicated_symbol> + 36 (:-1)
+6   Foundation                    	0x000000018eab2914 __NSThread__start__ + 732 (:-1)
+7   libsystem_pthread.dylib       	0x00000001f1142438 _pthread_start + 136 (:-1)
+8   libsystem_pthread.dylib       	0x00000001f113e8cc thread_start + 8 (:-1)
+
+Thread 12 name:
+Thread 12:
+0   libswiftCore.dylib            	0x000000018e4bbc7c swift::SubstGenericParametersFromMetadata::buildDescriptorPath(swift::TargetContextDescriptor<swift::InProcess> const*, swift::Demangle::__runtime::Demangler&) const + 24 (:-1)
+1   libswiftCore.dylib            	0x000000018e4bbe10 swift::SubstGenericParametersFromMetadata::buildDescriptorPath(swift::TargetContextDescriptor<swift::InProcess> const*, swift::Demangle::__runtime::Demangler&) const + 428 (:-1)
+2   libswiftCore.dylib            	0x000000018e4bbb30 swift::SubstGenericParametersFromMetadata::setup() const + 272 (:-1)
+3   libswiftCore.dylib            	0x000000018e4cd83c swift::SubstGenericParametersFromMetadata::getMetadata(unsigned int, unsigned int) const + 44 (:-1)
+4   libswiftCore.dylib            	0x000000018e4cb24c std::__1::__function::__value_func<void const* (unsigned int, unsigned int)>::operator()[abi:nqn210106](unsigned int&&, unsigned int&&) const + 36 (:-1)
+5   libswiftCore.dylib            	0x000000018e4cb24c std::__1::function<void const* (unsigned int, unsigned int)>::operator()(unsigned int, unsigned int) const + 36 (:-1)
+6   libswiftCore.dylib            	0x000000018e4cb24c (anonymous namespace)::DecodedMetadataBuilder::createGenericTypeParameterType(unsigned int, unsigned int) const + 76 (:-1)
+7   libswiftCore.dylib            	0x000000018e4c3390 swift::Demangle::__runtime::TypeDecoder<(anonymous namespace)::DecodedMetadataBuilder>::decodeMangledType(swift::Demangle::__runtime::Node*, unsigned int, bool) + 6968 (:-1)
+8   libswiftCore.dylib            	0x000000018e4c16a4 swift::Demangle::__runtime::TypeDecoder<(anonymous namespace)::DecodedMetadataBuilder>::decodeMangledType(swift::Demangle::__runtime::Node*, bool) + 24 (:-1)
+9   libswiftCore.dylib            	0x000000018e4c16a4 swift::TypeLookupErrorOr<(anonymous namespace)::DecodedMetadataBuilder::BuiltType> swift::Demangle::__runtime::decodeMangledType<(anonymous namespace)::DecodedMetadataBuilder>((anonymous namespace)... + 28 (:-1)
+10  libswiftCore.dylib            	0x000000018e4c16a4 swift_getTypeByMangledNodeImpl(swift::MetadataRequest, swift::Demangle::__runtime::Demangler&, swift::Demangle::__runtime::Node*, void const* const*, std::__1::function<void const* (unsigned int, u... + 784 (:-1)
+11  libswiftCore.dylib            	0x000000018e4c1218 swift_getTypeByMangledNode + 336 (:-1)
+12  libswiftCore.dylib            	0x000000018e4b7f7c swift_getTypeByMangledNameImpl(swift::MetadataRequest, __swift::__runtime::llvm::StringRef, void const* const*, std::__1::function<void const* (unsigned int, unsigned int)>, std::__1::function<swif... + 1164 (:-1)
+13  libswiftCore.dylib            	0x000000018e4b7974 swift_getTypeByMangledName + 336 (:-1)
+14  libswiftCore.dylib            	0x000000018e4b92ac checkGenericRequirement(swift::TargetGenericRequirementDescriptor<swift::InProcess> const&, __swift::__runtime::llvm::SmallVectorImpl<void const*>&, std::__1::function<void const* (unsigned int, un... + 72 (:-1)
+15  libswiftCore.dylib            	0x000000018e4b92ac swift::_checkGenericRequirements(__swift::__runtime::llvm::ArrayRef<swift::GenericParamDescriptor>, __swift::__runtime::llvm::ArrayRef<swift::TargetGenericRequirementDescriptor<swift::InProcess>>, ... + 2268 (:-1)
+16  libswiftCore.dylib            	0x000000018e4d9d50 swift::TargetProtocolConformanceDescriptor<swift::InProcess>::getWitnessTable(swift::TargetMetadata<swift::InProcess> const*, swift::ConformanceExecutionContext&) const + 328 (:-1)
+17  libswiftCore.dylib            	0x000000018e4a3f74 (anonymous namespace)::ConformanceLookupResult::fromConformance(swift::TargetMetadata<swift::InProcess> const*, swift::TargetProtocolConformanceDescriptor<swift::InProcess> const*) + 20 (:-1)
+18  libswiftCore.dylib            	0x000000018e4a3f74 swift_conformsToProtocolMaybeInstantiateSuperclasses(swift::TargetMetadata<swift::InProcess> const*, swift::TargetProtocolDescriptor<swift::InProcess> const*, bool) + 5452 (:-1)
+19  libswiftCore.dylib            	0x000000018e4b08b8 swift_conformsToProtocolWithExecutionContextImpl(swift::TargetMetadata<swift::InProcess> const*, swift::TargetProtocolDescriptor<swift::InProcess> const*, swift::ConformanceExecutionContext*) + 20 (:-1)
+20  libswiftCore.dylib            	0x000000018e4b08b8 swift_conformsToProtocolWithExecutionContext + 72 (:-1)
+21  libswiftCore.dylib            	0x000000018e4b0a30 swift::_conformsToProtocol(swift::OpaqueValue const*, swift::TargetMetadata<swift::InProcess> const*, swift::TargetProtocolDescriptorRef<swift::InProcess>, swift::TargetWitnessTable<swift::InProces... + 152 (:-1)
+22  libswiftCore.dylib            	0x000000018e4bac58 checkGenericRequirement(swift::TargetGenericRequirementDescriptor<swift::InProcess> const&, __swift::__runtime::llvm::SmallVectorImpl<void const*>&, std::__1::function<void const* (unsigned int, un... + 108 (:-1)
+23  libswiftCore.dylib            	0x000000018e4bac58 swift::_checkGenericRequirements(__swift::__runtime::llvm::ArrayRef<swift::GenericParamDescriptor>, __swift::__runtime::llvm::ArrayRef<swift::TargetGenericRequirementDescriptor<swift::InProcess>>, ... + 8840 (:-1)
+24  libswiftCore.dylib            	0x000000018e4d9d50 swift::TargetProtocolConformanceDescriptor<swift::InProcess>::getWitnessTable(swift::TargetMetadata<swift::InProcess> const*, swift::ConformanceExecutionContext&) const + 328 (:-1)
+25  libswiftCore.dylib            	0x000000018e4a3f74 (anonymous namespace)::ConformanceLookupResult::fromConformance(swift::TargetMetadata<swift::InProcess> const*, swift::TargetProtocolConformanceDescriptor<swift::InProcess> const*) + 20 (:-1)
+26  libswiftCore.dylib            	0x000000018e4a3f74 swift_conformsToProtocolMaybeInstantiateSuperclasses(swift::TargetMetadata<swift::InProcess> const*, swift::TargetProtocolDescriptor<swift::InProcess> const*, bool) + 5452 (:-1)
+27  libswiftCore.dylib            	0x000000018e4b08b8 swift_conformsToProtocolWithExecutionContextImpl(swift::TargetMetadata<swift::InProcess> const*, swift::TargetProtocolDescriptor<swift::InProcess> const*, swift::ConformanceExecutionContext*) + 20 (:-1)
+28  libswiftCore.dylib            	0x000000018e4b08b8 swift_conformsToProtocolWithExecutionContext + 72 (:-1)
+29  libswiftCore.dylib            	0x000000018e4b0a30 swift::_conformsToProtocol(swift::OpaqueValue const*, swift::TargetMetadata<swift::InProcess> const*, swift::TargetProtocolDescriptorRef<swift::InProcess>, swift::TargetWitnessTable<swift::InProces... + 152 (:-1)
+30  libswiftCore.dylib            	0x000000018e4bac58 checkGenericRequirement(swift::TargetGenericRequirementDescriptor<swift::InProcess> const&, __swift::__runtime::llvm::SmallVectorImpl<void const*>&, std::__1::function<void const* (unsigned int, un... + 108 (:-1)
+31  libswiftCore.dylib            	0x000000018e4bac58 swift::_checkGenericRequirements(__swift::__runtime::llvm::ArrayRef<swift::GenericParamDescriptor>, __swift::__runtime::llvm::ArrayRef<swift::TargetGenericRequirementDescriptor<swift::InProcess>>, ... + 8840 (:-1)
+32  libswiftCore.dylib            	0x000000018e4d9d50 swift::TargetProtocolConformanceDescriptor<swift::InProcess>::getWitnessTable(swift::TargetMetadata<swift::InProcess> const*, swift::ConformanceExecutionContext&) const + 328 (:-1)
+33  libswiftCore.dylib            	0x000000018e4a3f74 (anonymous namespace)::ConformanceLookupResult::fromConformance(swift::TargetMetadata<swift::InProcess> const*, swift::TargetProtocolConformanceDescriptor<swift::InProcess> const*) + 20 (:-1)
+34  libswiftCore.dylib            	0x000000018e4a3f74 swift_conformsToProtocolMaybeInstantiateSuperclasses(swift::TargetMetadata<swift::InProcess> const*, swift::TargetProtocolDescriptor<swift::InProcess> const*, bool) + 5452 (:-1)
+35  libswiftCore.dylib            	0x000000018e4b08b8 swift_conformsToProtocolWithExecutionContextImpl(swift::TargetMetadata<swift::InProcess> const*, swift::TargetProtocolDescriptor<swift::InProcess> const*, swift::ConformanceExecutionContext*) + 20 (:-1)
+36  libswiftCore.dylib            	0x000000018e4b08b8 swift_conformsToProtocolWithExecutionContext + 72 (:-1)
+37  libswiftCore.dylib            	0x000000018e4b0a30 swift::_conformsToProtocol(swift::OpaqueValue const*, swift::TargetMetadata<swift::InProcess> const*, swift::TargetProtocolDescriptorRef<swift::InProcess>, swift::TargetWitnessTable<swift::InProces... + 152 (:-1)
+38  libswiftCore.dylib            	0x000000018e4bac58 checkGenericRequirement(swift::TargetGenericRequirementDescriptor<swift::InProcess> const&, __swift::__runtime::llvm::SmallVectorImpl<void const*>&, std::__1::function<void const* (unsigned int, un... + 108 (:-1)
+39  libswiftCore.dylib            	0x000000018e4bac58 swift::_checkGenericRequirements(__swift::__runtime::llvm::ArrayRef<swift::GenericParamDescriptor>, __swift::__runtime::llvm::ArrayRef<swift::TargetGenericRequirementDescriptor<swift::InProcess>>, ... + 8840 (:-1)
+40  libswiftCore.dylib            	0x000000018e4d9d50 swift::TargetProtocolConformanceDescriptor<swift::InProcess>::getWitnessTable(swift::TargetMetadata<swift::InProcess> const*, swift::ConformanceExecutionContext&) const + 328 (:-1)
+41  libswiftCore.dylib            	0x000000018e4a3f74 (anonymous namespace)::ConformanceLookupResult::fromConformance(swift::TargetMetadata<swift::InProcess> const*, swift::TargetProtocolConformanceDescriptor<swift::InProcess> const*) + 20 (:-1)
+42  libswiftCore.dylib            	0x000000018e4a3f74 swift_conformsToProtocolMaybeInstantiateSuperclasses(swift::TargetMetadata<swift::InProcess> const*, swift::TargetProtocolDescriptor<swift::InProcess> const*, bool) + 5452 (:-1)
+43  libswiftCore.dylib            	0x000000018e500614 swift_conformsToProtocolWithExecutionContextImpl(swift::TargetMetadata<swift::InProcess> const*, swift::TargetProtocolDescriptor<swift::InProcess> const*, swift::ConformanceExecutionContext*) + 20 (:-1)
+44  libswiftCore.dylib            	0x000000018e500614 swift_conformsToProtocolCommonImpl(swift::TargetMetadata<swift::InProcess> const*, swift::TargetProtocolDescriptor<swift::InProcess> const*) + 20 (:-1)
+45  libswiftCore.dylib            	0x000000018e500614 swift_conformsToProtocolImpl(swift::TargetMetadata<swift::InProcess> const*, void const*) + 48 (:-1)
+46  libswiftCore.dylib            	0x000000018e500614 swift_conformsToProtocol + 88 (:-1)
+47  AttributeGraph                	0x00000001c4f90c18 AG::LayoutDescriptor::Builder::should_visit_fields(AG::swift::metadata const*, bool) + 416 (:-1)
+48  AttributeGraph                	0x00000001c4f93334 AG::LayoutDescriptor::make_layout(AG::swift::metadata const*, AGComparisonMode, AG::LayoutDescriptor::HeapMode) + 124 (:-1)
+49  AttributeGraph                	0x00000001c4f9356c AG::(anonymous namespace)::TypeDescriptorCache::drain_queue(void*) + 360 (:-1)
+50  libdispatch.dylib             	0x00000001cc2d41e4 _dispatch_client_callout + 16 (:-1)
+51  libdispatch.dylib             	0x00000001cc2f178c <deduplicated_symbol> + 28 (:-1)
+52  libdispatch.dylib             	0x00000001cc2cca5c _dispatch_continuation_invoke_inline + 280 (:-1)
+53  libdispatch.dylib             	0x00000001cc2cca5c _dispatch_continuation_pop_inline + 280 (:-1)
+54  libdispatch.dylib             	0x00000001cc2cca5c _dispatch_root_queue_drain + 708 (:-1)
+55  libdispatch.dylib             	0x00000001cc2cd098 _dispatch_worker_thread2 + 184 (:-1)
+56  libsystem_pthread.dylib       	0x00000001f113f374 _pthread_wqthread + 232 (:-1)
+57  libsystem_pthread.dylib       	0x00000001f113e8c0 start_wqthread + 8 (:-1)
+
+Thread 13:
+
+Thread 14:
+
+
+Thread 0 crashed with ARM Thread State (64-bit):
+    x0: 0x000000011a4ae040   x1: 0x0000000000000000   x2: 0x0000000000000000   x3: 0x000000011fd78d20
+    x4: 0x0000000000000000   x5: 0x000000018e4a8d64   x6: 0x0000000000000001   x7: 0x0000000000000000
+    x8: 0x0000000000000000   x9: 0x000000000000002f  x10: 0x000000011a4ae040  x11: 0x00000002bf8bc318
+   x12: 0x0000000000000040  x13: 0x29b70ca8a6d5d310  x14: 0x20b70ca8a6d5d310  x15: 0x00000001011d8000
+   x16: 0x000000019bcc499c  x17: 0x0000001ff74d21ec  x18: 0x0000000000000000  x19: 0x000000016fd5e3d0
+   x20: 0x000000012103bb70  x21: 0x00000001fbd630b0  x22: 0x0000000000000001  x23: 0x00000001fbd630b0
+   x24: 0x000000011fd78cf0  x25: 0x0000000118772ee0  x26: 0x000000012b7f75c0  x27: 0x000000012b759a80
+   x28: 0x00000001fc8eda30   fp: 0x000000016fd5e090   lr: 0x00000001002cb6dc
+    sp: 0x000000016fd5dcc0   pc: 0x00000001002cb96c cpsr: 0x20001000
+   esr: 0xf2000001 (Breakpoint) brk 1
+
+
+Binary Images:
+        0x100094000 -         0x100ba7fff Nosfy arm64  <12292d8b0f313082b3b2c2b32e023516> /private/var/containers/Bundle/Application/900ECCD9-3DE4-46EB-B9FC-07F06C210F70/Nosfy.app/Nosfy
+        0x100ef4000 -         0x100efffff libobjc-trampolines.dylib arm64e  <004ce93cf1423d68b3c330c6efef4d65> /private/preboot/Cryptexes/OS/usr/lib/libobjc-trampolines.dylib
+        0x18e3c9000 -         0x18e46e47f dyld arm64e  <0f8d35b6556f3e348eaa80ab54047dc5> /usr/lib/dyld
+        0x18e48a000 -         0x18ea238bf libswiftCore.dylib arm64e  <1539faa731da3c41b14aa9691063824d> /usr/lib/swift/libswiftCore.dylib
+        0x18ea24000 -         0x18f8adcbf Foundation arm64e  <73841aa3bfdd322d8dc2e5185a14dee1> /System/Library/Frameworks/Foundation.framework/Foundation
+        0x191793000 -         0x191d2fa3f CoreFoundation arm64e  <101eb2f1191534a08bc9631d03753b84> /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation
+        0x19217f000 -         0x19256febf QuartzCore arm64e  <8f1e0b3fadd63710a790009333597ab4> /System/Library/Frameworks/QuartzCore.framework/QuartzCore
+        0x1973d4000 -         0x19991763f UIKitCore arm64e  <0d94422ffe7c302eb8963bc5873c0cfc> /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore
+        0x19a81f000 -         0x19baaa99f SwiftUI arm64e  <17adc54e93ab3f13b469e3f53181fc4d> /System/Library/Frameworks/SwiftUI.framework/SwiftUI
+        0x19baf8000 -         0x19c9f47bf SwiftUICore arm64e  <82a21ce44e4338fb9862f0be7b909df1> /System/Library/Frameworks/SwiftUICore.framework/SwiftUICore
+        0x1a6c40000 -         0x1a6ff077f CFNetwork arm64e  <3ae849fe8a7d388c86ef64dedb9fc5c6> /System/Library/Frameworks/CFNetwork.framework/CFNetwork
+        0x1c4f8c000 -         0x1c4fd119f AttributeGraph arm64e  <a973ad423cff3c90bc78e4e0bffa155b> /System/Library/PrivateFrameworks/AttributeGraph.framework/AttributeGraph
+        0x1cc2b9000 -         0x1cc2ff5ff libdispatch.dylib arm64e  <49c0cd3ea6963b11ba925755f0c3c6e3> /usr/lib/system/libdispatch.dylib
+        0x1f113e000 -         0x1f114a4ef libsystem_pthread.dylib arm64e  <34b44744bc64386eab90eee86b23ac46> /usr/lib/system/libsystem_pthread.dylib
+        0x237790000 -         0x2377987bf GraphicsServices arm64e  <411165e2ee8e380eb2549977273971e3> /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices
+        0x240e00000 -         0x240e3bb1f libsystem_kernel.dylib arm64e  <18665b3f6d5133abb9e963062200ec42> /usr/lib/system/libsystem_kernel.dylib
+        0x2a6edd000 -         0x2a6edf1bf UpdateCycle arm64e  <26fab8144c8f3a06b45ecba271020dc4> /System/Library/PrivateFrameworks/UpdateCycle.framework/UpdateCycle
+        0x2abd0c000 -         0x2abd3501f caulk arm64e  <5dd354fba86f37328f36a88736414f79> /System/Library/PrivateFrameworks/caulk.framework/caulk
+
+EOF

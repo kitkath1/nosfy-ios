@@ -4,8 +4,10 @@ import UIKit
 // LA RÉCOMPENSE DU CHEMIN — de « Claim » à la carte gagnée.
 //
 // Le flux, dicté le 28-08 :
-//   galet disponible → halo → Claim → card lune → on RANGE Nosfy →
-//   on GRATTE la lune → révélation → Coins OU Boosters → créditée → claimed
+//   galet disponible → halo → Claim → card lune → on GRATTE la lune →
+//   révélation → Coins OU Boosters → créditée → claimed
+//   (le rangement du sticker Nosfy est mort le 20-09 : il verrouillait le
+//   grattage, payé sur TestFlight 81.)
 //
 // ⚠️ **LA RÈGLE QUI COMMANDE TOUT** : la récompense est TIRÉE AU CLAIM, pas
 // par l'animation. Le grattage ne décide RIEN — il révèle une décision déjà
@@ -35,19 +37,36 @@ extension RecompenseTiree {
         guard let type = j["type"] as? String else { return nil }
         let rarete = RareteRecompense(rawValue: (j["rarete"] as? String) ?? "")
             ?? .common
+        // LE RÉCIT DE LA CONVERSION (plan du 20-09, § 3.2 option A). La
+        // réponse porte déjà ce que la conversion automatique a fait à
+        // l'instant du crédit : `sachets_convertis` (enveloppe du 30-08,
+        // `20260830210000:357-382`, remis à 0 au rejeu) et le coffre relu
+        // APRÈS le déclencheur (`coffre.solde_or`, net ; `solde` à la racine
+        // est aussi post-conversion). On les garde dans le tirage pour que
+        // la card puisse dire « 147 gagnées → 2 sachets, 27 restent ».
+        // ⚠️ Payé sur TestFlight 81 (19-09) : la card disait « +147, Added to
+        // your balance » pendant que le coffre lisait 27 — rien ne racontait
+        // les −200 de la conversion au moment du gain.
+        let sachets = (j["sachets_convertis"] as? Int) ?? 0
+        let coffre = j["coffre"] as? [String: Any]
+        let solde = (coffre?["solde_or"] as? Int) ?? (j["solde"] as? Int)
         if type == "coins" {
             let monnaie = (j["monnaie"] as? String) ?? "yellow"
             return RecompenseTiree(type: .coins,
                                    coinType: monnaie == "silver" ? .black : .standard,
                                    montant: (j["montant"] as? Int) ?? 0,
-                                   rarete: rarete)
+                                   rarete: rarete,
+                                   sachetsConvertis: sachets,
+                                   soldeApres: solde)
         }
         let robes = (j["robes"] as? [String]) ?? []
         return RecompenseTiree(type: .boosters,
                                boosters: robes.map {
                                    $0 == "noire" ? .legendaryBlack : .orange
                                },
-                               rarete: rarete)
+                               rarete: rarete,
+                               sachetsConvertis: sachets,
+                               soldeApres: solde)
     }
 }
 
@@ -58,6 +77,14 @@ struct RecompenseTiree: Codable, Equatable {
     var montant: Int = 0
     var boosters: [TypeBooster] = []
     var rarete: RareteRecompense = .common
+    /// Ce que la conversion 100 pièces → 1 sachet a fait à l'instant du crédit
+    /// (20-09). OPTIONNELS : le journal `chemin.tirages` des installations
+    /// d'avant ne les porte pas, et un `Decodable` synthétisé refuse une clé
+    /// absente sur un champ non optionnel — un ancien tirage serait devenu
+    /// illisible, et la card ne se rouvrirait plus jamais dessus.
+    var sachetsConvertis: Int? = nil
+    /// Le solde d'or NET, relu par le serveur après la conversion.
+    var soldeApres: Int? = nil
     var isLegendaryCurrency: Bool { coinType == .black }
 }
 
@@ -66,7 +93,9 @@ struct RecompenseTiree: Codable, Equatable {
 /// `available` : le halo respire, « Claim » est offert.
 /// `claiming` : l'aller-retour serveur — le bouton attend, et un échec
 ///   REVIENT à `available` ; jamais un galet mort.
-/// `claimed` : créditée. La card se rouvre sans se re-gratter.
+/// `claimed` : créditée. La card se rouvre sans se re-gratter — et depuis le
+///   20-09, un nœud crédité mais jamais gratté (`nonReveles`) se rouvre par
+///   `rouvrir(id)`, au lancement ou depuis le galet.
 enum EtatRecompense: String, Codable { case locked, available, claiming, claimed }
 
 // MARK: - Le tirage
@@ -144,7 +173,18 @@ enum TirageRecompense {
         ouverte = nil
         tirage = nil
         revele = false
+        generationJournal += 1
     }
+
+    /// LA GÉNÉRATION DU JOURNAL — une propriété STOCKÉE, donc SUIVIE par
+    /// `@Observable` (le macro ne suit que le stocké). `journal` et `vues`
+    /// sont calculés sur les préférences, invisibles à l'observation : sans
+    /// ce compteur, la racine qui lit `nonReveles` dans son corps ne se
+    /// ré-évaluait jamais après un grattage, et le panneau du galet
+    /// proposait encore « Scratch » sur une card déjà révélée (relecture
+    /// d'interfaces du 20-09). Bumpé à chaque écriture du journal ou des
+    /// vues, et au changement de compte.
+    private var generationJournal = 0
 
     /// Les tirages persistés, par id de nœud (en attendant le serveur).
     private var journal: [Int: RecompenseTiree] {
@@ -157,13 +197,31 @@ enum TirageRecompense {
         set {
             UserDefaults.standard.set(try? JSONEncoder().encode(newValue),
                                       forKey: "chemin.tirages")
+            generationJournal += 1
         }
     }
     /// Les révélations déjà jouées.
     private var vues: Set<Int> {
         get { Set(UserDefaults.standard.array(forKey: "chemin.revele") as? [Int] ?? []) }
-        set { UserDefaults.standard.set(Array(newValue).sorted(), forKey: "chemin.revele") }
+        set {
+            UserDefaults.standard.set(Array(newValue).sorted(), forKey: "chemin.revele")
+            generationJournal += 1
+        }
     }
+    /// LES NŒUDS TIRÉS MAIS JAMAIS RÉVÉLÉS (20-09, plan § 5.5) : présents
+    /// dans le journal (le serveur a crédité au Claim), absents des vues (le
+    /// grattage n'a jamais fini). Calculé à la demande sur les préférences,
+    /// donc toujours juste après une écriture du journal ou des vues.
+    /// ⚠️ Payé sur TestFlight 81 (19-09) : Claim → card → app quittée →
+    /// au retour le galet disait « Reward already claimed » sans bouton, et
+    /// le résultat des 147 pièces n'a jamais été montré. C'est cet ensemble
+    /// que la Route lit pour offrir « Scratch », et que l'hôte lit au
+    /// lancement pour rouvrir la card tout seul.
+    var nonReveles: Set<Int> {
+        _ = generationJournal   // la dépendance observable, voir plus haut
+        return Set(journal.keys).subtracting(vues)
+    }
+
     /// Les compteurs de pitié, une piste par type.
     private func secs(pieces: Bool) -> Int {
         UserDefaults.standard.integer(forKey: pieces ? "chemin.secs.coins"
@@ -229,6 +287,29 @@ enum TirageRecompense {
         return true
     }
 
+    /// ROUVRIR LA CARD SUR UN TIRAGE DÉJÀ STOCKÉ — AUCUN appel serveur : le
+    /// tirage a été fait et crédité au Claim, il ne reste qu'à le montrer.
+    /// C'est la branche `journal[id]` de `reclamer`, enfin joignable depuis
+    /// l'écran : le galet « Scratch » de la Route et la reprise au lancement
+    /// passent par ici. `false` si le journal ne connaît pas le nœud — la
+    /// Route retombe alors sur son « Claim » ordinaire.
+    ///
+    /// Les annonces sont RETENUES comme au Claim (`retenirPourGalet`) : la
+    /// dalle « +N pièces » ne doit pas défiler pendant qu'on gratte ; `fermer`
+    /// les libère. Si le serveur a déjà rendu et acquitté ces événements à un
+    /// passage précédent (le toaster a défilé tout seul), il n'y a plus rien
+    /// à retenir : la card se rouvre, et c'est tout.
+    @discardableResult
+    func rouvrir(_ id: Int) -> Bool {
+        guard let deja = journal[id] else { return false }
+        tirage = deja
+        revele = vues.contains(id)
+        EconomieWoop.shared.retenirPourGalet = true
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        withAnimation(.easeOut(duration: 0.34)) { ouverte = id }
+        return true
+    }
+
     /// L'aller-retour : le tirage serveur, puis la relecture des soldes.
     private func tirerAuServeur(_ id: Int, pieces: Bool) async -> RecompenseTiree? {
         let generation = EconomieWoop.shared.generationCartes
@@ -283,7 +364,10 @@ enum TirageRecompense {
                                      boosters: [.legendaryBlack, .legendaryBlack],
                                      rarete: .legendary)
         default:
-            tirage = RecompenseTiree(type: .coins, montant: 160)
+            // Le récit de la conversion, pour le voir au sim : 160 gagnées →
+            // 1 sachet, 60 restent. Un banc, pas un fait.
+            tirage = RecompenseTiree(type: .coins, montant: 160,
+                                     sachetsConvertis: 1, soldeApres: 60)
         }
         revele = ouvert
         withAnimation(.easeOut(duration: 0.34)) { ouverte = -1 }
@@ -304,8 +388,14 @@ enum TirageRecompense {
         // pièces ou booster ». Avant, un tirage en sachets ne posait RIEN (la
         // dalle n'avait qu'une robe). L'événement fait la robe : pièces, pièce
         // d'argent (piste pièces, monnaie silver), ou sachet(s).
+        // ⚠️ 20-09 : la dalle de la MAQUETTE ne part qu'une card RÉVÉLÉE.
+        // « Scratch later » rouvre la même card au prochain passage ; sans
+        // ce garde, chaque fermeture sans grattage annonçait le gain une
+        // fois de plus, et le racontait AVANT qu'il soit vu. Côté serveur,
+        // les événements sont acquittés au premier affichage : ils ne
+        // reviennent pas, le garde n'est pas nécessaire là.
         let annonce: Annonce? = {
-            guard !EconomieWoop.possible, let t = tirage else { return nil }
+            guard !EconomieWoop.possible, revele, let t = tirage else { return nil }
             switch t.type {
             case .coins:
                 return t.isLegendaryCurrency ? .argent(t.montant) : .pieces(t.montant)
@@ -345,6 +435,38 @@ struct RewardCheminHote: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                 etat.banc(cas)
             }
+        }
+        .task { await reprendreNonRevele() }
+    }
+
+    /// LA REPRISE (20-09, plan § 5.5) : ce qu'elle voit au lancement, si un
+    /// tirage a été payé au Claim mais jamais gratté (app tuée, « Scratch
+    /// later », réponse perdue) — la home se pose, puis la card se rouvre
+    /// d'elle-même sur le tirage stocké, sans appel serveur. Le plus ancien
+    /// nœud d'abord ; les suivants se retrouvent par le galet.
+    ///
+    /// ⚠️ Payé sur TestFlight 81 (19-09) : au retour, le toaster « +147 »
+    /// défilait tout seul et le galet disait « already claimed » sans bouton.
+    /// La rétention des annonces est posée AVANT la pause de 1,2 s : la
+    /// relecture du coffre au lancement rend les événements non acquittés,
+    /// et il faut qu'elle les trouve déjà retenus, pas la card déjà ouverte.
+    /// Jamais pendant un banc (`-rewardChemin`, `-rewardAuto`) : ils posent
+    /// leur propre card.
+    @MainActor private func reprendreNonRevele() async {
+        let a = CommandLine.arguments
+        guard !a.contains("-rewardChemin"), !a.contains("-rewardAuto") else { return }
+        guard etat.ouverte == nil, let id = etat.nonReveles.min() else { return }
+        EconomieWoop.shared.retenirPourGalet = true
+        try? await Task.sleep(for: .seconds(1.2))
+        // Elle a touché un galet pendant la pause : `reclamer` tient la card,
+        // et `fermer` libérera la rétention posée ici.
+        guard etat.ouverte == nil else { return }
+        // Le journal a pu être vidé pendant la pause (changement de compte) :
+        // rien à rouvrir, et la rétention posée plus haut est rendue.
+        guard !Task.isCancelled, etat.rouvrir(id) else {
+            EconomieWoop.shared.retenirPourGalet = false
+            EconomieWoop.shared.libererEvenements()
+            return
         }
     }
 

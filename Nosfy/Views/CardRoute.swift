@@ -14,6 +14,11 @@ import SwiftUI
 //  1. le galet du milieu porte une DATE, jamais un rang — c'est la loi de la
 //     route (« la date est un estampillage, pas une position »), et le rang
 //     est déjà dit par le texte, à dix points de là ;
+//     ⚠️ 20-09 (TestFlight 81, « plusieurs fois le jour 19 ») : un « TODAY »
+//     sur l'actif a été essayé et refusé par Kathryn (« c'est la date et
+//     basta »). L'actif garde la date du jour ; le 2e galet d'un même jour
+//     porte le sticker ×2 (`Lecture.multiple`), et le plafond de deux
+//     séances par jour (`PlafondJour`) borne la répétition ;
 //  2. « étape X sur 9 » compte TOUS les nœuds du chapitre, récompenses
 //     comprises : le chiffre doit se vérifier au doigt sur la route ;
 //  3. le nœud du haut s'affiche tel quel, même éteint — une récompense déjà
@@ -314,17 +319,48 @@ struct CardRoute: View {
         // permanente sur cette card serait un coût permanent sur la page dont
         // la cadence est le chantier.
         //
-        // ⚠️ Fonction PURE DU TEMPS, pas un `@State` + `repeatForever` : cette
-        // card est démontée à chaque film de départ (`if verreMonte`), et un
-        // état de phase y sauterait à chaque aller-retour de la home.
-        if enSeance {
-            TimelineView(.animation(minimumInterval: 1.0 / 20.0,
+        // ⚠️ LE SOUFFLE NE SE REDESSINE PLUS, IL S'ANIME (05-09, voir
+        // `LisereRespirant`) : l'horloge ré-évaluait le corps ENTIER de la
+        // card (ardoise en verre, galets, textes) vingt fois par seconde,
+        // pendant TOUTE la séance, pour un point de 6 pt et une lueur de
+        // bord. Le `@State` de phase est ré-armé à `.task` : la card étant
+        // démontée à chaque film de départ, la respiration REPART du repos
+        // au remontage (déclaré ; l'ancienne forme reprenait en vol).
+        // ⚠️ CHANGEMENT DÉCLARÉ, à trancher sur capture : l'ancien souffle
+        // sommait DEUX sinus (4,7 s + 7,9 s, jamais le même état) ; une
+        // animation ne sait pas sommer deux périodes sur un même attribut —
+        // la nouvelle forme respire sur la SEULE période dominante (4,7 s),
+        // même plage (0,24 → 1,0). `-souffleHorloge` rejoue l'ancienne.
+        if enSeance, SouffleBanc.horloge {
+            TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                     paused: reduceMotion || RythmeEcran.dortHome)) { tl in
                 let _ = SondeVol.shared.tic(3)
                 corps(souffle(tl.date.timeIntervalSinceReferenceDate))
             }
+        } else if enSeance {
+            corps(0.24 + 0.76 * respiration)
+                .task(id: "\(reduceMotion)-\(RythmeEcran.dortHome)") {
+                    armerRespiration()
+                }
         } else {
             corps(0)
+        }
+    }
+
+    /// La phase du souffle de séance, 0 → 1 — LA seule chose qui bouge.
+    @State private var respiration: Double = 0
+
+    private func armerRespiration() {
+        guard enSeance, !reduceMotion, !RythmeEcran.dortHome else {
+            var tr = Transaction()
+            tr.disablesAnimations = true
+            withTransaction(tr) { respiration = 0 }
+            return
+        }
+        respiration = 0
+        withAnimation(.easeInOut(duration: 4.7 / 2)
+            .repeatForever(autoreverses: true)) {
+            respiration = 1
         }
     }
 
@@ -694,6 +730,9 @@ struct CardRoute: View {
                           lentille: false,
                           date: lecture.date(e),
                           jourSeul: geo.jourSeul,
+                          // LE STICKER ×2 (20-09) : le même calcul que la
+                          // route (`Lecture.multiple`), jamais recopié.
+                          multiple: lecture.multiple(e),
                           inerte: true)
             // LE GALET 1 RESPIRE PLUS FORT (V5) : sa lueur sous lui, feuille
             // `repeatForever` — jamais une horloge (la loi du 05-09).
@@ -773,6 +812,7 @@ struct CardRoute: View {
                           lentille: false,
                           date: lecture.date(e),
                           jourSeul: geo.jourSeul,
+                          multiple: lecture.multiple(e),
                           inerte: true)
             // LE GALET 1 RESPIRE (13-09, chemin vierge) : une lueur sous lui, en
             // valeur animée `repeatForever` — jamais une horloge (la loi du
@@ -1520,6 +1560,7 @@ struct RouteCardLab: View {
             case "apresReward": return 4    // rang 5, la pièce est derrière
             case "finChapitre": return 7    // rang 8, le trésor est dessous
             case "chap2": return 9 + 4      // chapitre 2, rang 5
+            case "double": return 2         // 20-09 : deux séances AUJOURD'HUI → ×2
             default: return 2               // rang 3, la pièce est dessous
             }
         }()
@@ -1539,6 +1580,14 @@ struct RouteCardLab: View {
             faits.insert(e.id)
             dates[e.id] = Calendar.current.date(
                 byAdding: .day, value: e.id - etape, to: Date())
+        }
+        // `double` (20-09) : les séances faites tombent toutes AUJOURD'HUI,
+        // à une heure d'écart — la 2e porte le sticker ×2, l'actif porte la
+        // même date à côté (le cas exact de TestFlight 81, le 19-09).
+        if cas == "double" {
+            for id in faits {
+                dates[id] = Date().addingTimeInterval(Double(id - etape) * 3600)
+            }
         }
         // La récompense DÉPASSÉE est réclamée : c'est elle qu'on veut voir
         // au-dessus d'aujourd'hui, gravée et éteinte.

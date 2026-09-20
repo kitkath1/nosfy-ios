@@ -20,17 +20,21 @@ enum PlafondJour {
 
     /// Le plafond vaut pour les séances finies À PARTIR de ce jour (la règle
     /// `chemin_plafond_depuis`, la même au serveur) : les journées d'avant
-    /// gardent tous leurs galets — lu le 20-09, son propre compte avait quatre
-    /// séances avec travail le matin même. Le banc `-plafondJourDepuis AAAA-MM-JJ`
-    /// avance ou recule la date (avec `-demoData` : trois séances aujourd'hui,
-    /// deux comptées, la troisième refusée).
+    /// gardent tous leurs galets. Posé au 21-09 le matin du 20-09 (son propre
+    /// compte avait quatre séances avec travail ce matin-là), puis **ramené au
+    /// 20-09 l'après-midi** sur son verdict (« ×4 dans la Route : non,
+    /// impossible — max deux et le sticker, basta ») une fois les comptes
+    /// Apple remis à zéro (migration `20260920170000`, à déployer avec ce
+    /// changement). Le banc `-plafondJourDepuis AAAA-MM-JJ` avance ou recule
+    /// la date (avec `-demoData` : trois séances aujourd'hui, deux comptées,
+    /// la troisième refusée).
     static let depuis: DateComponents = {
         let a = CommandLine.arguments
         if let i = a.firstIndex(of: "-plafondJourDepuis"), i + 1 < a.count {
             let p = a[i + 1].split(separator: "-").compactMap { Int($0) }
             if p.count == 3 { return DateComponents(year: p[0], month: p[1], day: p[2]) }
         }
-        return DateComponents(year: 2026, month: 9, day: 21)
+        return DateComponents(year: 2026, month: 9, day: 20)
     }()
 
     /// Le jour local d'une date — trois composantes, comparables.

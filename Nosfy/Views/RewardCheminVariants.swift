@@ -18,15 +18,20 @@ struct RecompensePieces: View {
     let tirage: RecompenseTiree
     var revele: Bool
 
-    @State private var roule = 0
+    /// LA HAUTEUR DU BANDEAU VIDÉO — lue par la card pour ne pas compter
+    /// cette surface dans le taux de grattage (elle n'a rien à révéler).
+    static let hauteurBandeau: CGFloat = 232
+
     @State private var tour: Double = 0
     /// LA PASTILLE DE CRÉDIT (28-08 : « une fois les pièces collectées, il faut
     /// animer une pastille pour montrer que c'est pris en compte »). Elle
-    /// arrive APRÈS que le compteur a fini de rouler — sinon elle annonce un
-    /// total qu'on est encore en train de compter.
+    /// arrive quand le voile a fini de se fondre — sinon elle annonce sous
+    /// une surface qu'on est encore en train d'ouvrir.
     @State private var pastille = false
 
     private var noire: Bool { tirage.coinType == .black }
+    /// Ce que la conversion a fait, si elle a fait quelque chose.
+    private var sachetsConvertis: Int { tirage.sachetsConvertis ?? 0 }
 
     var body: some View {
         ZStack {
@@ -38,12 +43,16 @@ struct RecompensePieces: View {
                 Spacer(minLength: 0).frame(height: 74)
             }
         }
+        // La ligne de conversion vit dans la marge basse, EN OVERLAY : posée
+        // dans la pile elle aurait pris 30 pt de plus au bloc du gain, qui
+        // déborde déjà, et poussé le bandeau vidéo sous le clip de la card.
+        .overlay(alignment: .bottom) { conversion.padding(.bottom, 36) }
         .onChange(of: revele) { _, v in if v { animerLeGain() } }
     }
 
     private var header: some View {
         DepartLoopVideo(nom: "reward-nosfy-coins")
-            .frame(height: 232)
+            .frame(height: Self.hauteurBandeau)
             .overlay(alignment: .bottom) {
                 LinearGradient(colors: [.clear, .black.opacity(0.55), .black],
                                startPoint: .top, endPoint: .bottom)
@@ -55,10 +64,15 @@ struct RecompensePieces: View {
     /// LE LANGAGE DE LA DERNIÈRE CARD DE LA STORY — le grand `+N` et la pièce.
     /// Relu, pas recopié : deux objets qui se ressemblent divergent à la
     /// première retouche.
+    ///
+    /// ⚠️ Payé sur TestFlight 81 (19-09) : le chiffre ne roulait qu'à la
+    /// révélation — sous le trou du grattage on lisait « +0 coins » alors que
+    /// le serveur avait déjà crédité. Le montant est connu dès l'ouverture
+    /// (tiré au Claim) : il est ÉCRIT dès l'ouverture, sans roulement.
     private var gain: some View {
         VStack(spacing: 14) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("+\(roule)")
+                Text("+\(tirage.montant)")
                     .font(.system(size: 54, weight: .semibold))
                     .monospacedDigit()
                     .foregroundStyle(LinearGradient(
@@ -66,12 +80,44 @@ struct RecompensePieces: View {
                         startPoint: .top, endPoint: .bottom))
                 piece
             }
-            Text(noire ? "Black coin — legendary currency" : "coins")
+            Text(noire ? L("Pièce noire — monnaie légendaire",
+                           "Black coin — legendary currency")
+                       : L("pièces", "coins"))
                 .font(.system(size: 12, weight: .semibold))
                 .tracking(noire ? 1.2 : 2.2)
                 .foregroundStyle(.white.opacity(noire ? 0.72 : 0.45))
             pastilleCredit
         }
+    }
+
+    /// LE RÉCIT DE LA CONVERSION (20-09, plan § 3.2 option A) : une ligne
+    /// discrète sous la quittance, seulement si le crédit a fait naître des
+    /// sachets. Le brut est au-dessus (« +147 »), le net est ici (« 27 ») :
+    /// c'est ce qui manquait entre la card et le module or du coffre.
+    /// ⚠️ Payé sur TestFlight 81 (19-09) : « 149 pièces dans l'historique,
+    /// pas dans le module or » — la conversion automatique du 30-08 n'était
+    /// racontée nulle part au moment du gain.
+    @ViewBuilder private var conversion: some View {
+        if sachetsConvertis > 0 {
+            Text(Self.ligneConversion(k: sachetsConvertis, reste: tirage.soldeApres))
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.white.opacity(0.55))
+                .multilineTextAlignment(.center)
+                .opacity(pastille ? 1 : 0)
+                .offset(y: pastille ? 0 : 6)
+                .allowsHitTesting(false)
+        }
+    }
+
+    /// « → 2 sachets · il te reste 27 pièces ». Sans solde relu (réponse
+    /// d'avant le 30-08, ou clé absente), on dit les sachets et rien d'autre :
+    /// jamais un chiffre inventé.
+    static func ligneConversion(k: Int, reste: Int?) -> String {
+        let fr = k == 1 ? "→ 1 sachet" : "→ \(k) sachets"
+        let en = k == 1 ? "→ 1 booster" : "→ \(k) boosters"
+        guard let reste else { return L(fr, en) }
+        return L("\(fr) · il te reste \(reste) pièces",
+                 "\(en) · \(reste) coins left")
     }
 
     /// LA CONFIRMATION — un anneau qui se ferme sur une coche, et le mot. Elle
@@ -85,7 +131,7 @@ struct RecompensePieces: View {
                 .frame(width: 17, height: 17)
                 .background(Circle().fill(Color(white: 0.94)))
                 .scaleEffect(pastille ? 1 : 0.2)
-            Text("Added to your balance")
+            Text(L("Ajouté à ton solde", "Added to your balance"))
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.white.opacity(0.62))
         }
@@ -114,18 +160,12 @@ struct RecompensePieces: View {
     }
 
     private func animerLeGain() {
-        let cible = tirage.montant
-        roule = 0
-        for i in 1 ... 18 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.035) {
-                roule = Int(Double(cible) * Double(i) / 18.0)
-            }
-        }
         if noire {
             withAnimation(.easeOut(duration: 2.6)) { tour = 3 }
         }
-        // la quittance arrive quand le compteur s'arrête, plus une respiration
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.86) {
+        // la quittance arrive quand le voile a fini de se fondre (0,45 s),
+        // plus une respiration
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             withAnimation(.spring(response: 0.44, dampingFraction: 0.66)) {
                 pastille = true

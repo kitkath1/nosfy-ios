@@ -1,7 +1,18 @@
 import SwiftUI
 import UIKit
 
-// LA CARD À GRATTER — `Claim → Nosfy → Scratch → Reward`.
+// LA CARD À GRATTER — `Claim → Scratch → Reward`.
+//
+// ⚠️ Payé sur TestFlight 81 (19-09), premier verdict au doigt de cette card :
+// « le petit ticket » (le sticker Nosfy) VERROUILLAIT le grattage — le voile
+// noir était sourd tant qu'on ne l'avait pas traîné 93 pt vers le bas, il
+// sortait de la card sans borne, et le seul mot d'aide n'apparaissait
+// qu'après. Puis 55 % d'une grille qui comptait le bandeau vidéo : gratter
+// toute la moitié basse, là où le chiffre est écrit, ne suffisait pas ; sous
+// le trou on lisait « +0 coins ». Depuis le 20-09 : le voile écoute le doigt
+// dès l'ouverture, le sticker n'est plus qu'une décoration posée dans la
+// card, le mot est là d'emblée, le seuil est 30 % hors bandeau, et le
+// montant réel est écrit sous le voile.
 //
 // Trois couches, et AUCUNE ne se recalcule par image (la loi de la page
 // ré-évaluée) :
@@ -29,16 +40,28 @@ struct CardRecompense: View {
     private static let pinceau: CGFloat = 30
     private static let colonnes = 18
     private static let rangees = 26
-    /// Le seuil de bascule. Un chiffre à régler au doigt, pas une loi.
-    private static let seuil: CGFloat = 0.55
+    /// Le seuil de bascule, en part des cases HORS bandeau vidéo. 0,55 sur la
+    /// grille entière était inatteignable là où le chiffre est écrit (mesuré
+    /// sur le build 81 : toute la moitié basse = 46 %). À 0,30, deux traits
+    /// de pouce sur le chiffre suffisent, et `reveler` finit le travail.
+    private static let seuil: CGFloat = 0.30
+    /// LE BARREAU de la texture haptique du grattage : `-sansHaptiqueGrattage`
+    /// la coupe, pour l'accuser ou la disculper sur iPhone (le simulateur ne
+    /// vibre pas).
+    private static let sansHaptique = CommandLine.arguments.contains("-sansHaptiqueGrattage")
 
-    @State private var nosfyRange = false
-    @State private var nosfyPrise: CGSize = .zero
-    @State private var nosfyPose: CGSize = .zero
     @State private var trace: [CGPoint] = []
     @State private var cases = Set<Int>()
     @State private var revele = false
     @State private var grains: [(pos: CGPoint, naissance: Date)] = []
+    /// LA TEXTURE DU GRATTAGE — un tic léger par point accepté, jamais plus
+    /// d'un toutes les 40 ms. ⚠️ Payé sur TestFlight 81 (19-09) : « la
+    /// vibration énorme » était le grondement continu de la fusée
+    /// (`RocketHaptics.dragLevel`, un événement de 60 s tenu sous le doigt et
+    /// relancé à 1,0 à chaque pose). Un grattage est une texture, pas un
+    /// moteur.
+    @State private var texture = UIImpactFeedbackGenerator(style: .light)
+    @State private var dernierTic: TimeInterval = 0
     @GestureState private var gratteEnCours = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -46,7 +69,7 @@ struct CardRecompense: View {
         ZStack {
             recompense
             if !revele { voileAGratter }
-            if !revele && !nosfyRange { nosfy }
+            if !revele { nosfy }
         }
         .frame(width: Self.largeur, height: Self.hauteur)
         .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
@@ -68,9 +91,12 @@ struct CardRecompense: View {
     /// ⚠️ Le mot de sortie posait sur un sachet et devenait illisible. Il vit
     /// maintenant SOUS la card, sur le voile — c'est aussi plus juste : la
     /// card est l'objet, la sortie n'en fait pas partie.
+    /// ⚠️ 20-09 : « Later » promettait un plus tard qui n'existait pas (la
+    /// card ne se rouvrait jamais). Elle se retrouve maintenant par le galet
+    /// (`rouvrir`) et au lancement : le mot le dit.
     private var fermer: some View {
         Button(action: onFermer) {
-            Text(revele ? "Close" : "Later")
+            Text(revele ? L("Fermer", "Close") : L("Gratter plus tard", "Scratch later"))
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.white.opacity(0.55))
                 .padding(.vertical, 12)
@@ -82,15 +108,11 @@ struct CardRecompense: View {
 
     private func demarrer() {
         if dejaRevele { revele = true }
-        RocketHaptics.shared.prepare()
-        // banc `-rewardAuto` : Nosfy se range seul, puis la lune se gratte —
-        // le film complet sans doigt (le simulateur n'en pose pas).
+        if !reduceMotion && !Self.sansHaptique { texture.prepare() }
+        // banc `-rewardAuto` : la lune se gratte seule — le film complet
+        // sans doigt (le simulateur n'en pose pas). Le rangement du sticker
+        // à 1,6 s est mort avec le geste : il n'y a plus rien à ranger.
         guard CommandLine.arguments.contains("-rewardAuto") else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
-            withAnimation(.spring(response: 0.34, dampingFraction: 0.8)) {
-                nosfyRange = true
-            }
-        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.6) {
             withAnimation(.easeOut(duration: 0.45)) { revele = true }
         }
@@ -113,16 +135,21 @@ struct CardRecompense: View {
             .overlay { poudre }
             .contentShape(Rectangle())
             .gesture(gratter)
-            .allowsHitTesting(nosfyRange)
+            // ⚠️ Plus de `.allowsHitTesting(nosfyRange)` : le voile écoute le
+            // doigt dès l'ouverture, sans condition.
     }
 
-    /// Le mot qui dit quoi faire — il s'efface dès le premier trait.
+    /// Le mot qui dit quoi faire — là DÈS L'OUVERTURE, centré sur le voile
+    /// sous le sticker, et il s'efface au premier trait. ⚠️ Payé sur
+    /// TestFlight 81 (19-09) : il n'apparaissait qu'après le rangement du
+    /// ticket, en blanc à 30 % — celle qui ne rangeait pas ne lisait jamais
+    /// « scratch ».
     @ViewBuilder private var invite: some View {
-        if trace.isEmpty && nosfyRange {
-            Text("Scratch to reveal")
+        if trace.isEmpty {
+            Text(L("GRATTER POUR RÉVÉLER", "SCRATCH TO REVEAL"))
                 .font(.system(size: 13, weight: .semibold))
                 .tracking(1.6)
-                .foregroundStyle(.white.opacity(0.30))
+                .foregroundStyle(.white.opacity(0.60))
         }
     }
 
@@ -163,21 +190,48 @@ struct CardRecompense: View {
     private var gratter: some Gesture {
         DragGesture(minimumDistance: 0)
             .updating($gratteEnCours) { _, e, _ in e = true }
-            .onChanged { g in marquer(g.location, vitesse: g.velocity) }
+            .onChanged { g in marquer(g.location) }
             .onEnded { _ in finirGrattage() }
     }
 
     /// Un point n'entre que s'il a AVANCÉ : sans cette décimation le tracé
     /// grossit sans fin et le masque finit par coûter cher à redessiner.
-    private func marquer(_ p: CGPoint, vitesse: CGSize) {
+    private func marquer(_ p: CGPoint) {
         if let d = trace.last, hypot(p.x - d.x, p.y - d.y) < 7 { return }
         trace.append(p)
         semerGrains(p)
         marquerCases(p)
-        let v = min(1, hypot(vitesse.width, vitesse.height) / 900)
-        if !reduceMotion { RocketHaptics.shared.dragLevel(0.18 + 0.5 * v) }
-        if CGFloat(cases.count) / CGFloat(Self.colonnes * Self.rangees)
-            >= Self.seuil { reveler() }
+        tic()
+        if couverture >= Self.seuil { reveler() }
+    }
+
+    /// Un tic par point accepté, cadencé : deux points à moins de 40 ms ne
+    /// font qu'un tic. Coupé par « Réduire les animations » et par le barreau.
+    private func tic() {
+        guard !reduceMotion, !Self.sansHaptique else { return }
+        let t = Date().timeIntervalSinceReferenceDate
+        guard t - dernierTic >= 0.040 else { return }
+        dernierTic = t
+        texture.impactOccurred(intensity: 0.35)
+    }
+
+    /// LA PREMIÈRE RANGÉE QUI COMPTE. Sur la robe pièces, le bandeau vidéo
+    /// (232 pt sur 424) n'a rien à révéler : il est gratté si on y passe,
+    /// mais il n'entre pas dans le taux. 232 / (424 / 26) = 14,2 → les
+    /// rangées 0 à 13 sont exclues ; la 14 (228-244 pt) compte, elle porte
+    /// déjà le fondu vers le noir. La robe boosters compte toute la grille.
+    private var rangeeDepart: Int {
+        guard tirage.type == .coins else { return 0 }
+        let ch = Self.hauteur / CGFloat(Self.rangees)
+        return min(Self.rangees - 1, Int(RecompensePieces.hauteurBandeau / ch))
+    }
+
+    /// Le taux de cases grattées, hors bandeau.
+    private var couverture: CGFloat {
+        let depart = rangeeDepart
+        let comptees = cases.lazy.filter { $0 / Self.colonnes >= depart }.count
+        let total = Self.colonnes * (Self.rangees - depart)
+        return CGFloat(comptees) / CGFloat(max(total, 1))
     }
 
     /// LA COUVERTURE se mesure sur une GRILLE, pas sur des pixels d'écran :
@@ -213,40 +267,34 @@ struct CardRecompense: View {
     }
 
     private func finirGrattage() {
-        RocketHaptics.shared.dragEnd()
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             let vieux = Date().addingTimeInterval(-0.9)
             grains.removeAll { $0.naissance < vieux }
         }
     }
 
+    /// La bascule : au seuil, la card FINIT LE GRATTAGE ELLE-MÊME — le voile
+    /// (et le sticker) se fondent en 0,45 s, le `.heavy` marque le moment.
     private func reveler() {
         guard !revele else { return }
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
-        RocketHaptics.shared.dragEnd()
         withAnimation(.easeOut(duration: 0.45)) { revele = true }
         onRevele()
     }
 
     // MARK: Nosfy
 
-    /// LE STICKER — la vignette holographique au croissant. Il FLOTTE au-dessus
-    /// de la card (ombre portée, léger bercement), on l'attrape, on le pousse
-    /// dans la card : arrivé dedans il se range, et c'est ÇA qui arme le
-    /// grattage.
+    /// LE STICKER — la vignette holographique au croissant, POSÉE dans la
+    /// card comme une décoration du voile : 33 pt, penchée, son ombre portée.
+    /// Il s'efface avec le voile à la révélation (échelle 0,4 + fondu).
     ///
-    /// ⚠️ `@GestureState` sur la prise : un geste peut mourir sans `onEnded`
-    /// (app en fond, Reachability qui vole le doigt) — sans lui, Nosfy resterait
-    /// collé au doigt à vie.
-    ///
-    /// ⚠️ **QUATRE FOIS PLUS PETIT** (28-08) : 132 → **33 pt**. Et ces 33 pt
-    /// posent un problème que le réglage seul ne voit pas — **on passe SOUS les
-    /// 44 pt de cible tactile d'Apple**, donc l'objet deviendrait joli et
-    /// inattrapable. La vignette rétrécit, mais la **PRISE reste à 64 pt** :
-    /// un `contentShape` par-dessus, exactement la parade de la maison pour une
-    /// vue trop petite ou sans taille propre pour attraper un geste.
-    /// L'ombre suit l'échelle — un rayon de 18 sous un objet de 33 est un
-    /// halo, pas une ombre portée.
+    /// ⚠️ Payé sur TestFlight 81 (19-09) : il se traînait, et c'est LUI qui
+    /// armait le grattage — 93 pt vers le bas pour que le voile écoute, sans
+    /// ressort ni borne : lâché de côté il sortait de la card clippée et la
+    /// card ne se grattait plus jamais (« le petit ticket qu'on peut faire
+    /// disparaître »). Plus de geste, plus de prise, plus de `.rigid` du
+    /// rangement : `allowsHitTesting(false)`, le doigt passe au voile dessous.
+    /// Sa position est fixe (−30 % de la hauteur), donc toujours DANS la card.
     private var nosfy: some View {
         Image("sticker-nosfy")
             .resizable()
@@ -254,36 +302,10 @@ struct CardRecompense: View {
             .frame(width: 33)
             .rotationEffect(.degrees(-7))
             .shadow(color: .black.opacity(0.7), radius: 5, y: 3)
-            .frame(width: 64, height: 64)
-            .contentShape(Rectangle())
-            .offset(x: nosfyPose.width + nosfyPrise.width,
-                    y: -Self.hauteur * 0.30 + nosfyPose.height + nosfyPrise.height)
-            .gesture(porterNosfy)
+            .offset(y: -Self.hauteur * 0.30)
+            .allowsHitTesting(false)
             .transition(.scale(scale: 0.4).combined(with: .opacity))
             .zIndex(3)
-    }
-
-    private var porterNosfy: some Gesture {
-        DragGesture(minimumDistance: 2)
-            .onChanged { g in nosfyPrise = g.translation }
-            .onEnded { g in
-                nosfyPrise = .zero
-                let y = -Self.hauteur * 0.30 + nosfyPose.height + g.translation.height
-                if y > -Self.hauteur * 0.08 { rangerNosfy() }
-                else {
-                    withAnimation(.spring(response: 0.42, dampingFraction: 0.72)) {
-                        nosfyPose.width += g.translation.width
-                        nosfyPose.height += g.translation.height
-                    }
-                }
-            }
-    }
-
-    private func rangerNosfy() {
-        UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
-        withAnimation(.spring(response: 0.34, dampingFraction: 0.8)) {
-            nosfyRange = true
-        }
     }
 
     // MARK: la récompense, dessous
