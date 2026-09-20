@@ -19,6 +19,44 @@ encore à produire comme reportées après TestFlight : une autre session Cartes
 travaille dessus. Ce prérequis reste ouvert jusqu’à publication et vérification
 du catalogue complet ; les sessions Parcours/Compte ne modifient pas ses assets.
 
+## ⚠️⚠️⚠️ LA LÉGENDAIRE (Quatre Lunes) — règle HARDCORE de Kathryn, 20-09-2026
+
+Une Quatre Lunes doit être reconnue **à 100 %, de loin, sans lire les lunes**,
+par sa **matière** et sa **vie** — jamais par une étiquette ni une couleur.
+Trois Lunes reste **intacte** (« excellentes ») : on ne l'étend pas, on ne
+l'empile pas. Ce qui suit lie toutes les sessions, sans exception.
+
+1. **JAMAIS DE BALAYAGE.** Aucune bande, lame, nappe, lobe, « éclair », sweep
+   — automatique ou au geste. Dit quatre fois (26-08, slider, première
+   arrivée, 20-09 : « les balayages c'est cheap, on a déjà parlé de ça »).
+   Toute lumière a une **cause** : l'inclinaison du téléphone sur un **relief
+   cuit**, ou le pouce (**la lampe** : rien ne bouge tant que le doigt ne bouge
+   pas). Une lumière qui bouge a un **bord**.
+2. **La brillance vient de la blancheur**, jamais de l'épaisseur : cheveux de
+   lumière 1 px, blooms ≤ 5 px, noir absolu entre. Ses mots de rejet :
+   « opaque » (lavis gris), « fake » (trait épais, néon), « coton »
+   (procédural), « peau de girafe » (grille visible).
+3. **Aucune couleur** hors blanc, argent, braise très sombre, rouge de braise
+   qui meurt. Jamais d'arc-en-ciel, de néon, de cartoon.
+4. **L'effet est dérivé de l'image de chaque carte** — sa gravure de ses
+   propres bords, ses braises de ses propres pixels chauds, sa nacre de ses
+   propres blancs — **cuit par script à la publication**. Aucune coordonnée
+   écrite pour une carte précise (la plongée-film de carte-lune-1 est **morte**).
+   Ça doit tenir pour **50 cartes et 3 mondes** sans main humaine, et chaque
+   monde a **sa météo** : Forêt = neige fine + braises ; Cimes = cendres qui
+   tombent + lave ; Bois = nacre qui monte, **pas de feu**.
+5. **Le doigt conduit, jamais un film** : la caméra ne zoome pas au-delà des
+   pixels de la peinture (×2 maximum), ne se pose jamais seule sur un
+   détail, ne dure pas.
+6. **Rien ne se juge à taille de carte seule** : crops ×3 obligatoires sur
+   toute planche montrée — elle les regarde. **Rien ne se pose sans mesure
+   chauffe sur son iPhone** (le profil est 🔴) ; chaque effet arrive avec son
+   barreau (`-sansRelief`, `-sansBraises`, `-sansNeige`, `-sansLampe`).
+7. **Le plan et les maquettes** : `tools/carte-lune/PLAN-LEGENDAIRE-PLONGEE-2026-09-20.md`
+   et `tools/carte-lune/maquette-legendaire-2026-09-20/` (Python, pas le
+   shader). Le shader (`CarteLune.metal`) ne reçoit aujourd'hui **aucun**
+   paramètre de rareté : c'est le défaut de départ, mesuré le 20-09.
+
 
 ## Compte vide et Route — règle de Kathryn,18-09
 

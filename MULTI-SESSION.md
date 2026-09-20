@@ -1,5 +1,31 @@
 # Règle multi-session (Nosfy)
 
+## Cartes — rendu légendaire et plongée : ANALYSE SEULE, 20-09 (session ouverte)
+
+Sur trois constats de Kathryn (profil « 1 / 5 », légendaire indistincte de
+Trois Lunes, plongée qui « zoome sur les pattes ») : lecture du code, aucun
+code écrit, aucun asset, aucun backend, aucun téléphone. Constats posés :
+`rarete` ne sert qu'au son (`CarteLuneLab.swift:752`), `carteLuneV5` sans
+paramètre de rareté, chemin de plongée en fractions de carte-lune-1
+(`:322-330`), depth v0 = rampe pour toutes. Proposition écrite :
+`tools/carte-lune/PLAN-LEGENDAIRE-PLONGEE-2026-09-20.md` (seul fichier de
+cette session, plus cet en-tête). Si elle dit oui, périmètre à venir :
+`CarteLune.metal` (nouvelle fonction V6), `CarteLuneLab.swift` (CarteVivante),
+banc `-luneLab` — **pas** `ProfilLune.swift`, pas les 14 PNG, pas le tirage,
+pas les 36 scènes (session Cartes production). Signaler ici avant de toucher
+ces deux fichiers Swift/Metal.
+
+Suite (20-09, après-midi) : **règle HARDCORE « La légendaire » ajoutée dans
+`CLAUDE.md`** sur son ordre (mon seul hunk dans ce fichier partagé — ne pas
+l'emporter dans un autre commit). Maquettes Python (pas le shader) :
+`tools/carte-lune/maquette-legendaire-2026-09-20/` (planches ×3 mondes, film).
+**À la session Cartes production** : elle vise 50 cartes en une semaine ; le
+plan demande un **kit cuit par script à la publication** (vraie profondeur,
+plans, relief, masque de braise/nacre, position de la lune — § 6 du plan) —
+rien à faire à la main par carte, mais prévoir l'étape dans
+`publier_catalogue.py` ; le monde de chaque carte (Forêt/Cimes/Bois) doit être
+lisible dans le catalogue, il règle la météo.
+
 ## ⚠️ Sortie de Nosfy — commit posé par index TEMPORAIRE, 20-09 : relisez votre index sur `NosfyOnboarding.swift`
 
 `Nosfy/Views/NosfyOnboarding.swift` : la sortie du film refaite (« Let's go,
