@@ -4366,8 +4366,18 @@ struct HomeNuitPage: View {
         if rendreHorloge() { return }
         // On rejoint l'état STABLE le plus proche — jamais un état
         // inventé : `reposCard` sait déjà lequel (séance, tiroir, repos).
-        guard depart == nil, ferme == nil, abs(tirage - reposCard) > 0.5
-        else { return }
+        guard depart == nil, ferme == nil else { return }
+        reposer()
+    }
+
+    /// LE RETOUR AU REPOS, sans film : la card rejoint `reposCard` et la
+    /// phrase se repose, en 0,26 s. Ne joue rien si tout est déjà en place —
+    /// c'est ce qui le rend appelable depuis n'importe quelle sortie du geste
+    /// (`fermer()` sans scène, geste volé, plafond du jour) sans empiler
+    /// deux animations sur `tirage`.
+    private func reposer() {
+        let phraseDeplacee = PhraseHorloge.forceScroll == nil && scroll != 0
+        guard abs(tirage - reposCard) > 0.5 || phraseDeplacee else { return }
         withAnimation(.easeOut(duration: 0.26)) {
             tirage = reposCard
             if PhraseHorloge.forceScroll == nil { scroll = 0 }
@@ -4413,7 +4423,12 @@ struct HomeNuitPage: View {
     private func lancer(gDepart: Double) {
         // LE PLAFOND DU JOUR (20-09, sa règle) : la porte ne s'ouvre pas, aucun
         // film — la pop-up native dit « revenez demain ».
-        if plafondDuJourAtteint { refuserPlafond(); return }
+        // ⚠️ Et la scène se RANGE (20-09 après-midi) : ce `return` posé à
+        // 09:32 laissait `tirage` sous le pouce, `scroll` dissous et, sur une
+        // reprise, `eGele` sans horloge — la home figée, floue, derrière la
+        // pop-up. `fermer()` sait déjà tout ramener : depuis la scène gelée
+        // s'il y en a une, sinon au repos.
+        if plafondDuJourAtteint { refuserPlafond(); fermer(); return }
         gCran = gDepart
         // ⚠️ ON REPREND OÙ LE DOIGT A GELÉ. En reculant la date de naissance de
         // l'horloge de ce qui est déjà joué, la reprise est CONTINUE : un
@@ -4487,7 +4502,16 @@ struct HomeNuitPage: View {
         eGele = nil
         gCran = 0
         verreMonte = true
-        guard depuis > 0.001 || tiroirOuvert else { return }
+        // ⚠️ **RIEN À DÉFAIRE NE VEUT PAS DIRE RIEN À RANGER** (20-09, second
+        // retour du jour : « quand je tire et je retire… figé »). Un tirage
+        // relâché depuis le repos SANS ouvrir — pas assez loin, pas assez
+        // vite, ou vers le bas — arrive ici avec `tirage` et `scroll` LÀ OÙ
+        // LE POUCE LES A LAISSÉS : la card à mi-course, la phrase dissoute,
+        // le tiroir entrevu. Personne d'autre ne les ramenait : l'ancien
+        // chien de garde le faisait PAR ACCIDENT (il tirait dès que le pouce
+        // marquait une pause), et il est mort ce matin. La card rentre, la
+        // phrase revient nette — 0,26 s, le retour du geste volé.
+        guard depuis > 0.001 || tiroirOuvert else { reposer(); return }
         eFerme = depuis
         ferme = Date()
         let duree = Self.dureeFermeture * max(depuis / DepartCine.T, 0.30)
@@ -4651,12 +4675,23 @@ struct HomeNuitPage: View {
             let chemin = cheminEtat
             DepartEtat.shared.ouvrirChemin(etape: chemin.etape,
                                            faits: chemin.faits,
-                                           dates: chemin.dates)
+                                           dates: chemin.dates,
+                                           celebration: feteBanc(chemin))
             return
         }
         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
         cheminDemonte = false
         cheminOuvert = true
+    }
+
+    /// Banc `-cheminFete` (20-09, la cinématique du galet accompli) : la
+    /// Route s'ouvre en FÊTE sur le dernier galet fait, exactement comme la
+    /// racine le fait après une story (NosfyApp, `celebration:` = la séance
+    /// qui vient de finir, déjà dans `faits`) — sans séance ni serveur. Avec
+    /// `-homeChemin -duoEtape n`, le galet célébré est le rang n.
+    private func feteBanc(_ chemin: (etape: Int, faits: Set<Int>, dates: [Int: Date])) -> Int? {
+        guard CommandLine.arguments.contains("-cheminFete") else { return nil }
+        return chemin.faits.filter { $0 < chemin.etape }.max()
     }
 
     /// D2 (27-08, jalon 0 de tools/road/AUDIT-ROAD.md) — L'ÉTAT DU CHEMIN
