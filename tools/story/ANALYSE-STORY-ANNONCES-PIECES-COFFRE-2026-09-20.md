@@ -44,7 +44,9 @@ sortie de la Route est le filet (`libererFinSeance`). La pop-up booster attend
 toujours cette sortie.
 
 Site : `b-flow-deux-annonces` 🟡 avec **litige ouvert** — le relâchement au
-galet est le retour TestFlight du 20-09, **corrigé dans l'arbre, pas commité**.
+galet est le retour TestFlight du 20-09, **commité dans ce83e640** (la Route :
+cinématique du galet et correctifs TestFlight), après l'écriture de cette
+page ; la pastille du site n'a pas été remesurée.
 
 ## 3. Story ↔ coffre
 
@@ -56,19 +58,21 @@ D'où ça vient : la même réponse de clôture rend `solde`, `reste`,
 redemander** au serveur (`EconomieNosfy.appliquer(ClotureSeance)`) ; le coffre
 lit `or` et `reste` (`CoffreV2`, jauge `.compte(courant: e.reste, cible: prix)`).
 La phrase de conversion de la story lit `sachetsConvertis` et `reste` du reçu
-(`BilanRecompenseSeance`) — **dans l'arbre, pas commitée, pas vue à l'écran**.
+(`BilanRecompenseSeance`) — **encore dans l'arbre, pas commitée, pas vue à
+l'écran** (StorySuite.swift porte 321 lignes non commitées d'une autre session).
 
 Site : `b-live-coffre-1909` 🟢 (53 contrôles Coffre, 44 API PASS),
 `b-annonces-recus` 🟢.
 
 ## Réserves
 
-1. **Build 81** n'a ni les annonces au galet, ni la phrase de conversion, ni le
-   prénom du profil dans la story : trois corrections d'autres sessions encore
-   dans l'arbre.
-2. ⚠️ **`Nosfy/Services/ReglementSeance.swift` est marqué « supprimé » dans
-   l'index partagé** (par une autre session), alors que le fichier existe dans
-   l'arbre et dans HEAD. Un `git commit` nu l'emporterait : la story perdrait
-   son reçu. Non touché, signalé ici.
+1. **Build 81** n'a ni les annonces au galet, ni le prénom du profil (tous
+   deux commités depuis, ce83e640), ni la phrase de conversion (encore dans
+   l'arbre). Un nouveau build TestFlight est nécessaire pour les voir.
+2. ⚠️ **L'index partagé porte 401 suppressions en attente** (dont
+   `Nosfy/Services/ReglementSeance.swift`, le service qui range le reçu sur la
+   séance), alors que les fichiers existent dans l'arbre et dans HEAD. Un
+   `git commit` nu les emporterait : la story perdrait son reçu. Non touché,
+   signalé ici — à relire avec `git diff --cached --name-status`.
 3. Rien mesuré sur l'iPhone. Le commit e0e1d073 (Détails HIIT, Résumé
    intervalles, card à 4 lignes) ne touche que l'affichage, pas cette chaîne.
