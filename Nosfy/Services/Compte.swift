@@ -244,7 +244,7 @@ enum Compte {
             : !eco.retourDisponible ? "retour_disponible faux (rien à prendre, ou aucune séance finie — S4)"
             : (sacre.manegeOuvert || sacre.popupOuverte) ? "un manège ou une pop-up est ouvert"
             : (depart.welcomeOuverte || depart.welcomePremiereOuverte || depart.visiteOuverte) ? "déjà ouverte, ou la visite"
-            : dejaPresenteeAujourdhui(eco) ? "déjà présentée aujourd'hui (une seule fois par jour)"
+            : dejaPresenteeCeLancement ? "déjà présentée depuis ce lancement (le +10 reste à prendre)"
             : nil
         if let retenue {
             print("[welcome-back] retenue : \(retenue)")
@@ -258,16 +258,13 @@ enum Compte {
         UserDefaults.standard.set(!prochaineTexte, forKey: cleWelcomeRobeTexte)
         print("[welcome-back] ouverte (le serveur dit que le jour est à prendre) · robe \(depart.welcomeRobe)")
         depart.welcomeOuverte = true
-        // ⚠️ **LA MÉMOIRE « DÉJÀ PRÉSENTÉE AUJOURD'HUI »** (20-09, retour
-        // TestFlight de Kathryn : « la card revient à chaque fois »). Sans elle,
-        // `proposerWelcomeBack` s'ouvrait à CHAQUE passage au premier plan tant
-        // que le +10 n'était pas encaissé. On retient le JOUR SERVEUR (`eco.jour`,
-        // le même que le carnet) à l'ouverture — pas la fermeture : une app tuée
-        // compte aussi comme « présentée ». Le serveur, lui, ne paie qu'une fois
-        // par jour (mesuré). ⚠️ Conséquence à trancher avec elle : un « Later »
-        // sans Claim ne rouvre pas la card aujourd'hui (le +10 du jour est
-        // remis à demain). Effacée avec le compte (clé `woop.*`).
-        marquerWelcomePresentee(eco)
+        // ⚠️ **« LATER » GARDE TOUJOURS LE +10** (son verdict 20-09). La card ne
+        // se répète plus à CHAQUE passage au premier plan (le bug TestFlight),
+        // mais le drapeau vit EN MÉMOIRE, remis à zéro à chaque LANCEMENT : un
+        // « Later » ne perd donc rien — au prochain lancement, tant que le +10
+        // du jour n'est pas encaissé (le serveur dit encore `retour_disponible`),
+        // la card revient. Seul un Claim arrivé au serveur l'éteint pour de bon.
+        dejaPresenteeCeLancement = true
         // BANC `-welcomeClaimAuto` (16-09) : le simulateur ne tape pas — on
         // rejoue EXACTEMENT le chemin du bouton Claim (`onClaim` = reclamerRetour,
         // `onClose`) et on mesure le +10 : le solde AVANT / APRÈS, et le toaster
@@ -285,25 +282,17 @@ enum Compte {
         }
     }
 
-    /// La clé de la mémoire « présentée le <jour serveur> » et celle de la robe
-    /// alternée. `woop.*` : effacées à la déconnexion / suppression du compte.
-    private static let cleWelcomePresentee = "woop.welcome.jourPresente"
+    /// La clé de la robe alternée (persistée). `woop.*` : effacée avec le compte.
     private static let cleWelcomeRobeTexte = "woop.welcome.prochaineRobeTexte"
 
-    /// Vrai si la card a DÉJÀ été présentée pour le jour serveur courant. Sans
-    /// jour serveur (première passe, réseau muet), on ne bloque pas : mieux vaut
-    /// une card de trop qu'un +10 jamais proposé. Le banc `-welcomeToujours`
-    /// désarme la mémoire pour rejouer la présentation.
-    static func dejaPresenteeAujourdhui(_ eco: EconomieWoop) -> Bool {
-        if CommandLine.arguments.contains("-welcomeToujours") { return false }
-        guard let jour = eco.jour else { return false }
-        return UserDefaults.standard.string(forKey: cleWelcomePresentee) == jour
-    }
-
-    /// Retient le jour serveur à l'OUVERTURE (survit à une app tuée).
-    static func marquerWelcomePresentee(_ eco: EconomieWoop) {
-        guard let jour = eco.jour else { return }
-        UserDefaults.standard.set(jour, forKey: cleWelcomePresentee)
+    /// La card a DÉJÀ été présentée DEPUIS CE LANCEMENT — en mémoire, remis à
+    /// zéro au prochain lancement, pour que « Later » ne perde jamais le +10
+    /// (elle revient tant que le serveur dit `retour_disponible`). Le banc
+    /// `-welcomeToujours` la rejoue quand même.
+    private static var _presenteeCeLancement = false
+    private static var dejaPresenteeCeLancement: Bool {
+        get { _presenteeCeLancement && !CommandLine.arguments.contains("-welcomeToujours") }
+        set { _presenteeCeLancement = newValue }
     }
 
     // MARK: - L'appel d'une edge function, avec la session
