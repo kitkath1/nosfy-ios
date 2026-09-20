@@ -46,7 +46,6 @@ struct WorkoutLivePortrait: View {
             .scaleEffect(1.1)
             .frame(width: size, height: size)
             .clipped()
-            .blendMode(.screen)
             .accessibilityHidden(true)
     }
 }

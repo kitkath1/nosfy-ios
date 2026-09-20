@@ -1,12 +1,8 @@
 {
-  "images": [
-    {
-      "filename": "nosfy_yeux_rouge.png",
-      "idiom": "universal"
-    }
+  "images" : [
+    { "filename" : "portrait@1x.png", "idiom" : "universal", "scale" : "1x" },
+    { "filename" : "portrait@2x.png", "idiom" : "universal", "scale" : "2x" },
+    { "filename" : "portrait@3x.png", "idiom" : "universal", "scale" : "3x" }
   ],
-  "info": {
-    "author": "xcode",
-    "version": 1
-  }
+  "info" : { "author" : "xcode", "version" : 1 }
 }

@@ -31,6 +31,8 @@ la couleur ne soit jamais la seule indication.
 ## Animation et cycle de vie
 
 Le portrait original est une ressource locale partagée entre app et widget,
+rendu en 64, 128 et 192 px (1x/2x/3x) depuis le 20-09 : une image plus grande
+que la présentation ne s’affiche pas sur iPhone (règle Apple, ActivityKit),
 fixe et sans moteur d’animation. `MoonShape` réutilise le contour exact du logo
 dans les petits formats. Un reflet traverse ce contour à
 une mise à jour, sans rotation ni pulsation permanente. Les paliers apparaissent
