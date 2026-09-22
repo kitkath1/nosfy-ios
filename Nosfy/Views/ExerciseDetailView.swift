@@ -1224,7 +1224,9 @@ struct ExerciseDetailView: View {
                 if let ask = restartAsk {
                     RestartPopup(
                         onLaunch: { exitRestart(ask, thenLaunch: true) },
-                        onDismiss: { exitRestart(ask, thenLaunch: false) })
+                        onDismiss: { exitRestart(ask, thenLaunch: false) },
+                        onAutreExercice: { exitRestart(ask, thenLaunch: false)
+                                           rendreLaBibliotheque() })
                 }
                 // LES PIÈCES DE LA SÉRIE — au-dessus de tout : la carte
                 // s'écrit en lumière pendant que le panneau descend.
@@ -3148,6 +3150,17 @@ struct ExerciseDetailView: View {
     }
 
     /// Tous les choix de la pop-up passent ici, après son fondu de sortie.
+    /// « CHOISIR UN AUTRE EXERCICE » (21-09) : la série est réglée par
+    /// `exitRestart`, puis la fiche se dépile — la page Exercices reprend la
+    /// main, sur l'accueil par zones si aucune section n'était posée. Le
+    /// souffle de 0,30 s laisse la pop-up finir son fondu : dépiler sous une
+    /// card qui s'efface faisait naître la bibliothèque déjà couverte.
+    private func rendreLaBibliotheque() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.30) {
+            dismiss()
+        }
+    }
+
     private func exitRestart(_ f: FinishedSeries, thenLaunch: Bool) {
         restartAsk = nil
         if thenLaunch {

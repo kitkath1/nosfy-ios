@@ -1,0 +1,8 @@
+{
+  "images" : [
+    { "filename" : "typo-fessiers.png", "idiom" : "universal", "scale" : "1x" },
+    { "filename" : "typo-fessiers@2x.png", "idiom" : "universal", "scale" : "2x" },
+    { "filename" : "typo-fessiers@3x.png", "idiom" : "universal", "scale" : "3x" }
+  ],
+  "info" : { "author" : "xcode", "version" : 1 }
+}

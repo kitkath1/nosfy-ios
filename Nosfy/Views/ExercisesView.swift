@@ -85,6 +85,16 @@ enum ExosBanc {
     /// nuit opaque à la place du verre (la loi : tout moteur coûteux arrive
     /// avec de quoi l'accuser ou le disculper, au téléphone, en ABBA).
     static let sansVerreListe = CommandLine.arguments.contains("-sansVerreListe")
+    /// `-exosAccueil <0|1>` : l'accueil des zones (1) ou le mur des 29 (0) posé
+    /// au lancement — le mur n'existe plus dans le jeu (« Tout », c'est
+    /// l'accueil), le banc le garde pour les captures de non-régression.
+    static let accueil: Bool? = valeur("-exosAccueil").map { $0 > 0.5 }
+    /// `-sansVerreAccueil` : LE BARREAU de l'accueil — ses cards en nuit opaque
+    /// (la loi : tout moteur coûteux arrive avec de quoi l'accuser).
+    static let sansVerreAccueil = CommandLine.arguments.contains("-sansVerreAccueil")
+    /// `-sansPulseAccueil` : LE BARREAU de la respiration des carrés — la lueur
+    /// de la zone posée à son repos, immobile (l'ABBA sur son téléphone).
+    static let sansPulseAccueil = CommandLine.arguments.contains("-sansPulseAccueil")
 
     private static func valeur(_ cle: String) -> Double? {
         let args = CommandLine.arguments
@@ -415,6 +425,19 @@ struct ExercisesView: View {
     /// pas dans l'`@Observable` du par-image.
     @AppStorage("exosModeListe") private var modeListe = false
 
+    /// L'ACCUEIL DES ZONES (21-09, Kathryn : « une page d'accueil d'exercices,
+    /// des designs minimal blancs, en mode cards, des typologies ») — voir
+    /// `AccueilExos` et `tools/exos-accueil/PLAN-ACCUEIL-EXERCICES-2026-09-21.md`.
+    /// `true` : la page montre les cinq cards de zone à la place de la grille.
+    /// Il ne change qu'au TAP (une card, la molette ramenée sur Tout) : même
+    /// famille que `cherche` et `modeListe`, jamais dans l'`@Observable` du
+    /// par-image.
+    @State private var accueil = true
+
+    /// L'accueil se montre quand rien ne le contredit : aucune section au
+    /// tambour, aucun mot tapé (la recherche est globale et reprend la grille).
+    private var montreAccueil: Bool { accueil && filter == nil && q.isEmpty }
+
     /// LE CATALOGUE CACHÉ. Il était recalculé — `flatMap` sur les catégories —
     /// TROIS fois par évaluation de corps, donc trois fois par image de
     /// scroll. Il ne change qu'au filtre. Rempli DÈS L'INIT : le remplir à
@@ -576,6 +599,13 @@ struct ExercisesView: View {
                 withAnimation(.easeOut(duration: 0.28)) {
                     items = ExosCatalogue.liste(filter, q: q)
                 }
+                // L'ACCUEIL DES ZONES (21-09) : « Tout » n'est plus le mur,
+                // c'est l'accueil — le tambour ramené sur Tout le rend. Dans
+                // sa propre transaction : le geste de la molette a écrit
+                // `filter` dans la sienne, celle-ci est déjà close.
+                if filter == nil, !accueil {
+                    withAnimation(.easeOut(duration: 0.28)) { accueil = true }
+                }
                 ordre = OrdreScroll(y: 0, jeton: ordre.jeton + 1)
             }
             // LE MOT CHANGE LA GRILLE — même cascade qu'un changement de
@@ -613,6 +643,7 @@ struct ExercisesView: View {
         deja = true
         withAnimation(.easeOut(duration: 0.45)) { naissance = 1 }
         if let l = ExosBanc.liste { modeListe = l }
+        if let a = ExosBanc.accueil { accueil = a }
         if let t = ExosBanc.tirage { etat.tirage = t }
         if let y = ExosBanc.scroll {
             // Le scroll n'existe pas encore à la première image : on le laisse
@@ -647,6 +678,34 @@ struct ExercisesView: View {
                 etat.touchStart = .now
             }
         }
+    }
+
+    /// UNE CARD DE ZONE ÉCRIT LE MÊME ÉTAT QUE LA MOLETTE (21-09). Le tambour
+    /// se cale sur le cran de la zone (le ressort de VoiceOver), et la section
+    /// est posée dans la MÊME transaction que la fermeture de l'accueil : le
+    /// fondu de l'accueil et la cascade des cards sont un seul mouvement.
+    private func choisirZone(_ zone: ExerciseCategory) {
+        guard let idx = ArcDial.items.firstIndex(where: { $0.1 == zone })
+        else { return }
+        withAnimation(.spring(response: 0.34, dampingFraction: 0.76)) {
+            etat.pos = Double(idx)
+        }
+        etat.detent = idx
+        withAnimation(.easeOut(duration: 0.28)) {
+            accueil = false
+            filter = zone
+        }
+    }
+
+    /// Retour aux catégories : la section s'efface, le tambour revient sur
+    /// « Tout », l'accueil se rallume — le chemin inverse de `choisirZone`,
+    /// et la recherche est vidée (un mot tapé cacherait l'accueil).
+    private func revenirAuxCategories() {
+        etat.pos = 0
+        etat.detent = 0
+        filter = nil
+        q = ""
+        accueil = true
     }
 
     // MARK: - Le contenu de la card
@@ -709,9 +768,20 @@ struct ExercisesView: View {
                              reserve: CGFloat) -> some View {
         let cardW = w - 2 * GrandeCardExos.margeCote
         ZStack(alignment: .top) {
-            GrilleExos(items: items, reserve: reserve, etat: etat,
-                       ordre: ordre, tuto: tutoActif, liste: modeListe,
-                       deepLinked: $deepLinked)
+            // L'ACCUEIL DES ZONES OU LA GRILLE (21-09) : « Tout », c'est
+            // l'accueil ; une section, c'est la grille inchangée. Le fondu
+            // entre les deux est porté par la transaction de `choisirZone`
+            // (ou du tambour) — sans elle, l'un remplacerait l'autre à sec.
+            if montreAccueil {
+                AccueilExos(reserve: reserve, tuto: tutoActif,
+                            onZone: choisirZone)
+                    .transition(.opacity)
+            } else {
+                GrilleExos(items: items, reserve: reserve, etat: etat,
+                           ordre: ordre, tuto: tutoActif, liste: modeListe,
+                           deepLinked: $deepLinked)
+                    .transition(.opacity)
+            }
             // LE BANDEAU DE NUIT, par-dessus la grille : les cartes passent
             // DESSOUS, elles ne s'arrêtent pas à son bord. Et c'est LA POIGNÉE
             // de la card.
@@ -723,8 +793,16 @@ struct ExercisesView: View {
                         titre: filter?.rawValue ?? "Exercices",
                         q: $q, cherche: $cherche, liste: $modeListe,
                         retour: {
+                            // LE CHEVRON D'UNE SECTION REND LES CATÉGORIES
+                            // (verdict 21-09 : « le chevron me remet sur la
+                            // home, pas sur catégories »). Depuis l'accueil
+                            // lui-même, il rend la home, comme avant.
                             withAnimation(.easeOut(duration: 0.3)) {
-                                selection = .home
+                                if montreAccueil {
+                                    selection = .home
+                                } else {
+                                    revenirAuxCategories()
+                                }
                             }
                         },
                         // §3.4ter : la page ne bouge JAMAIS — la poignée
@@ -753,17 +831,25 @@ struct ExercisesView: View {
         // le droit de LANCER un scroll depuis les 156 derniers points — c'est le
         // lit de la molette, les cartes y sont déjà éteintes.
         .overlay(alignment: .bottom) {
-            Color.clear
-                .frame(height: Self.prise)
-                .contentShape(Rectangle())
-                .gesture(priseBasse)
+            // PAS DE MOLETTE SOUS L'ACCUEIL (verdict Kathryn 21-09 : « pas de
+            // molette ici ») : les cinq carrés SONT le filtre. La prise du
+            // pouce et le tambour ne vivent que sur la grille d'une section.
+            if !montreAccueil {
+                Color.clear
+                    .frame(height: Self.prise)
+                    .contentShape(Rectangle())
+                    .gesture(priseBasse)
+            }
         }
         // LA MOLETTE, couchée au bas de la card. Son cadre est GÉNÉREUX
         // (300 pt) pour que la fumée ait de l'air au-dessus du disque : le
         // shader éteint tout à 16 pt du bord de son hôte.
         .overlay(alignment: .bottom) {
-            ArcDial(etat: etat, sousFiche: deepLinked != nil)
-                .frame(width: cardW, height: 300)
+            if !montreAccueil {
+                ArcDial(etat: etat, sousFiche: deepLinked != nil)
+                    .frame(width: cardW, height: 300)
+                    .transition(.opacity)
+            }
         }
         // (LE CLAVIER DE BRAISE EST ARCHIVÉ — verdict Kathryn 15-09 : « mets
         // le clavier natif Apple, enlève le custom à la recherche ». Le
@@ -2770,4 +2856,259 @@ struct RangeeExo: View {
         }
         .clipShape(Self.shape)
     }
+}
+
+// MARK: - L'accueil des zones (21-09)
+
+/// L'ACCUEIL DES EXERCICES — verdicts Kathryn 21-09 : « une page d'accueil
+/// d'exercices, des typologies, en mode cards » puis « en mode GROS CARRÉ, pas
+/// de ligne, deux carrés par ligne, pas de molette ici ». Plan et décisions :
+/// `tools/exos-accueil/PLAN-ACCUEIL-EXERCICES-2026-09-21.md`.
+///
+/// Cinq zones, dans l'ordre de la molette (on descend le corps, le cardio
+/// ferme la marche), en **carrés, deux par ligne** : Haut · Abdos / Bas ·
+/// Fessiers / Cardio seul sur sa ligne (il « ne désigne pas une zone »). Taper
+/// un carré écrit le MÊME état que le tambour (`filter`) — aucune navigation
+/// nouvelle. Sous « Tout » il n'y a plus le mur des 29 : « Tout », c'est ici.
+///
+/// Un carré = **le carré anatomique** en plein (le corps gris, la zone en
+/// blanc, cuit par script depuis UN corps de référence :
+/// `tools/exos-accueil/icones/cuire_icones.py` → assets `typo-<zone>`), le nom
+/// en pied sur la nuit qui remonte, la pastille du nombre en liquid glass en
+/// haut à droite. Barreau : `-sansVerreAccueil`.
+private struct AccueilExos: View {
+    let reserve: CGFloat
+    /// Le tuto est armé : le premier carré publie son ancre (l'école de la
+    /// grille — hors tuto, rien n'est publié).
+    let tuto: Bool
+    var onZone: (ExerciseCategory) -> Void
+
+    static let gouttiere: CGFloat = 13
+
+    /// Le rang descend DANS la donnée (§3 : l'identité d'un ForEach) — la
+    /// boucle reste clé par la zone.
+    private struct RangZone: Identifiable {
+        let zone: ExerciseCategory
+        let rang: Int
+        var id: String { zone.id }
+    }
+
+    private var rangs: [RangZone] {
+        ExerciseCategory.allCases.enumerated().map { RangZone(zone: $1, rang: $0) }
+    }
+
+    var body: some View {
+        ScrollView {
+            grille
+                .padding(.top, reserve + GrilleExos.topPad)
+                .padding(.horizontal, ExercisesView.encart)
+                // Le pied : l'air de la dalle du moteur, pas le lit de la
+                // molette (elle n'est pas montée sous l'accueil).
+                .padding(.bottom, 40)
+        }
+        .scrollIndicators(.hidden)
+        .scrollBounceBehavior(.basedOnSize)
+    }
+
+    /// Deux carrés par ligne ; le dernier (cardio) seul, à gauche, à la même
+    /// taille que les autres — un carré est un carré.
+    private var grille: some View {
+        VStack(spacing: Self.gouttiere) {
+            ForEach(Array(stride(from: 0, to: rangs.count, by: 2)), id: \.self) { i in
+                HStack(spacing: Self.gouttiere) {
+                    carre(rangs[i])
+                    if i + 1 < rangs.count {
+                        carre(rangs[i + 1])
+                    } else {
+                        Color.clear.aspectRatio(1, contentMode: .fit)
+                    }
+                }
+            }
+        }
+    }
+
+    private func carre(_ r: RangZone) -> some View {
+        Button { onZone(r.zone) } label: {
+            CarreZone(zone: r.zone, rang: r.rang)
+        }
+        .buttonStyle(CardPressStyle())
+        .accessibilityIdentifier("zone-\(r.zone.id)")
+        .overlay { ancreTuto(r.rang) }
+    }
+
+    @ViewBuilder
+    private func ancreTuto(_ rang: Int) -> some View {
+        if tuto, rang == 0 {
+            Color.clear
+                .anchorPreference(key: SlotAnchorKey.self, value: .bounds) {
+                    ["tuto-card": $0]
+                }
+        }
+    }
+}
+
+/// UN CARRÉ DE ZONE — sa référence en grand, et **plus fin** (verdict 22-09 :
+/// « pas assez premium, un truc gros, fais plus fin, et anime la partie
+/// blanche qui pulse ») : le corps est une GRAVURE (masse sombre, séparations
+/// en fil clair), la zone visée est en blanc, et **sa lueur respire**.
+///
+/// LA RESPIRATION NE REDESSINE RIEN (la loi de la maison, mesurée A/B le
+/// 05-09 : redessiner coûte 3 à 8 fois plus qu'animer) : la lueur est une
+/// DEUXIÈME IMAGE cuite (`typo-<zone>-lueur`, la zone en blanc pur + son bloom
+/// de 5 px, en alpha) posée sur le carré, et seule son OPACITÉ est animée —
+/// `repeatForever` sur une valeur animable, interpolée par le compositeur.
+/// Elle dort quand l'onglet est caché (`ongletCache`), sous « Réduire les
+/// animations », et sous le barreau `-sansPulseAccueil`.
+///
+/// ⚠️ Le `repeatForever` vit dans CETTE feuille et se ré-arme au `task(id:)`
+/// (le piège de `PageCard` : un `withAnimation` posé chez le parent se fait
+/// avaler quand le parent est ré-évalué).
+private struct CarreZone: View {
+    let zone: ExerciseCategory
+    /// Le rang dans la grille : chaque carré respire avec un léger retard sur
+    /// le précédent — cinq lueurs en phase liraient comme un clignotement.
+    let rang: Int
+
+    @Environment(\.ongletCache) private var ongletCache
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// L'opacité de la lueur : 0,35 au creux, 1 au sommet (blanc pur + bloom).
+    @State private var lueur: Double = CarreZone.repos
+
+    /// 0,35 et non 0,10 : au creux de la respiration la zone restait terne
+    /// (72 % de blanc, vu à la capture) — le blanc ne doit jamais s'éteindre,
+    /// il respire entre clair et pur.
+    private static let repos: Double = 0.18
+    private static let shape = RoundedRectangle(cornerRadius: 24, style: .continuous)
+    /// LE DÉGRADÉ DE NOIR de sa référence, posé PAR LA CARD (pas cuit dans
+    /// l'image) : un gris sombre en tête qui meurt vers le noir.
+    private static let degradeTete = LinearGradient(
+        stops: [
+            .init(color: Color(white: 0.11), location: 0.0),
+            .init(color: Color(white: 0.04), location: 0.55),
+            .init(color: .black, location: 1.0)
+        ],
+        startPoint: .top, endPoint: .bottom)
+    /// La lumière de verre : un souffle clair en haut à gauche, comme sur
+    /// les tuiles de sa référence — la card est un objet, pas un aplat.
+    private static let verre = RadialGradient(
+        colors: [Color.white.opacity(0.07), .clear],
+        center: UnitPoint(x: 0.2, y: 0.1), startRadius: 0, endRadius: 220)
+    private static let nuitPied = LinearGradient(
+        stops: [
+            .init(color: .black.opacity(0.0), location: 0.0),
+            .init(color: .black.opacity(0.0), location: 0.64),
+            .init(color: .black.opacity(0.70), location: 0.84),
+            .init(color: .black.opacity(0.96), location: 1.0)
+        ],
+        startPoint: .top, endPoint: .bottom)
+
+    var body: some View {
+        Color.clear
+            .aspectRatio(1, contentMode: .fit)
+            .background {
+                ZStack {
+                    Self.shape.fill(Self.degradeTete)
+                    Self.shape.fill(Self.verre)
+                    // La gravure : une image à ALPHA, ses bords dissous dans
+                    // le noir par le voile cuit — aucun rectangle, aucun trait.
+                    Image("typo-\(zone.assetAccueil)")
+                        .resizable()
+                        .interpolation(.high)
+                        .aspectRatio(contentMode: .fill)
+                    // La lueur qui respire — une opacité, rien d'autre.
+                    Image("typo-\(zone.assetAccueil)-lueur")
+                        .resizable()
+                        .interpolation(.high)
+                        .aspectRatio(contentMode: .fill)
+                        .opacity(lueur)
+                }
+            }
+            .overlay { Self.shape.fill(Self.nuitPied) }
+            .overlay(alignment: .topTrailing) {
+                PiluleCompte(n: zone.compteAccueil)
+                    .fixedSize()
+                    .padding(10)
+            }
+            .overlay(alignment: .bottomLeading) {
+                Text(zone.rawValue)
+                    .font(.inter(15, .medium))
+                    .tracking(0.2)
+                    .foregroundStyle(Color.inkPrimary)
+                    .lineLimit(1)
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 12)
+            }
+            .clipShape(Self.shape)
+            .overlay {
+                Self.shape.strokeBorder(
+                    LinearGradient(colors: [.white.opacity(0.16), .white.opacity(0.03)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing),
+                    lineWidth: 0.5)
+            }
+            .task(id: ongletCache) { armer() }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(zone.rawValue), \(zone.compteAccueil) exercices")
+    }
+
+    /// Arme la respiration, ou la pose au repos. Une seule animation sur un
+    /// seul attribut ; le retard par rang décale les cinq carrés.
+    private func armer() {
+        let dort = ongletCache || reduceMotion || ExosBanc.sansPulseAccueil
+            || ProtectionThermique.shared.ambianceAuRepos
+        guard !dort else {
+            withAnimation(.easeOut(duration: 0.3)) { lueur = Self.repos }
+            return
+        }
+        lueur = Self.repos
+        withAnimation(.easeInOut(duration: 2.0)
+                        .repeatForever(autoreverses: true)
+                        .delay(Double(rang) * 0.3)) {
+            lueur = 1
+        }
+    }
+}
+
+/// La pilule du nombre — le « 60 % » de la référence, en **liquid glass**
+/// (verdict 21-09 : « une mini pastille liquid glass avec le nombre ») : la
+/// capsule de verre `.clear` (jamais `.regular`, le givré laiteux) sur une
+/// nuit légère pour que le chiffre reste lisible quand la vidéo passe
+/// dessous. Barreau `-sansVerreAccueil` : la capsule mate d'avant.
+private struct PiluleCompte: View {
+    let n: Int
+
+    var body: some View {
+        Text("\(n)")
+            .font(.inter(11.5, .semibold))
+            .monospacedDigit()
+            .foregroundStyle(Color.white.opacity(0.86))
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4)
+            .background {
+                if ExosBanc.sansVerreAccueil {
+                    Capsule().fill(Color.white.opacity(0.08))
+                } else {
+                    ZStack {
+                        Color.clear.glassEffect(.clear, in: Capsule())
+                        Capsule().fill(Color.black.opacity(0.28))
+                    }
+                }
+            }
+            .overlay { Capsule().strokeBorder(Color.white.opacity(0.14), lineWidth: 0.5) }
+    }
+}
+
+/// Ce que l'accueil sait d'une zone, et que le modèle n'a pas à porter : le
+/// nom de son carré anatomique et le nombre d'exercices.
+private extension ExerciseCategory {
+    var assetAccueil: String {
+        switch self {
+        case .haut: return "haut"
+        case .abdos: return "abdos"
+        case .bas: return "bas"
+        case .fessiers: return "fessiers"
+        case .cardio: return "cardio"
+        }
+    }
+
+    var compteAccueil: Int { ExerciseCatalog.exercises(in: self).count }
 }

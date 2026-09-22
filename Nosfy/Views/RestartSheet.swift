@@ -101,6 +101,11 @@ enum PanneauMesures {
 struct RestartPopup: View {
     var onLaunch: () -> Void = {}
     var onDismiss: () -> Void = {}
+    /// « CHOISIR UN AUTRE EXERCICE » (verdict Kathryn 21-09 : « à la place de
+    /// fermer, Choisir un autre exercice, et ça amène sur la liste des
+    /// exercices »). La croix et le fond ferment sans choisir, comme avant ;
+    /// ce lien, lui, enregistre la série ET rend la bibliothèque.
+    var onAutreExercice: () -> Void = {}
 
     @State private var visible = false
     @State private var enSortie = false
@@ -117,7 +122,7 @@ struct RestartPopup: View {
                 Color.black.opacity(visible ? 0.68 : 0)
                     .ignoresSafeArea()
                     .contentShape(Rectangle())
-                    .onTapGesture { fermer(relancer: false) }
+                    .onTapGesture { fermer(sortie: .fermer) }
                     .accessibilityHidden(true)
 
                 carte(largeur: largeur, hauteur: hauteur)
@@ -129,7 +134,7 @@ struct RestartPopup: View {
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isModal)
         .accessibilityIdentifier("restart-popup")
-        .accessibilityAction(.escape) { fermer(relancer: false) }
+        .accessibilityAction(.escape) { fermer(sortie: .fermer) }
         .onAppear {
             withAnimation(reduceMotion ? .easeOut(duration: 0.15)
                           : .spring(response: 0.40, dampingFraction: 0.88)) {
@@ -162,7 +167,7 @@ struct RestartPopup: View {
 
             Spacer(minLength: 20)
 
-            Button { fermer(relancer: true) } label: {
+            Button { fermer(sortie: .relancer) } label: {
                 Text(L("Recommencer", "Start again"))
                     .font(.inter(16, .semibold))
                     .foregroundStyle(Color.white.opacity(0.95))
@@ -181,15 +186,15 @@ struct RestartPopup: View {
             .accessibilityIdentifier("restart-launch")
             .padding(.horizontal, 28)
 
-            Button { fermer(relancer: false) } label: {
-                Text(L("Terminé", "Done"))
+            Button { fermer(sortie: .autreExercice) } label: {
+                Text(L("Choisir un autre exercice", "Choose another exercise"))
                     .font(.inter(15, .medium))
                     .foregroundStyle(Color.white.opacity(0.60))
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityIdentifier("restart-dismiss")
+            .accessibilityIdentifier("restart-autre-exercice")
             .padding(.top, 6)
             .padding(.bottom, 18)
         }
@@ -214,7 +219,7 @@ struct RestartPopup: View {
                 .allowsHitTesting(false)
         }
         .overlay(alignment: .topTrailing) {
-            Button { fermer(relancer: false) } label: {
+            Button { fermer(sortie: .fermer) } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(Color.white.opacity(0.55))
@@ -229,13 +234,19 @@ struct RestartPopup: View {
         .disabled(enSortie)
     }
 
-    private func fermer(relancer: Bool) {
+    enum Sortie { case relancer, fermer, autreExercice }
+
+    private func fermer(sortie: Sortie) {
         guard !enSortie else { return }
         enSortie = true
         withAnimation(.easeOut(duration: reduceMotion ? 0.12 : 0.24)) {
             visible = false
         } completion: {
-            if relancer { onLaunch() } else { onDismiss() }
+            switch sortie {
+            case .relancer: onLaunch()
+            case .fermer: onDismiss()
+            case .autreExercice: onAutreExercice()
+            }
         }
     }
 }

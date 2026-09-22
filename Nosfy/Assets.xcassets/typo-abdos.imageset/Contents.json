@@ -1,0 +1,8 @@
+{
+  "images" : [
+    { "filename" : "typo-abdos.png", "idiom" : "universal", "scale" : "1x" },
+    { "filename" : "typo-abdos@2x.png", "idiom" : "universal", "scale" : "2x" },
+    { "filename" : "typo-abdos@3x.png", "idiom" : "universal", "scale" : "3x" }
+  ],
+  "info" : { "author" : "xcode", "version" : 1 }
+}
