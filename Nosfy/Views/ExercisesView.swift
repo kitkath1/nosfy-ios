@@ -585,6 +585,23 @@ struct ExercisesView: View {
             .onChange(of: deepLinked) { _, exercice in
                 if exercice != nil { eteindreTuto() }
             }
+            // LE LECTEUR DE SÉANCE A CHOISI (22-09) : il a posé son
+            // intention dans `PlayerEtat`, on ouvre la fiche. Le canal
+            // est vidé tout de suite — une intention ne se rejoue pas.
+            // ⚠️ `initial: true`, ET C'EST TOUT LE SUJET (mesuré au film le
+            // 22-09). Depuis que la home reste derrière le lecteur, cette
+            // page N'EST PLUS MONTÉE quand le lecteur pose son intention :
+            // l'intention est déjà écrite à l'instant où la vue naît, donc
+            // il n'y a plus AUCUN changement à observer, et la fiche ne
+            // s'ouvrait jamais — on atterrissait sur la liste des zones.
+            // Avec `initial`, la vue lit le canal en naissant.
+            .onChange(of: PlayerEtat.shared.exerciceDemande,
+                      initial: true) { _, exo in
+                guard let exo else { return }
+                PlayerEtat.shared.exerciceDemande = nil
+                eteindreTuto()
+                deepLinked = exo
+            }
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(item: $deepLinked) { ExerciseDetailView(exercise: $0) }
             // ⚠️ SANS `initial: true` : au lancement il n'y a rien à rejoindre,
@@ -793,6 +810,20 @@ struct ExercisesView: View {
                         titre: filter?.rawValue ?? "Exercices",
                         q: $q, cherche: $cherche, liste: $modeListe,
                         retour: {
+                            // ⚠️ EN SÉANCE, LE CHEVRON REND LE LECTEUR
+                            // (verdict Kathryn 22-09 : « le chevron retour
+                            // depuis la page exercices, ça renvoie sur
+                            // l'overlay — on a dit que la page exo était
+                            // masquée »). Cette page n'existe qu'HORS
+                            // séance : pendant, toutes ses sorties mènent
+                            // au lecteur, comme l'onglet et le galet.
+                            // Sous la coupe blanche, comme partout.
+                            if montreAccueil, enSeance {
+                                CoupeEtat.shared.jouer {
+                                    PlayerEtat.shared.ouvrirLecteur = true
+                                }
+                                return
+                            }
                             // LE CHEVRON D'UNE SECTION REND LES CATÉGORIES
                             // (verdict 21-09 : « le chevron me remet sur la
                             // home, pas sur catégories »). Depuis l'accueil

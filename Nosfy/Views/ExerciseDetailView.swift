@@ -1042,6 +1042,18 @@ struct ExerciseDetailView: View {
         // voile, le flash et la lentille vivent AU-DESSUS du sous-arbre
         // zoomé, nets pendant que la page plonge.
         .scaleEffect(dive, anchor: UnitPoint(x: 0.5, y: 0.84))
+        // `-boucleAuto` (22-09) — LE BANC DE L'ALLER-RETOUR : il rend la
+        // main au lecteur à notre place, comme le ferait « Choisir un autre
+        // exercice » dans la pop-up flamme. Sans lui, le simulateur ne peut
+        // filmer que l'aller : il ne pose pas de doigt.
+        .task {
+            #if DEBUG
+            guard ProcessInfo.processInfo.arguments.contains("-boucleAuto")
+            else { return }
+            try? await Task.sleep(for: .seconds(3.4))
+            rendreLaBibliotheque()
+            #endif
+        }
         .task { await runAubeBench() }
         .task { await runCarteBench() }
         // Le banc de la card reward : `-rewardAuto` l'ouvre seul après un
@@ -3155,9 +3167,19 @@ struct ExerciseDetailView: View {
     /// main, sur l'accueil par zones si aucune section n'était posée. Le
     /// souffle de 0,30 s laisse la pop-up finir son fondu : dépiler sous une
     /// card qui s'efface faisait naître la bibliothèque déjà couverte.
+    /// ⚠️ LE RETOUR SE FAIT SOUS LE BLANC (22-09). Avant : 0,30 s
+    /// d'attente, PUIS la fiche se dépile, PUIS le lecteur remonte — trois
+    /// temps décalés, et la page Exercices visible entre les deux. C'est
+    /// exactement ce qu'elle voyait. La coupe tient l'écran, et tout
+    /// bascule derrière elle : la fiche, l'onglet rendu à la home, le
+    /// lecteur posé. La racine ne relance PAS de coupe : elle est ici.
     private func rendreLaBibliotheque() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.30) {
+        CoupeEtat.shared.jouer {
             dismiss()
+            // ET LE LECTEUR REVIENT (22-09) : la fiche se dépile, la racine
+            // rend l'onglet à la home et pose le player, le suivant déjà en
+            // tête. La bibliothèque reste accessible par ses cinq zones.
+            PlayerEtat.shared.ouvrirLecteur = true
         }
     }
 

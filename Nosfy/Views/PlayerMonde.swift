@@ -13,6 +13,17 @@ final class PlayerEtat {
     static let shared = PlayerEtat()
     private init() {}
 
+    /// L'EXERCICE DEMANDÉ DEPUIS LE PLAYER (22-09) — le lecteur de séance
+    /// ne navigue pas lui-même : il POSE son intention ici, la page
+    /// Exercices la lit et ouvre la fiche. Un canal, jamais un chemin de
+    /// navigation dupliqué.
+    var exerciceDemande: Exercise?
+
+    /// ROUVRIR LE LECTEUR (22-09) — posé par la fiche quand on choisit un
+    /// autre exercice. La racine le lit et ouvre le player : la fiche ne
+    /// présente rien elle-même.
+    var ouvrirLecteur = false
+
     /// 0 fermé → 1 ouvert. Les slots (scène, pied) en sont fonctions.
     var p: CGFloat = 0
     /// L'intention (le spring anime `p` vers elle).

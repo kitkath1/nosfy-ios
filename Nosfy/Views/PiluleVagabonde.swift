@@ -1683,7 +1683,6 @@ struct PiluleLab: View {
     /// soit : Kathryn refuse le grossissement.
     @State private var style: StylePlayer = .glisse
     private var overlayOuvert: Bool { morph > 0.001 }
-    @State private var retours = 0
     private var setsFaits: Int {
         Self.groupesDemo.reduce(0) { $0 + $1.done }
     }
@@ -1764,8 +1763,7 @@ struct PiluleLab: View {
                         depart: depart,
                         exoChoisi: exoChoisi,
                         groupes: Self.groupesDemo,
-                        onStop: { stops += 1 },
-                        onExos: { retours += 1 })
+                        onStop: { stops += 1 })
                 }
                 if !overlayOuvert { pupitre }
             }
@@ -1983,11 +1981,48 @@ struct GrandPlayer: View {
     /// Le sticker du jour — la vraie mini-card de séance.
     var sticker: String = "sticker-flamme"
     var onStop: () -> Void = {}
-    var onExos: () -> Void = {}
+    /// LE LECTEUR CHOISIT (22-09) : un exercice tapé dans une zone. Le
+    /// player ne navigue pas, il rend l'intention à la racine.
+    var onChoisirExo: (Exercise) -> Void = { _ in }
+    /// CE QUE NOSFY PROPOSE (22-09) — calculé par la racine à l'ouverture,
+    /// depuis l'historique réel. Vide = l'app n'a rien à proposer, et le
+    /// lecteur le dit au lieu d'inventer.
+    var propositions: [PropositionExo] = []
+    /// La séance n'a encore aucun exercice : le lecteur s'ouvre sur la
+    /// proposition, tête déjà repliée.
+    var seanceVide: Bool = false
 
     @State private var fermeture: CGFloat = 0
     @State private var fermeturePrise = false
     @State private var deplies: Set<String> = []
+    /// LA TÊTE REPLIÉE (22-09, verdict Kathryn : « le header de notre
+    /// overlay au scroll peut devenir un mode petit pour laisser place
+    /// aux catégories »). 0 la tête en grand — le ticket, le sticker, le
+    /// ruban, le nom balayé, la session — 1 la tête en une ligne. C'est
+    /// une VALEUR ANIMABLE, jamais deux vues échangées : le ticket
+    /// rétrécit, il ne disparaît pas (la loi du 05-09, « redessiner pour
+    /// animer coûte 3 à 8 fois plus qu'animer »).
+    @State private var repli: CGFloat = GrandPlayer.bancRepli
+    /// L'exercice déjà lancé depuis CE lecteur : sa rangée de proposition
+    /// se coche sans attendre l'aller-retour SwiftData.
+    @State private var lances: Set<String> = []
+    /// La zone ouverte : ses exercices remplacent la partition, dans le
+    /// MÊME composant. `nil` = la séance.
+    @State private var zone: ExerciseCategory? = GrandPlayer.bancZone
+
+    /// `-lecteurReplie` : le player naît TÊTE REPLIÉE, carrés visibles —
+    /// le simulateur ne glisse pas la partition.
+    /// `-lecteurZone <n>` : la zone `n` ouverte (0 Haut … 4 Cardio).
+    static let bancRepli: CGFloat =
+        (CommandLine.arguments.contains("-lecteurReplie")
+         || bancZone != nil) ? 1 : 0
+    static let bancZone: ExerciseCategory? = {
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: "-lecteurZone"), i + 1 < a.count,
+              let n = Int(a[i + 1]),
+              ExerciseCategory.allCases.indices.contains(n) else { return nil }
+        return ExerciseCategory.allCases[n]
+    }()
 
     private var setsFaits: Int { groupes.reduce(0) { $0 + $1.done } }
     private var setsTotal: Int { groupes.reduce(0) { $0 + $1.rows.count } }
@@ -2051,7 +2086,29 @@ struct GrandPlayer: View {
                 .opacity(Double(encre))
             VStack(spacing: 0) {
                 teteFixe(encre: encre, enGeste: enGeste)
-                partition.scrollDisabled(enGeste)
+                // LES CINQ ZONES — elles n'apparaissent QUE quand la tête
+                // s'est repliée : deux bandeaux pleins au-dessus de la
+                // liste, c'est ce qui rendrait l'écran lourd.
+                // ⚠️ LES CARRÉS SONT TOUJOURS LÀ. Point. (Verdict Kathryn
+                // 22-09, deux fois : « il faut que ce soit fluide, le fait
+                // d'avoir le résumé ET le fait de pouvoir ajouter un exo »,
+                // puis « après le Go il manque dans l'overlay la catégorie
+                // abdos et tout, tous les carrés là ! ».)
+                //
+                // Ils ont été conditionnels deux fois, et deux fois c'était
+                // faux : d'abord au repli de la tête — donc invisibles tant
+                // qu'on n'avait pas scrollé —, puis seulement devant la
+                // partition — donc absents juste après le Go, au moment
+                // précis où l'on choisit. Une porte qui n'est pas toujours
+                // au même endroit n'est pas une porte.
+                barreZones
+                // LA CARTE « SUIVANT » EST DESCENDUE DANS LE PIED (22-09) :
+                // elle y était en double avec le bouton d'action, et elle
+                // mangeait 74 pt au-dessus de la partition.
+                contenu.scrollDisabled(enGeste)
+                    .modifier(BancBoucleLecteur(tape: {
+                        if let p = propositions.first { lancer(p.exercise) }
+                    }))
             }
             .opacity(Double(encre))
             .overlay(alignment: .bottom) {
@@ -2096,13 +2153,36 @@ struct GrandPlayer: View {
         // ⚠️ PAR LE MODIFIER : appelée en direct, elle sautait la garde.
         .sondeCadence("player-morph")
         .accessibilityIdentifier("seance-detail")
+        // LA SÉANCE EST VIDE : le lecteur s'ouvre TÊTE REPLIÉE, carrés
+        // visibles, la proposition de Nosfy dessous — il n'y a rien
+        // d'autre à montrer, et c'est exactement ce qu'on veut après le Go.
+        // ⚠️ LA GRANDE TÊTE EST L'ÉTAT DE REPOS (verdict Kathryn 22-09 :
+        // « et la vue qu'on avait de base avec le gros sticker ? »). Le
+        // lecteur s'ouvre AVEC sa carte du jour en grand, son sticker
+        // flamme, son ticket de séries et son nom balayé — le composant
+        // qu'elle a dessiné et qui vit aussi sur la page noire.
+        //
+        // Il ne se replie QU'AU SCROLL, et c'est sa règle à elle : « le
+        // header de notre overlay au scroll peut devenir un mode petit pour
+        // laisser place aux catégories ». Les cinq carrés sont donc la
+        // récompense du geste, pas ce qui chasse le sticker d'entrée.
+        //
+        // (Avant, un `onAppear` repliait la tête dès que la séance était
+        //  vide : on n'a JAMAIS vu la grande tête au départ.)
         .onDisappear { CouvertureFoyer.shared.retirer() }
     }
 
     /// L'EN-TÊTE FIXE — il ne scrolle jamais, et c'est LUI qui porte le
     /// drag-pour-fermer (la partition garde son scroll : chacun sa zone).
     private func teteFixe(encre: CGFloat, enGeste: Bool) -> some View {
-        VStack(spacing: 10) {
+        // LE REPLI, EN GÉOMÉTRIE PURE : une seule valeur pilote la taille
+        // du ticket, la fonte du nom, l'air autour. Aucune vue n'est
+        // montée ni démontée pendant le scroll.
+        let r = repli
+        let carte: CGFloat = 150 - 108 * r        // 150 → 42
+        let echelle: CGFloat = 1.55 - 1.15 * r    // 1,55 → 0,40
+        let nom: CGFloat = 1 - r                  // le grand nom s'efface
+        return VStack(spacing: 10 - 5 * r) {
             Capsule().fill(.white.opacity(0.22))
                 .frame(width: 40, height: 5)
                 // LA VRAIE MARGE HAUTE : le banc ignore la zone sûre,
@@ -2113,9 +2193,49 @@ struct GrandPlayer: View {
             // LA MINI-CARD DU JOUR + LE BADGE DE SÉRIES (l'ancien player).
             // L'IMAGE DU JOUR + LE BADGE, BEAUCOUP plus grands (verdict
             // 04-09) : c'est la pièce maîtresse de la tête.
-            MiniCardJour(date: depart, sticker: sticker)
-                .scaleEffect(1.55)
-                .frame(width: 150, height: 150)
+            teteLigne(carte: carte, echelle: echelle, r: r, nom: nom)
+        }
+        .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
+        .gesture(dragFermeture)
+    }
+
+    /// LA LIGNE DE TÊTE — en grand elle est une colonne (ticket, nom,
+    /// session), repliée elle devient une rangée : la vignette, le nom et
+    /// le chrono, le ruban à droite. Les MÊMES vues dans les deux cas.
+    @ViewBuilder
+    private func teteLigne(carte: CGFloat, echelle: CGFloat,
+                           r: CGFloat, nom: CGFloat) -> some View {
+        if r > 0.5 {
+            // ⚠️ L'AIR EST UN MATÉRIAU (verdict 22-09 : « plus d'espace,
+            // aéré à la Apple »). Les cotes d'un en-tête compact iOS : la
+            // gouttière à 24, le titre qui respire, le ruban qui ne
+            // l'écrase pas.
+            HStack(spacing: 14) {
+                miniCarte(carte: carte, echelle: echelle, r: r)
+                VStack(alignment: .leading, spacing: 3) {
+                    titreOverlay(16)
+                    chronoSession.font(.system(size: 11, weight: .medium))
+                }
+                Spacer(minLength: 10)
+                TicketSeries(texte: "\(setsFaits) SETS", echelle: 0.58)
+                    .fixedSize()
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 10)
+            .padding(.bottom, 20)
+        } else {
+            miniCarte(carte: carte, echelle: echelle, r: r)
+            titreOverlay(25).padding(.top, 2).opacity(Double(nom))
+            chronoSession.padding(.top, 2).padding(.bottom, 14)
+        }
+    }
+
+    private func miniCarte(carte: CGFloat, echelle: CGFloat,
+                           r: CGFloat) -> some View {
+        MiniCardJour(date: depart, sticker: sticker)
+            .scaleEffect(echelle)
+            .frame(width: carte, height: carte)
                 // LE TICKET DE PAPIER — il RESTE ici, dans le DÉTAIL
                 // (verdict Kathryn 05-09, correction du même jour : « il
                 // fallait pas enlever le ticket avec le nombre de sets
@@ -2123,16 +2243,17 @@ struct GrandPlayer: View {
                 // n'enlever que sur la pastille, et enlever SON
                 // ANIMATION »). C'est donc son talon qui s'est tu (voir
                 // `TicketSeries`), pas le ticket.
-                .overlay(alignment: .trailing) {
-                    TicketSeries(texte: "\(setsFaits) SETS",
-                                 echelle: 0.95)
-                        .rotationEffect(.degrees(-4))
-                        .offset(x: 44, y: 10)
-                }
-                .padding(.top, 10)
-            // LE NOM DE L'EXERCICE, ou l'invite animée.
-            titreOverlay
-                .padding(.top, 2)
+            // LE TICKET DE PAPIER reste collé à la carte tant qu'elle est
+            // grande ; replié, il passe à droite de la ligne (voir
+            // `teteLigne`), jamais il ne disparaît.
+            .overlay(alignment: .trailing) {
+                TicketSeries(texte: "\(setsFaits) SETS", echelle: 0.95)
+                    .rotationEffect(.degrees(-4))
+                    .offset(x: 44, y: 10)
+                    .opacity(Double(1 - r))
+            }
+            .padding(.top, 10 - 8 * r)
+    }
             // ⚠️ À LA PLACE DE LA BARRE (verdict Kathryn) : les FLAMMES
             // condensées, la session en cours et le chrono, sur une
             // ligne. Les flammes sont GELÉES (t constant : aucune
@@ -2140,19 +2261,16 @@ struct GrandPlayer: View {
             // (La ligne de braises sous le titre est RETIRÉE — verdict
             //  04-09 : « ça fait lourd ». La vague du bas suffit à dire
             //  que ça tourne ; ici, le chrono seul.)
-            TimelineView(.periodic(from: depart, by: 1)) { tl in
-                let s = max(0, Int(tl.date.timeIntervalSince(depart)))
-                Text("session · \(s / 60):\(String(format: "%02d", s % 60))")
-                    .font(.system(size: 13, weight: .medium))
-                    .monospacedDigit()
-                    .foregroundStyle(.white.opacity(0.5))
-            }
-            .padding(.top, 2)
-            .padding(.bottom, 14)
+    /// LE CHRONO DE SESSION — une seule horloge, la même dans les deux
+    /// tailles de tête.
+    private var chronoSession: some View {
+        TimelineView(.periodic(from: depart, by: 1)) { tl in
+            let s = max(0, Int(tl.date.timeIntervalSince(depart)))
+            Text("session · \(s / 60):\(String(format: "%02d", s % 60))")
+                .monospacedDigit()
+                .foregroundStyle(.white.opacity(0.5))
         }
-        .frame(maxWidth: .infinity)
-        .contentShape(Rectangle())
-        .gesture(dragFermeture)
+        .font(.system(size: 13, weight: .medium))
     }
 
     /// LA PARTITION — le vrai composant de l'ancien player.
@@ -2164,54 +2282,230 @@ struct GrandPlayer: View {
     /// du 04-09. Elle prend ici la place restante du VStack, comme dans
     /// `ScenePlayer`. Le clic-pour-déplier revient avec elle (l'état
     /// `deplies` vit chez l'hôte, la loi payée).
+    /// CE QUE MONTRE LE LECTEUR : ta séance, ou les exercices d'une zone.
+    /// Le MÊME cadre, le même masque, la même place — seul le contenu
+    /// change (verdict 22-09 : « ça remplace les rangées, dans le même
+    /// composant, on ne change pas d'écran »).
+    /// CE QUE MONTRE LE LECTEUR, dans l'ordre : la zone qu'on vient
+    /// d'ouvrir, sinon la proposition de Nosfy tant que la séance est
+    /// vide, sinon ta partition.
+    @ViewBuilder
+    private var contenu: some View {
+        if let z = zone {
+            listeZone(z)
+        } else if seanceVide, !propositions.isEmpty {
+            listePropositions
+        } else {
+            partition
+        }
+    }
+
+    /// LA PROPOSITION DE NOSFY — la zone du jour et ses charges, lues dans
+    /// l'historique. Un tap lance. « Choisir autre chose » n'est pas un
+    /// bouton : les cinq carrés sont juste au-dessus.
+    private var listePropositions: some View {
+        ScrollView {
+            LazyVStack(spacing: 10) {
+                enTetePropose
+                ForEach(propositions) { p in
+                    RangeeZoneLecteur(exercise: p.exercise,
+                                      detail: p.detail(),
+                                      lance: lances.contains(p.exercise.id))
+                        .contentShape(RoundedRectangle(cornerRadius: 14,
+                                                       style: .continuous))
+                        .highPriorityGesture(TapGesture().onEnded {
+                            lancer(p.exercise)
+                        })
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 2)
+            .padding(.bottom, 150)
+        }
+        .scrollIndicators(.hidden)
+        .transition(.opacity)
+        .mask(Self.fondu)
+    }
+
+    private var enTetePropose: some View {
+        HStack(spacing: 8) {
+            Text("Nosfy propose")
+                .font(.inter(10.5, .semibold))
+                .tracking(1.2)
+                .foregroundStyle(.white.opacity(0.5))
+            if let z = propositions.first?.exercise.category {
+                Text(z.rawValue)
+                    .font(.inter(10.5, .medium))
+                    .foregroundStyle(.white.opacity(0.32))
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 6)
+        .padding(.bottom, 12)
+    }
+
+    /// AJOUTER UN EXERCICE, DEPUIS LE BAS DE LA SÉANCE — on ouvre
+    /// directement la zone où l'on travaille : un tap pour une liste, au
+    /// lieu de deux. Sans exercice en cours, on rend simplement les
+    /// carrés. ⚠️ Il OUVRE une liste, il ne choisit RIEN : c'est elle qui
+    /// choisit, toujours.
+    private func ajouterUnExercice() {
+        Haptique.leger()
+        withAnimation(.spring(response: 0.34, dampingFraction: 0.84)) {
+            zone = zoneCourante
+            repli = 1
+        }
+    }
+
+    /// La zone où l'on est : celle du dernier exercice de la séance, sinon
+    /// celle que Nosfy avait proposée.
+    private var zoneCourante: ExerciseCategory? {
+        groupes.last?.exercise.category ?? propositions.first?.exercise.category
+    }
+
+    /// LANCER UN EXERCICE — LE CHANGEMENT SE FAIT SOUS LE BLANC (22-09).
+    /// Avant : le lecteur descendait, l'onglet basculait, la fiche montait
+    /// — trois mouvements décalés, et la page Exercices visible entre deux.
+    /// Maintenant, la coupe tient l'écran et tout bascule derrière elle.
+    #if DEBUG
+    /// `-boucleAuto` — le banc tape le bouton du pied à notre place. Une
+    /// seule fois : sans le verrou, le lecteur relancerait un exercice à
+    /// chaque retour et la boucle ne s'arrêterait jamais.
+    nonisolated(unsafe) static var boucleFaite = false
+    static let bancBoucle = ProcessInfo.processInfo.arguments
+        .contains("-boucleAuto")
+    #endif
+
+    private func lancer(_ exo: Exercise) {
+        Haptique.moyen()
+        lances.insert(exo.id)
+        CoupeEtat.shared.jouer {
+            onChoisirExo(exo)
+            poserFerme()
+        }
+    }
+
+    /// Le même fondu pour les listes d'exercices. Leur pied ne porte que
+    /// le Stop, donc il peut descendre un peu plus bas que celui de la
+    /// partition.
+    private static let fondu = LinearGradient(stops: [
+        .init(color: .clear, location: 0),
+        .init(color: .black, location: 0.04),
+        .init(color: .black, location: 0.80),
+        .init(color: .clear, location: 0.90)
+    ], startPoint: .top, endPoint: .bottom)
+
+    /// LA BARRE DES ZONES — les carrés anatomiques de la bibliothèque,
+    /// en petit. Un tap ouvre la zone ; un second la referme et rend la
+    /// séance.
+    private var barreZones: some View {
+        HStack(spacing: 10) {
+            ForEach(ExerciseCategory.allCases) { z in
+                CarreZoneMini(zone: z, choisie: zone == z)
+                    .contentShape(RoundedRectangle(cornerRadius: 13,
+                                                   style: .continuous))
+                    .highPriorityGesture(TapGesture().onEnded {
+                        Haptique.leger()
+                        withAnimation(.spring(response: 0.34,
+                                              dampingFraction: 0.84)) {
+                            zone = (zone == z) ? nil : z
+                            repli = 1
+                        }
+                    })
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 22)
+    }
+
+    /// LES EXERCICES D'UNE ZONE — une rangée par exercice, la vignette,
+    /// le nom, le muscle. Un tap LANCE : le player rend l'intention et
+    /// se referme.
+    private func listeZone(_ z: ExerciseCategory) -> some View {
+        ScrollView {
+            LazyVStack(spacing: 10) {
+                ForEach(ExerciseCatalog.exercises(in: z)) { exo in
+                    RangeeZoneLecteur(exercise: exo,
+                                      detail: exo.muscle,
+                                      lance: lances.contains(exo.id))
+                        .contentShape(RoundedRectangle(cornerRadius: 14,
+                                                       style: .continuous))
+                        .highPriorityGesture(TapGesture().onEnded {
+                            lancer(exo)
+                        })
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 2)
+            .padding(.bottom, 150)
+        }
+        .scrollIndicators(.hidden)
+        .transition(.opacity)
+        .mask(Self.fondu)
+    }
+
     private var partition: some View {
         SlateListe(groupes: groupes,
                    courant: groupes.first?.id ?? "",
-                   basAir: 120,
-                   deplies: $deplies)
+                   // ⚠️ LA PLACE DU PIED EST RÉSERVÉE (mesuré au banc
+                   // 22-09) : à 120, le bouton d'action et le Stop
+                   // flottaient par-dessus « Set 3 » et la rangée 02 — le
+                   // défaut exact de l'ancien « Page exercices ». Le pied
+                   // fait ~170 pt (bouton 48 + espace 10 + médaillon 96 +
+                   // marge 14) : on lui en donne 176.
+                   basAir: 176,
+                   deplies: $deplies,
+                   onScroll: { y in replier(y > 26) },
+                   onAjouter: ajouterUnExercice)
             .equatable()
             .padding(.horizontal, 12)
+            // Le fondu du bas commence AVANT le pied (0,80 au lieu de
+            // 0,88) : en cours de défilement, ce qui passe dessous s'est
+            // déjà éteint. Rien ne se lit à travers un bouton.
             .mask(LinearGradient(stops: [
                 .init(color: .clear, location: 0),
                 .init(color: .black, location: 0.04),
-                .init(color: .black, location: 0.88),
-                .init(color: .clear, location: 1)
+                .init(color: .black, location: 0.70),
+                .init(color: .clear, location: 0.80)
             ], startPoint: .top, endPoint: .bottom))
     }
 
-    /// LE PIED — le retour à la page exercices de l'ancien player.
-    /// ⚠️ INVERSÉ le 14-09 (verdict Kathryn : « consistance avec la nouvelle
-    /// home ») : l'ACTION en haut (« Page exercices »), le STOP en bas —
-    /// exactement l'ordre de la home en séance (bouton primaire puis
-    /// médaillon). Un seul ordre dans toute l'app.
-    private func piedExercices(encre: CGFloat, enGeste: Bool) -> some View {
-        VStack(spacing: 10) {
-            piedTexte(encre: encre, enGeste: enGeste)
-            MedaillonStop(lueur: true, action: {
-                Haptique.moyen()
-                onStop()
-            })
-                .scaleEffect(1.35)
-                .frame(width: 96, height: 96)
+    /// LE REPLI DE LA TÊTE — écrit SEULEMENT quand il change d'état (le
+    /// scroll remonte une valeur par image ; l'écrire par image
+    /// rejouerait le player entier). Ouvrir une zone le force.
+    private func replier(_ compacte: Bool) {
+        let cible: CGFloat = (compacte || zone != nil) ? 1 : 0
+        guard abs(repli - cible) > 0.01 else { return }
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.88)) {
+            repli = cible
         }
-        // Le stop DESCEND encore (verdict 04-09, 2e passe).
-        .padding(.bottom, 14)
-        .opacity(Double(encre))
     }
 
-    private func piedTexte(encre: CGFloat, enGeste: Bool) -> some View {
-        Text("Page exercices")
-            .font(.inter(15, .semibold))
-            .foregroundStyle(Color.white.opacity(0.92))
-            .padding(.horizontal, 24)
-            .padding(.vertical, 13)
-            .modifier(VerreOuMat(pose: encre > 0.9 && !enGeste))
-            .contentShape(Capsule())
-            .highPriorityGesture(TapGesture().onEnded {
-                Haptique.leger()
-                onExos()
-                fermer()
-            })
+    /// LE PIED — LE STOP, ET RIEN D'AUTRE.
+    ///
+    /// ⚠️ AUCUN BOUTON N'Y PROPOSE D'EXERCICE (verdict Kathryn 22-09, deux
+    /// refus de suite) : « pourquoi il y a écrit commencer développé
+    /// couché, non je veux pas ça », puis « le suivant, le presse à jambe,
+    /// non il y a pas ça — on doit choisir un exo MANUELLEMENT ». Le
+    /// lecteur ne décide de rien : il montre, elle choisit.
+    ///
+    /// ⚠️ « PAGE EXERCICES » EST MORT LUI AUSSI. Ce bouton ne fermait pas
+    /// le lecteur, il CHANGEAIT D'ONGLET, et l'onglet ne revenait jamais
+    /// tout seul : c'est lui qui posait la page Exercices derrière le
+    /// lecteur pour tout le reste de la séance.
+    ///
+    /// Reste le médaillon, au même pixel du début à la fin de la séance —
+    /// le seul geste qui termine, et le pouce le trouve sans regarder.
+    private func piedExercices(encre: CGFloat, enGeste: Bool) -> some View {
+        MedaillonStop(lueur: true, action: {
+            Haptique.moyen()
+            onStop()
+        })
+            .scaleEffect(1.35)
+            .frame(width: 96, height: 96)
+            // Le stop DESCEND encore (verdict 04-09, 2e passe).
+            .padding(.bottom, 14)
+            .opacity(Double(encre))
     }
 
     /// LE DRAG-POUR-FERMER (école Spotify) — posé sur la TÊTE
@@ -2276,24 +2570,39 @@ struct GrandPlayer: View {
     /// lueur qui BALAYE le dégradé de blanc, en boucle douce. Le nom de
     /// l'exercice, lui, reste posé (c'est un fait, pas une invitation).
     @ViewBuilder
-    private var titreOverlay: some View {
-        if let nom = exoChoisi {
-            // ⚠️ LE NOM EST BALAYÉ PAR LA LUMIÈRE (verdict Kathryn 05-09,
-            // en remplacement du ticket : « l'exercice en cours avec un
-            // effet de balayage de lumière très Apple pour montrer que
-            // c'est en cours »). C'est la MÊME lueur que l'invite — un
-            // seul balayage dans la maison — et elle se tait sous le
-            // doigt comme elle : rien ne s'anime pendant un geste.
-            InviteAnimee(taille: 25, texte: nom,
-                         fige: fermeture > 0.5 || morph < 0.98)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 28)
-        } else {
-            // La même porte que dans la pilule : rien ne s'anime sous
-            // le doigt (relecture adverse 04-09 — c'était la dernière
-            // horloge qui battait encore pendant le geste).
-            InviteAnimee(taille: 25, fige: fermeture > 0.5 || morph < 0.98)
-        }
+    /// CE QUE DIT LA TÊTE — le nom de l'exercice en cours, sinon
+    /// « Choisissez un exercice » tant que rien n'est fait, et « Séance en
+    /// cours » dès qu'il y a du travail derrière.
+    ///
+    /// ⚠️ ELLE MENTAIT (relevé 22-09 sur capture) : elle disait
+    /// « choisissez un exercice » au-dessus d'une partition qui montrait
+    /// déjà un exercice fait, deux séries et deux flammes — `exoChoisi`
+    /// tombe à `nil` dès qu'aucun exercice n'est ouvert. On lit maintenant
+    /// `groupes`, c'est-à-dire ce qui est RÉELLEMENT affiché dessous.
+    private var nomDeLaTete: String {
+        if let nom = exoChoisi, !nom.isEmpty { return nom }
+        // ⚠️ `seanceVide`, PAS `groupes.isEmpty` (mesuré au simulateur
+        // 22-09) : la partition n'est JAMAIS vide — elle porte toujours au
+        // moins un groupe, même sans une seule série faite. Elle disait donc
+        // « Séance en cours » au-dessus d'un ticket « 0 SETS ».
+        return seanceVide ? "Choisissez un exercice" : "Séance en cours"
+    }
+
+    /// ⚠️ LA TAILLE SE PASSE EN PARAMÈTRE (relevé 22-09, le titre coupé
+    /// « Choisissez un ex… ») : `InviteAnimee` PORTE sa propre
+    /// `.font(.system(size: taille))`, donc un `.font()` posé autour d'elle
+    /// est ignoré sans le moindre avertissement. La tête repliée demandait
+    /// 15 pt et recevait 25 : le titre débordait de sa ligne.
+    ///
+    /// Le nom est balayé par la lumière (verdict 05-09 : « l'exercice en
+    /// cours avec un effet de balayage très Apple pour montrer que c'est en
+    /// cours ») — une seule lueur dans la maison, et elle se tait sous le
+    /// doigt comme tout le reste.
+    private func titreOverlay(_ taille: CGFloat) -> some View {
+        InviteAnimee(taille: taille, texte: nomDeLaTete,
+                     fige: fermeture > 0.5 || morph < 0.98)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, taille > 20 ? 28 : 0)
     }
 
     func fermer() {
@@ -2305,4 +2614,143 @@ struct GrandPlayer: View {
         }
     }
 
+    /// LA FERMETURE SANS MOUVEMENT — sous la coupe blanche, le lecteur ne
+    /// doit pas se voir descendre : il n'est simplement plus là quand le
+    /// blanc s'ouvre. Pas d'haptique non plus : le tap en a déjà donné une.
+    func poserFerme() {
+        CouvertureFoyer.shared.retirer()
+        var tr = Transaction()
+        tr.disablesAnimations = true
+        withTransaction(tr) {
+            morph = 0
+            fermeture = 0
+        }
+    }
+
+}
+
+// MARK: - Le lecteur de séance : les zones et leurs exercices (22-09)
+
+/// UN CARRÉ DE ZONE, EN PETIT — le même asset anatomique que l'accueil
+/// des exercices (`typo-<zone>`), cuit par script. Choisi, il porte son
+/// liseré blanc et sa zone s'éclaire.
+private struct CarreZoneMini: View {
+    let zone: ExerciseCategory
+    let choisie: Bool
+
+    private static let forme = RoundedRectangle(cornerRadius: 13, style: .continuous)
+
+    var body: some View {
+        Color.clear
+            .aspectRatio(1, contentMode: .fit)
+            .background {
+                ZStack {
+                    Self.forme.fill(
+                        LinearGradient(colors: [Color(white: 0.16), .black],
+                                       startPoint: .top, endPoint: .bottom))
+                    Image("typo-\(zone.assetLecteur)")
+                        .resizable()
+                        .interpolation(.high)
+                        .aspectRatio(contentMode: .fill)
+                    Image("typo-\(zone.assetLecteur)-lueur")
+                        .resizable()
+                        .interpolation(.high)
+                        .aspectRatio(contentMode: .fill)
+                        .opacity(choisie ? 0.9 : 0.22)
+                }
+            }
+            .overlay(alignment: .bottom) {
+                Text(zone.rawValue)
+                    .font(.inter(8.5, .semibold))
+                    .foregroundStyle(.white.opacity(choisie ? 0.95 : 0.7))
+                    .padding(.bottom, 4)
+            }
+            .clipShape(Self.forme)
+            .overlay {
+                Self.forme.strokeBorder(
+                    .white.opacity(choisie ? 0.85 : 0.12),
+                    lineWidth: choisie ? 1.2 : 0.5)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(zone.rawValue)
+            .accessibilityAddTraits(choisie ? [.isButton, .isSelected] : .isButton)
+    }
+}
+
+/// UNE RANGÉE D'EXERCICE DANS LE LECTEUR — la grammaire des rangées de
+/// la partition : la vignette, le nom, le muscle, rien d'autre. Elle se
+/// tape pour lancer.
+private struct RangeeZoneLecteur: View {
+    let exercise: Exercise
+    /// La ligne sous le nom : la dernière charge quand on la connaît,
+    /// le muscle sinon. Jamais un chiffre inventé.
+    var detail: String = ""
+    /// Déjà lancé depuis ce lecteur : la rangée porte sa coche.
+    var lance: Bool = false
+
+    private static let forme = RoundedRectangle(cornerRadius: 14, style: .continuous)
+    private static let vignette = RoundedRectangle(cornerRadius: 10, style: .continuous)
+
+    var body: some View {
+        HStack(spacing: 14) {
+            ExercisePhoto(exercise: exercise)
+                .frame(width: 44, height: 44)
+                .clipShape(Self.vignette)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(exercise.name)
+                    .font(.inter(14, .semibold))
+                    .foregroundStyle(Color.inkPrimary)
+                    .lineLimit(1)
+                Text(detail.isEmpty ? exercise.muscle : detail)
+                    .font(.inter(10))
+                    .foregroundStyle(.white.opacity(0.46))
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 6)
+            Image(systemName: lance ? "checkmark" : "chevron.right")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.white.opacity(lance ? 0.6 : 0.35))
+        }
+        .padding(.leading, 10)
+        .padding(.trailing, 16)
+        .frame(height: 68)
+        .background(Self.forme.fill(.white.opacity(0.05)))
+        .overlay { Self.forme.strokeBorder(.white.opacity(0.1), lineWidth: 0.5) }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(exercise.name), \(exercise.muscle)")
+        .accessibilityAddTraits(.isButton)
+    }
+}
+
+private extension ExerciseCategory {
+    /// Le nom de l'asset anatomique, partagé avec l'accueil des exercices.
+    var assetLecteur: String {
+        switch self {
+        case .haut: return "haut"
+        case .abdos: return "abdos"
+        case .bas: return "bas"
+        case .fessiers: return "fessiers"
+        case .cardio: return "cardio"
+        }
+    }
+}
+
+/// LE BANC DE LA BOUCLE — il tape le bouton du pied 2,4 s après l'ouverture
+/// du lecteur, une seule fois. Isolé dans un modificateur pour que le corps
+/// du lecteur ne grossisse pas d'un `task` de plus (le mur du type-checker
+/// n'est jamais loin dans ce fichier).
+private struct BancBoucleLecteur: ViewModifier {
+    var tape: () -> Void
+    func body(content: Content) -> some View {
+        #if DEBUG
+        content.task {
+            guard GrandPlayer.bancBoucle, !GrandPlayer.boucleFaite else { return }
+            GrandPlayer.boucleFaite = true
+            try? await Task.sleep(for: .seconds(2.4))
+            tape()
+        }
+        #else
+        content
+        #endif
+    }
 }

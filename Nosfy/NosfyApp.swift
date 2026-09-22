@@ -521,6 +521,12 @@ struct RootView: View {
     /// viennent à sa fermeture (`enchainerApresStory`).
     @State private var storyFin: StoryLaunch?
 
+    /// CE QUE NOSFY PROPOSE (22-09) — calculé À L'OUVERTURE du lecteur,
+    /// jamais tenu en permanence : un `@Query` de plus sur la racine, c'est
+    /// une lecture SwiftData à chaque battement de la vue la plus chère de
+    /// l'app. Ici, une lecture par ouverture, et rien entre deux.
+    @State private var propositions: [PropositionExo] = []
+
     /// L'entraînement ouvert, s'il y en a un.
     @Query(filter: #Predicate<Workout> { $0.endedAt == nil },
            sort: \Workout.startedAt, order: .reverse)
@@ -894,8 +900,17 @@ struct RootView: View {
         } else {
             depart.fermerChemin()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) {
-                depart.tutoDemande = true
-                withAnimation(.easeOut(duration: 0.3)) { selection = .exercises }
+                // ⚠️ ON NE CHANGE PLUS D'ONGLET APRÈS LE GO (verdict Kathryn
+                // 22-09 : « quand on drag après le Go, derrière c'est pas la
+                // page exercice mais la home noire »). L'onglet Exercices
+                // garde son flow HORS séance ; pendant, c'est le lecteur qui
+                // porte tout. C'est aussi ce qui fait que plus rien ne
+                // découvre la liste des exercices en cours de route.
+                // LE MÊME ACCUEIL SANS LE FILM (22-09) : le lecteur s'ouvre
+                // aussi quand le décompte est coupé (`-sansCount`, Réduire
+                // les animations) — sinon le banc et l'accessibilité voient
+                // un parcours différent du vrai.
+                CoupeEtat.shared.jouer { poserGrandPlayer() }
             }
         }
     }
@@ -1080,7 +1095,11 @@ struct RootView: View {
     /// il ouvre le panneau du départ.
     private func galetPlayTape() {
         if active != nil {
-            withAnimation(.easeOut(duration: 0.3)) { selection = .exercises }
+            // ⚠️ IL RAMÈNE AU LECTEUR, PLUS À LA PAGE (22-09) : la séance
+            // se passe dans le lecteur, et la page Exercices est hors
+            // séance. Le galet est la deuxième porte d'entrée après
+            // l'onglet ; elle mène au même endroit.
+            CoupeEtat.shared.jouer { poserGrandPlayer() }
         } else {
             DepartEtat.shared.proposer()
         }
@@ -1417,9 +1436,85 @@ struct RootView: View {
             .environment(\.ongletCache, selection != .home || filmDepart != nil)
     }
 
+    /// LES PROPOSITIONS, LUES UNE FOIS — les douze dernières séances
+    /// terminées suffisent : au-delà, la zone du jour ne bouge plus
+    /// (fenêtre de 14 jours dans `NosfyPropose`).
+    private func calculerPropositions() {
+        var d = FetchDescriptor<Workout>(
+            predicate: #Predicate { $0.endedAt != nil },
+            sortBy: [SortDescriptor(\.startedAt, order: .reverse)])
+        d.fetchLimit = 12
+        let seances = (try? modelContext.fetch(d)) ?? []
+        propositions = NosfyPropose.propositions(seances: seances)
+    }
+
+    /// LE LECTEUR POSÉ, PAS MONTÉ — il arrive à sa place d'un coup, sans
+    /// animation, parce que la coupe blanche tient l'écran pendant ce
+    /// temps. « Il était déjà là » est justement ce qu'on veut lire quand
+    /// le blanc s'ouvre ; une montée de 0,6 s qui dépasse du blanc dirait
+    /// le contraire.
+    /// LES DEUX COUVERCLES — ce qui passe PAR-DESSUS tout le reste.
+    ///
+    /// ⚠️ NOMMÉS DANS UNE SOUS-VUE, ET PAS DEUX `.overlay` DE SUITE : le
+    /// `body` de la racine est au bord du mur du type-checker, et le
+    /// deuxième overlay l'a fait tomber (« unable to type-check this
+    /// expression in reasonable time », 22-09). La règle de la maison : une
+    /// vue est une addition de sous-vues NOMMÉES.
+    ///
+    /// · LA COUPE BLANCHE (`CoupeBlanche.swift`) rend invisibles les
+    ///   changements d'écran du parcours de séance — elle doit donc couvrir
+    ///   jusqu'au film de départ (zIndex 40). `-sansCoupe` la retire.
+    /// · L'ÉCRAN D'ERREUR (18-09) passe même devant elle : une panne se dit,
+    ///   quoi qu'il arrive à l'écran.
+    @ViewBuilder private var couvercles: some View {
+        ZStack {
+            CoupeBlanche()
+            EcranErreurHote()
+        }
+    }
+
+    /// L'ONGLET QU'ON TAPE — et la seule chose qu'il fait de différent
+    /// pendant une séance.
+    ///
+    /// ⚠️ « ON GARDE LA PAGE EXERCICES QUE HORS SESSION » (verdict Kathryn
+    /// 22-09). Pendant une séance, taper Exercices FAIT REMONTER LE LECTEUR
+    /// au lieu d'ouvrir la page : la séance se passe à un seul endroit, et
+    /// on ne peut plus tomber sur la liste en plein travail. HORS séance,
+    /// rien ne change — la page garde exactement son flow.
+    ///
+    /// ⚠️ C'EST LE BINDING DU TabView, PAS UN `onChange` : seul le DOIGT
+    /// passe par ici. Les `selection = .exercises` écrits par le code —
+    /// celui qui ouvre la fiche, par exemple — écrivent l'état directement
+    /// et ne sont donc JAMAIS interceptés. Avec un `onChange` on aurait
+    /// rouvert le lecteur par-dessus la fiche qu'on venait de demander.
+    private var ongletChoisi: Binding<WoopTab> {
+        Binding(get: { selection },
+                set: { cible in
+                    if cible == .exercises, active != nil,
+                       filmDepart == nil, morphPlayer < 0.98 {
+                        CoupeEtat.shared.jouer { poserGrandPlayer() }
+                        return
+                    }
+                    selection = cible
+                })
+    }
+
+    private func poserGrandPlayer() {
+        guard active != nil, morphPlayer < 0.98 else { return }
+        calculerPropositions()
+        PlayerEtat.shared.couvre = true
+        let couverture = CouvertureFoyer.shared
+        let jeton = couverture.commencerOuverture()
+        var tr = Transaction()
+        tr.disablesAnimations = true
+        withTransaction(tr) { morphPlayer = 1 }
+        couverture.terminerOuverture(jeton)
+    }
+
     private func ouvrirGrandPlayer() {
         guard active != nil, morphPlayer < 0.98 else { return }
         Haptique.leger()
+        calculerPropositions()
         // ⚠️ LA CORDE QUE PERSONNE NE TIRAIT (05-09, audit + lecture).
         // `PlayerEtat.couvre` a QUATRE lecteurs — les deux vidéos de
         // l'accueil, celle des exercices, la page Progression — et il
@@ -1564,7 +1659,7 @@ struct RootView: View {
                 Color.black.ignoresSafeArea()
             } else if !showSplash && !showAuth && !homeEclipsee
                 && !(Self.cheminSeul && depart.cheminOuvert) {
-            TabView(selection: $selection) {
+            TabView(selection: ongletChoisi) {
                 Tab("Accueil", systemImage: "house.fill", value: WoopTab.home) {
                     // §23 LE BRANCHEMENT — LA HOME V2 ROUGE prend l'onglet.
                     // ⚠️ LE CONTENU EST SORTI EN `ongletHome` (le mur de
@@ -1924,7 +2019,20 @@ struct RootView: View {
                     groupes: groupesDeSeance(a),
                     sticker: WoopSticker.pour(a).asset,
                     onStop: { DepartEtat.shared.pauseOuverte = true },
-                    onExos: { withAnimation { selection = .exercises } })
+                    // LE LECTEUR A CHOISI (22-09) : il pose l'exercice
+                    // dans `PlayerEtat`, on rend l'onglet Exercices, et
+                    // la page ouvre la fiche. Le player ne navigue pas
+                    // lui-même : un seul chemin de navigation dans l'app.
+                    // ⚠️ SANS ANIMATION : l'appel arrive DÉJÀ sous la coupe
+                    // blanche (`lancer()` l'y enveloppe). Animer ici ferait
+                    // durer sous le blanc un mouvement que personne ne voit,
+                    // et qui dépasserait de l'autre côté.
+                    onChoisirExo: { exo in
+                        PlayerEtat.shared.exerciceDemande = exo
+                        selection = .exercises
+                    },
+                    propositions: propositions,
+                    seanceVide: a.orderedExercises.isEmpty)
                     // Même loi que la pilule : il reçoit `UIScreen.bounds`,
                     // une cote PHYSIQUE — sans ça il naissait 59 pt trop bas.
                     .ignoresSafeArea()
@@ -2314,27 +2422,36 @@ struct RootView: View {
                     var tr = Transaction()
                     tr.disablesAnimations = true
                     withTransaction(tr) {
-                        depart.tutoDemande = true
-                        selection = .exercises
+                        // LE TUTO NE SERT PLUS APRÈS LE GO (22-09) : c'est
+                        // le LECTEUR qui accueille, avec ses cinq zones et
+                        // la proposition de Nosfy. La brume sur une card ne
+                        // se justifiait que parce qu'on tombait sur un mur.
+                        // ⚠️ ET L'ONGLET NE BOUGE PLUS : la home noire reste
+                        // derrière le lecteur toute la séance (22-09).
                         filmDepart = nil
                     }
+                    // LE LECTEUR S'OUVRE DIRECT (verdict Kathryn 22-09 :
+                    // « après le Go on arrive direct sur l'overlay »), et il
+                    // est POSÉ sous la coupe blanche, pas monté : quand le
+                    // blanc s'ouvre, il est déjà là.
+                    CoupeEtat.shared.jouer { poserGrandPlayer() }
                 }
                 .id(film)
                 .zIndex(40)
             }
         }
+        // L'ERREUR DE NOSFY (18-09, ErreurNosfy.swift / EcranErreur.swift) : UN
+        // écran pour toute panne signalée par `ErreurNosfy.shared.signaler`, au-
+        // dessus de tout (le film de départ, la visite, le rejeu) — la bête, le
+        // titre, le sous-titre, Réessayer. Le mode avion s'y lit et s'y règle
+        // seul. Démonté quand le rejeu réussit.
+        .overlay { couvercles }
         // LE COMPTE (14-09, Compte.swift) — trois choses, à la racine :
         //  · la porte DEMANDÉE (déconnexion, suppression, session révoquée) :
         //    tout ce qui est ouvert se ferme, la porte revient sans le film ;
         //  · « la porte tient l'écran » (porte, film, splash, rejeu) — publié
         //    pour que le Welcome Back ne s'ouvre jamais dessous ;
         //  · quand la porte tombe, le Welcome Back est proposé (une connue qui
-        // L'ERREUR DE NOSFY (18-09, ErreurNosfy.swift / EcranErreur.swift) : UN
-        // écran pour toute panne signalée par `ErreurNosfy.shared.signaler`, au-
-        // dessus de tout (le film de départ, la visite, le rejeu) — la bête, le
-        // titre, le sous-titre, Réessayer. Le mode avion s'y lit et s'y règle
-        // seul. Démonté quand le rejeu réussit.
-        .overlay { EcranErreurHote() }
         //    rentre) — jamais en première fois, jamais sans le serveur (S4).
         .onChange(of: compte.porteDemandee) { _, demandee in
             guard demandee else { return }
@@ -2366,7 +2483,13 @@ struct RootView: View {
         // `-departAuto` presse la porte de départ de la Home à 7 s (le refus).
         .task {
             let a = CommandLine.arguments
-            guard a.contains("-cheminAuto") || a.contains("-departAuto") else { return }
+            // ⚠️ TOUT NOUVEAU DRAPEAU S'AJOUTE ICI AUSSI (piège payé DEUX
+            // fois : `-goAuto` le 22-09 matin, `-boucleAuto` le soir). La
+            // garde rejette silencieusement ce qu'elle ne connaît pas, et
+            // le banc paraît « ne rien faire ».
+            guard a.contains("-cheminAuto") || a.contains("-departAuto")
+                    || a.contains("-goAuto") || a.contains("-boucleAuto")
+            else { return }
             // `-plafondBanc` : trois séances FINIES AVEC TRAVAIL aujourd'hui (une
             // série cochée chacune — la démo n'en coche aucune, donc aucun galet),
             // semées une fois : la Route en compte deux, la troisième est refusée.
@@ -2392,6 +2515,17 @@ struct RootView: View {
                 }
             }
             try? await Task.sleep(for: .seconds(7))
+            // `-goAuto` (22-09) : LE VRAI CHEMIN DU GO — le décompte, puis
+            // le lecteur qui s'ouvre. Le simulateur n'appuie pas sur
+            // « Start » ; sans ce banc, l'accueil d'après le Go ne peut
+            // être ni capturé ni jugé par personne.
+            if a.contains("-goAuto") { demarrerDepuisChemin(); return }
+            // `-boucleAuto` (22-09) : L'ALLER-RETOUR COMPLET, sans doigt.
+            // Le Go, le lecteur, le bouton du pied tapé par `GrandPlayer`,
+            // la fiche, puis son retour — de quoi FILMER la boucle entière
+            // et juger sa fluidité. « Le simulateur ne pose pas de doigt »
+            // est la raison d'être de tous les bancs de ce dépôt.
+            if a.contains("-boucleAuto") { demarrerDepuisChemin(); return }
             if a.contains("-departAuto") { startWorkout(); return }
             let finies = ((try? modelContext.fetch(FetchDescriptor<Workout>())) ?? [])
                 .filter { $0.endedAt != nil && $0.faitPourRoute }
@@ -2412,6 +2546,20 @@ struct RootView: View {
             Button(L("Fermer", "Close"), role: .cancel) {}
         } message: {
             Text(L("Ta séance reste ouverte. Réessaie de la terminer.", "Your session is still open. Try finishing it again."))
+        }
+        // LE RETOUR SYSTÉMATIQUE AU LECTEUR (22-09) : « Choisir un autre
+        // exercice » dans la pop-up flamme le rouvre, le suivant déjà en
+        // tête. C'est la boucle qu'elle a dessinée : on en part, on y revient.
+        .onChange(of: PlayerEtat.shared.ouvrirLecteur) { _, quand in
+            guard quand else { return }
+            PlayerEtat.shared.ouvrirLecteur = false
+            // ⚠️ PAS DE COUPE ICI : on est DÉJÀ dedans. C'est la fiche qui
+            // l'a lancée (`rendreLaBibliotheque`), et c'est sous son blanc
+            // que la fiche se dépile, que l'onglet revient à la home et que
+            // le lecteur se pose. Rouvrir une coupe par-dessus la première
+            // en ferait clignoter deux.
+            selection = .home
+            poserGrandPlayer()
         }
         .onChange(of: depart.cheminOuvert) { _, ouverte in
             if !ouverte, recompensesApresRoute { libererFinSeance() }

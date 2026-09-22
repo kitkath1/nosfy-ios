@@ -362,6 +362,11 @@ struct SlateListe: View, Equatable {
     /// colle sa frame (et donc le rect d'exclusion du chef) — une frame
     /// fixe fabriquait des zones mortes qui avalaient les taps.
     var onContentHeight: (CGFloat) -> Void = { _ in }
+    /// LE SCROLL, REMONTÉ À L'HÔTE (22-09) — c'est lui qui replie la tête
+    /// du player. Valeur par défaut vide : la STORY et l'ardoise ne le
+    /// passent pas, leur comportement ne bouge pas d'un pixel. (Une
+    /// closure de plus ne casse pas l'égalité : `==` est écrit à la main
+    /// et ne compare que `courant`, `deplies` et les clés des groupes.)
 
     /// LES GROUPES DÉPLIÉS — ET L'ÉTAT VIT CHEZ L'HÔTE (26-08, la
     /// QUATRIÈME variante du piège du dépliage, celle-ci prouvée à la
@@ -382,7 +387,55 @@ struct SlateListe: View, Equatable {
     /// l'égalité est fausse → le corps se rejoue. Ne JAMAIS le
     /// redescendre en `@State`.
     @Binding var deplies: Set<String>
+    /// LE SCROLL, REMONTÉ À L'HÔTE (22-09) — c'est lui qui replie la tête
+    /// du player. Valeur par défaut vide : la STORY et l'ardoise ne le
+    /// passent pas, leur comportement ne bouge pas d'un pixel.
+    var onScroll: (CGFloat) -> Void = { _ in }
+    /// AJOUTER UN EXERCICE, AU BAS DE LA SÉANCE (22-09) — la porte est à
+    /// la SUITE de ce qu'on a fait, là où l'œil arrive après une série.
+    /// ⚠️ OPTIONNELLE, ET `nil` PAR DÉFAUT : la STORY de fin et l'ardoise
+    /// ne la passent pas, donc la rangée n'existe pas chez elles et leur
+    /// rendu ne bouge pas d'un pixel. (Une closure de plus ne casse pas
+    /// l'égalité : `==` est écrit à la main et ne compare que `courant`,
+    /// `deplies` et les clés des groupes.)
+    /// ⚠️ DÉCLARÉE APRÈS `deplies` : Swift impose l'ordre des arguments
+    /// d'un initialiseur mémberwise sur l'ordre des propriétés.
+    var onAjouter: (() -> Void)?
     @State private var seme = false
+
+    /// LA RANGÉE « + » — sobre, en creux, jamais un bouton plein : c'est
+    /// une porte au bout d'une liste, pas l'action principale de l'écran
+    /// (celle-là vit dans le pied du lecteur).
+    /// Le « + » est du TEXTE, pas un symbole Apple : un seul jeu de
+    /// formes dans cet écran, et rien d'emprunté.
+    @ViewBuilder
+    private func rangAjouter(_ action: @escaping () -> Void) -> some View {
+        HStack(spacing: 9) {
+            Text("+")
+                .font(.inter(16, .medium))
+                .foregroundStyle(.white.opacity(0.5))
+            Text("Ajouter un exercice")
+                .font(.inter(13.5, .semibold))
+                .foregroundStyle(.white.opacity(0.6))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 15)
+        // ⚠️ UN FILET PLEIN, PAS DES POINTILLÉS : un cadre en tirets se
+        // lit comme une case vide à remplir — « fake », son mot de rejet.
+        // Ici c'est une porte, pas un trou : un cheveu blanc à 10 %, la
+        // même matière que le reste de l'écran.
+        .background {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(.white.opacity(0.035))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(.white.opacity(0.10), lineWidth: 1)
+                }
+        }
+        .padding(.top, 8)
+        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .onTapGesture { action() }
+    }
 
     static func == (l: Self, r: Self) -> Bool {
         l.courant == r.courant
@@ -428,6 +481,7 @@ struct SlateListe: View, Equatable {
                                   rang: r.rang,
                                   onTap: { bascule(r.groupe.id) })
                     }
+                    if let onAjouter { rangAjouter(onAjouter) }
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 10)
@@ -438,6 +492,12 @@ struct SlateListe: View, Equatable {
             }
             .frame(width: g.size.width, height: g.size.height)
             .clipped()
+            // ⚠️ UNE SEULE SONDE, et elle n'écrit RIEN ici : elle remonte
+            // l'offset à l'hôte, qui décide. Lire un `@State` local par
+            // image de scroll re-jouerait la partition entière.
+            .onScrollGeometryChange(for: CGFloat.self) {
+                $0.contentOffset.y + $0.contentInsets.top
+            } action: { _, y in onScroll(y) }
         }
         .scrollIndicators(.hidden)
         .onAppear {
