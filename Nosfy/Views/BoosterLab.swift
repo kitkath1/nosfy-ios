@@ -538,6 +538,20 @@ final class BoosterSFX {
 ///     légendaires — même expérience, même braise, un autre dessin).
 struct BoosterLab: View {
     @Environment(\.scenePhase) private var scenePhase
+    /// ⚠️ **LE BARREAU DU MANÈGE** (21-09) : sans lui on ne peut ni l'accuser
+    /// ni le disculper sur le téléphone. `-manegeHorloge60` force 60 images
+    /// par seconde partout, quelle que soit la chaleur — c'est le témoin de
+    /// l'A/B ; sans lui, la cadence descend à 30 dès « fair ».
+    static let horloge60 = CommandLine.arguments.contains("-manegeHorloge60")
+    /// La cadence de la scène 3D : 60 à froid, 30 dès que le téléphone souffle.
+    static var cadenceManege: Int {
+        horloge60 || !ProtectionThermique.shared.ambianceAuRepos ? 60 : 30
+    }
+    /// Le pas des deux horloges SwiftUI de l'étage résultat, même règle.
+    static var pasManege: Double {
+        horloge60 || !ProtectionThermique.shared.ambianceAuRepos ? 1.0 / 60 : 1.0 / 30
+    }
+
     private static let still = CommandLine.arguments.contains("-boosterStill")
     private static let dos = CommandLine.arguments.contains("-boosterDos")
     private static let mylar = CommandLine.arguments.contains("-boosterMylar")
@@ -626,6 +640,18 @@ struct BoosterLab: View {
                                  handle: handle,
                                  forge: appMode || Self.scelle,
                                  paused: scenePhase != .active || handle.attenteReseau,
+                                 // ⚠️ **LE MANÈGE LIT ENFIN LA CHALEUR**
+                                 // (21-09, « ça chauffe si je tire plusieurs
+                                 // boosters dans le manège 3D ») : chaque
+                                 // sachet rebâtit une scène SceneKit plein
+                                 // écran, HDR + bloom + anticrénelage, à 60
+                                 // images par seconde — et rien ne la
+                                 // ralentissait, même à « serious » où le GPU
+                                 // est déjà bridé. Le DESSIN ne change pas :
+                                 // ni bloom, ni particules, ni sol miroir —
+                                 // seule la cadence descend à 30 quand le
+                                 // téléphone souffle. Témoin : `-manegeHorloge60`.
+                                 preferredFramesPerSecond: Self.cadenceManege,
                                  robe: robeEffective,
                                  cadreDecoupe: true)
                         .ignoresSafeArea()
@@ -645,8 +671,9 @@ struct BoosterLab: View {
                         let projW = H * 0.41647
                         let cardW = min(projW + 46, 426)
                         let cardH = projW * 1448.0 / 1086.0
-                        TimelineView(.animation(minimumInterval: 1.0 / 60,
+                        TimelineView(.animation(minimumInterval: Self.pasManege,
                                                 paused: scenePhase != .active)) { tl in
+                            let _ = SondeVol.shared.tic(7)
                             let age = tl.date.timeIntervalSince(registreBorn)
                             // — LE VOL (l'avion) : fonction pure du temps.
                             // Cabrée, montée quadratique, dérive, roulis,
@@ -1101,7 +1128,7 @@ struct SacreRegistre: View {
     var born: Date
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60,
+        TimelineView(.animation(minimumInterval: BoosterLab.pasManege,
                                 paused: scenePhase != .active)) { tl in
             let age = tl.date.timeIntervalSince(born)
             VStack(spacing: 13) {

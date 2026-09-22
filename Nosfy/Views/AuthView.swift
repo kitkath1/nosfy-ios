@@ -85,9 +85,11 @@ struct AuthView: View {
             // La parallaxe gyroscopique : la même dérive de caméra que le ciel
             // de la home — mais elle ne touche QUE les couches procédurales,
             // l'image, elle, reste immobile au pixel.
-            SkyMotion.shared.start(reduceMotion: reduceMotion)
+            SkyMotion.shared.retenir("auth", reduceMotion: reduceMotion)
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { formShown = true }
         }
+        // 21-09 : la feuille Apple rend le gyroscope en partant.
+        .onDisappear { SkyMotion.shared.lacher("auth") }
     }
 
     /// La connexion est immédiate : un toucher, on entre. Le vrai envoi d'OTP

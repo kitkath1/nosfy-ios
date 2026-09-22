@@ -66,6 +66,9 @@ struct ProfilLuneView: View {
     /// fois (il pend, se déplie, s'envole) et ne revient pas — tant qu'on
     /// reste. Il revient quand on quitte l'onglet et qu'on y revient.
     @State private var nosfyPenche = false
+    /// Il ne joue QU'UNE fois par visite de l'onglet — le drapeau retombe
+    /// quand on quitte (21-09, avec le réveil thermique ci-dessous).
+    @State private var nosfyDejaJoue = false
     /// L'onglet affiché ou non — l'arrivée sur la page joue le piano.
     @Environment(\.ongletCache) private var ongletCache
 
@@ -368,9 +371,26 @@ struct ProfilLuneView: View {
             // Nosfy : présent à l'arrivée, démonté quand on quitte — il
             // rejouera au retour. Jamais sous protection thermique ni
             // Reduce Motion : la page se passe de lui.
-            nosfyPenche = !cache && !Self.sansNosfyPenche
+            if cache { nosfyDejaJoue = false }
+            nosfyPenche = !cache && !nosfyDejaJoue && !Self.sansNosfyPenche
                 && !ReposDecorProfil.banniere
                 && !UIAccessibility.isReduceMotionEnabled
+        }
+        // ⚠️ **IL REVIENT QUAND LE TÉLÉPHONE REFROIDIT** (21-09, son retour
+        // TestFlight 82 : « on ne voit plus la petite chauve-souris qui
+        // apparaît dans la page profil, alors qu'elle doit réapparaître »).
+        // La porte `banniere` (thermique ≥ serious) n'était lue QU'UNE fois,
+        // dans la fermeture ci-dessus : arriver sur le profil avec un
+        // téléphone chaud le supprimait pour toute la visite, même une fois
+        // refroidi — alors que le galet et le spot, eux, relisent la porte
+        // dans leur `body` et se réveillent. Ici on la surveille : dès
+        // qu'elle retombe, si l'onglet est affiché et qu'il n'a pas encore
+        // joué, il descend. Il ne rejoue jamais deux fois par visite.
+        .onChange(of: ReposDecorProfil.banniere) { _, auRepos in
+            guard !auRepos, !ongletCache, !nosfyDejaJoue,
+                  !Self.sansNosfyPenche,
+                  !UIAccessibility.isReduceMotionEnabled else { return }
+            nosfyPenche = true
         }
         .onAppear {
             if Self.reglagesNow { showReglages = true }
@@ -638,7 +658,11 @@ struct ProfilLuneView: View {
             // Il joue une fois puis la vue est DÉMONTÉE (pas cachée) : plus
             // de lecteur, plus de couche, zéro coût après son envol.
             if nosfyPenche {
-                NosfyPencheProfil { nosfyPenche = false }
+                NosfyPencheProfil {
+                    nosfyPenche = false
+                    // Il a joué : plus de rejeu tant qu'on reste ici (21-09).
+                    nosfyDejaJoue = true
+                }
                     .frame(width: 125 * 668 / 376, height: 125)
                     .blendMode(.screen)
                     .position(x: largeur / 2, y: 20 + 62.5)

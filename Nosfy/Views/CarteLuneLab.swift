@@ -470,7 +470,9 @@ struct CarteVivante: View {
     var body: some View {
         GeometryReader { geo in
             let cs = Self.cardSize(in: geo.size)
-            TimelineView(.animation(minimumInterval: 1.0 / 60.0,
+            // 21-09 : la carte vivante suit la chaleur comme le manège (son
+            // shader tourne sur ~426 pt pendant qu'elle la regarde).
+            TimelineView(.animation(minimumInterval: BoosterLab.pasManege,
                                     paused: scenePhase != .active
                                         || (frozen != nil && smokeFreeze != nil))) { tl in
                 let tilt = tilt(at: tl.date)

@@ -163,8 +163,9 @@ struct GaletEtape: View {
     /// calendrier.
     var jourSeul: Bool = false
     /// ⚠️ **LE STICKER ×2** (20-09, retour TestFlight 81 : « le badge ×2,
-    /// celui qu'on a déjà »). Deux séances avec travail le même jour local =
-    /// deux galets datés pareil ; le 2e porte le sticker `WoopSticker.fois2`
+    /// celui qu'on a déjà » — 21-09, sa règle « un galet = 1 jour » lui donne
+    /// son sens définitif). Deux séances avec travail le même jour local = UN
+    /// galet, celui du jour, qui porte le sticker `WoopSticker.fois2`
     /// en coin bas-droit — il s'AJOUTE à la date, il ne remplace rien (règle
     /// du 27-08). `nil` ou 1 = rien ; 2 = le sticker ; au-delà, RIEN (son
     /// verdict du 20-09 : « max deux séances par jour et le sticker, basta »
@@ -672,8 +673,20 @@ struct GaletEtape: View {
                     .opacity(alphaEncre)
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
+                    // ⚠️ **L'ARRIVÉE DU ×2** (21-09, « une super animation
+                    // quand c'est fois 2 sur la route ») : il TOMBE sur le
+                    // galet au moment du sceau — une échelle et une opacité,
+                    // deux valeurs animables interpolées par le compositeur.
+                    // L'animation est portée par le conteneur, sur la SEULE
+                    // valeur `multiple` : un `.animation` sur le galet entier
+                    // rejouerait son shader à chaque image (la loi du 05-09).
+                    .transition(.scale(scale: 0.25).combined(with: .opacity))
             }
         }
+        // Le ressort du ×2 (21-09) : `.animation(_:value:)` ne s'arme QUE
+        // quand `multiple` change — le reste du galet n'emprunte jamais
+        // cette animation, son shader n'est pas rejoué.
+        .animation(.spring(response: 0.46, dampingFraction: 0.55), value: multiple)
         .compositingGroup()
         // LA FUMÉE DU PRESS — trois volutes pâles qui s'échappent du
         // bouton et se dissolvent (l'école Pil-3 B), une bouffée par

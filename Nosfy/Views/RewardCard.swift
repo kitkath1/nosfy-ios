@@ -1,3 +1,11 @@
+// ⚠️ **LES HORLOGES DE LA CARD S'ARRÊTENT À CHAUD** (21-09, retour
+// TestFlight 82). Welcome Back n'est PAS un cover : la home vit entière
+// dessous (ses vidéos, ses verres), et la card empilait par-dessus douze
+// TimelineView à 30 et 60 Hz que rien n'endormait — ni la chaleur, ni la
+// protection qui range déjà tout le reste. Dès « fair », elles se figent :
+// la card garde son dessin, ses chiffres et sa lumière, elle cesse
+// seulement de les recalculer trente fois par seconde. À froid, rien ne
+// change.
 import SwiftUI
 import AVFoundation
 import CoreText
@@ -150,8 +158,14 @@ struct RewardPopup: View {
                     tete: tete)
             .sensoryFeedback(.impact(weight: .heavy, intensity: 1.0),
                              trigger: boum)
+            .onDisappear {
+                // 21-09 : la card est le VRAI lecteur du gyroscope (huit
+                // sites lisent `tilt` ici). Elle le rend en partant, sinon
+                // il tournait pour toute la vie de l'app.
+                SkyMotion.shared.lacher("reward")
+            }
             .onAppear {
-                SkyMotion.shared.start(reduceMotion: reduceMotion)
+                SkyMotion.shared.retenir("reward", reduceMotion: reduceMotion)
                 // La card figée ne joue RIEN : ni rampe, ni tick, ni
                 // arpège — une capture de réglage, pas une arrivée.
                 guard RewardBanc.fige == nil else { return }
@@ -600,7 +614,8 @@ private struct RewardScene: View, Animatable {
                         // pied de la card, la scène naît d'en bas.
                         if robe == .video {
                         TimelineView(.animation(
-                            minimumInterval: 1.0 / 30.0)) { tl in
+                            minimumInterval: 1.0 / 30.0,
+                            paused: ProtectionThermique.shared.ambianceAuRepos)) { tl in
                             let b = balayageSpot(
                                 tl.date.timeIntervalSince(naissance))
                             Self.forme.fill(
@@ -1089,7 +1104,8 @@ struct PoudreDiamant: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0,
-                                paused: reduceMotion)) { tl in
+                                paused: reduceMotion
+                                || ProtectionThermique.shared.ambianceAuRepos)) { tl in
             let t = tl.date.timeIntervalSince(naissance)
             Canvas { ctx, _ in
                 ctx.blendMode = .plusLighter
@@ -1226,7 +1242,8 @@ private struct ChiffreMatrice: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0,
-                                paused: reduceMotion)) { tl in
+                                paused: reduceMotion
+                                || ProtectionThermique.shared.ambianceAuRepos)) { tl in
             corps(t: tl.date.timeIntervalSince(naissance))
         }
         .task {
@@ -1372,7 +1389,8 @@ struct VerreQuatre: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60.0,
-                                paused: reduceMotion)) { tl in
+                                paused: reduceMotion
+                                || ProtectionThermique.shared.ambianceAuRepos)) { tl in
             let t = tl.date.timeIntervalSince(naissance)
             let tilt = SkyMotion.shared.tilt
             let libre: CGFloat = enMain ? 0.25 : 1
@@ -1558,7 +1576,8 @@ private struct PastilleLuneReward: View {
         // 30 Hz : le flottement est LENT, 60 Hz coûtait le double pour
         // rien (la card laguait).
         TimelineView(.animation(minimumInterval: 1.0 / 30.0,
-                                paused: reduceMotion)) { tl in
+                                paused: reduceMotion
+                                || ProtectionThermique.shared.ambianceAuRepos)) { tl in
             let t = tl.date.timeIntervalSince(naissance)
             let b = balayageSpot(t)
             let tilt = SkyMotion.shared.tilt
@@ -1712,7 +1731,8 @@ private struct ChiffreRevele: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0,
-                                paused: reduceMotion)) { tl in
+                                paused: reduceMotion
+                                || ProtectionThermique.shared.ambianceAuRepos)) { tl in
             let b = balayageSpot(tl.date.timeIntervalSince(naissance))
             Color.clear
                 .overlay {
@@ -1797,7 +1817,8 @@ private struct FlammeSticker: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60.0,
-                                paused: reduceMotion)) { tl in
+                                paused: reduceMotion
+                                || ProtectionThermique.shared.ambianceAuRepos)) { tl in
             let t = tl.date.timeIntervalSince(naissance)
             // Elle VIT : respiration ample, balancement, vacillement.
             let souffle = 1 + 0.075 * sin(t * 1.35)
@@ -2075,7 +2096,8 @@ struct TexteGeant: View {
                     // que le cône de la lampe (les rangées, statiques, ne
                     // se redessinent pas : seul le masque glisse).
                     TimelineView(.animation(
-                        minimumInterval: 1.0 / 30.0)) { tl in
+                        minimumInterval: 1.0 / 30.0,
+                        paused: ProtectionThermique.shared.ambianceAuRepos)) { tl in
                         let b = balayageSpot(
                             tl.date.timeIntervalSince(naissance))
                         rangées
@@ -2161,7 +2183,8 @@ struct LampeEventail: View {
     var naissance: Date
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                paused: ProtectionThermique.shared.ambianceAuRepos)) { tl in
             corps(balayage: balayageSpot(
                 tl.date.timeIntervalSince(naissance)))
         }
@@ -2254,7 +2277,8 @@ struct Scintilles: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0,
-                                paused: reduceMotion)) { tl in
+                                paused: reduceMotion
+                                || ProtectionThermique.shared.ambianceAuRepos)) { tl in
             let t = tl.date.timeIntervalSince(naissance)
             Canvas { ctx, size in
                 ctx.blendMode = .plusLighter
@@ -2347,7 +2371,8 @@ struct ChiffreVerre: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60.0,
-                                paused: reduceMotion)) { tl in
+                                paused: reduceMotion
+                                || ProtectionThermique.shared.ambianceAuRepos)) { tl in
             let t = tl.date.timeIntervalSince(naissance)
             let tilt = SkyMotion.shared.tilt
             let libre: CGFloat = enMain ? 0.25 : 1
@@ -2565,7 +2590,8 @@ struct GaletVerre: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60.0,
-                                paused: reduceMotion)) { tl in
+                                paused: reduceMotion
+                                || ProtectionThermique.shared.ambianceAuRepos)) { tl in
             let t = tl.date.timeIntervalSince(naissance)
             let tilt = SkyMotion.shared.tilt
             // La dérive se fait discrète sous le doigt : la main commande.

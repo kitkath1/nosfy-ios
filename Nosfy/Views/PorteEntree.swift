@@ -494,15 +494,18 @@ struct PorteEntree: View {
         // LE GYROSCOPE DE LA PARALLAXE : SkyMotion ne démarre pas tout seul
         // (le bug payé du 19-08 : « la parallaxe lisait des zéros sur
         // téléphone ») et le système coupe ses updates en arrière-plan — on le
-        // relance sur le retour. ⚠️ JAMAIS de stop() ici : SkyMotion n'a pas
-        // de refcount, un stop couperait le poignet de toute l'app.
+        // relance sur le retour. ⚠️ 21-09 : il a MAINTENANT des lecteurs
+        // nommés — la porte retient le sien et le rend en partant ; le
+        // poignet des autres écrans n'est jamais coupé (`lacher` n'éteint
+        // que quand plus personne ne lit).
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
-                SkyMotion.shared.start(reduceMotion: reduceMotion)
+                SkyMotion.shared.retenir("porte", reduceMotion: reduceMotion)
             }
         }
+        .onDisappear { SkyMotion.shared.lacher("porte") }
         .onAppear {
-            SkyMotion.shared.start(reduceMotion: reduceMotion)
+            SkyMotion.shared.retenir("porte", reduceMotion: reduceMotion)
             // Le banc de la sortie se déclenche SEUL à +3 s (le bouton ne se
             // tape pas en ligne de commande — l'école de `-clotureTest`). Au
             // doigt, le bouton reste le déclencheur, et le premier gagne.

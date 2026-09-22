@@ -810,6 +810,16 @@ struct ExerciseDetailView: View {
             // pointé (tranches de 5 min, sets, segments scellés) est écrit.
             .onDisappear {
                 WorkoutActivityController.clearFocus(source: liveSource, for: liveWorkout ?? active)
+                // ⚠️ **L'ÉCRAN NE RESTE PLUS ALLUMÉ POUR TOUJOURS** (21-09,
+                // « ça chauffe après plein d'allers-retours ») : le départ
+                // d'un double galet pose `isIdleTimerDisabled = true` et
+                // seul « Finish » le rendait. Quitter la fiche en cours de
+                // course (retour arrière, changement d'onglet) laissait le
+                // téléphone éveillé jusqu'à la fin de la session — un
+                // multiplicateur de chauffe qui ne se voit nulle part.
+                if seanceTapis != nil {
+                    UIApplication.shared.isIdleTimerDisabled = false
+                }
             }
             .onChange(of: active == nil) { _, fermee in
                 guard fermee, let st = seanceTapis, !st.terminee else { return }

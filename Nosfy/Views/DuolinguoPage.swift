@@ -277,24 +277,34 @@ struct EcranSpec: Equatable, Identifiable {
         seances[min(max(k, 0), seances.count - 1)].id
     }
 
-    /// Un galet par séance terminée avec du travail (filtre de la Home).
-    /// Les pauses calendaires ne font pas avancer le chemin ; deux séances le
-    /// même jour restent deux séances — et PAS TROIS (20-09, sa règle : « maximum
-    /// deux séances par jour, pour pas tricher ») : `PlafondJour.comptees` ne garde
-    /// que les deux premières de chaque jour local, la même règle que
-    /// `seances_chemin_plafonnees()` au serveur. Après35, le dernier chapitre est accompli.
+    /// ⚠️ **UN GALET = UN JOUR** (21-09, sa règle : « un galet = 1 jour malgré
+    /// deux séances, sinon tout s'épuise trop vite »). Un jour LOCAL qui porte
+    /// au moins une séance comptée avance le chemin d'UN galet ; la deuxième
+    /// séance du jour ne pose pas de galet — elle pose le sticker ×2 sur celui
+    /// du jour (`seances`) et rejoue sa fête. Le plafond de deux séances par
+    /// jour ne bouge pas (`PlafondJour`, la même règle que
+    /// `seances_chemin_plafonnees()` au serveur) : il borne ce qui COMPTE, pas
+    /// ce qui s'affiche — et la clôture continue de payer la deuxième (sa
+    /// décision du 21-09). Les pauses calendaires ne font pas avancer ;
+    /// après 35 jours, le dernier chapitre est accompli.
+    ///
+    /// `dates` porte la PREMIÈRE fin du jour (celle qui a ouvert le galet) ;
+    /// `seances` vaut 1 ou 2 — la source unique du ×2, lue par la route ET
+    /// par la card de la home.
     static func etapeEtFaits(seancesFinies: [Date], aujourdhui: Date = Date())
-        -> (etape: Int, faits: Set<Int>, dates: [Int: Date]) {
-        let finies = PlafondJour.comptees(seancesFinies.filter { $0 <= aujourdhui })
-            .map(\.date).prefix(seances.count)
+        -> (etape: Int, faits: Set<Int>, dates: [Int: Date], seances: [Int: Int]) {
+        let lesJours = PlafondJour.jours(seancesFinies.filter { $0 <= aujourdhui })
+            .prefix(EcranSpec.seances.count)
         var faits: Set<Int> = []
         var dates: [Int: Date] = [:]
-        for (rang, date) in finies.enumerated() {
+        var parGalet: [Int: Int] = [:]
+        for (rang, j) in lesJours.enumerated() {
             let id = id(pourJour: rang)
             faits.insert(id)
-            dates[id] = date
+            dates[id] = j.date
+            parGalet[id] = j.seances
         }
-        return (id(pourJour: finies.count), faits, dates)
+        return (id(pourJour: lesJours.count), faits, dates, parGalet)
     }
 
     /// LES FRONTIÈRES (2e salve : « ça doit être le même élément ») — une
@@ -356,6 +366,11 @@ extension EcranSpec {
         /// Les estampilles de complétion (`Workout.endedAt`) : un galet fait
         /// porte SA date, jamais une date déduite du rang.
         var datesFaites: [Int: Date] = [:]
+        /// ⚠️ **LE NOMBRE DE SÉANCES DE CHAQUE GALET** (21-09, un galet = un
+        /// jour) : 1, ou 2 quand la journée en a porté deux. C'est LUI qui
+        /// pose le sticker ×2 — plus un rang recalculé entre galets voisins,
+        /// puisque deux galets ne peuvent plus partager un jour.
+        var seancesParGalet: [Int: Int] = [:]
         var reclamees: Set<Int> = []
         /// ⚠️ **AUJOURD'HUI EST UNE DONNÉE, PAS UN `Date()` CACHÉ.** Les trois
         /// méthodes d'origine appelaient l'horloge en douce : aucun banc ne
@@ -413,7 +428,18 @@ extension EcranSpec {
             // AUJOURD'HUI — le galet au halo marque le jour où le user est
             // connecté : sa date se calcule à l'affichage, et ne se FIGE qu'à la
             // complétion (c'est à ce moment-là qu'elle entre dans `datesFaites`).
-            if e.id == etape && !faits.contains(e.id) { return maintenant }
+            if e.id == etape && !faits.contains(e.id) {
+                // ⚠️ **UN GALET = UN JOUR** (21-09) : si la journée a DÉJÀ son
+                // galet (une séance faite aujourd'hui), l'actif est celui de
+                // DEMAIN — il ne porte aucune date, sinon deux galets
+                // afficheraient le même jour côte à côte (« plusieurs fois le
+                // 19 septembre », TestFlight 81). Il garde son halo et son
+                // panneau : c'est toujours par lui qu'on lance la deuxième.
+                let dejaAujourdhui = datesFaites.values.contains {
+                    Calendar.current.isDate($0, inSameDayAs: maintenant)
+                }
+                return dejaAujourdhui ? nil : maintenant
+            }
             // Une réalisation porte sa date, y compris le dernier galet après35séances.
             // Aucun jour manqué ou futur n'est inventé entre deux séances.
             return datesFaites[e.id]
@@ -447,14 +473,8 @@ extension EcranSpec {
         /// home l'appellent toutes deux (la loi de la source unique). Coût :
         /// une passe sur les dates faites (35 au plus) par galet dessiné.
         func multiple(_ e: EtapeSpec) -> Int? {
-            guard !e.special, let d = datesFaites[e.id] else { return nil }
-            let cal = Calendar.current
-            var rang = 1
-            for (id, autre) in datesFaites where id != e.id {
-                guard cal.isDate(autre, inSameDayAs: d) else { continue }
-                if autre < d || (autre == d && id < e.id) { rang += 1 }
-            }
-            return rang >= 2 ? rang : nil
+            guard !e.special, let n = seancesParGalet[e.id], n >= 2 else { return nil }
+            return n
         }
 
         /// LE FUTUR NE PORTE PLUS UN RANG, IL PORTE UNE PROMESSE : « une petite
@@ -583,6 +603,9 @@ extension EcranSpec {
     var cineAncre: UnitPoint = .center
     var cineHalo: CGFloat = 0
     var cineHalo2: CGFloat = 0
+    /// LE TROISIÈME HALO — celui du ×2 (21-09) : il ne part que si la journée
+    /// a porté deux séances. Barreau `-sansFeteFois2`.
+    var cineHalo3: CGFloat = 0
     /// L'écran posé (pour le titre de la dalle) et le geste en cours
     /// (la dalle s'efface pendant le scroll).
     var ecranCourant = 0
@@ -610,6 +633,9 @@ extension EcranSpec {
     /// actif, il porte AUJOURD'HUI, calculé à l'affichage (elle ne se fige
     /// qu'à la complétion).
     var datesFaites: [Int: Date] = [:]
+    /// Le nombre de séances de chaque galet fait (1 ou 2) — la source du
+    /// sticker ×2 depuis le 21-09 (un galet = un jour).
+    var seancesParGalet: [Int: Int] = [:]
     /// LE PLAFOND DU JOUR (20-09) : le tap sur le galet actif quand les deux
     /// séances du jour sont faites — la pop-up native du refus, pas le panneau.
     var refusPlafond = false
@@ -1287,6 +1313,9 @@ private struct CheminDuo: View {
                 ZStack {
                     HaloFete(h: etat.cineHalo)
                     HaloFete(h: etat.cineHalo2)
+                    // Le troisième ne naît que pour un ×2 (21-09) : sa rampe
+                    // reste à 0 sinon, et une rampe à 0 ne dessine rien.
+                    HaloFete(h: etat.cineHalo3)
                 }
                 .position(x: largeur / 2 + e.dx,
                           y: (CGFloat(e.ecran) * 874 + e.y) * k)
@@ -1500,10 +1529,13 @@ private struct CheminDuo: View {
                     // aujourd'hui → le galet actif propose LA DEUXIÈME, et le
                     // dit (« lancer une deuxième séance aujourd'hui ? ») ; à
                     // deux, il ne s'ouvre plus (voir le tap : la pop-up native).
+                    // 21-09, un galet = un jour : un galet à DEUX séances le
+                    // dit — c'est ce que le sticker ×2 annonce, et « View »
+                    // ouvre alors la pop-up native des heures.
                     titre: e.special ? "Nosfy has something for you"
                         : (cEst ? (etat.faitesAujourdhui == 1 ? "Start a second session today?"
                                                              : "Today's session")
-                                : "Session done"),
+                                : (lecture.multiple(e) == 2 ? "Two sessions" : "Session done")),
                     cta: e.special
                         ? (recompensePrete ? "Claim" : (aGratter ? "Scratch" : nil))
                         : (cEst ? "Start" : "View"),
@@ -1654,10 +1686,17 @@ private struct CheminDuo: View {
     /// rien : les deux ensembles et la table sont des COW, on ne copie que
     /// trois références.
     private var lecture: EcranSpec.Lecture {
-        EcranSpec.Lecture(etape: etat.etape,
-                          faits: etat.faits,
-                          datesFaites: etat.datesFaites,
-                          reclamees: etat.reclamees)
+        // ⚠️ LE ×2 ARRIVE AVEC LA FÊTE (21-09) : tant que le sceau n'est pas
+        // tombé, le galet qu'on célèbre compte pour UNE séance — sinon le
+        // sticker serait déjà là à l'ouverture de la Route et on ne le
+        // verrait jamais tomber. Même école que `faits.remove(celebration)`.
+        var parGalet = etat.seancesParGalet
+        if let c = etat.celebration, !etat.celebrationValidee { parGalet[c] = 1 }
+        return EcranSpec.Lecture(etape: etat.etape,
+                                 faits: etat.faits,
+                                 datesFaites: etat.datesFaites,
+                                 seancesParGalet: parGalet,
+                                 reclamees: etat.reclamees)
     }
 
     /// Les cinq états du verdict — le raisonnement vit dans
@@ -1894,6 +1933,9 @@ struct DuolinguoPage: View {
     /// par l'hôte. nil = le banc (aucune estampille : la date d'un jour passé
     /// se dérive alors de l'axe des rangs).
     var dates: [Int: Date]? = nil
+    /// Le nombre de séances par galet (21-09, un galet = un jour) : 1 ou 2.
+    /// nil = le banc, aucun ×2.
+    var seances: [Int: Int]? = nil
     /// Les nœuds spéciaux déjà réclamés (l'hôte les persiste).
     var reclamees: Set<Int>? = nil
     /// Les nœuds réclamés dont la card n'a jamais été grattée (20-09, § 5.5)
@@ -2135,6 +2177,10 @@ struct DuolinguoPage: View {
                 if let faits { etat.faits = faits }
                 if let celebration { etat.faits.remove(celebration) }
                 if let dates { etat.datesFaites = dates }
+                // ⚠️ La valeur INITIALE se pose ici : un `.onChange` ne tire
+                // pas au premier montage — sans cette ligne, le sticker ×2
+                // n'apparaissait jamais à l'ouverture de la Route (21-09).
+                if let seances { etat.seancesParGalet = seances }
                 if let reclamees { etat.reclamees = reclamees }
                 etat.aOuvrir = aOuvrir
                 // La page NAÎT POSÉE sur l'écran de l'actif : `piloter`
@@ -2174,6 +2220,9 @@ struct DuolinguoPage: View {
             .onChange(of: dates) { _, neuf in
                 if let neuf { etat.datesFaites = neuf }
             }
+            .onChange(of: seances) { _, neuf in
+                if let neuf { etat.seancesParGalet = neuf }
+            }
             .onChange(of: reclamees) { _, neuf in
                 if let neuf { etat.reclamees = neuf }
             }
@@ -2206,6 +2255,14 @@ struct DuolinguoPage: View {
                 // la fête d'avant (sceau + onde), sans zoom ni halos.
                 let cine = !CommandLine.arguments.contains("-sansCineGalet")
                     && celebration < EcranSpec.etapes.count
+                // ⚠️ **LA FÊTE DU ×2** (21-09, « il faut prévoir une super
+                // animation quand c'est fois 2 sur la route ») : la deuxième
+                // séance d'une journée ne pose pas de galet, elle REVIENT sur
+                // celui du jour — le sticker tombe avec le sceau (sa
+                // transition vit dans `GaletEtape`), un troisième halo part
+                // derrière, et la main le sent une seconde fois.
+                let fois2 = (etat.seancesParGalet[celebration] ?? 1) >= 2
+                    && !CommandLine.arguments.contains("-sansFeteFois2")
                 do {
                     try await Task.sleep(for: .milliseconds(550))
                     if cine {
@@ -2230,7 +2287,14 @@ struct DuolinguoPage: View {
                     if cine {
                         try await Task.sleep(for: .milliseconds(420))
                         withAnimation(.easeOut(duration: 1.0)) { etat.cineHalo2 = 1 }
-                        try await Task.sleep(for: .milliseconds(630))
+                        if fois2 {
+                            try await Task.sleep(for: .milliseconds(260))
+                            UINotificationFeedbackGenerator().notificationOccurred(.success)
+                            withAnimation(.easeOut(duration: 1.1)) { etat.cineHalo3 = 1 }
+                            try await Task.sleep(for: .milliseconds(370))
+                        } else {
+                            try await Task.sleep(for: .milliseconds(630))
+                        }
                         // Le dézoom : la route revient, le galet reste posé
                         // avec son sceau — « la session a été faite ».
                         withAnimation(.easeInOut(duration: 0.7)) { etat.cineZoom = 1 }
@@ -2295,6 +2359,7 @@ struct DuolinguoPage: View {
             etat.cineZoom = 1
             etat.cineHalo = 0
             etat.cineHalo2 = 0
+            etat.cineHalo3 = 0
         }
     }
 

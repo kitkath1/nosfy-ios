@@ -223,11 +223,33 @@ struct LiquidLensLab: View {
     @State private var flareAt: Date?
     @State private var flareAng: Double = 0
 
+    @Environment(\.scenePhase) private var scenePhaseLentille
+
+    /// ⚠️ **LA CADENCE SUIT LA CHALEUR** (21-09, retour TestFlight 82 : « ça
+    /// chauffe surtout quand la séance est longue »). Cette vue redessine
+    /// TOUT l'écran — `compositingGroup` + `layerEffect` Metal + Canvas —
+    /// à chaque image, pendant chaque série ET tout son repos : c'est le
+    /// moteur qui tourne le plus longtemps d'une séance, et il n'avait
+    /// AUCUNE porte (ni scène, ni thermique). Le dessin ne change pas ; à
+    /// froid elle garde ses 60 images. À « fair » 30, à « serious » 20 —
+    /// l'effort se lit pareil, le téléphone souffle. Témoin de l'A/B :
+    /// `-lentilleHorloge60` force 60 quelle que soit la chaleur.
+    private static let horloge60 =
+        CommandLine.arguments.contains("-lentilleHorloge60")
+    private var pasLentille: Double {
+        if Self.horloge60 { return 1.0 / 60.0 }
+        if ProtectionThermique.shared.appelAuRepos { return 1.0 / 20.0 }
+        if ProtectionThermique.shared.ambianceAuRepos { return 1.0 / 30.0 }
+        return 1.0 / 60.0
+    }
+
     var body: some View {
         GeometryReader { geo in
             let w = geo.size.width
             let h = geo.size.height
-            TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { tl in
+            TimelineView(.animation(minimumInterval: pasLentille,
+                                    paused: scenePhaseLentille != .active)) { tl in
+                let _ = SondeVol.shared.tic(6)
                 let now = tl.date
                 let t = now.timeIntervalSinceReferenceDate
                     .truncatingRemainder(dividingBy: 900)

@@ -12,12 +12,18 @@ final class HistoriqueStories {
     var chargement = false
     private var ticket = UUID()
 
-    func ouvrir(jour: Date, contexte: ModelContext) {
+    /// `parFin` (21-09) : la Route demande les séances par leur FIN — un
+    /// galet = un jour, et c'est la fin qui donne le jour du galet.
+    func ouvrir(jour: Date, contexte: ModelContext, parFin: Bool = false) {
         guard !chargement, story == nil else { return }
         let seances = (try? contexte.fetch(FetchDescriptor<Workout>())) ?? []
-        choix = SeancesHistorique.duJour(jour, parmi: seances)
+        choix = SeancesHistorique.duJour(jour, parmi: seances, parFin: parFin)
         if choix.count == 1, let w = choix.first { ouvrir(w, contexte: contexte) }
-        else { choixOuvert = !choix.isEmpty }
+        else if choix.isEmpty {
+            // Le silence est un bug : sans cette trace, un « View » qui
+            // n'ouvre rien ne laisse aucune preuve (retour TestFlight 81).
+            NavDiagnostic.noter("historique.jour-vide")
+        } else { choixOuvert = true }
     }
 
     func ouvrir(_ workout: Workout, contexte: ModelContext) {

@@ -30,7 +30,7 @@ declare
   u uuid := gen_random_uuid(); v uuid := gen_random_uuid();
   w1 uuid := gen_random_uuid(); w2 uuid := gen_random_uuid(); w3 uuid := gen_random_uuid();
   w4 uuid := gen_random_uuid(); w5 uuid := gen_random_uuid(); w6 uuid := gen_random_uuid(); w7 uuid := gen_random_uuid();
-  j jsonb; k jsonb; n integer; solde_avant integer; solde_apres integer; erreur text;
+  j jsonb; k jsonb; n integer; solde_avant integer; solde_apres integer; erreur text; zone text;
   paris date := (now() at time zone 'Europe/Paris')::date;
 begin
   insert into auth.users(id) values (u), (v);
@@ -88,18 +88,34 @@ begin
     get stacked diagnostics erreur = message_text;
     perform pg_temp.note('lune du rang 3 refusée avec 2 séances comptées', erreur = 'progression_insuffisante', erreur);
   end;
-  -- Une séance HIER : elle compte (troisième), la lune s'ouvre.
+  -- Une séance HIER : elle compte (troisième séance comptée).
   perform pg_temp.seance(w4, u, interval '1 day', 'Europe/Paris', true);
   select count(*) into n from public.seances_chemin_plafonnees();
   perform pg_temp.note('une séance d''hier compte : trois séances comptées', n = 3, n::text);
-  j := public.tirer_noeud_chemin(3, true);
-  perform pg_temp.note('lune du rang 3 accordée avec 3 séances comptées (aucun refus)', j->>'raison' is null and coalesce(j->>'deja_reclame','false') <> 'true',
-            'raison=' || coalesce(j->>'raison','∅') || ' deja_reclame=' || coalesce(j->>'deja_reclame','∅') || ' sachets=' || coalesce(j->>'sachets_convertis','∅') || ' booster_ids=' || coalesce(j->>'booster_ids','∅'));
+  -- ⚠️ 21-09, SA RÈGLE « UN GALET = UN JOUR » : la lune ne compte plus des
+  -- séances mais des JOURS (migration 20260921090000). Trois séances sur DEUX
+  -- jours ne l'ouvrent donc plus — et c'est voulu. L'ouverture au troisième
+  -- JOUR est vérifiée par tools/duolingo/qa-galet-jour.sql.
+  begin
+    perform public.tirer_noeud_chemin(3, true);
+    perform pg_temp.note('lune du rang 3 refusée : 3 séances mais 2 jours (règle du 21-09)', false, 'aucun refus');
+  exception when sqlstate 'PT409' then
+    get stacked diagnostics erreur = message_text;
+    perform pg_temp.note('lune du rang 3 refusée : 3 séances mais 2 jours (règle du 21-09)',
+              erreur = 'progression_insuffisante', erreur);
+  end;
 
-  -- 4. Le fuseau change le jour : une séance finie il y a 5 min « à Pago Pago » (UTC−11)
-  --    tombe la veille locale → elle compte, dans SA journée (avec la séance d'hier : rang ≤ 2).
-  perform pg_temp.seance(w5, u, interval '5 minutes', 'Pacific/Pago_Pago', true);
-  perform pg_temp.note('séance Pago Pago : rattachée à un autre jour que Paris',
+  -- 4. Le fuseau change le jour : une séance finie il y a 5 min de l'autre côté
+  --    de la ligne de date tombe un AUTRE jour local → elle compte dans SA journée.
+  --    ⚠️ 21-09 : le fuseau ne peut pas être écrit en dur — Pago Pago (UTC−11) ne
+  --    recule d'un jour que le matin à Paris, et ce banc échouait tous les
+  --    après-midi. On choisit celui qui décale VRAIMENT à l'instant du banc.
+  zone := case when (now() at time zone 'Pacific/Pago_Pago')::date <> paris
+               then 'Pacific/Pago_Pago' else 'Pacific/Kiritimati' end;
+  perform pg_temp.note('un fuseau qui change le jour existe à cette heure',
+            (now() at time zone zone)::date <> paris, zone);
+  perform pg_temp.seance(w5, u, interval '5 minutes', zone, true);
+  perform pg_temp.note('séance de l''autre bout du monde : rattachée à un autre jour que Paris',
             (select p.jour from public.seances_chemin_plafonnees() p where p.id = w5) is not null
             and (select p.jour from public.seances_chemin_plafonnees() p where p.id = w5) <> paris
             and (select p.rang_jour from public.seances_chemin_plafonnees() p where p.id = w5) <= 2,

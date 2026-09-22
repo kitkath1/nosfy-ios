@@ -192,13 +192,23 @@ struct HomeNuitFond: View {
         // Le gyroscope s'amorce ICI : la scène est l'endroit juste, tout ce
         // qui vit dessus en profite (la leçon du 19-08 — sur la home aurora
         // personne ne l'appelait et la parallaxe lisait des zéros).
+        // ⚠️ **LA HOME NE RETIENT LE GYROSCOPE QUE SI SON DÉCOR LE LIT**
+        // (21-09, « ça chauffe après plein d'allers-retours »). En
+        // production `DecorHome.auRepos` est vrai : la pièce est figée
+        // (`MoonCoinLab` lit alors zéro) et PLUS AUCUNE vue de la home ne
+        // lit `tilt` — le gyroscope tournait à 30 Hz sur le fil principal
+        // pour personne, jusqu'à la mort de l'app. Il ne s'allume donc plus
+        // que sous `-decorHomeAnime`, et il se lâche quand la home s'en va.
         .onAppear {
-            SkyMotion.shared.start(reduceMotion: reduceMotion)
+            if !DecorHome.auRepos {
+                SkyMotion.shared.retenir("home", reduceMotion: reduceMotion)
+            }
             Paillettes.shared.prepare()
         }
+        .onDisappear { SkyMotion.shared.lacher("home") }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active {
-                SkyMotion.shared.start(reduceMotion: reduceMotion)
+            if phase == .active, !DecorHome.auRepos {
+                SkyMotion.shared.retenir("home", reduceMotion: reduceMotion)
             }
         }
     }
@@ -735,7 +745,11 @@ struct PhraseVue: View, Animatable {
         // plein écran : un `.blur` posé sur une boîte pose un voile uniforme
         // sur tout son rectangle (piège payé). Sur des glyphes, il ne floute
         // que l'encre.
-        .blur(radius: (1 - u) * params.flou + flouDepart)
+        // 22-09 : à chaud, l'arrivée de la phrase se joue sans flou (le
+        // mouvement et l'opacité restent) — un rayon animé n'est jamais mis
+        // en cache, et c'est ce qu'elle voit traîner sur un téléphone bridé.
+        .blur(radius: ProtectionThermique.shared.ambianceAuRepos ? 0
+              : (1 - u) * params.flou + flouDepart)
         .scaleEffect(1 + (params.zoom - 1) * (1 - u), anchor: .leading)
         .offset(y: (1 - u) * params.montee)
         .opacity(u)
@@ -1801,7 +1815,11 @@ struct SemaineStrip: View {
         .opacity(pose)
         .offset(y: 14 * (1 - pose))
         .onAppear {
-            SkyMotion.shared.start(reduceMotion: reduceMotion)
+            // Même règle qu'au-dessus : le galet jouet ne lit pas `tilt`
+            // quand le décor est au repos (21-09).
+            if !DecorHome.auRepos {
+                SkyMotion.shared.retenir("home", reduceMotion: reduceMotion)
+            }
             Paillettes.shared.prepare()
         }
     }
@@ -2425,8 +2443,7 @@ struct HomeNuitPage: View {
             // La durée est PROPORTIONNELLE à ce qu'il reste à défaire : fermer
             // depuis un quart de film ne peut pas prendre le même temps que
             // fermer depuis la fin, sinon un aller-retour court traîne.
-            let duree = Self.dureeFermeture * max(eFerme / DepartCine.T, 0.30)
-            let p = min(now.timeIntervalSince(f) / duree, 1)
+            let p = min(now.timeIntervalSince(f) / dureeFerme, 1)
             return eFerme * (1 - DepartCine.bezier(0.30, 0, 0.12, 1, p))
         }
         return tiroirOuvert ? DepartCine.T : 0
@@ -2435,6 +2452,26 @@ struct HomeNuitPage: View {
     /// 1,25 s — 64 % de l'aller. À 0,72 s (37 %) la cascade se tassait et on
     /// ne voyait plus le flou : « il faut que le retour soit aussi fluide ».
     private static let dureeFermeture: Double = 1.25
+    /// ⚠️ **À CHAUD, LE RETOUR EST COURT** (22-09, sur la version du 21 :
+    /// « quand je tire vers le bas et au retour, la home devient blur et bugue
+    /// quelques secondes avant de redevenir utilisable »). La fermeture fait
+    /// tourner l'horloge à 60 Hz sur TOUTE la page pendant 1,25 s, avec ses
+    /// flous à rayon animé — c'est le pire moment de la home, et sur un
+    /// téléphone bridé chaque image dure : 1,25 s de film devient plusieurs
+    /// secondes de bouillie pendant lesquelles rien ne répond. Dès « fair »,
+    /// le retour ne dure plus que 0,45 s et ses flous sont à zéro (`flouVif`) :
+    /// la card rentre, la phrase revient nette. À froid, rien ne change.
+    private static var dureeFermetureEffective: Double {
+        ProtectionThermique.shared.ambianceAuRepos ? 0.45 : dureeFermeture
+    }
+    /// La durée de LA fermeture en cours, figée au moment où elle part —
+    /// `eNow` la relit à chaque image ; un changement thermique en vol ne
+    /// fait donc pas sauter la courbe.
+    @State private var dureeFerme: Double = 1.25
+    /// Le facteur des flous du film et du geste : 1 à froid, 0 dès « fair ».
+    private var flouVif: CGFloat {
+        ProtectionThermique.shared.ambianceAuRepos ? 0 : 1
+    }
 
     /// ⚠️ **LA CARD ORANGE DESCEND JUSQU'AU PLAYER** (26-08, troisième verdict
     /// de la soirée : « la card orange est pas assez basse avec le player » —
@@ -3009,7 +3046,11 @@ struct HomeNuitPage: View {
             //
             // 60 Hz et pas 30 : la pointe de la chute est à 452 pt/s, soit
             // 7,5 pt par image à 60 Hz — 15 à 30 Hz, sur un objet net de 288 pt.
-            TimelineView(.animation(minimumInterval: 1.0 / 60.0,
+            // 22-09 : à chaud, 30 images par seconde suffisent au film — la
+            // page entière est reconstruite à chaque image, et c'est LÀ que
+            // le téléphone bridé s'écroule.
+            TimelineView(.animation(minimumInterval: ProtectionThermique.shared.ambianceAuRepos
+                                        ? 1.0 / 30.0 : 1.0 / 60.0,
                                     paused: reduceMotion
                                         || (depart == nil && ferme == nil))) { tl in
                 let _ = SondeVol.shared.tic(4)
@@ -3269,6 +3310,7 @@ struct HomeNuitPage: View {
         let c = cheminEtat
         lectureChemin = EcranSpec.Lecture(
             etape: c.etape, faits: c.faits, datesFaites: c.dates,
+            seancesParGalet: c.seances,
             reclamees: DepartEtat.shared.reclamees)
     }
 
@@ -3482,7 +3524,7 @@ struct HomeNuitPage: View {
         // chose. Et à 26 pt de rayon, la différence de hauteur entre 5 lignes et
         // 3 est invisible — c'est ce qui permet de changer le nombre de lignes
         // sans que le bloc saute.
-        let cloche = DepartCine.clocheTexte(e)          // 0 → 26 → 0
+        let cloche = DepartCine.clocheTexte(e) * flouVif // 0 → 26 → 0 (0 à chaud)
         let bascule = DepartCine.bascule(e)             // le fondu croisé, 0,12 s
         ZStack(alignment: .topLeading) {
             // LA PHRASE D'ARRIVÉE. ⚠️ MÊME CORPS, MÊME GRAISSE, MÊME GOUTTIÈRE
@@ -3511,7 +3553,7 @@ struct HomeNuitPage: View {
                         // pose un voile clair uniforme aux coins carrés, que ni
                         // masque ni blend ne rattrapent (piège payé).
                         .blur(radius: net > 0.995 ? 0
-                              : max(cloche, DepartCine.flouMax * (1 - net)))
+                              : max(cloche, DepartCine.flouMax * flouVif * (1 - net)))
                         .offset(y: 9 * (1 - net))
                 }
             }
@@ -3592,7 +3634,7 @@ struct HomeNuitPage: View {
                                           DepartCine.slidAt + 0.53, e))
                 .scaleEffect(0.93 + 0.07 * slid, anchor: .bottom)
                 .offset(y: 30 * (1 - slid))
-                .blur(radius: slid > 0.96 ? 0 : 7 * (1 - slid))
+                .blur(radius: slid > 0.96 ? 0 : 7 * flouVif * (1 - slid))
                 .allowsHitTesting(e > 1.88)
             }
                 Group {
@@ -3620,7 +3662,7 @@ struct HomeNuitPage: View {
                     // à un changement de texte `arr` vaut 1 et c'est `m` qui
                     // rejoue l'entrée. Rien d'autre sur la page ne bouge.
                     PhraseVue(p: min(arr, m), flouDepart: cloche
-                                + 3.5 * min(g / 0.37, 1),
+                                + 3.5 * flouVif * min(g / 0.37, 1),
                               params: phraseMuee(m), rasant: rasant,
                               fragments: fragmentsPhrase(),
                               ecran: geo.size.width,
@@ -3819,7 +3861,7 @@ struct HomeNuitPage: View {
                         .offset(y: 8 * net)
                         // ⚠️ FLOU PLAFONNÉ À 6 pt — un blur sur du verre natif
                         // empile deux passes, et au-delà on paie pour du vide.
-                        .blur(radius: 6 * net * flouSemaine)
+                        .blur(radius: 6 * net * flouSemaine * flouVif)
                         .opacity(1 - net)
                         .opacity(RasantHorloge.iso ? 0 : 1)
                     }
@@ -3865,7 +3907,7 @@ struct HomeNuitPage: View {
                         // l'opération la plus chère de la page, et au-delà de
                         // 6 pt on ne distingue plus rien : on payait pour du
                         // vide, à chaque image du tirage.
-                        .blur(radius: 6 * net * flouSemaine)
+                        .blur(radius: 6 * net * flouSemaine * flouVif)
                         .opacity(1 - net)
                         .opacity(RasantHorloge.iso ? 0 : 1)
                     }
@@ -4015,7 +4057,7 @@ struct HomeNuitPage: View {
                         // cards (offset 8, flou plafonné 6, extinction) —
                         // et elle naît avec la phrase.
                         .offset(y: 8 * net)
-                        .blur(radius: 6 * net * flouPiece)
+                        .blur(radius: 6 * net * flouPiece * flouVif)
                         .opacity((1 - net) * arr)
                         .opacity(RasantHorloge.iso ? 0 : 1)
                         // Sourde dès que la page fait autre chose : le
@@ -4514,7 +4556,8 @@ struct HomeNuitPage: View {
         guard depuis > 0.001 || tiroirOuvert else { reposer(); return }
         eFerme = depuis
         ferme = Date()
-        let duree = Self.dureeFermeture * max(depuis / DepartCine.T, 0.30)
+        let duree = Self.dureeFermetureEffective * max(depuis / DepartCine.T, 0.30)
+        dureeFerme = duree
         // …pendant que la mécanique du tiroir (et les booléens du galet) rentre
         // sur la même durée et la même courbe.
         withAnimation(.timingCurve(0.30, 0, 0.12, 1, duration: duree)) {
@@ -4676,6 +4719,7 @@ struct HomeNuitPage: View {
             DepartEtat.shared.ouvrirChemin(etape: chemin.etape,
                                            faits: chemin.faits,
                                            dates: chemin.dates,
+                                           seances: chemin.seances,
                                            celebration: feteBanc(chemin))
             return
         }
@@ -4689,7 +4733,8 @@ struct HomeNuitPage: View {
     /// racine le fait après une story (NosfyApp, `celebration:` = la séance
     /// qui vient de finir, déjà dans `faits`) — sans séance ni serveur. Avec
     /// `-homeChemin -duoEtape n`, le galet célébré est le rang n.
-    private func feteBanc(_ chemin: (etape: Int, faits: Set<Int>, dates: [Int: Date])) -> Int? {
+    private func feteBanc(_ chemin: (etape: Int, faits: Set<Int>, dates: [Int: Date],
+                                     seances: [Int: Int])) -> Int? {
         guard CommandLine.arguments.contains("-cheminFete") else { return nil }
         return chemin.faits.filter { $0 < chemin.etape }.max()
     }
@@ -4703,7 +4748,8 @@ struct HomeNuitPage: View {
     /// Banc : `-duoEtape n` force la n-ième séance comme étape (branchée,
     /// avec panneau) — c'est LE banc qui manquait pour juger les états
     /// ensemble (audit §0) ; les jours d'avant suivent le motif démo.
-    private var cheminEtat: (etape: Int, faits: Set<Int>, dates: [Int: Date]) {
+    private var cheminEtat: (etape: Int, faits: Set<Int>, dates: [Int: Date],
+                             seances: [Int: Int]) {
         let finies = workoutsBruts.filter(\.faitPourRoute).compactMap(\.endedAt)
         var r = EcranSpec.etapeEtFaits(seancesFinies: finies)
         let a = CommandLine.arguments
@@ -4716,11 +4762,23 @@ struct HomeNuitPage: View {
             // n'auraient plus de date (elle vient de la complétion, pas du
             // rang) : rang k = aujourd'hui − (n − k) jours.
             r.dates = [:]
+            r.seances = [:]
             for (k, e) in EcranSpec.seances.prefix(max(n, 0)).enumerated()
             where r.faits.contains(e.id) {
                 r.dates[e.id] = Calendar.current.date(byAdding: .day,
                                                       value: k - n, to: Date())
+                r.seances[e.id] = 1
             }
+        }
+        // Banc `-duoFois2` (21-09) : le DERNIER galet fait est celui
+        // d'AUJOURD'HUI et porte DEUX séances — c'est le cas réel de la règle
+        // (« deux séances aujourd'hui = un galet ×2 »), donc celui qu'il faut
+        // voir : le galet du jour daté du jour, et l'actif qui ne répète plus
+        // sa date. Sans la date du jour, le banc montrait un cas qui n'existe
+        // pas et cachait justement ce qui change.
+        if CommandLine.arguments.contains("-duoFois2"), let dernier = r.faits.max() {
+            r.seances[dernier] = 2
+            r.dates[dernier] = Date()
         }
         return r
     }
@@ -4815,7 +4873,7 @@ struct HomeNuitPage: View {
     }
 
     private var dissolution: CGFloat {
-        min(CGFloat(phrase.dissolution), max(scroll - 40, 0) / 22)
+        min(CGFloat(phrase.dissolution), max(scroll - 40, 0) / 22) * flouVif
     }
 
     /// La lampe pendant sa naissance. Les trois gestes de l'allumage, chacun

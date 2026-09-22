@@ -82,6 +82,10 @@ final class DepartEtat {
     /// sa règle : « les jours apparaissent le jour où le user a terminé sa
     /// séance ». Elles voyagent AVEC les faits : un galet fait porte SA date.
     var cheminDates: [Int: Date] = [:]
+    /// Le nombre de séances par galet (21-09, un galet = un jour) : 1 ou 2.
+    /// Il voyage avec les dates — c'est lui qui pose le sticker ×2 et qui
+    /// dit à la fête du galet qu'elle doit jouer sa variante ×2.
+    var cheminSeances: [Int: Int] = [:]
     /// ⚠️ **UN GALET EST AU DOIGT** (28-08) — le seul but de ce drapeau est de
     /// faire taire le geste de sortie de `CheminHote` pendant le port. Il est
     /// écrit deux fois par port (prise / lâcher) et **lu uniquement dans la
@@ -128,6 +132,7 @@ final class DepartEtat {
         cheminCelebration = nil
         cheminFaits = []
         cheminDates = [:]
+        cheminSeances = [:]
         galetPorte = false
         homeDort = false
     }
@@ -177,13 +182,15 @@ final class DepartEtat {
         }
     }
 
-    func ouvrirChemin(etape: Int, faits: Set<Int>, dates: [Int: Date] = [:], celebration: Int? = nil) {
+    func ouvrirChemin(etape: Int, faits: Set<Int>, dates: [Int: Date] = [:],
+                      seances: [Int: Int] = [:], celebration: Int? = nil) {
         print("[SONDE-CHEMIN] DepartEtat.ouvrirChemin — déjà ouvert ? \(cheminOuvert)")
         guard !cheminOuvert else { return }
         cheminCelebration = celebration
         cheminEtape = etape
         cheminFaits = faits
         cheminDates = dates
+        cheminSeances = seances
         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
         // ⚠️ EASE, PAS RESSORT (28-08) : un ressort à 0,88 d'amortissement
         // dépasse puis revient, et ce retour se lisait comme un décalage. Sur

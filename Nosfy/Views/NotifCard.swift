@@ -262,7 +262,13 @@ struct NotifJauge: View {
             .offset(x: -12)
             .allowsHitTesting(false)
             .onAppear {
-                if NotifBanc.tFige != nil { flotte = true; return }
+                // Même règle que la pièce (21-09) : à chaud, le sachet se
+                // pose au lieu de flotter.
+                if NotifBanc.tFige != nil
+                    || ProtectionThermique.shared.ambianceAuRepos {
+                    flotte = true
+                    return
+                }
                 withAnimation(.easeInOut(duration: 1.9)
                     .repeatForever(autoreverses: true)) { flotte = true }
             }
@@ -1036,6 +1042,16 @@ struct PieceQuiTourne: View {
         // plus — une capture de réglage est immobile.
         if let t = NotifBanc.tFige {
             tour = (t / periode).truncatingRemainder(dividingBy: 1)
+            return
+        }
+        // ⚠️ **ELLE NE TOURNE PLUS À CHAUD** (21-09) : `PieceSprite` est
+        // `Animatable`, donc son corps est ré-évalué à CHAQUE image de la
+        // rampe — avec un rognage d'image neuf à chaque fois, sous deux
+        // ombres et le masque de la dalle. Pour 2,8 secondes d'affichage.
+        // Quand le téléphone souffle, la pièce se pose sur une case : la
+        // dalle dit exactement la même chose.
+        if ProtectionThermique.shared.ambianceAuRepos {
+            tour = 0.12
             return
         }
         withAnimation(.linear(duration: periode)

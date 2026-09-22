@@ -25,11 +25,22 @@ struct ParoleLigne: View {
         active && scenePhase == .active
             && !DepartEtat.shared.welcomeOuverte && !DepartEtat.shared.welcomePremiereOuverte
     }
+    /// ⚠️ **LE FLOU DES MOTS SE TAIT À CHAUD** (21-09, retour TestFlight 82 :
+    /// « un aspect blur qui dure longtemps »). Chaque mot part d'une
+    /// gaussienne de 12 pt qui rejoint le net en 1,05 s, décalée mot par mot
+    /// — deux à quatre secondes de flou à rayon ANIMÉ, donc jamais mis en
+    /// cache (la loi du 05-09), et c'est justement quand le téléphone est
+    /// bridé qu'on les voit traîner. Dès « fair », les mots se posent NETS :
+    /// le texte est entier, il n'a jamais été flouté. Même traitement que
+    /// « Réduire les animations », qui faisait déjà exactement ça.
+    private var repos: Bool {
+        reduceMotion || ProtectionThermique.shared.ambianceAuRepos
+    }
 
     var body: some View {
         // Une nouvelle réplique est floue dès sa première image ; aucun flash
         // du texte complet avant le démarrage de la tâche. Hors écran : pose nette.
-        let net = !visible || reduceMotion || (poses && derniereLecture == replique)
+        let net = !visible || repos || (poses && derniereLecture == replique)
         let mots = MotsFlou.partition([(texte, true)], base: retard)
         let font = UIFont(name: "Inter-SemiBold", size: taille)
             ?? .systemFont(ofSize: taille, weight: .semibold)
@@ -51,9 +62,9 @@ struct ParoleLigne: View {
                         .opacity(net ? 1 : 0)
                         .scaleEffect(net ? 1 : 0.96)
                         .offset(y: net ? 0 : 5)
-                        .animation(!visible || reduceMotion ? nil : .timingCurve(0.2, 0.8, 0.2, 1,
+                        .animation(!visible || repos ? nil : .timingCurve(0.2, 0.8, 0.2, 1,
                             duration: 1.05).delay(mot.retard), value: poses)
-                        .animation(!visible || reduceMotion ? nil : .easeOut(duration: 0.25), value: mot.texte)
+                        .animation(!visible || repos ? nil : .easeOut(duration: 0.25), value: mot.texte)
                 }
             }
             .fixedSize(horizontal: true, vertical: false)
@@ -61,8 +72,8 @@ struct ParoleLigne: View {
             .frame(width: geo.size.width, height: geo.size.height, alignment: .leading)
         }
         .allowsHitTesting(false)
-        .task(id: Lecture(replique: replique, active: visible, reduite: reduceMotion)) {
-            guard visible, !reduceMotion else { poserSansAnimation(true); return }
+        .task(id: Lecture(replique: replique, active: visible, reduite: repos)) {
+            guard visible, !repos else { poserSansAnimation(true); return }
             guard derniereLecture != replique else { poserSansAnimation(true); return }
             derniereLecture = replique
             poserSansAnimation(false)

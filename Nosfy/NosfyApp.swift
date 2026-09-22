@@ -497,6 +497,15 @@ struct RootView: View {
     /// `fullScreenCover` couvre tout, comme celui de la chambre Régularité.
     /// ⚠️ Payé sur TestFlight 81 (19-09) : « View » ne faisait que fermer.
     @State private var historiqueRoute = HistoriqueStories()
+    /// ⚠️ **UNE SÉANCE VIDE NE PART PLUS EN SILENCE** (21-09, le retour de
+    /// Taha : « il a fait plusieurs séances, pas enregistrées dans son
+    /// compte »). Lu au serveur le 21-09 : sur ses quatre séances, DEUX sont
+    /// arrivées sans le moindre exercice (dont une de 23 minutes) — elles ne
+    /// comptent pour rien, ne paient rien, n'ouvrent ni story ni galet, et
+    /// jusqu'ici l'app le renvoyait simplement à l'accueil sans un mot. Elle
+    /// le DIT maintenant, par la pop-up native (la même école que le plafond
+    /// du jour) : rien n'est inventé, on explique juste le vide.
+    @State private var finSansTravail = false
     /// Banc de mesure (jalon 1) : la home démontée sous la route.
     private static let cheminSeul = CommandLine.arguments.contains("-cheminSeul")
     /// LA HOME ÉCLIPSÉE sous le Sacre — EN DIFFÉRÉ : démonter le TabView
@@ -686,6 +695,9 @@ struct RootView: View {
         }
         withAnimation(.easeOut(duration: 0.22)) { depart.pauseOuverte = false }
         compte.finSeancePresentee = ouvre
+        // Rien de validé : on le dit (21-09). `ouvre` est déjà la définition
+        // du travail — séries cochées, intervalles, longueurs.
+        finSansTravail = !ouvre
         WorkoutActivityController.end()
         // LE TROPHÉE ET LE BOOSTER SE MÉRITENT : une séance sans une
         // seule série ni un intervalle ne remplit rien et ne propose rien
@@ -773,11 +785,18 @@ struct RootView: View {
             .filter { $0.endedAt != nil && $0.faitPourRoute }
             .sorted { ($0.endedAt!, $0.remoteID.uuidString) < ($1.endedAt!, $1.remoteID.uuidString) }
         let route = EcranSpec.etapeEtFaits(seancesFinies: finies.compactMap(\.endedAt))
-        if let rang = finies.firstIndex(where: { $0.remoteID == workout.remoteID }),
-           rang < EcranSpec.seances.count {
+        // ⚠️ **UN GALET = UN JOUR** (21-09) : le galet fêté est celui du JOUR
+        // de cette séance, jamais son rang parmi toutes les séances — sinon
+        // la DEUXIÈME séance d'une journée fêterait le galet de demain (un
+        // sceau et des halos sur un galet vide, et l'étape qui n'avance pas).
+        // Une séance au-delà du plafond n'a pas de galet : ses gains partent
+        // sans fête, par la home.
+        let cal = Calendar.current
+        if let fin = workout.endedAt,
+           let galet = route.dates.first(where: { cal.isDate($0.value, inSameDayAs: fin) })?.key {
             recompensesApresRoute = true
             depart.ouvrirChemin(etape: route.etape, faits: route.faits, dates: route.dates,
-                                celebration: EcranSpec.seances[rang].id)
+                                seances: route.seances, celebration: galet)
         } else {
             libererFinSeance()
         }
@@ -910,6 +929,7 @@ struct RootView: View {
                 DuolinguoPage(etapeInitiale: depart.cheminEtape,
                               faits: depart.cheminFaits,
                               dates: depart.cheminDates,
+                              seances: depart.cheminSeances,
                               reclamees: depart.reclamees,
                               // RÉCLAMÉ ≠ GRATTÉ (20-09, § 5.5) : les nœuds
                               // dont la card n'a jamais été révélée — le
@@ -1003,16 +1023,15 @@ struct RootView: View {
     /// (`HistoriqueStories.ouvrir(_:)` : le reçu est relu au serveur ou
     /// reconstruit depuis le carnet, puis `StoryLaunch`). Aucune écriture.
     private func voirSeanceDepuisChemin(_ date: Date) {
-        let finies = ((try? modelContext.fetch(FetchDescriptor<Workout>())) ?? [])
-            .filter { $0.endedAt != nil && $0.faitPourRoute }
-        guard let w = finies.min(by: {
-            abs($0.endedAt!.timeIntervalSince(date)) < abs($1.endedAt!.timeIntervalSince(date))
-        }), let fin = w.endedAt, abs(fin.timeIntervalSince(date)) <= 2 else {
-            NavDiagnostic.noter("route.voir-introuvable")
-            return
-        }
         NavDiagnostic.noter("route.voir")
-        historiqueRoute.ouvrir(w, contexte: modelContext)
+        // ⚠️ **UN GALET PEUT PORTER DEUX SÉANCES** (21-09, sa demande : « une
+        // pop-up native pour savoir l'heure de la séance faite à revoir dans
+        // la story »). On ne cherche donc plus LA séance à ± 2 s de
+        // l'estampille du galet — on demande son JOUR, et `HistoriqueStories`
+        // fait le reste : une seule séance, sa story s'ouvre tout droit ;
+        // deux, la feuille native d'Apple donne l'heure, le type et la durée
+        // de chacune (« 18:30 · Haut du corps · 42 min ») et elle choisit.
+        historiqueRoute.ouvrir(jour: date, contexte: modelContext, parFin: true)
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -2378,7 +2397,15 @@ struct RootView: View {
                 .filter { $0.endedAt != nil && $0.faitPourRoute }
                 .compactMap(\.endedAt)
             let route = EcranSpec.etapeEtFaits(seancesFinies: finies)
-            depart.ouvrirChemin(etape: route.etape, faits: route.faits, dates: route.dates)
+            depart.ouvrirChemin(etape: route.etape, faits: route.faits, dates: route.dates,
+                                seances: route.seances)
+        }
+        .alert(L("Rien n'a été enregistré", "Nothing was recorded"),
+               isPresented: $finSansTravail) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(L("Cette séance se termine sans aucune série validée ni intervalle : elle ne compte pas dans ta Route et ne rapporte rien. Valide tes séries pendant la séance pour qu'elles comptent.",
+                   "This session ends with no completed set or interval: it doesn't count towards your Route and earns nothing. Complete your sets during the session so they count."))
         }
         .alert(L("Séance non enregistrée", "Session not saved"), isPresented: $erreurFinSeance) {
             Button(L("Réessayer", "Try again")) { terminerSeance() }

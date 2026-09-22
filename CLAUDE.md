@@ -67,9 +67,17 @@ l'empile pas. Ce qui suit lie toutes les sessions, sans exception.
 Sans séance terminée, commencer tout en haut du chapitre1, au premier galet.
 Aucun fait, date ou gain inventé pour remplir l'écran. Garder ce contrat dans
 Compte, Flow, Serveur et QA. Banc : `tools/duolingo/verif_route_vide.py`.
-Progression implémentée le18-09 : un galet par séance terminée avec travail,
-sept séances par chapitre, récompenses à3/7, cinq chapitres ; après35,
-historique conservé sans nouveau cycle.1074 contrôles Swift et35 API PASS.
+⚠️ **Règle du 21-09 : UN GALET = UN JOUR.** Un jour local avec au moins une
+séance terminée avec travail vaut un galet ; la deuxième séance de la journée
+ne pose pas de galet — elle pose le sticker ×2 sur celui du jour et rejoue sa
+fête. Le plafond « deux séances comptées par jour » ne bouge pas, et la clôture
+PAIE toujours la deuxième (sa décision : ce sont les galets qui s'épuisaient
+trop vite, pas les pièces). Les lunes 3/7 et le trésor 35 comptent des JOURS
+(serveur : `jours_chemin()`, migration `20260921090000`). Sept jours par
+chapitre, cinq chapitres ; après 35, historique conservé sans nouveau cycle.
+Un galet à deux séances ouvre, au « View », la pop-up NATIVE des heures.
+Preuves : `tools/duolingo/galet-jour-2026-09-21/`. (Avant le 21-09 : un galet
+par SÉANCE, implémenté le 18-09 — cette règle est morte.)1074 contrôles Swift et35 API PASS.
 Contrôle iPhone distinct ; preuves : tools/production/compte-progression-2026-09-18/.
 
 ## Production et documentation — rappel explicite de Kathryn, 18-09-2026

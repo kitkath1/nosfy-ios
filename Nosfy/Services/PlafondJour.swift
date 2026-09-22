@@ -63,6 +63,38 @@ enum PlafondJour {
         return sortie
     }
 
+    /// ⚠️ **LES JOURS DE LA ROUTE** (21-09, sa règle : « un galet = 1 jour
+    /// malgré deux séances, sinon tout s'épuise trop vite »). Un jour LOCAL
+    /// qui porte au moins une séance comptée vaut UN galet ; la deuxième
+    /// séance de la journée n'en pose pas un second — elle pose le sticker
+    /// ×2 sur celui du jour. Le plafond ne bouge pas : il borne ce qui
+    /// COMPTE (`comptees`), pas ce qui s'affiche, et la clôture continue de
+    /// payer la deuxième (sa décision du 21-09).
+    ///
+    /// Rendus dans l'ordre des jours. `date` = la PREMIÈRE fin du jour
+    /// (celle qui a ouvert le galet, c'est elle que le galet porte),
+    /// `derniere` = la dernière (pour retrouver la bonne story),
+    /// `seances` = 1 ou 2 — c'est lui, et lui seul, qui dit le ×2.
+    static func jours(_ dates: [Date], calendrier: Calendar = .current)
+        -> [(date: Date, seances: Int, derniere: Date)] {
+        var ordre: [DateComponents] = []
+        var parJour: [DateComponents: (premiere: Date, derniere: Date, n: Int)] = [:]
+        for (d, _) in comptees(dates, calendrier: calendrier) {
+            let j = jour(d, calendrier: calendrier)
+            if var e = parJour[j] {
+                e.n += 1
+                e.derniere = max(e.derniere, d)
+                parJour[j] = e
+            } else {
+                parJour[j] = (d, d, 1)
+                ordre.append(j)
+            }
+        }
+        return ordre.compactMap { j in
+            parJour[j].map { (date: $0.premiere, seances: $0.n, derniere: $0.derniere) }
+        }
+    }
+
     /// Combien de séances COMPTÉES aujourd'hui (jour local).
     static func faitesAujourdhui(_ dates: [Date], maintenant: Date = Date(),
                                  calendrier: Calendar = .current) -> Int {

@@ -10,8 +10,16 @@ enum SeancesHistorique {
         return c.date(byAdding: .day, value: index, to: lundi)
     }
     @MainActor
-    static func duJour(_ jour: Date, parmi seances: [Workout], calendrier: Calendar = .current) -> [Workout] {
-        seances.filter { $0.endedAt != nil && $0.faitPourRoute && calendrier.isDate($0.startedAt, inSameDayAs: jour) }
+    /// `parFin` (21-09, un galet = un jour) : la Route compte les journées
+    /// par la FIN de la séance (`endedAt`, comme `seances_chemin_plafonnees`
+    /// au serveur) — une séance commencée à 23 h 50 et finie à 0 h 10
+    /// appartient au lendemain. Le widget Regularity, lui, garde le départ.
+    static func duJour(_ jour: Date, parmi seances: [Workout], calendrier: Calendar = .current,
+                       parFin: Bool = false) -> [Workout] {
+        seances.filter { w in
+            guard let fin = w.endedAt, w.faitPourRoute else { return false }
+            return calendrier.isDate(parFin ? fin : w.startedAt, inSameDayAs: jour)
+        }
             .sorted {
                 if $0.startedAt == $1.startedAt { return $0.remoteID.uuidString < $1.remoteID.uuidString }
                 return $0.startedAt < $1.startedAt

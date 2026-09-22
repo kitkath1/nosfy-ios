@@ -664,12 +664,22 @@ struct TapisScene: View {
             && (RythmeEcran.dort("exercises") || PlayerEtat.shared.couvre)
     }
 
+    /// ⚠️ **LA CADENCE SUIT LA CHALEUR** (21-09) : la course dure vingt à
+    /// quarante minutes, écran forcé allumé, cette scène plein écran à 60
+    /// images par seconde — et aucun lecteur thermique nulle part dans
+    /// l'écran de séance. Le dessin ne change pas ; à froid, 60 comme avant.
+    private var pasTapis: Double {
+        if ProtectionThermique.shared.appelAuRepos { return 1.0 / 20.0 }
+        if ProtectionThermique.shared.ambianceAuRepos { return 1.0 / 30.0 }
+        return 1.0 / 60.0
+    }
+
     var body: some View {
         GeometryReader { geo in
             let w = geo.size.width, h = geo.size.height
             ZStack {
                 Color.black.ignoresSafeArea()
-                TimelineView(.animation(minimumInterval: 1 / 60, paused: dort)) { tl in
+                TimelineView(.animation(minimumInterval: pasTapis, paused: dort)) { tl in
                     vivante(w: w, h: h, now: date(tl.date))
                 }
                 // L'ARC et la FUMÉE : deux vues à part, chacune sur son

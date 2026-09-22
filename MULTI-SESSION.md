@@ -465,3 +465,80 @@ Le 27-08, un montage réel (`SessionSlate`, le player qui se soulève) a été
 `ExerciseDetailView.swift` — diff mécaniquement inverse — dans un commit qui ne
 parlait que d'autre chose. Personne ne l'a vu, le fichier compilait encore. La
 règle ci-dessus existe pour que ça ne se reproduise plus.
+
+## Retours TestFlight 82 — ANALYSE SEULE, 21-09 matin (session ouverte)
+
+Sur les sept retours de Kathryn (home : blur qui dure + pas fluide ; chauffe en séance longue ;
+chauffe après plusieurs boosters au manège ; chauffe après beaucoup d'allers-retours ; pousser un
+toaster vers l'île chauffe/bugue ; la chauve-souris du profil n'apparaît plus ; NOUVELLE RÈGLE
+demandée : un galet = un jour malgré deux séances + super animation ×2) : lecture du code et des
+preuves, **aucun code, aucun commit, aucune écriture serveur, aucun téléphone**. Livrable :
+`tools/perf/ANALYSE-RETOURS-TESTFLIGHT-82-2026-09-21.md`. À savoir pour toutes :
+
+- Le build 82 porte bien 7f0992c8 + 11150e8e (HomeNuit identique). Ce qu'elle voit encore : la
+  phrase rejoue son entrée floue mot par mot à chaque retour de cover (`visiteVoix` lit `dortHome`
+  qui inclut `couvert` depuis le 18-09, HomeNuit.swift:604-608) — session Home, c'est à toi.
+- Séance : le vrai player est la fiche ; `LiquidLensLab.swift:227` = TimelineView 60 Hz sans
+  aucune porte ; 0 lecteur thermique dans Exercices/fiche/tapis/HIIT/manège/toasters.
+- `SkyMotion.shared.stop()` n'a aucun appelant : gyro 30 Hz à vie (DemonSky.swift:31-74).
+- Toaster : `PileAnnoncesHote` est sourd (`.allowsHitTesting(false)`), aucun geste ; son swipe tire
+  la home. Chauve-souris = Nosfy pendu, porte « serious » lue une fois (ProfilLune.swift:372).
+- Route : sa règle du 21-09 « un galet = un jour » remplace celle du 18-09 (CLAUDE.md § Compte
+  vide et Route à réécrire quand elle tranche) ; dix sites serveur/app listés au § 8 — session
+  Route, ne pas coder avant ses décisions (pièces de la 2e séance, rétroactivité, départ de la
+  2e séance, View).
+- Apple : aucun crash sur le 82 ; une capture sans texte 20-09 17:37 (profil, carte en vol).
+- Site : `mesures.ts` (+5 `m-tf82-*`, `m-home-tirer-bloque` à jour), `qa.ts` (qa-18, qa-24),
+  `briques.ts` (b-route-jour) — hunks à moi ; artefact régénéré (1 985 298 o), `npm run verif`
+  VERT ; ⚠️ NON republié au lien fixe (la session a changé de compte Claude après la limite :
+  l'artefact 17333ad1 n'est pas joignable d'ici) — première session sur son compte d'origine :
+  `Artifact publish docs/site/index.html` avec l'url 17333ad1.
+- ⚠️ L'index partagé porte `D Nosfy/Media/profil-nosfy-penche.mp4` : un commit nu ferait
+  disparaître Nosfy du profil.
+
+## UN GALET = UN JOUR + portes thermiques — CODÉ, 21-09 après-midi (session ouverte)
+
+Sur son « fix tout ça go ». **Rien commité.** Build simulateur vert.
+
+- **Serveur POSÉ** : `20260921090000_chemin_un_galet_par_jour.sql` (`jours_chemin()` +
+  la garde des lunes qui compte des JOURS). `seances_chemin_plafonnees()`, la clôture et
+  `reward_rules` sont INTACTES ; la 2e séance du jour est toujours payée. Bancs :
+  `qa-galet-jour` 15 PASS, `qa-plafond-jour` 25 PASS, `verif_route_vide` 1 328 PASS.
+  ⚠️ Session Route : `20260920120000` (HIIT) figure dans l'historique DISTANT.
+- **Mes hunks** (à prendre séparément si vous commitez ces fichiers) :
+  `PlafondJour.swift`, `DuolinguoPage.swift`, `GaletEtape.swift`, `CardRoute.swift`,
+  `HomeNuit.swift`, `NosfyApp.swift`, `DepartSeance.swift`, `Models.swift`,
+  `HistoriqueStories.swift`, `ParoleLigne.swift`, `ProfilLune.swift`, `DemonSky.swift`,
+  `RewardCard.swift`, `PorteEntree.swift`, `AuthView.swift`, `Annonces.swift`,
+  `NotifCard.swift`, `LiquidLensLab.swift`, `TapisScene.swift`, `BoosterLab.swift`,
+  `CarteLuneLab.swift`, `ExercisesView.swift`, `ExerciseDetailView.swift`, `SondeVol.swift`.
+- **Interfaces neuves** : `EcranSpec.etapeEtFaits` rend un 4e champ `seances` ;
+  `EcranSpec.Lecture.seancesParGalet` ; `DuolinguoPage(seances:)` ;
+  `DepartEtat.ouvrirChemin(…, seances:, celebration:)` ; `SeancesHistorique.duJour(parFin:)` ;
+  `HistoriqueStories.ouvrir(jour:contexte:parFin:)` ; `SkyMotion.retenir(_:reduceMotion:)`
+  / `lacher(_:)` (`start` reste un alias) ; `SondeVol` passe à 8 groupes de tics ;
+  `ArcDial(sousFiche:)` ; `FileAnnonces.escamoter()`.
+- **Barreaux neufs** : `-duoFois2`, `-sansFeteFois2`, `-lentilleHorloge60`, `-manegeHorloge60`.
+- ⚠️ Toute vue qui démarre le gyroscope doit maintenant le RENDRE (`lacher`), sinon il
+  tourne à vie. Et `tools/perf/lire-vol.py` ne lit que 5 groupes de tics sur 8.
+- 21-09 15:55 · même session : **Taha** — lu au serveur, son compte 0e50bf50 a ses 4 séances,
+  2 vides (0 exercice), 2 payées (94 cardio, 20 série). Pas de perte de données validées.
+  Posé : pop-up native « Rien n'a été enregistré » quand une séance se termine sans série
+  validée ni intervalle (`NosfyApp.swift`, `finSansTravail`). Build vert. Non commité.
+- 22-09 08:32 · même session : **Release de l'arbre INSTALLÉE SUR SON IPHONE PAR LE WI-FI**
+  (« iPhone de Frédéric », `transportType: localNetwork`, sans câble ; signature OK malgré
+  le compte Xcode sans session). Elle REMPLACE TestFlight 82 (même bundle, données
+  conservées), lancée sans aucun drapeau (ni sonde, ni banc). C'est la première fois que
+  les correctifs du 21-09 (galet-jour, portes thermiques, gyroscope, toaster, séance
+  vide) tournent sur son téléphone. Rien mesuré. Rien commité.
+- 22-09 08:50 · même session : retour du tirage de la home **court et sans flou dès « fair »**
+  (`HomeNuit.swift` : `dureeFermetureEffective` 0,45 s, `flouVif` = 0 sur les flous du film, du
+  geste, de la Route, de la pièce et de l'arrivée de la phrase ; horloge du film 30 Hz à
+  chaud). Release réinstallée sur son iPhone en Wi-Fi et **lancée AVEC `-sondeVol -navProbe
+  -ecranEveille`** : la sonde et le journal de nav enregistrent ses prochains tirages. À
+  relever (`devicectl device copy from … Documents/`), puis relancer avec `-sansSondeVol`.
+  ⚠️ Autres sessions : ne relancez pas l'app sur son iPhone sans le dire ici.
+
+- 22-09 · le geste de renvoi du toaster (`Annonces.swift`, `escamoter()`) n'est PAS dans ce
+  commit : il repose sur la dalle « depuis l'île » que la session Annonces n'a pas encore
+  commitée — il part avec elle.

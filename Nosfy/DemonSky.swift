@@ -28,7 +28,36 @@ final class SkyMotion {
     /// main s'immobilise — `userAcceleration` vaut 0 sur un téléphone posé.
     private(set) var shake = CGVector.zero     // ±1 par axe, en g
 
-    func start(reduceMotion: Bool) {
+    /// ⚠️ **LE GYROSCOPE S'ARRÊTE, ENFIN** (21-09, retour TestFlight 82 :
+    /// « ça chauffe après plein d'allers-retours »). Jusqu'ici `start` était
+    /// appelé par la home, la porte et chaque card, `stop()` par PERSONNE
+    /// (aucun appelant dans tout le dépôt) : trente réveils du fil principal
+    /// par seconde, pour toute la vie de l'app, sur tous les écrans — même
+    /// quand plus une seule vue ne lit `tilt`. Un COMPTE DE LECTEURS règle
+    /// ça : le premier qui retient l'allume, le dernier qui lâche l'éteint.
+    /// `start` reste le nom historique pour ne rien casser.
+    /// Des lecteurs NOMMÉS, pas un compteur : un `onAppear` peut courir deux
+    /// fois pour la même vue (SwiftUI n'en fait aucune promesse) et un
+    /// compteur, lui, ne redescendrait jamais à zéro. Un nom entre une fois.
+    @ObservationIgnored private var lecteurs: Set<String> = []
+
+    func retenir(_ qui: String, reduceMotion: Bool) {
+        lecteurs.insert(qui)
+        demarrer(reduceMotion: reduceMotion)
+    }
+
+    /// Le dernier qui sort éteint. `tilt` retombe à zéro : les vues qui le
+    /// lisent encore voient un téléphone immobile, jamais une valeur périmée.
+    func lacher(_ qui: String) {
+        lecteurs.remove(qui)
+        guard lecteurs.isEmpty else { return }
+        stop()
+    }
+
+    /// Le nom historique — gardé pour les bancs et les archives.
+    func start(reduceMotion: Bool) { retenir("hérité", reduceMotion: reduceMotion) }
+
+    private func demarrer(reduceMotion: Bool) {
         guard !reduceMotion, manager.isDeviceMotionAvailable,
               !manager.isDeviceMotionActive else { return }
         manager.deviceMotionUpdateInterval = 1.0 / 30.0

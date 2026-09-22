@@ -1581,20 +1581,22 @@ struct RouteCardLab: View {
             dates[e.id] = Calendar.current.date(
                 byAdding: .day, value: e.id - etape, to: Date())
         }
-        // `double` (20-09) : les séances faites tombent toutes AUJOURD'HUI,
-        // à une heure d'écart — la 2e porte le sticker ×2, l'actif porte la
-        // même date à côté (le cas exact de TestFlight 81, le 19-09).
-        if cas == "double" {
-            for id in faits {
-                dates[id] = Date().addingTimeInterval(Double(id - etape) * 3600)
-            }
+        // `double` (21-09, un galet = un jour) : le galet DU JOUR porte deux
+        // séances — donc le sticker ×2 et sa fête. Deux galets ne peuvent
+        // plus partager une date : le doublon de TestFlight 81 (« plusieurs
+        // fois le 19 septembre ») est mort avec la règle.
+        var seances: [Int: Int] = [:]
+        if cas == "double", let dernier = faits.max() {
+            dates[dernier] = Date()
+            seances[dernier] = 2
         }
         // La récompense DÉPASSÉE est réclamée : c'est elle qu'on veut voir
         // au-dessus d'aujourd'hui, gravée et éteinte.
         let reclamees = Set(EcranSpec.etapes
             .filter { $0.special && $0.id < etape }.map(\.id))
         return EcranSpec.Lecture(etape: etape, faits: faits,
-                                 datesFaites: dates, reclamees: reclamees)
+                                 datesFaites: dates, seancesParGalet: seances,
+                                 reclamees: reclamees)
     }
 
     private static func legende(_ cas: String) -> String {

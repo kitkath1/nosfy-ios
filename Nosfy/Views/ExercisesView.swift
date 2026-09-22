@@ -762,7 +762,7 @@ struct ExercisesView: View {
         // (300 pt) pour que la fumée ait de l'air au-dessus du disque : le
         // shader éteint tout à 16 pt du bord de son hôte.
         .overlay(alignment: .bottom) {
-            ArcDial(etat: etat)
+            ArcDial(etat: etat, sousFiche: deepLinked != nil)
                 .frame(width: cardW, height: 300)
         }
         // (LE CLAVIER DE BRAISE EST ARCHIVÉ — verdict Kathryn 15-09 : « mets
@@ -2159,6 +2159,12 @@ private struct VoileTuto: Shape {
 /// noms) se redessine par image de geste.
 private struct ArcDial: View {
     let etat: EtatExos
+    /// ⚠️ **ELLE DORT SOUS LA FICHE** (21-09, « ça chauffe quand la séance
+    /// est longue ») : la fiche d'exercice est POUSSÉE dans la pile de
+    /// navigation — l'onglet reste « exercices », donc `RythmeEcran.dort`
+    /// répondait NON et cette molette (verre natif + horloge + flou)
+    /// continuait de battre sous une page opaque, pendant toute la séance.
+    var sousFiche: Bool = false
 
     static let items: [(String, ExerciseCategory?)] = {
         var all: [(String, ExerciseCategory?)] = [("Tout", nil)]
@@ -2189,7 +2195,7 @@ private struct ArcDial: View {
             ZStack {
                 ArcSmoke(etat: etat, kx: kx, ky: ky,
                          w: geo.size.width, h: geo.size.height)
-                ArcKnob(etat: etat, kx: kx, ky: ky)
+                ArcKnob(etat: etat, kx: kx, ky: ky, sousFiche: sousFiche)
                 ArcTambour(etat: etat, kx: kx, ky: ky)
             }
             .frame(width: geo.size.width, height: geo.size.height)
@@ -2266,6 +2272,8 @@ private struct ArcSmoke: View {
 private struct ArcKnob: View {
     let etat: EtatExos
     let kx: CGFloat, ky: CGFloat
+    /// La fiche est poussée par-dessus : plus rien ne bat ici (21-09).
+    var sousFiche: Bool = false
 
     var body: some View {
         let engaged = etat.engaged
@@ -2316,7 +2324,8 @@ private struct ArcKnob: View {
                 .overlay {
                     // Le liseré vivant : la respiration des icônes de la nav.
                     TimelineView(.animation(minimumInterval: RythmeEcran.pas,
-                                        paused: RythmeEcran.dort("exercises"))) { tl in
+                                        paused: sousFiche
+                                            || RythmeEcran.dort("exercises"))) { tl in
                         let clock = tl.date.timeIntervalSinceReferenceDate
                         let warm = 0.5 + 0.5 * sin(clock * 0.83)
                         let cool = 0.5 + 0.5 * sin(clock * 0.57 + 1.7)
