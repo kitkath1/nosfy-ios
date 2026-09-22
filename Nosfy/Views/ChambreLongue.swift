@@ -224,6 +224,10 @@ final class ChambreEtat {
     /// records, que le premier écran ne montre pas.
     static let bancBas = CommandLine.arguments.contains("-chambreBas")
 
+    /// Le banc du MOIS : `-chambreMois` ouvre la chambre sur la fenêtre Mois
+    /// (le simulateur ne sait pas taper le sélecteur) — 22-09, les séries.
+    static let bancMois = CommandLine.arguments.contains("-chambreMois")
+
     /// Le banc : `-chambreLongue hiit` ouvre la chambre au lancement.
     static var bancKind: WidgetKind? {
         let a = CommandLine.arguments
@@ -240,7 +244,7 @@ final class ChambreEtat {
 
     func ouvrir(_ kind: WidgetKind?) {
         guard !Self.neutralisee, let kind else { return }
-        fenetre = .semaine
+        fenetre = Self.bancMois ? .mois : .semaine
         withAnimation(.timingCurve(0.22, 1, 0.36, 1, duration: 0.44)) {
             ouverte = kind
         }

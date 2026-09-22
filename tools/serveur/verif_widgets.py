@@ -13,8 +13,8 @@ b-wd-hiitpeak-groupage, b-rg-seuil-effort) :
      record), reste (fenêtre mois), ratio et delta_pct (division par zéro) ;
   2. l'app DÉSINSTALLÉE puis lancée sur le compte de test (le pull ramène les séances), au banc
      `-widgetsBanc`, imprime les chiffres du téléphone (journal [widgets]) — et pour chaque
-     fenêtre : faites, volume, pic, efforts, temps_pics, records_battus sont ÉGAUX à ceux du
-     serveur. Le seuil d'effort imprimé est celui du serveur (seuil_effort_kmh).
+     fenêtre : faites, series (22-09), volume, pic, efforts, temps_pics, records_battus sont
+     ÉGAUX à ceux du serveur. Le seuil d'effort imprimé est celui du serveur (seuil_effort_kmh).
   ⚠️ L'app se lance sur le simulateur LIBRE (iPhone 17 Pro D8A31930…), jamais sur ceux qui
   sont bootés (Kathryn ou une autre session peuvent y être) ; il est éteint à la fin.
 """
@@ -25,7 +25,7 @@ URL = "https://ytnnyjkramgiqyxdrkcu.supabase.co"
 KEY = re.search(r'"(sb_publishable_[A-Za-z0-9_-]+)"', open(f"{REPO}/Nosfy/Services/Supabase.swift").read()).group(1)
 UD = "D8A31930-1D84-42BF-A129-051BB6B9195B"
 APP = "/private/tmp/woop-dd-serveur/Build/Products/Debug-iphonesimulator/Nosfy.app"
-CHAMPS = ("faites", "precedent", "volume", "volume_precedent", "pic", "efforts", "temps_pics", "records_battus")
+CHAMPS = ("faites", "precedent", "series", "series_precedent", "volume", "volume_precedent", "pic", "efforts", "temps_pics", "records_battus")
 
 
 def call(path, body=None, jwt=None):
@@ -64,6 +64,9 @@ for fen in ("semaine", "mois"):
     serveur[fen] = {
         "faites": r["widget_regularite"].get("faites", 0),
         "precedent": r["widget_regularite"].get("precedent", 0),
+        # 22-09 : les séries faites de la fenêtre (20260922103419) — comptées à la fin de séance
+        "series": r["widget_regularite"].get("series", 0),
+        "series_precedent": r["widget_regularite"].get("series_precedent", 0),
         "volume": int(round(r["widget_volume"].get("volume", 0) or 0)),
         "volume_precedent": int(round(r["widget_volume"].get("precedent", 0) or 0)),
         "pic": float(r["widget_hiit"].get("pic", 0) or 0),

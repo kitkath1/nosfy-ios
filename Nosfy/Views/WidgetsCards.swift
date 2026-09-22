@@ -2455,7 +2455,8 @@ struct SemaineStats {
             print("[widgets] \(fen.rawValue) → faites \(f.faites) · precedent \(f.precedent)"
                   + " · volume \(Int(f.volume.rounded())) · volume_precedent \(Int(f.volumePrec.rounded()))"
                   + " · pic \(f.picMax) · efforts \(f.efforts) · temps_pics \(f.tempsPics)"
-                  + " · records_battus \(f.recordsBattus) · seuil \(seuilEffort)")
+                  + " · records_battus \(f.recordsBattus) · seuil \(seuilEffort)"
+                  + " · series \(f.series) · series_precedent \(f.seriesPrec)")
         }
     }
 

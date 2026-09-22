@@ -1,0 +1,6 @@
+pose : HTTP 201 
+historique : HTTP 201 [{'version': '20260922103419'}]
+tête de l'historique : [{'version': '20260922103419', 'name': 'widget_regularite_series'}, {'version': '20260921090000', 'name': 'chemin_un_galet_par_jour'}, {'version': '20260920170000', 'name': 'chemin_plafond_depuis_le_20'}]
+migrations distantes : [{'n': 57}]
+définition vive relue : 'series' × 1 · v_series × 8 · ended_at >= b.debut : True
+droits : [{'proacl': '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}'}]

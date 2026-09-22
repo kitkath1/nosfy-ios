@@ -117,6 +117,13 @@ struct ChambreFenetre {
     var recordSuite = 0
     var jours: [ChambreJour] = []
     var defi: ChambreDefi?
+    /// LES SÉRIES FAITES de la fenêtre et de la précédente (22-09, Kathryn :
+    /// « le nombre de séries par semaine et par mois, avec la date de fin de
+    /// séance »). Une série faite = une série cochée — `Workout.seriesPayantes`,
+    /// la ligne qui paie les pièces ; le serveur compte les mêmes lignes
+    /// (`widget_regularite.series`). Comptées au jour de FIN de la séance.
+    var series = 0
+    var seriesPrec = 0
 
     // ── Volume
     var volume = 0.0
@@ -154,6 +161,7 @@ struct ChambreFenetre {
     var recordsBattus = 0
 
     var delta: Int { faites - precedent }
+    var seriesDelta: Int { series - seriesPrec }
     var volumeDeltaPct: Int? {
         volumePrec > 0 ? Int(((volume - volumePrec) / volumePrec * 100).rounded()) : nil
     }
@@ -168,6 +176,7 @@ struct ChambreFenetre {
         guard vide else { return self }
         var f = self
         f.precedent = 0; f.suite = 0; f.recordSuite = 0; f.defi = nil
+        f.seriesPrec = 0
         f.volumePrec = 0; f.fantome = []; f.recordSemaine = 0
         f.picPrec = 0; f.effortsPrec = 0; f.tempsPicsPrec = 0
         f.recupMoyPrec = 0; f.plusLongTrouPrec = 0; f.pics4 = [0, 0, 0, 0]
@@ -240,6 +249,17 @@ struct ChambreDonnees {
         let avant = finies.filter { $0.startedAt < debut }
         f.vide = cette.isEmpty
         f.libelle = libelle(debut: debut, fin: fin, cal: cal, mois: mois)
+
+        // ⑤ LES SÉRIES, au jour de FIN de la séance (sa règle du 22-09 — la
+        // Route et les pièces comptent à la fin ; les séances de ce widget,
+        // elles, restent au jour de début : le litige est posé sur le site,
+        // b-fn-fenetre-bornes). Une séance finie a toujours une fin ; le
+        // repli sur le début ne sert qu'au type.
+        let finDe: (Workout) -> Date = { $0.endedAt ?? $0.startedAt }
+        f.series = finies.filter { finDe($0) >= debut && finDe($0) < fin }
+            .reduce(0) { $0 + $1.seriesPayantes }
+        f.seriesPrec = finies.filter { finDe($0) >= debutPrec && finDe($0) < finPrec }
+            .reduce(0) { $0 + $1.seriesPayantes }
 
         regularite(&f, cette: cette, prec: prec, finies: finies,
                    cal: cal, maintenant: maintenant, debut: debut,

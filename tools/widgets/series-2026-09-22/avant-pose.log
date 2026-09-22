@@ -1,0 +1,17 @@
+PASS vide · semaine : series 0, series_precedent 0, series_delta 0 · 0 / 0 / 0
+PASS vide · mois : series 0, series_precedent 0 · 0
+PASS vide · aucune des trois clés n'est null
+PASS semaine : 13 séries (8 + 5 ; la série à 0 rép compte ; le cardio ne compte pas) · 13
+PASS semaine : 3 séances faites (le compte des séances ne bouge pas) · 3
+PASS semaine : series_precedent 0 sans historique, delta +13 · 0 / 13
+PASS semaine d'avant au même temps écoulé : 4 séries (la séance d'après la borne exclue) · 4
+PASS semaine : delta = 13 − 4 = 9 · 9
+PASS semaine : precedent (séances) = 1, la même borne · 1
+PASS à cheval sur la borne : ses 3 séries NE comptent PAS dans series_precedent (fin après la borne) · 4
+PASS à cheval sur la borne : la séance, elle, compte dans precedent (début avant la borne) — le litige · 2
+PASS mois : 13 + 4 + 6 + 3 + 7 = 33 séries (tout ce qui a fini depuis 30 jours) · 33
+PASS mois d'avant : 9 séries (il y a 31 jours ; il y a 61 jours est hors fenêtre) · 9
+PASS mois : delta 24 · 24
+PASS les clés du 13-09 sont intactes
+PASS un compte étranger lit 0 série · 0
+Séries par fenêtre : 16 PASS, 0 FAIL (avec la migration rejouée, transaction annulée)

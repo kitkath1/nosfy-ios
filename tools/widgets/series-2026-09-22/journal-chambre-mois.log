@@ -1,0 +1,475 @@
+CoreData: error: Failed to stat path '/Users/kathryn/Library/Developer/CoreSimulator/Devices/D8A31930-1D84-42BF-A129-051BB6B9195B/data/Containers/Data/Application/CE0EE73B-9972-4C64-8F9A-0505EB0DD9A1/Library/Application Support/default.store', errno 2 / No such file or directory.
+CoreData: error: Executing as effective user 501
+CoreData: error:   Sandbox access to file-write-create denied
+CoreData: error: Failed to statfs file; errno 2 / No such file or directory.
+CoreData: error: Information for file system
+CoreData: error: ---------------------------
+CoreData: error:   File system type: 		0
+CoreData: error:   File system flags: 		0
+CoreData: error:   Total data blocks: 		0
+CoreData: error:   Free data blocks: 		0
+CoreData: error:   Free blocks for nonsuperuser:	0
+CoreData: error:   Total i-nodes: 			0
+CoreData: error:   File system ID: 		0, 0
+CoreData: error:   Free i-nodes: 			0
+CoreData: error:   Owner UID: 			0
+CoreData: error:   Filesystem type name: 		
+CoreData: error:   Mount on name: 			
+CoreData: error:   Mount from name: 		ƒ¸Ä
+CoreData: error: Failed to stat path '/Users/kathryn/Library/Developer/CoreSimulator/Devices/D8A31930-1D84-42BF-A129-051BB6B9195B/data/Containers/Data/Application/CE0EE73B-9972-4C64-8F9A-0505EB0DD9A1/Library/Application Support', errno 2 / No such file or directory.
+CoreData: error: Executing as effective user 501
+CoreData: error:   Sandbox access to file-write-create denied
+CoreData: error: Failed to statfs file; errno 2 / No such file or directory.
+CoreData: error: Information for file system
+CoreData: error: ---------------------------
+CoreData: error:   File system type: 		0
+CoreData: error:   File system flags: 		0
+CoreData: error:   Total data blocks: 		0
+CoreData: error:   Free data blocks: 		0
+CoreData: error:   Free blocks for nonsuperuser:	0
+CoreData: error:   Total i-nodes: 			0
+CoreData: error:   File system ID: 		0, 0
+CoreData: error:   Free i-nodes: 			0
+CoreData: error:   Owner UID: 			0
+CoreData: error:   Filesystem type name: 		
+CoreData: error:   Mount on name: 			
+CoreData: error:   Mount from name: 		ƒ¸Ä
+CoreData: error: Executing as effective user 501
+CoreData: error: Information for /Users/kathryn/Library/Developer/CoreSimulator/Devices/D8A31930-1D84-42BF-A129-051BB6B9195B/data/Containers/Data/Application/CE0EE73B-9972-4C64-8F9A-0505EB0DD9A1/Library
+CoreData: error: ---------------------------
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		160 bytes
+CoreData: error:   File inode: 		39622831
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   file is not a symbolic link
+CoreData: error:   Sandbox access to file-write-create allowed
+CoreData: error: Information for file system
+CoreData: error: ---------------------------
+CoreData: error:   File system type: 		0x1a
+CoreData: error:   File system flags: 		0x4909080
+CoreData: error:   MNT_JOURNALED
+CoreData: error:   Total data blocks: 		242824745
+CoreData: error:   Free data blocks: 		45048867
+CoreData: error:   Free blocks for nonsuperuser:	45048867
+CoreData: error:   Total i-nodes: 			1807512541
+CoreData: error:   File system ID: 		0x1000011, 0x1a
+CoreData: error:   Free i-nodes: 			1801954680
+CoreData: error:   Owner UID: 			0
+CoreData: error:   Filesystem type name: 		apfs
+CoreData: error:   Mount on name: 			/System/Volumes/Data
+CoreData: error:   Mount from name: 		/dev/disk3s5
+CoreData: error: Executing as effective user 501
+CoreData: error: Information for /Users/kathryn/Library/Developer/CoreSimulator/Devices/D8A31930-1D84-42BF-A129-051BB6B9195B/data/Containers/Data/Application/CE0EE73B-9972-4C64-8F9A-0505EB0DD9A1
+CoreData: error: ---------------------------
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		224 bytes
+CoreData: error:   File inode: 		39622829
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   file is not a symbolic link
+CoreData: error:   Sandbox access to file-write-create allowed
+CoreData: error: Executing as effective user 501
+CoreData: error: Information for /Users/kathryn/Library/Developer/CoreSimulator/Devices/D8A31930-1D84-42BF-A129-051BB6B9195B/data/Containers/Data/Application
+CoreData: error: ---------------------------
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		4960 bytes
+CoreData: error:   File inode: 		4276534
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   file is not a symbolic link
+CoreData: error:   Sandbox access to file-write-create allowed
+CoreData: error: Executing as effective user 501
+CoreData: error: Information for /Users/kathryn/Library/Developer/CoreSimulator/Devices/D8A31930-1D84-42BF-A129-051BB6B9195B/data/Containers/Data
+CoreData: error: ---------------------------
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		192 bytes
+CoreData: error:   File inode: 		4275755
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   file is not a symbolic link
+CoreData: error:   Sandbox access to file-write-create allowed
+CoreData: error: Executing as effective user 501
+CoreData: error: Information for /Users/kathryn/Library/Developer/CoreSimulator/Devices/D8A31930-1D84-42BF-A129-051BB6B9195B/data/Containers
+CoreData: error: ---------------------------
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		224 bytes
+CoreData: error:   File inode: 		4275702
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   file is not a symbolic link
+CoreData: error:   Sandbox access to file-write-create allowed
+CoreData: error: Executing as effective user 501
+CoreData: error: Information for /Users/kathryn/Library/Developer/CoreSimulator/Devices/D8A31930-1D84-42BF-A129-051BB6B9195B/data
+CoreData: error: ---------------------------
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		416 bytes
+CoreData: error:   File inode: 		4275483
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   775
+CoreData: error:   file is not a symbolic link
+CoreData: error:   Sandbox access to file-write-create allowed
+CoreData: error: Executing as effective user 501
+CoreData: error: Information for /Users/kathryn/Library/Developer/CoreSimulator/Devices/D8A31930-1D84-42BF-A129-051BB6B9195B
+CoreData: error: ---------------------------
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		160 bytes
+CoreData: error:   File inode: 		1026855
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   file is not a symbolic link
+CoreData: error:   Sandbox access to file-write-create allowed
+CoreData: error: Executing as effective user 501
+CoreData: error: Information for /Users/kathryn/Library/Developer/CoreSimulator/Devices
+CoreData: error: ---------------------------
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		2880 bytes
+CoreData: error:   File inode: 		983150
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   file is not a symbolic link
+CoreData: error:   Sandbox access to file-write-create allowed
+CoreData: error: Executing as effective user 501
+CoreData: error: Information for /Users/kathryn/Library/Developer/CoreSimulator
+CoreData: error: ---------------------------
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		160 bytes
+CoreData: error:   File inode: 		982963
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   file is not a symbolic link
+CoreData: error:   Sandbox access to file-write-create allowed
+CoreData: error: Executing as effective user 501
+CoreData: error: Information for /Users/kathryn/Library/Developer
+CoreData: error: ---------------------------
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		224 bytes
+CoreData: error:   File inode: 		865704
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   file is not a symbolic link
+CoreData: error:   Sandbox access to file-write-create allowed
+CoreData: error: Executing as effective user 501
+CoreData: error: Information for /Users/kathryn/Library
+CoreData: error: ---------------------------
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		2880 bytes
+CoreData: error:   File inode: 		330374
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   700
+CoreData: error:   file is not a symbolic link
+CoreData: error:   Sandbox access to file-write-create allowed
+CoreData: error: Executing as effective user 501
+CoreData: error: Information for /Users/kathryn
+CoreData: error: ---------------------------
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		1920 bytes
+CoreData: error:   File inode: 		330367
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   750
+CoreData: error:   file is not a symbolic link
+CoreData: error:   Sandbox access to file-write-create allowed
+CoreData: error: Executing as effective user 501
+CoreData: error: Information for /Users
+CoreData: error: ---------------------------
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		160 bytes
+CoreData: error:   File inode: 		18366
+CoreData: error:   File user ID: 		0
+CoreData: error:   File group ID: 		80
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   file is not a symbolic link
+CoreData: error:   Sandbox access to file-write-create denied
+CoreData: error: Executing as effective user 501
+CoreData: error: Information for /
+CoreData: error: ---------------------------
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		704 bytes
+CoreData: error:   File inode: 		2
+CoreData: error:   File user ID: 		0
+CoreData: error:   File group ID: 		0
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   file is not a symbolic link
+CoreData: error:   Sandbox access to file-write-create denied
+CoreData: error: Logging status information for directory path: /Users/kathryn/Library/Developer/CoreSimulator/Devices/D8A31930-1D84-42BF-A129-051BB6B9195B/data/Containers/Data/Application/CE0EE73B-9972-4C64-8F9A-0505EB0DD9A1/Library/Application Support
+CoreData: error: Executing as effective user 501
+CoreData: error: Information for /
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		704 bytes
+CoreData: error:   File inode: 		2
+CoreData: error:   File user ID: 		0
+CoreData: error:   File group ID: 		0
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   component is not a symbolic link
+CoreData: error:   component is readable
+CoreData: error:   component is not writeable with errno 30
+CoreData: error: Information for /Users
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		160 bytes
+CoreData: error:   File inode: 		18366
+CoreData: error:   File user ID: 		0
+CoreData: error:   File group ID: 		80
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   component is not a symbolic link
+CoreData: error:   component is readable
+CoreData: error:   component is not writeable with errno 13
+CoreData: error: Information for /Users/kathryn
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		1920 bytes
+CoreData: error:   File inode: 		330367
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   750
+CoreData: error:   component is not a symbolic link
+CoreData: error:   component is readable
+CoreData: error:   component is writeable
+CoreData: error: Information for /Users/kathryn/Library
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		2880 bytes
+CoreData: error:   File inode: 		330374
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   700
+CoreData: error:   component is not a symbolic link
+CoreData: error:   component is readable
+CoreData: error:   component is writeable
+CoreData: error: Information for /Users/kathryn/Library/Developer
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		224 bytes
+CoreData: error:   File inode: 		865704
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   component is not a symbolic link
+CoreData: error:   component is readable
+CoreData: error:   component is writeable
+CoreData: error: Information for /Users/kathryn/Library/Developer/CoreSimulator
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		160 bytes
+CoreData: error:   File inode: 		982963
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   component is not a symbolic link
+CoreData: error:   component is readable
+CoreData: error:   component is writeable
+CoreData: error: Information for /Users/kathryn/Library/Developer/CoreSimulator/Devices
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		2880 bytes
+CoreData: error:   File inode: 		983150
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   component is not a symbolic link
+CoreData: error:   component is readable
+CoreData: error:   component is writeable
+CoreData: error: Information for /Users/kathryn/Library/Developer/CoreSimulator/Devices/D8A31930-1D84-42BF-A129-051BB6B9195B
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		160 bytes
+CoreData: error:   File inode: 		1026855
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   component is not a symbolic link
+CoreData: error:   component is readable
+CoreData: error:   component is writeable
+CoreData: error: Information for /Users/kathryn/Library/Developer/CoreSimulator/Devices/D8A31930-1D84-42BF-A129-051BB6B9195B/data
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		416 bytes
+CoreData: error:   File inode: 		4275483
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   775
+CoreData: error:   component is not a symbolic link
+CoreData: error:   component is readable
+CoreData: error:   component is writeable
+CoreData: error: Information for /Users/kathryn/Library/Developer/CoreSimulator/Devices/D8A31930-1D84-42BF-A129-051BB6B9195B/data/Containers
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		224 bytes
+CoreData: error:   File inode: 		4275702
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   component is not a symbolic link
+CoreData: error:   component is readable
+CoreData: error:   component is writeable
+CoreData: error: Information for /Users/kathryn/Library/Developer/CoreSimulator/Devices/D8A31930-1D84-42BF-A129-051BB6B9195B/data/Containers/Data
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		192 bytes
+CoreData: error:   File inode: 		4275755
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   component is not a symbolic link
+CoreData: error:   component is readable
+CoreData: error:   component is writeable
+CoreData: error: Information for /Users/kathryn/Library/Developer/CoreSimulator/Devices/D8A31930-1D84-42BF-A129-051BB6B9195B/data/Containers/Data/Application
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		4960 bytes
+CoreData: error:   File inode: 		4276534
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   component is not a symbolic link
+CoreData: error:   component is readable
+CoreData: error:   component is writeable
+CoreData: error: Information for /Users/kathryn/Library/Developer/CoreSimulator/Devices/D8A31930-1D84-42BF-A129-051BB6B9195B/data/Containers/Data/Application/CE0EE73B-9972-4C64-8F9A-0505EB0DD9A1
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		224 bytes
+CoreData: error:   File inode: 		39622829
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   component is not a symbolic link
+CoreData: error:   component is readable
+CoreData: error:   component is writeable
+CoreData: error: Information for /Users/kathryn/Library/Developer/CoreSimulator/Devices/D8A31930-1D84-42BF-A129-051BB6B9195B/data/Containers/Data/Application/CE0EE73B-9972-4C64-8F9A-0505EB0DD9A1/Library
+CoreData: error:   File Device ID: 	0
+CoreData: error:   Device ID: 		16777233
+CoreData: error:   File Size: 		160 bytes
+CoreData: error:   File inode: 		39622831
+CoreData: error:   File user ID: 		501
+CoreData: error:   File group ID: 		20
+CoreData: error:   File Permissions: 	
+CoreData: error: d
+CoreData: error:   755
+CoreData: error:   component is not a symbolic link
+CoreData: error:   component is readable
+CoreData: error:   component is writeable
+CoreData: error: Failed to stat path '/Users/kathryn/Library/Developer/CoreSimulator/Devices/D8A31930-1D84-42BF-A129-051BB6B9195B/data/Containers/Data/Application/CE0EE73B-9972-4C64-8F9A-0505EB0DD9A1/Library/Application Support', errno 2 / No such file or directory.
+CoreData: error:   Sandbox access to file-write-create denied
+CoreData: error: addPersistentStoreWithType:configuration:URL:options:error: returned error NSCocoaErrorDomain (512)
+CoreData: error: userInfo:
+CoreData: error: 	reason : Failed to create file; code = 2
+CoreData: error: storeType: SQLite
+CoreData: error: configuration: default
+CoreData: error: URL: file:///Users/kathryn/Library/Developer/CoreSimulator/Devices/D8A31930-1D84-42BF-A129-051BB6B9195B/data/Containers/Data/Application/CE0EE73B-9972-4C64-8F9A-0505EB0DD9A1/Library/Application%20Support/default.store
+CoreData: annotation: options:
+CoreData: annotation: 	NSMigratePersistentStoresAutomaticallyOption : 1
+CoreData: annotation: 	NSInferMappingModelAutomaticallyOption : 1
+CoreData: annotation: 	NSPersistentStoreRemoteChangeNotificationOptionKey : 1
+CoreData: annotation: 	NSPersistentHistoryTrackingKey : 1
+CoreData: error: <NSPersistentStoreCoordinator: 0x1034df380>: Attempting recovery from error encountered during addPersistentStore: 0x103444ba0 Error Domain=NSCocoaErrorDomain Code=512 "Le fichier n’as pas pu être enregistré." UserInfo={reason=Failed to create file; code = 2}
+CoreData: error: During recovery, parent directory path reported as missing
+CoreData: error: Recovery attempt while adding <NSPersistentStoreDescription: 0x103444ba0> (type: SQLite, url: file:///Users/kathryn/Library/Developer/CoreSimulator/Devices/D8A31930-1D84-42BF-A129-051BB6B9195B/data/Containers/Data/Application/CE0EE73B-9972-4C64-8F9A-0505EB0DD9A1/Library/Application%20Support/default.store) was successful!
+=== AttributeGraph: cycle detected through attribute 27952 ===
+[booster-bench] makeHDRStudio: envCal=false
+IOSurfaceClientSetSurfaceNotify failed e00002c7
+[reseau] en ligne
+[welcome-back] retenue : la porte, le film ou le splash tient l'écran
+[pull] bilans historiques : 2 retrouvés
+[pull] seances_depuis(tout) → total 39, rendues 39 · insérées 39, ignorées 0 · local 39
+[home-serveur] home() → prénom Kiki · 0 / 5, reste 5 · en séance false (0 min) · 39 séances en tout · première fois false · visite false · langue fr
+[home-serveur] home() → prénom Kiki · 0 / 5, reste 5 · en séance false (0 min) · 39 séances en tout · première fois false · visite false · langue fr
+[home-serveur] phrases → active, active_zero, seance, seance_debut, vide
+[chemin] 1 nœud(s) déjà payés, appris du serveur
+[home-serveur] phrases → active, active_zero, seance, seance_debut, vide
+[chemin] composition conforme à la base (5 règles lues)
+[annonces] regles_annonces() → rangs [3, 5, 10], vidéo 10, hasard 5-8 après 10, budget 4/1/1, écart 3 séries ET 6 min, rare reward-rare, pool 7 vidéos ["reward-piece-1", "reward-piece-2", "reward-piece-3", "reward-piece-4", "reward-piece-5", "reward-fire", "reward-lune"]
+[cardio] planchers du barème lus : tapis 5.0 min, escalier 5.0 min, seuil 15.0 km/h, effort HIIT 20.0 s
+[chambre-serveur] objectif_hebdo() → 5
+[chambre-serveur] objectif_hebdo() → 5
+[chemin] composition conforme à la base (5 règles lues)
+[chambre-serveur] widget_regularite(semaine) → 0 séance(s) · défi 16/23 (août, 16 dates, → 3 octobre)
+[chambre-serveur] widget_regularite(semaine) → 0 séance(s) · défi 16/23 (août, 16 dates, → 3 octobre)
+[chambre-serveur] widget_regularite(mois) → 28 séance(s) · défi 16/23 (août, 16 dates, → 3 octobre)
+[chambre-serveur] widget_regularite(mois) → 28 séance(s) · défi 16/23 (août, 16 dates, → 3 octobre)
+[pull] bilans historiques : 0 retrouvés
+[pull] seances_depuis(2026-09-22T08:51:58.426157+00:00) → total 0, rendues 0 · insérées 0, ignorées 0 · local 39
+[welcome-back] retenue : retour_disponible faux (rien à prendre, ou aucune séance finie — S4)
+[booster-bench] lune: geo=false op=1.0
+[booster-bench] scène : mylar=false env=booster-studio.hdr emission=0.6000000238418579
+fr.kathryn.woop: 72377

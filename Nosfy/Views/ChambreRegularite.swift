@@ -43,14 +43,28 @@ struct ChambreRegularite: View {
             BlocTitre(texte: L("Résumé", "Summary"))
             ligne(valeur: "\(f.faites)",
                   nom: fenetre == .semaine ? L("Séances cette semaine", "Sessions this week") : L("Séances ce mois-ci", "Sessions this month"),
-                  sous: f.precedent == 0
-                      ? "Aucune \(fenetre == .semaine ? "la semaine passée" : "le mois passé")"
-                      : L("Contre \(f.precedent) \(fenetre == .semaine ? "la semaine passée" : "le mois passé")", "Vs \(f.precedent) \(fenetre == .semaine ? "last week" : "last month")"),
+                  sous: sousContre(f.precedent),
                   delta: f.delta)
+            // LES SÉRIES (22-09) : la même ligne, le compte fin après le
+            // compte gros — « 48 · Séries cette semaine · Contre 36 · ▲ +12 » ;
+            // le sélecteur fait les deux fenêtres. Rien d'autre : pas de
+            // sticker, pas de phrase (le bloc est typographique).
+            ligne(valeur: "\(f.series)",
+                  nom: fenetre == .semaine ? L("Séries cette semaine", "Sets this week") : L("Séries ce mois-ci", "Sets this month"),
+                  sous: sousContre(f.seriesPrec),
+                  delta: f.seriesDelta)
             ligne(valeur: "\(f.suite)", nom: L("Semaine\(f.suite > 1 ? "s" : "") d'affilée", "Week\(f.suite > 1 ? "s" : "") in a row"),
                   sous: L("Ton record : \(f.recordSuite) semaine\(f.recordSuite > 1 ? "s" : "")", "Your best: \(f.recordSuite) week\(f.recordSuite > 1 ? "s" : "")"), delta: nil)
         }
         .chambreVide(f.vide && f.suite == 0)
+    }
+
+    /// « Contre 6 la semaine passée » / « Aucune le mois passé » — la même
+    /// sous-ligne pour les séances et les séries, dans les deux langues (le
+    /// « Aucune » restait en français côté anglais).
+    private func sousContre(_ avant: Int) -> String {
+        let quand = fenetre == .semaine ? L("la semaine passée", "last week") : L("le mois passé", "last month")
+        return avant == 0 ? L("Aucune \(quand)", "None \(quand)") : L("Contre \(avant) \(quand)", "Vs \(avant) \(quand)")
     }
 
     private func ligne(valeur: String, nom: String, sous: String, delta: Int?) -> some View {

@@ -542,3 +542,18 @@ Sur son « fix tout ça go ». **Rien commité.** Build simulateur vert.
 - 22-09 · le geste de renvoi du toaster (`Annonces.swift`, `escamoter()`) n'est PAS dans ce
   commit : il repose sur la dalle « depuis l'île » que la session Annonces n'a pas encore
   commitée — il part avec elle.
+
+- **22-09 11:00 — session Widgets (séries par semaine / mois).** `widget_regularite`
+  rend `series`, `series_precedent`, `series_delta` : migration **20260922103419 POSÉE**
+  (API de gestion, historique inscrit, 57 = 57). Chambre Regularity : 3e ligne du
+  Résumé. Fichiers à moi dans l'arbre, NON commités : `Nosfy/Views/ChambreDonnees.swift`,
+  `Nosfy/Views/ChambreRegularite.swift`, `Nosfy/Services/ChambreServeur.swift`,
+  `Nosfy/Views/ChambreLongue.swift` (flag `-chambreMois`), `Nosfy/Views/WidgetsCards.swift`
+  (le banc `imprimerBanc`, ~l. 3176 seulement), `tools/serveur/verif_widgets.py`,
+  `supabase/migrations/20260922103419_widget_regularite_series.sql`, `tools/widgets/`,
+  `docs/site/content/serveur.ts` + `pages/widgets.mdx` + `index.html`.
+  ⚠️ Compte de test be69f505 : trois coquilles de démo poussées par mes lancements
+  (`-demoData` puis `-sessionBanc`) et **retirées** à 10:55 → 39 séances, comme avant ;
+  le +10 du jour a été encaissé par `-welcomeClaimAuto` (solde 46 → 56).
+  ⚠️ Litige posé sur le site : widgets au jour de DÉBUT, Route au jour de FIN
+  (`b-fn-fenetre-bornes`).

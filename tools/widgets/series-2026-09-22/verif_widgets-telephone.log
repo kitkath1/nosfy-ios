@@ -1,0 +1,47 @@
+compte de test : be69f505-1d62-4fa2-8894-c898e8da1f8f
+
+[1] le serveur : les quatre widget_* par fenêtre
+  ✓ widget_regularite(semaine) → 200
+  ✓ widget_volume(semaine) → 200
+  ✓ widget_hiit(semaine) → 200
+  ✓ widget_peak(semaine) → 200
+  ✓ semaine : aucun null hors les nullables assumés 
+    semaine : faites 0 · precedent 1 · series 0 · series_precedent 3 · volume 0 · volume_precedent 2175 · pic 0.0 · efforts 0 · temps_pics 0 · records_battus 0
+  ✓ widget_regularite(mois) → 200
+  ✓ widget_volume(mois) → 200
+  ✓ widget_hiit(mois) → 200
+  ✓ widget_peak(mois) → 200
+  ✓ mois : aucun null hors les nullables assumés 
+    mois : faites 28 · precedent 11 · series 102 · series_precedent 33 · volume 40088 · volume_precedent 11715 · pic 17.0 · efforts 9 · temps_pics 305 · records_battus 5
+
+[2] le téléphone : app désinstallée, le pull, puis -widgetsBanc
+  ✓ app réinstallée (base vide) sur le simulateur libre
+    pull : ['bilans historiques : 2 retrouvés', 'seances_depuis(tout) → total 39, rendues 39 · insérées 39, ignorées 0 ']
+  ✓ semaine : le téléphone a imprimé ses chiffres
+    semaine : faites 0 · precedent 1 · series 0 · series_precedent 3 · volume 0 · volume_precedent 2175 · pic 0.0 · efforts 0 · temps_pics 0 · records_battus 0
+  ✓ semaine · faites : serveur 0 = téléphone 0
+  ✓ semaine · precedent : serveur 1 = téléphone 1
+  ✓ semaine · series : serveur 0 = téléphone 0
+  ✓ semaine · series_precedent : serveur 3 = téléphone 3
+  ✓ semaine · volume : serveur 0 = téléphone 0
+  ✓ semaine · volume_precedent : serveur 2175 = téléphone 2175
+  ✓ semaine · pic : serveur 0.0 = téléphone 0.0
+  ✓ semaine · efforts : serveur 0 = téléphone 0
+  ✓ semaine · temps_pics : serveur 0 = téléphone 0
+  ✓ semaine · records_battus : serveur 0 = téléphone 0
+  ✓ semaine · seuil : serveur 15.0 = téléphone 15.0
+  ✓ mois : le téléphone a imprimé ses chiffres
+    mois : faites 28 · precedent 11 · series 102 · series_precedent 33 · volume 40088 · volume_precedent 11715 · pic 17.0 · efforts 9 · temps_pics 305 · records_battus 5
+  ✓ mois · faites : serveur 28 = téléphone 28
+  ✓ mois · precedent : serveur 11 = téléphone 11
+  ✓ mois · series : serveur 102 = téléphone 102
+  ✓ mois · series_precedent : serveur 33 = téléphone 33
+  ✓ mois · volume : serveur 40088 = téléphone 40088
+  ✓ mois · volume_precedent : serveur 11715 = téléphone 11715
+  ✓ mois · pic : serveur 17.0 = téléphone 17.0
+  ✓ mois · efforts : serveur 9 = téléphone 9
+  ✓ mois · temps_pics : serveur 305 = téléphone 305
+  ✓ mois · records_battus : serveur 5 = téléphone 5
+  ✓ mois · seuil : serveur 15.0 = téléphone 15.0
+
+35 ✓ · 0 ✗ — TOUT EST VERT

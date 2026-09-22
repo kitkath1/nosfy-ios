@@ -176,6 +176,10 @@ enum ChambreServeur {
         f.precedent = ent(o["precedent"]) ?? 0
         f.suite = ent(o["suite_semaines"]) ?? 0
         f.recordSuite = ent(o["record_suite"]) ?? 0
+        // 22-09 : les séries faites de la fenêtre (20260922103419) — clé
+        // absente → 0, une part grise, jamais un chiffre inventé.
+        f.series = ent(o["series"]) ?? 0
+        f.seriesPrec = ent(o["series_precedent"]) ?? 0
         let cal = Calendar.current
         for j in tableau(o["jours"]) {
             guard let d = jour(j["jour"]),

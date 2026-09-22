@@ -1,0 +1,17 @@
+compte de test : be69f505-1d62-4fa2-8894-c898e8da1f8f
+
+[1] le serveur : les quatre widget_* par fenêtre
+  ✓ widget_regularite(semaine) → 200
+  ✓ widget_volume(semaine) → 200
+  ✓ widget_hiit(semaine) → 200
+  ✓ widget_peak(semaine) → 200
+  ✓ semaine : aucun null hors les nullables assumés 
+    semaine : faites 0 · precedent 1 · series 0 · series_precedent 3 · volume 0 · volume_precedent 2175 · pic 0.0 · efforts 0 · temps_pics 0 · records_battus 0
+  ✓ widget_regularite(mois) → 200
+  ✓ widget_volume(mois) → 200
+  ✓ widget_hiit(mois) → 200
+  ✓ widget_peak(mois) → 200
+  ✓ mois : aucun null hors les nullables assumés 
+    mois : faites 28 · precedent 11 · series 102 · series_precedent 33 · volume 40088 · volume_precedent 11715 · pic 17.0 · efforts 9 · temps_pics 305 · records_battus 5
+
+10 ✓ · 0 ✗ — TOUT EST VERT
