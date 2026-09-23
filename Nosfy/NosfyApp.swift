@@ -1461,14 +1461,15 @@ struct RootView: View {
     /// expression in reasonable time », 22-09). La règle de la maison : une
     /// vue est une addition de sous-vues NOMMÉES.
     ///
-    /// · LA COUPE BLANCHE (`CoupeBlanche.swift`) rend invisibles les
-    ///   changements d'écran du parcours de séance — elle doit donc couvrir
-    ///   jusqu'au film de départ (zIndex 40). `-sansCoupe` la retire.
+    /// · L'OUVERTURE (`OuvertureParticules.swift`, 23-09 — elle remplace la
+    ///   flamme noire, refusée) rend invisibles les changements d'écran du
+    ///   parcours de séance : elle doit donc couvrir jusqu'au film de
+    ///   départ (zIndex 40). `-sansOuverture` la retire.
     /// · L'ÉCRAN D'ERREUR (18-09) passe même devant elle : une panne se dit,
     ///   quoi qu'il arrive à l'écran.
     @ViewBuilder private var couvercles: some View {
         ZStack {
-            CoupeBlanche()
+            Ouverture()
             EcranErreurHote()
         }
     }
