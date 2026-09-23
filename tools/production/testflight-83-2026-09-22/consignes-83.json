@@ -1,0 +1,65 @@
+{
+  "mesure_utc": "2026-09-23T07:46:51+00:00",
+  "ecriture": [
+    {
+      "locale": "fr-FR",
+      "http": 200,
+      "reponse": {
+        "data": {
+          "type": "betaBuildLocalizations",
+          "id": "26fd9460-4f7d-4fb8-b1d4-98baa8bbbb3a",
+          "attributes": {
+            "whatsNew": "Build 83 — LE LECTEUR DE SÉANCE tient maintenant toute la séance. Après le Go tu arrives directement dedans : la carte du jour, les cinq carrés du corps, et ce que Nosfy propose. La page Exercices ne s'ouvre plus QUE hors séance ; pendant, l'onglet, le galet et le chevron y ramènent tous. Entre deux écrans, un cercle blanc.\n\nÀ regarder en premier : est-ce que tu vois encore la liste des exercices passer pendant une séance ? est-ce que le téléphone chauffe ?\n\nTeste le parcours complet avec un compte neuf :\n• Connecte-toi avec Apple, puis choisis ta langue, ton prénom et ton objectif.\n• Vérifie que les séances, les pièces, les boosters et la collection commencent à zéro.\n• Fais une séance de musculation ou de cardio et termine-la.\n• Consulte les stories et les récompenses, puis l’animation du galet accompli.\n• Ouvre le booster gagné et retrouve la carte dans ta collection.\n• Touche un jour fait dans le widget Regularity pour revoir sa séance. Si tu as fait plusieurs séances ce jour-là, choisis celle à revoir.\n• Déconnecte-toi puis reconnecte-toi : tes séances, leurs reçus et ta collection doivent revenir sans gain en double.\n• Reviens un autre jour pour vérifier le retour quotidien.\n\nEn cas de problème, indique l’étape, le modèle d’iPhone, la version d’iOS et joins une capture via TestFlight.",
+            "locale": "fr-FR"
+          },
+          "relationships": {
+            "build": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/26fd9460-4f7d-4fb8-b1d4-98baa8bbbb3a/relationships/build",
+                "related": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/26fd9460-4f7d-4fb8-b1d4-98baa8bbbb3a/build"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/26fd9460-4f7d-4fb8-b1d4-98baa8bbbb3a"
+          }
+        },
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/26fd9460-4f7d-4fb8-b1d4-98baa8bbbb3a"
+        }
+      }
+    },
+    {
+      "locale": "en-GB",
+      "http": 200,
+      "reponse": {
+        "data": {
+          "type": "betaBuildLocalizations",
+          "id": "24ef1970-3908-465c-92a5-cb3b12f3f97e",
+          "attributes": {
+            "whatsNew": "Build 83 — THE SESSION PLAYER now holds the whole workout. After Go you land straight in it: the day's card, the five body squares, and what Nosfy suggests. The Exercises page only opens OUTSIDE a session; during one, the tab, the pebble and the chevron all lead back to the player. Between screens, a white circle.\n\nLook first: do you still see the exercise list flash past during a session? does the phone get hot?\n\nTest the full experience with a new account:\n• Sign in with Apple, then choose your language, name and goal.\n• Check that workouts, coins, boosters and your collection start empty.\n• Complete a strength or cardio workout.\n• View the session stories, rewards and completed pebble animation.\n• Open the earned booster and find the card in your collection.\n• Tap a completed day in the Regularity widget to revisit its workout. Choose a session when the day contains several.\n• Sign out and back in: workouts, reward receipts and your collection should return without duplicate rewards.\n• Return on another day to check the daily return.\n\nIf something goes wrong, include the step, iPhone model, iOS version and a screenshot through TestFlight.",
+            "locale": "en-GB"
+          },
+          "relationships": {
+            "build": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/24ef1970-3908-465c-92a5-cb3b12f3f97e/relationships/build",
+                "related": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/24ef1970-3908-465c-92a5-cb3b12f3f97e/build"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/24ef1970-3908-465c-92a5-cb3b12f3f97e"
+          }
+        },
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/24ef1970-3908-465c-92a5-cb3b12f3f97e"
+        }
+      }
+    }
+  ],
+  "relecture": {
+    "en-GB": "Build 83 — THE SESSION PLAYER now holds the whole workout. After Go you land straight in it: the day's card, the five body squares, and what Nosfy suggests. The Exercises page only opens OUTSIDE a session; during one, the tab, the pebble and the chevron all lead back to the player. Between screens, a white circle.\n\nLook first: do you still see the exercise list flash past during a session? does the phone get hot?\n\nTest the full experience with a new account:\n• Sign in with Apple, then choose your language, name and goal.\n• Check that workouts, coins, boosters and your collection start empty.\n• Complete a strength or cardio workout.\n• View the session stories, rewards and completed pebble animation.\n• Open the earned booster and find the card in your collection.\n• Tap a completed day in the Regularity widget to revisit its workout. Choose a session when the day contains several.\n• Sign out and back in: workouts, reward receipts and your collection should return without duplicate rewards.\n• Return on another day to check the daily return.\n\nIf something goes wrong, include the step, iPhone model, iOS version and a screenshot through TestFlight.",
+    "fr-FR": "Build 83 — LE LECTEUR DE SÉANCE tient maintenant toute la séance. Après le Go tu arrives directement dedans : la carte du jour, les cinq carrés du corps, et ce que Nosfy propose. La page Exercices ne s'ouvre plus QUE hors séance ; pendant, l'onglet, le galet et le chevron y ramènent tous. Entre deux écrans, un cercle blanc.\n\nÀ regarder en premier : est-ce que tu vois encore la liste des exercices passer pendant une séance ? est-ce que le téléphone chauffe ?\n\nTeste le parcours complet avec un compte neuf :\n• Connecte-toi avec Apple, puis choisis ta langue, ton prénom et ton objectif.\n• Vérifie que les séances, les pièces, les boosters et la collection commencent à zéro.\n• Fais une séance de musculation ou de cardio et termine-la.\n• Consulte les stories et les récompenses, puis l’animation du galet accompli.\n• Ouvre le booster gagné et retrouve la carte dans ta collection.\n• Touche un jour fait dans le widget Regularity pour revoir sa séance. Si tu as fait plusieurs séances ce jour-là, choisis celle à revoir.\n• Déconnecte-toi puis reconnecte-toi : tes séances, leurs reçus et ta collection doivent revenir sans gain en double.\n• Reviens un autre jour pour vérifier le retour quotidien.\n\nEn cas de problème, indique l’étape, le modèle d’iPhone, la version d’iOS et joins une capture via TestFlight."
+  }
+}
