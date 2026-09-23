@@ -2640,6 +2640,26 @@ private struct CarreZoneMini: View {
 
     private static let forme = RoundedRectangle(cornerRadius: 13, style: .continuous)
 
+    /// ⚠️ L'ÉTAT DU SOUFFLE VIT DANS LA FEUILLE — piège payé sur
+    /// `PageCard.swift` : un `repeatForever` posé plus haut se fait AVALER
+    /// dès que le parent est ré-évalué, et la respiration s'arrête sans
+    /// que rien ne le dise. Il se ré-arme aussi quand la zone change.
+    @State private var respire = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var pulseActif: Bool {
+        choisie && !reduceMotion
+            && !ProcessInfo.processInfo.arguments.contains("-sansPulseZone")
+    }
+    private var lueur: Double {
+        guard pulseActif else { return choisie ? 0.9 : 0.22 }
+        return respire ? 1.0 : 0.58
+    }
+    private var souffle: Animation? {
+        pulseActif ? .easeInOut(duration: 1.7).repeatForever(autoreverses: true)
+                   : nil
+    }
+
     var body: some View {
         Color.clear
             .aspectRatio(1, contentMode: .fit)
@@ -2652,11 +2672,22 @@ private struct CarreZoneMini: View {
                         .resizable()
                         .interpolation(.high)
                         .aspectRatio(contentMode: .fill)
+                    // ⚠️ SEULES LES PARTIES BLANCHES RESPIRENT, et ce
+                    // calque de lueur ne contient QUE ça : la zone peinte
+                    // en blanc sur le corps. Le corps gris ne bouge pas, la
+                    // tuile non plus. Une tuile qui pulse, ce serait un
+                    // point qui respire — générique, et elle l'a refusé.
+                    //
+                    // ⚠️ ET SEULE UNE OPACITÉ EST ANIMÉE : aucune image
+                    // n'est refabriquée. C'est la loi mesurée le 05-09 sur
+                    // son iPhone (redessiner pour animer : 33-38 % de
+                    // processeur ; animer une valeur : 4-18 %).
                     Image("typo-\(zone.assetLecteur)-lueur")
                         .resizable()
                         .interpolation(.high)
                         .aspectRatio(contentMode: .fill)
-                        .opacity(choisie ? 0.9 : 0.22)
+                        .opacity(lueur)
+                        .animation(souffle, value: respire)
                 }
             }
             .overlay(alignment: .bottom) {
@@ -2674,6 +2705,7 @@ private struct CarreZoneMini: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(zone.rawValue)
             .accessibilityAddTraits(choisie ? [.isButton, .isSelected] : .isButton)
+            .task(id: pulseActif) { respire = pulseActif }
     }
 }
 
