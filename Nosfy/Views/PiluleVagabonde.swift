@@ -190,6 +190,10 @@ struct InviteAnimee: View {
     /// lueur dans toute la maison : deux balayages qui divergeraient ne
     /// seraient plus la même langue.
     var texte: String = "Choisissez un exercice"
+    /// LA COULEUR DE LA LUEUR (23-09, verdict Kathryn : « des couleurs de
+    /// flamme braise aussi dans le header quand je suis en séance en
+    /// cours »). Blanc par défaut : la pilule et l'invite ne changent pas.
+    var teinte: Color = .white
     /// ⚠️ ELLE N'AVAIT AUCUNE PORTE (04-09, lot 2, cause n° 7) : une
     /// `TimelineView` sans `paused:`, qui balayait un dégradé sur du
     /// texte 30 fois par seconde — et c'est l'état du DÉBUT DE CHAQUE
@@ -209,14 +213,19 @@ struct InviteAnimee: View {
                 .font(.system(size: taille, weight: poids))
                 .foregroundStyle(LinearGradient(
                     stops: [
-                        .init(color: .white.opacity(0.40),
+                        .init(color: teinte.opacity(0.40),
                               location: max(0, u - 0.28)),
-                        .init(color: .white, location: u),
-                        .init(color: .white.opacity(0.40),
+                        .init(color: teinte, location: u),
+                        .init(color: teinte.opacity(0.40),
                               location: min(1, u + 0.28))
                     ],
                     startPoint: .leading, endPoint: .trailing))
                 .lineLimit(1)
+                // ⚠️ IL SE SERRE, IL NE SE COUPE PAS. Le chevron du retour
+                // lui prend 34 pt dans la tête repliée : sans ça, on
+                // relisait « Choisissez un ex… » (le défaut du 22-09, une
+                // deuxième fois par une autre cause).
+                .minimumScaleFactor(0.72)
         }
     }
 }
@@ -2009,6 +2018,8 @@ struct GrandPlayer: View {
     /// La zone ouverte : ses exercices remplacent la partition, dans le
     /// MÊME composant. `nil` = la séance.
     @State private var zone: ExerciseCategory? = GrandPlayer.bancZone
+    /// LE MODE CHOISIR, posé par le bouton. Faux = on regarde sa séance.
+    @State private var choisit = GrandPlayer.bancChoisit
 
     /// `-lecteurReplie` : le player naît TÊTE REPLIÉE, carrés visibles —
     /// le simulateur ne glisse pas la partition.
@@ -2016,6 +2027,10 @@ struct GrandPlayer: View {
     static let bancRepli: CGFloat =
         (CommandLine.arguments.contains("-lecteurReplie")
          || bancZone != nil) ? 1 : 0
+    /// `-lecteurChoisit` : ouvrir le lecteur en mode choisir, pour juger
+    /// l'état « la page a changé » sans poser de doigt.
+    static let bancChoisit = ProcessInfo.processInfo.arguments
+        .contains("-lecteurChoisit")
     static let bancZone: ExerciseCategory? = {
         let a = CommandLine.arguments
         guard let i = a.firstIndex(of: "-lecteurZone"), i + 1 < a.count,
@@ -2086,22 +2101,22 @@ struct GrandPlayer: View {
                 .opacity(Double(encre))
             VStack(spacing: 0) {
                 teteFixe(encre: encre, enGeste: enGeste)
-                // LES CINQ ZONES — elles n'apparaissent QUE quand la tête
-                // s'est repliée : deux bandeaux pleins au-dessus de la
-                // liste, c'est ce qui rendrait l'écran lourd.
-                // ⚠️ LES CARRÉS SONT TOUJOURS LÀ. Point. (Verdict Kathryn
-                // 22-09, deux fois : « il faut que ce soit fluide, le fait
-                // d'avoir le résumé ET le fait de pouvoir ajouter un exo »,
-                // puis « après le Go il manque dans l'overlay la catégorie
-                // abdos et tout, tous les carrés là ! ».)
+                // ⚠️ LE BOUTON D'ABORD, LES CARRÉS SOUS LUI (verdict
+                // Kathryn 23-09 : « les carrés disparaissent, ils
+                // n'apparaissent que quand on clique sur ajouter un
+                // exercice ET LA PAGE CHANGE, mais je peux revoir aussi
+                // l'état de la session en cours »).
                 //
-                // Ils ont été conditionnels deux fois, et deux fois c'était
-                // faux : d'abord au repli de la tête — donc invisibles tant
-                // qu'on n'avait pas scrollé —, puis seulement devant la
-                // partition — donc absents juste après le Go, au moment
-                // précis où l'on choisit. Une porte qui n'est pas toujours
-                // au même endroit n'est pas une porte.
-                barreZones
+                // C'est ce qui sépare enfin les deux états : « choisir » et
+                // « en cours » portaient le même signal le plus visible —
+                // les cinq carrés — donc on ne les distinguait pas à un
+                // mètre. Les carrés sont un outil de CHOIX ; ils n'ont rien
+                // à faire devant une séance qui tourne.
+                boutonBascule(encre: encre, enGeste: enGeste)
+                if enChoix {
+                    barreZones
+                        .transition(.opacity.combined(with: .offset(y: -10)))
+                }
                 // LA CARTE « SUIVANT » EST DESCENDUE DANS LE PIED (22-09) :
                 // elle y était en double avec le bouton d'action, et elle
                 // mangeait 74 pt au-dessus de la partition.
@@ -2194,6 +2209,15 @@ struct GrandPlayer: View {
             // L'IMAGE DU JOUR + LE BADGE, BEAUCOUP plus grands (verdict
             // 04-09) : c'est la pièce maîtresse de la tête.
             teteLigne(carte: carte, echelle: echelle, r: r, nom: nom)
+                // LA CHALEUR DE LA SÉANCE, DERRIÈRE LA TÊTE (23-09).
+                // ⚠️ MONTÉE SEULEMENT EN SÉANCE ET LECTEUR POSÉ : la loi
+                // du rideau — rien ne vit caché, et rien n'anime sous le
+                // doigt. Elle se démonte dès qu'on passe en mode choisir.
+                .background {
+                    if !enChoix, morph > 0.98, fermeture < 0.5 {
+                        ChaleurTete().allowsHitTesting(false)
+                    }
+                }
         }
         .frame(maxWidth: .infinity)
         .contentShape(Rectangle())
@@ -2212,6 +2236,7 @@ struct GrandPlayer: View {
             // gouttière à 24, le titre qui respire, le ruban qui ne
             // l'écrase pas.
             HStack(spacing: 14) {
+                chevronRetour
                 miniCarte(carte: carte, echelle: echelle, r: r)
                 VStack(alignment: .leading, spacing: 3) {
                     titreOverlay(16)
@@ -2225,9 +2250,34 @@ struct GrandPlayer: View {
             .padding(.top, 10)
             .padding(.bottom, 20)
         } else {
-            miniCarte(carte: carte, echelle: echelle, r: r)
+            HStack(spacing: 14) {
+                chevronRetour
+                miniCarte(carte: carte, echelle: echelle, r: r)
+                // La place du chevron est rendue de l'autre côté : la
+                // carte du jour reste CENTRÉE, elle ne glisse pas quand on
+                // entre ou sort du mode choisir.
+                if choisit { Color.clear.frame(width: 24, height: 1) }
+            }
             titreOverlay(25).padding(.top, 2).opacity(Double(nom))
             chronoSession.padding(.top, 2).padding(.bottom, 14)
+        }
+    }
+
+    /// LE CHEVRON DU RETOUR — à gauche du carré de date (verdict Kathryn
+    /// 23-09 : « à la place du bouton Ma séance tu mets un chevron à
+    /// gauche du carré de date, pour revenir à l'état vue session en
+    /// cours »). Il ne vit QUE dans le mode choisir : sans séance
+    /// derrière, il n'y a rien à rendre.
+    @ViewBuilder
+    private var chevronRetour: some View {
+        if choisit {
+            Image(systemName: "chevron.left")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(Color.white.opacity(0.78))
+                .frame(width: 24, height: 44)
+                .contentShape(Rectangle())
+                .highPriorityGesture(TapGesture().onEnded { basculer() })
+                .transition(.opacity.combined(with: .offset(x: -8)))
         }
     }
 
@@ -2291,9 +2341,9 @@ struct GrandPlayer: View {
     /// vide, sinon ta partition.
     @ViewBuilder
     private var contenu: some View {
-        if let z = zone {
+        if enChoix, let z = zone {
             listeZone(z)
-        } else if seanceVide, !propositions.isEmpty {
+        } else if enChoix, !propositions.isEmpty {
             listePropositions
         } else {
             partition
@@ -2349,13 +2399,43 @@ struct GrandPlayer: View {
     /// lieu de deux. Sans exercice en cours, on rend simplement les
     /// carrés. ⚠️ Il OUVRE une liste, il ne choisit RIEN : c'est elle qui
     /// choisit, toujours.
-    private func ajouterUnExercice() {
+    /// LE MODE CHOISIR — les carrés et les listes d'exercices.
+    /// Vrai d'office tant que la séance est VIDE : il n'y a rien d'autre à
+    /// montrer, et aucun retour à proposer.
+    private var enChoix: Bool { seanceVide || choisit }
+
+    /// LA BASCULE — le MÊME bouton, au MÊME pixel, dans les deux sens.
+    /// ⚠️ Un chevron aurait demandé d'apprendre une icône ; une position
+    /// s'apprend toute seule. C'est la loi du Stop, qui ne bouge jamais du
+    /// début à la fin d'une séance.
+    private func basculer() {
         Haptique.leger()
-        withAnimation(.spring(response: 0.34, dampingFraction: 0.84)) {
-            zone = zoneCourante
-            repli = 1
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+            choisit.toggle()
+            if !choisit { zone = nil } else { zone = zoneCourante }
         }
     }
+
+    /// LE BOUTON À PLACE FIXE — absent tant que la séance est vide : il n'y
+    /// a pas de séance à revoir, et les carrés sont déjà là.
+    @ViewBuilder
+    private func boutonBascule(encre: CGFloat, enGeste: Bool) -> some View {
+        // ⚠️ IL N'A PLUS QU'UN SENS (verdict 23-09) : le retour est passé
+        // au chevron, à gauche du carré de date. Un bouton qui ouvre, un
+        // chevron qui ferme — deux gestes différents pour deux sens
+        // différents, c'est ce qu'elle a demandé.
+        if !seanceVide, !choisit {
+            BoutonAjouter(texte: "Ajouter un exercice",
+                          enGeste: enGeste) { basculer() }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 18)
+        }
+    }
+
+    /// (Le cadre en pointillés du 23-09 a été remplacé le même jour par
+    /// `BoutonAjouter` — « anime davantage le bouton, effet de particules
+    /// blanches très fines dans ses bordures, fond qui devient plus clair
+    /// au tap, + haptique ».)
 
     /// La zone où l'on est : celle du dernier exercice de la séance, sinon
     /// celle que Nosfy avait proposée.
@@ -2379,6 +2459,9 @@ struct GrandPlayer: View {
     private func lancer(_ exo: Exercise) {
         Haptique.moyen()
         lances.insert(exo.id)
+        // On repart de la séance au retour : elle vient d'y ajouter une
+        // ligne, c'est elle qu'elle veut voir.
+        choisit = false
         CoupeEtat.shared.jouer {
             onChoisirExo(exo)
             poserFerme()
@@ -2456,7 +2539,7 @@ struct GrandPlayer: View {
                    basAir: 176,
                    deplies: $deplies,
                    onScroll: { y in replier(y > 26) },
-                   onAjouter: ajouterUnExercice)
+                   marqueCourante: true)
             .equatable()
             .padding(.horizontal, 12)
             // Le fondu du bas commence AVANT le pied (0,80 au lieu de
@@ -2580,6 +2663,12 @@ struct GrandPlayer: View {
     /// tombe à `nil` dès qu'aucun exercice n'est ouvert. On lit maintenant
     /// `groupes`, c'est-à-dire ce qui est RÉELLEMENT affiché dessous.
     private var nomDeLaTete: String {
+        // ⚠️ LA PAGE CHANGE, LE TITRE AUSSI (verdict Kathryn 23-09 : « ils
+        // n'apparaissent que quand on clique sur ajouter un exercice ET LA
+        // PAGE CHANGE »). Un écran qui change de métier change de nom :
+        // sans ça, seuls les carrés bougeaient et on lisait encore
+        // « Séance en cours » au-dessus d'une liste de choix.
+        if enChoix { return "Choisissez un exercice" }
         if let nom = exoChoisi, !nom.isEmpty { return nom }
         // ⚠️ `seanceVide`, PAS `groupes.isEmpty` (mesuré au simulateur
         // 22-09) : la partition n'est JAMAIS vide — elle porte toujours au
@@ -2599,7 +2688,12 @@ struct GrandPlayer: View {
     /// cours ») — une seule lueur dans la maison, et elle se tait sous le
     /// doigt comme tout le reste.
     private func titreOverlay(_ taille: CGFloat) -> some View {
+        // EN SÉANCE, LE NOM EST CHAUD : un blanc tiré vers la braise, pas
+        // un orange. « Aucune couleur hors blanc, argent, braise très
+        // sombre » — ceci reste un blanc, réchauffé.
         InviteAnimee(taille: taille, texte: nomDeLaTete,
+                     teinte: enChoix ? .white
+                         : Color(red: 1.0, green: 0.88, blue: 0.78),
                      fige: fermeture > 0.5 || morph < 0.98)
             .multilineTextAlignment(.center)
             .padding(.horizontal, taille > 20 ? 28 : 0)
@@ -2784,5 +2878,34 @@ private struct BancBoucleLecteur: ViewModifier {
         #else
         content
         #endif
+    }
+}
+
+/// LA CHALEUR DE LA TÊTE — la braise de la séance, derrière la carte du
+/// jour. Elle MONTE et redescend très lentement : une respiration de feu,
+/// pas une pulsation de voyant (« évite les animations génériques comme les
+/// pulsations ou les points qui respirent », 23-09).
+///
+/// ⚠️ UNE SEULE VALEUR ANIMABLE, aucun redessin : un dégradé radial dont
+/// seule l'opacité bouge. « Redessiner pour animer coûte 3 à 8 fois plus
+/// que d'animer » (mesuré le 05-09). Et elle n'est MONTÉE qu'en séance,
+/// lecteur posé : hors de là elle n'existe pas, donc elle ne coûte rien.
+///
+/// ⚠️ PAS DE `blendMode` : sur du noir, un dégradé chaud posé normalement
+/// se lit déjà comme de la lumière, et un blendMode force une passe hors
+/// écran (la loi du verre).
+private struct ChaleurTete: View {
+    @State private var v: CGFloat = 0.30
+
+    var body: some View {
+        RadialGradient(
+            colors: [Color(red: 0.98, green: 0.36, blue: 0.10).opacity(0.26 * v),
+                     Color(red: 0.55, green: 0.12, blue: 0.02).opacity(0.10 * v),
+                     .clear],
+            center: .center, startRadius: 4, endRadius: 210)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 5.4)
+                    .repeatForever(autoreverses: true)) { v = 1.0 }
+            }
     }
 }

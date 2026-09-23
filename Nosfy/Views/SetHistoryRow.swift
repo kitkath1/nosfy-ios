@@ -20,14 +20,24 @@ struct SetHistoryRow: View {
     /// le repos prévu pour une série à venir.
     let seconds: Int
     let done: Bool
-    var coins: Int = CoffreFortPurse.perSeries
+    /// Le gain de la ligne. `nil` = LE TAUX DE LA MAISON, lu au serveur
+    /// (`CoffreFortPurse.perSeries` → `EconomieWoop.piecesParSerie`, 15-09)
+    /// au moment du rendu — un défaut d'argument ne peut pas lire l'acteur
+    /// principal, le corps si.
+    var coins: Int? = nil
     /// LE GENRE (15-09, plan cardio §D) : une série (le défaut), un
     /// intervalle cardio, ou les longueurs de la piscine — le MÊME gabarit
     /// de 66 pt (l'invariant PageCard), trois contenus.
     var genre: SlateLigne.Genre = .serie(reps: 0, kilos: 0)
+    /// LA SÉRIE EN COURS (23-09, verdict Kathryn : « mets clairement en
+    /// évidence la série actuellement réalisée »). C'est la première non
+    /// faite de l'exercice courant — celle qu'elle est en train de vivre.
+    /// ⚠️ `false` PAR DÉFAUT : la story de fin, l'ardoise et la fiche ne la
+    /// passent pas, donc rien ne change chez elles.
+    var courante: Bool = false
 
     init(rank: Int, reps: Int, kilos: Double, seconds: Int, done: Bool,
-         coins: Int = CoffreFortPurse.perSeries) {
+         coins: Int? = nil) {
         self.rank = rank
         self.reps = reps
         self.kilos = kilos
@@ -44,8 +54,14 @@ struct SetHistoryRow: View {
         self.kilos = ligne.kilos
         self.seconds = ligne.seconds
         self.done = ligne.done
-        self.coins = CoffreFortPurse.perSeries
+        self.coins = nil
         self.genre = ligne.genre
+    }
+
+    /// La même, en disant que c'est CELLE-LÀ qu'on est en train de faire.
+    init(rank: Int, ligne: SlateLigne, courante: Bool) {
+        self.init(rank: rank, ligne: ligne)
+        self.courante = courante
     }
 
     private var estSerie: Bool { if case .serie = genre { return true }; return false }
@@ -58,9 +74,17 @@ struct SetHistoryRow: View {
             // néon, 18 cubiques chacune), un blur offscreen, et surtout
             // une animation `repeatForever` PAR LIGNE, sans garde
             // `reduceMotion`, qui maintenait le calque vivant à vie.
+            // LE CHEVEU BLANC de la série en cours. Sa place est TOUJOURS
+            // réservée (2 pt), sinon les lignes glisseraient de 2 pt quand
+            // l'actif change — la loi de la lame de `SlateRang`.
+            Capsule(style: .continuous)
+                .fill(.white)
+                .frame(width: 2, height: 22)
+                .opacity(courante ? 0.95 : 0)
             Text(titre)
-                .font(.inter(15, .medium))
-                .foregroundStyle(Color.white.opacity(done ? 0.94 : 0.55))
+                .font(.inter(15, courante ? .semibold : .medium))
+                .foregroundStyle(Color.white
+                    .opacity(courante ? 1.0 : (done ? 0.94 : 0.55)))
                 .lineLimit(1)
                 .fixedSize()
 
@@ -86,8 +110,22 @@ struct SetHistoryRow: View {
                 Color.clear.frame(width: 28, height: 28)
             }
         }
-        .padding(.leading, 10)
+        .padding(.leading, 8)
         .padding(.trailing, 12)
+        // LA BRAISE QUI LA PORTE — un dégradé très sombre, qui s'éteint
+        // vers la droite. ⚠️ AUCUNE HORLOGE : c'est un état, pas une
+        // pulsation (« évite les animations génériques comme les
+        // pulsations ou les points qui respirent », 23-09).
+        .background {
+            if courante {
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .fill(LinearGradient(
+                        colors: [Color(red: 0.22, green: 0.07, blue: 0.02),
+                                 Color(red: 0.07, green: 0.03, blue: 0.02)
+                                     .opacity(0.0)],
+                        startPoint: .leading, endPoint: .trailing))
+            }
+        }
         // 58 → 66 : 4 pt d'air de plus en haut et en bas (15-08) — les
         // petites cartes noires respirent dans la carte dépliée.
         .frame(height: 66)
@@ -238,7 +276,7 @@ struct SetHistoryRow: View {
     private var gain: some View {
         if done {
             HStack(spacing: 5) {
-                Text("+\(coins)")
+                Text("+\(coins ?? CoffreFortPurse.perSeries)")
                     .font(.inter(14, .semibold))
                     .foregroundStyle(Color.woopGold.opacity(0.92))
                     .monospacedDigit()

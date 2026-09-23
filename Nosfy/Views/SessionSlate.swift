@@ -183,19 +183,21 @@ struct SessionSlate: View {
     private func buildGroupes() -> [SlateGroupe] {
         var out: [SlateGroupe] = []
         var courant: [SlateLigne] = []
-        for i in 0..<max(drafts.count, 5) {
-            if i < drafts.count {
-                courant.append(SlateLigne(
-                    reps: drafts[i].reps, kilos: drafts[i].weight,
-                    seconds: drafts[i].isDone ? drafts[i].durationSeconds
-                                              : restSeconds,
-                    done: drafts[i].isDone))
-            } else {
-                courant.append(SlateLigne(
-                    reps: drafts.last?.reps ?? 12,
-                    kilos: drafts.last?.weight ?? 20,
-                    seconds: restSeconds, done: false))
-            }
+        // L'ARDOISE DIT LE VRAI. Elle remplissait jusqu'à CINQ lignes en
+        // inventant les manquantes (les chiffres de la dernière série,
+        // non cochées) : « je vois 5 séries alors que j'en ai fait 2 ».
+        // Un replay ne devine pas — il retrace. Seules les vraies
+        // lignes du brouillon s'écrivent ; s'il n'y en a aucune, une
+        // ligne d'attente unique tient la place.
+        for d in drafts {
+            courant.append(SlateLigne(
+                reps: d.reps, kilos: d.weight,
+                seconds: d.isDone ? d.durationSeconds : restSeconds,
+                done: d.isDone))
+        }
+        if courant.isEmpty {
+            courant.append(SlateLigne(reps: 12, kilos: 20,
+                                      seconds: restSeconds, done: false))
         }
         out.append(SlateGroupe(id: "courant", exercise: exercise,
                                rows: courant))
@@ -391,55 +393,17 @@ struct SlateListe: View, Equatable {
     /// du player. Valeur par défaut vide : la STORY et l'ardoise ne le
     /// passent pas, leur comportement ne bouge pas d'un pixel.
     var onScroll: (CGFloat) -> Void = { _ in }
-    /// AJOUTER UN EXERCICE, AU BAS DE LA SÉANCE (22-09) — la porte est à
-    /// la SUITE de ce qu'on a fait, là où l'œil arrive après une série.
-    /// ⚠️ OPTIONNELLE, ET `nil` PAR DÉFAUT : la STORY de fin et l'ardoise
-    /// ne la passent pas, donc la rangée n'existe pas chez elles et leur
-    /// rendu ne bouge pas d'un pixel. (Une closure de plus ne casse pas
-    /// l'égalité : `==` est écrit à la main et ne compare que `courant`,
-    /// `deplies` et les clés des groupes.)
-    /// ⚠️ DÉCLARÉE APRÈS `deplies` : Swift impose l'ordre des arguments
-    /// d'un initialiseur mémberwise sur l'ordre des propriétés.
-    var onAjouter: (() -> Void)?
+    /// MARQUER LA SÉRIE EN COURS (23-09) — seul le LECTEUR le demande.
+    /// ⚠️ `false` par défaut : la story de fin, l'ardoise et la card de
+    /// séance ne le passent pas. Une séance finie n'a plus de série « en
+    /// cours » : l'y marquer serait un mensonge.
+    var marqueCourante: Bool = false
     @State private var seme = false
-
-    /// LA RANGÉE « + » — sobre, en creux, jamais un bouton plein : c'est
-    /// une porte au bout d'une liste, pas l'action principale de l'écran
-    /// (celle-là vit dans le pied du lecteur).
-    /// Le « + » est du TEXTE, pas un symbole Apple : un seul jeu de
-    /// formes dans cet écran, et rien d'emprunté.
-    @ViewBuilder
-    private func rangAjouter(_ action: @escaping () -> Void) -> some View {
-        HStack(spacing: 9) {
-            Text("+")
-                .font(.inter(16, .medium))
-                .foregroundStyle(.white.opacity(0.5))
-            Text("Ajouter un exercice")
-                .font(.inter(13.5, .semibold))
-                .foregroundStyle(.white.opacity(0.6))
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 15)
-        // ⚠️ UN FILET PLEIN, PAS DES POINTILLÉS : un cadre en tirets se
-        // lit comme une case vide à remplir — « fake », son mot de rejet.
-        // Ici c'est une porte, pas un trou : un cheveu blanc à 10 %, la
-        // même matière que le reste de l'écran.
-        .background {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(.white.opacity(0.035))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(.white.opacity(0.10), lineWidth: 1)
-                }
-        }
-        .padding(.top, 8)
-        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .onTapGesture { action() }
-    }
 
     static func == (l: Self, r: Self) -> Bool {
         l.courant == r.courant
             && l.deplies == r.deplies
+            && l.marqueCourante == r.marqueCourante
             && l.groupes.map(\.cle) == r.groupes.map(\.cle)
     }
 
@@ -479,9 +443,12 @@ struct SlateListe: View, Equatable {
                         SlateRang(groupe: r.groupe,
                                   depliee: r.depliee,
                                   rang: r.rang,
+                                  // Seul le PREMIER exercice de la séance
+                                  // peut porter la série en cours : les
+                                  // suivants sont à venir.
+                                  marqueCourante: marqueCourante && r.rang == 1,
                                   onTap: { bascule(r.groupe.id) })
                     }
-                    if let onAjouter { rangAjouter(onAjouter) }
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 10)
@@ -576,7 +543,15 @@ private struct SlateRang: View {
     let depliee: Bool
     /// Le rang dans la séance, à partir de 1 — « 01 », « 02 »…
     let rang: Int
+    var marqueCourante: Bool = false
     let onTap: () -> Void
+
+    /// LA SÉRIE EN COURS — la première non faite. `nil` quand tout est
+    /// fait : on ne désigne rien plutôt que de désigner au hasard.
+    private var indexCourant: Int? {
+        guard marqueCourante else { return nil }
+        return groupe.rows.firstIndex { !$0.done }
+    }
 
     var body: some View {
         HStack(spacing: 14) {
@@ -640,7 +615,8 @@ private struct SlateRang: View {
             VStack(spacing: 4) {
                 ForEach(groupe.rows.indices, id: \.self) { i in
                     SetHistoryRow(rank: i + 1,
-                                  ligne: groupe.rows[i])
+                                  ligne: groupe.rows[i],
+                                  courante: i == indexCourant)
                 }
             }
             .transition(.opacity)

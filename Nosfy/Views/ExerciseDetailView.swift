@@ -1253,11 +1253,22 @@ struct ExerciseDetailView: View {
                     // la pastille de séance (y 5 → 92 physique) et s'y
                     // cachait. Elle descend sous la capsule, en points
                     // PHYSIQUES — la même cote que la pastille elle-même.
-                    PillGain(gain: pg.gain, total: pg.total)
-                        .padding(.top, IleGeo.capsuleBas + 10)
+                    // LA BELLE PASTILLE (15-09) : `NotifJauge` remplace la
+                    // pill rudimentaire — le gain en tête, la jauge du coffre
+                    // (reste / prix), la pièce qui tourne. `total` n'est plus
+                    // affiché ici (la jauge dit mieux « où en est le coffre »).
+                    ToasterGain(gain: pg.gain,
+                                fraction: Double(EconomieWoop.shared.reste)
+                                    / Double(max(EconomieWoop.shared.prixBooster, 1)))
+                        // REMONTÉE + SOUS LE DYNAMIC ISLAND (15-09, Kathryn :
+                        // « ça remonte mais ça ne disparaît pas dans le display
+                        // island ») : on RESPECTE la safe-area du haut (elle
+                        // contient l'île), et la belle carte (zIndex 30) se pose
+                        // juste dessous — près du haut, jamais derrière l'île.
+                        // (15-09 : « remonte encore un peu » → 12 → 4.)
+                        .padding(.top, 4)
                         .frame(maxWidth: .infinity, maxHeight: .infinity,
                                alignment: .top)
-                        .ignoresSafeArea(edges: .top)
                         .transition(.move(edge: .top)
                             .combined(with: .opacity))
                         .allowsHitTesting(false)
