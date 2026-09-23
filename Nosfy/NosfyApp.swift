@@ -2446,6 +2446,13 @@ struct RootView: View {
         // dessus de tout (le film de départ, la visite, le rejeu) — la bête, le
         // titre, le sous-titre, Réessayer. Le mode avion s'y lit et s'y règle
         // seul. Démonté quand le rejeu réussit.
+        // ⚠️ LE POINT REC SE POSE ICI, À LA RACINE — PAS SUR LE `TabView`.
+        // Mesuré le 23-09 : la barre d'onglets NATIVE se dessine au-dessus
+        // des overlays du `TabView`, et le coureur repassait par-dessus le
+        // point. À la racine, il couvre. Il ne prend jamais le doigt :
+        // c'est l'onglet dessous qui répond, et `ongletChoisi` remonte
+        // déjà le lecteur au lieu d'ouvrir la page.
+        .overlay(alignment: .bottom) { PointRecSurBarre(enSeance: active != nil) }
         .overlay { couvercles }
         // LE COMPTE (14-09, Compte.swift) — trois choses, à la racine :
         //  · la porte DEMANDÉE (déconnexion, suppression, session révoquée) :
