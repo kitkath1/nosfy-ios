@@ -546,6 +546,14 @@ private struct SlateRang: View {
     var marqueCourante: Bool = false
     let onTap: () -> Void
 
+    /// ⚠️ L'EXERCICE EN COURS (24-09). La tête ne le NOMME plus — elle dit
+    /// l'état. C'est donc ici, et seulement ici, qu'on lit sur quoi on
+    /// travaille : la rangée doit le dire toute seule, même repliée.
+    /// `rang == 1` parce que la partition met TOUJOURS le courant en tête
+    /// (`groupesDeSeance`), et `marqueCourante` n'est vrai que dans le
+    /// lecteur — une séance finie n'a plus d'exercice « en cours ».
+    private var courant: Bool { marqueCourante && rang == 1 }
+
     /// LA SÉRIE EN COURS — la première non faite. `nil` quand tout est
     /// fait : on ne désigne rien plutôt que de désigner au hasard.
     private var indexCourant: Int? {
@@ -565,18 +573,24 @@ private struct SlateRang: View {
                              Color.white.opacity(0.25)],
                     startPoint: .top, endPoint: .bottom))
                 .frame(width: 2.4, height: 30)
-                .opacity(depliee ? 1 : 0)
+                // La lame vit sur la rangée OUVERTE — et désormais aussi
+                // sur l'exercice EN COURS, même replié.
+                .opacity(depliee || courant ? 1 : 0)
 
             // LE NUMÉRO — deux positions, chiffres MONOSPACÉS : le
             // layout ne respire pas entre 9 et 10.
             Text(String(format: "%02d", rang))
                 .font(.inter(18, .medium))
                 .monospacedDigit()
-                .foregroundStyle(Color.white.opacity(depliee ? 0.92 : 0.34))
+                .foregroundStyle(Color.white.opacity(depliee || courant ? 0.92 : 0.34))
 
             Text(groupe.exercise.nomLocalise)
                 .font(.inter(15, .semibold))
-                .foregroundStyle(Color.white.opacity(depliee ? 0.94 : 0.52))
+                // ⚠️ BLANC PLEIN POUR LE COURANT, retenu pour les autres.
+                // C'est l'ÉCART qui désigne — pas un fond, pas un cadre,
+                // pas une couleur. La brillance vient de la blancheur.
+                .foregroundStyle(Color.white.opacity(
+                    courant ? 1.0 : (depliee ? 0.94 : 0.46)))
                 .lineLimit(1)
 
             Spacer(minLength: 8)
