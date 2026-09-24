@@ -156,7 +156,14 @@ struct NotifJauge: View {
     /// dit le coffre qui se remplit vers le prochain sachet — gris → blanc,
     /// « c'est connecté, ça monte » — et le sachet détouré flotte à la place
     /// de la pièce. Surtout pour la home.
-    enum Robe { case piece, booster }
+    ///
+    /// ⚠️ **ROBE 3 : `.clin` (24-09)** — la MÊME dalle, la MÊME jauge, le
+    /// même chiffre en tête : seule la place de droite change, la petite
+    /// tête de Nosfy qui cligne y remplace la pièce. Son verdict du jour :
+    /// « trop cheap le +20 pièces en blanc, mets le même layout que les
+    /// autres toasters avec la barre de progression ». Une robe n'est pas
+    /// une mise en page de plus — c'est ce qu'on pose à DROITE.
+    enum Robe { case piece, booster, clin }
     var robe: Robe = .piece
     /// Le flottement doux du sachet (une valeur animable, jamais un redessin).
     @State private var flotte = false
@@ -199,7 +206,7 @@ struct NotifJauge: View {
             Spacer(minLength: 8)
             BarreParticules(fraction: pose ? fraction : 0,
                             naissance: naissance,
-                            grains: robe == .piece)
+                            grains: false)
         }
     }
 
@@ -221,7 +228,10 @@ struct NotifJauge: View {
     private var piece: some View {
         switch robe {
         case .piece:
-            PieceQuiTourne(diametre: Self.diametrePiece,
+            // Un peu plus PETITE (0,84×) et DÉCOLLÉE du bord droit ET du bas
+            // (verdict Kathryn 15-09) : elle ne mord plus le coin, elle
+            // respire dans son angle.
+            PieceQuiTourne(diametre: Self.diametrePiece * 0.84,
                            periode: Self.periodePiece,
                            naissance: naissance)
                 .background {
@@ -229,14 +239,30 @@ struct NotifJauge: View {
                         colors: [Color(red: 1.00, green: 0.74, blue: 0.34)
                             .opacity(0.13), .clear],
                         center: .center, startRadius: 2,
-                        endRadius: Self.diametrePiece * 0.68)
+                        endRadius: Self.diametrePiece * 0.84 * 0.68)
                 }
                 .shadow(color: .black.opacity(0.65), radius: 12, y: 7)
-                .offset(x: Self.morsure)
+                .offset(x: -8, y: -8)
                 .allowsHitTesting(false)
         case .booster:
             boosterSprite
+        case .clin:
+            teteQuiCligne
         }
+    }
+
+    /// LA PETITE TÊTE QUI CLIGNE (`nosfy-clin-loop`, 200×244, 30 img/s) —
+    /// elle tient dans la MÊME réserve que la pièce (86 pt), et pour la même
+    /// raison : la colonne et la jauge s'arrêtent avant elle.
+    ///
+    /// ⚠️ **AUCUN MASQUE** : le fichier est sur du noir vrai, il se fond dans
+    /// la dalle sans détourage — la seule vidéo qui ne force pas un rendu
+    /// hors écran de tout son plan à chaque image (loi `NotifChasse`).
+    private var teteQuiCligne: some View {
+        VideoBete(nom: "nosfy-clin-loop")
+            .frame(width: 106 * 200 / 244, height: 106)
+            .offset(x: -2)
+            .allowsHitTesting(false)
     }
 
     /// LE SACHET ORANGE détouré (`booster-orange`, déjà dans la pop-up du
@@ -271,6 +297,35 @@ struct NotifJauge: View {
                 }
                 withAnimation(.easeInOut(duration: 1.9)
                     .repeatForever(autoreverses: true)) { flotte = true }
+            }
+    }
+}
+
+// MARK: - LE TOASTER PRÊT À POSER (fiche, home)
+
+/// LE TOASTER DE GAIN, prêt à poser dans un flux — il gère SON entrée (la
+/// barre se remplit, le chiffre monte) et SON horloge, pour qu'un site
+/// d'appel n'ait qu'à donner le gain et la progression du coffre. Il remplace
+/// `PillGain` (fiche) et la dalle rudimentaire de la home. Robe `.piece` pour
+/// un gain de pièces, `.booster` quand un sachet tombe (surtout la home).
+struct ToasterGain: View {
+    let gain: Int
+    /// La progression du coffre APRÈS ce gain [0,1] — ce que dit la jauge.
+    var fraction: Double = 0
+    var robe: NotifJauge.Robe = .piece
+    var libelle: String = "COINS EARNED"
+    var sousTitre: String = "VAULT PROGRESS"
+
+    @State private var pose = false
+    @State private var naissance = Date()
+
+    var body: some View {
+        NotifJauge(sousTitre: sousTitre, libelle: libelle, gain: gain,
+                   fraction: fraction, pose: pose, naissance: naissance,
+                   robe: robe)
+            .onAppear {
+                naissance = Date()
+                withAnimation(.easeOut(duration: 0.5)) { pose = true }
             }
     }
 }
@@ -349,15 +404,35 @@ struct BarreParticules: View, Animatable {
 
     // ── LE DESSIN
 
+    /// Le rayon de la tête — il sert DEUX fois : à la dessiner, et à réserver
+    /// sa place au bout de la course.
+    private static let rayonTete: CGFloat = 2.6
+
+    /// ⚠️⚠️ **LE BOUT DE LA COURSE, PAYÉ LE 24-09** (elle voulait enfin voir
+    /// « la progress bar qui va au bout » — et à `f = 1` le bout était LAID).
+    /// Le front arrivait exactement SUR le bord du `Canvas` : la tête y était
+    /// **coupée en deux**, et le halo — à qui ce fichier donne « le droit de
+    /// déborder, c'est de la lumière » — se faisait **TRANCHER par les bornes
+    /// du Canvas**, ce qui posait un RECTANGLE gris de 18 pt de haut à arêtes
+    /// droites (relevé au zoom ×3 sur capture). Une lumière n'a pas d'arête.
+    ///
+    /// Deux gestes, et aucun n'est un réglage :
+    /// 1. la course s'arrête **un rayon de tête avant** le bord — la tête
+    ///    tient donc toujours entière, par construction (la piste aussi, pour
+    ///    qu'aucun bout de rail gris ne dépasse du plein) ;
+    /// 2. le halo **MEURT** quand le front arrive au bout : il n'y a plus
+    ///    rien devant à éclairer. C'est la seule extinction qui ait une
+    ///    cause — et elle supprime le clip au lieu de le cacher.
     private static func dessiner(_ ctx: inout GraphicsContext,
                                  _ size: CGSize,
                                  _ f: Double, _ t: Double,
                                  grains: Bool) {
         let y = size.height / 2
-        piste(&ctx, size, y)
-        let w = size.width * f
+        let course = max(size.width - rayonTete, 1)
+        piste(&ctx, course, y)
+        let w = course * f
         guard w > 0.5 else { return }
-        remplissage(&ctx, size, y, w)
+        remplissage(&ctx, course, y, w)
         if grains {
             // ⚠️ LES GRAINS SONT CLIPPÉS, PAS RÉGLÉS. Baisser leur amplitude
             // avait déjà été essayé (±5,8 → ±4 pt) et ça n'a PAS suffi : sur
@@ -370,24 +445,24 @@ struct BarreParticules: View, Animatable {
             dedans.clip(to: Path(roundedRect: CGRect(x: 0, y: y - trait / 2,
                                                      width: w, height: trait),
                                  cornerRadius: trait / 2))
-            grainsDeLumiere(&dedans, size, y, f, t)
+            grainsDeLumiere(&dedans, course, y, f, t)
         }
         // Le halo et la tête, EUX, ont le droit de déborder : c'est de la
         // lumière, pas de la matière. Ils se dessinent hors du clip.
-        lueurDuFront(&ctx, y, w)
+        lueurDuFront(&ctx, y, w, f)
         tete(&ctx, y, w)
     }
 
     private static func piste(_ ctx: inout GraphicsContext,
-                              _ size: CGSize, _ y: CGFloat) {
-        let r = CGRect(x: 0, y: y - trait / 2, width: size.width,
+                              _ course: CGFloat, _ y: CGFloat) {
+        let r = CGRect(x: 0, y: y - trait / 2, width: course,
                        height: trait)
         ctx.fill(Path(roundedRect: r, cornerRadius: trait / 2),
                  with: .color(.white.opacity(0.07)))
     }
 
     private static func remplissage(_ ctx: inout GraphicsContext,
-                                    _ size: CGSize, _ y: CGFloat,
+                                    _ course: CGFloat, _ y: CGFloat,
                                     _ w: CGFloat) {
         let r = CGRect(x: 0, y: y - trait / 2, width: w, height: trait)
         ctx.fill(
@@ -399,14 +474,20 @@ struct BarreParticules: View, Animatable {
                     .init(color: .white, location: 1)
                 ]),
                 startPoint: .zero,
-                endPoint: CGPoint(x: size.width, y: 0)))
+                endPoint: CGPoint(x: course, y: 0)))
     }
 
     /// LE HALO DU FRONT — la lumière que le remplissage pousse devant lui.
     /// Un dégradé radial, PAS un `blur` : le flou pose un voile uniforme
     /// sur tout le rectangle de son hôte, et il coûte 27 img/s.
     private static func lueurDuFront(_ ctx: inout GraphicsContext,
-                                     _ y: CGFloat, _ w: CGFloat) {
+                                     _ y: CGFloat, _ w: CGFloat,
+                                     _ f: Double) {
+        // Le front touche le bout : plus rien devant, donc plus de halo —
+        // et donc plus de rectangle tranché par le Canvas.
+        let u = min(max((f - 0.88) / 0.12, 0), 1)
+        let vie = 1 - u * u * (3 - 2 * u)
+        guard vie > 0.01 else { return }
         // 0,30 / 26 pt au premier jet : le halo lisait comme un MORCEAU DE
         // BARRE EN PLUS, blanc et carré, posé après le front — il mentait
         // sur le gain. Un halo se devine, il ne se compte pas.
@@ -415,7 +496,7 @@ struct BarreParticules: View, Animatable {
         ctx.fill(
             Path(ellipseIn: box),
             with: .radialGradient(
-                Gradient(colors: [Color.white.opacity(0.17),
+                Gradient(colors: [Color.white.opacity(0.17 * vie),
                                   Color.white.opacity(0)]),
                 center: CGPoint(x: w, y: y),
                 startRadius: 0, endRadius: r))
@@ -425,7 +506,7 @@ struct BarreParticules: View, Animatable {
     /// que SOUS le front** : une particule au-delà de la fraction serait
     /// de la lumière qui ment sur le gain.
     private static func grainsDeLumiere(_ ctx: inout GraphicsContext,
-                                        _ size: CGSize, _ y: CGFloat,
+                                        _ course: CGFloat, _ y: CGFloat,
                                         _ f: Double, _ t: Double) {
         for i in 0..<grains {
             let depart = NotifBanc.hash(i, 1)
@@ -455,7 +536,7 @@ struct BarreParticules: View, Animatable {
             let vie = 0.18 + 0.82 * tw * tw * tw
             let a = bord * vie * 0.95
             guard a > 0.02 else { continue }
-            let cx = x * size.width
+            let cx = x * course
             let box = CGRect(x: cx - rayon, y: y + dy - rayon,
                              width: rayon * 2, height: rayon * 2)
             ctx.fill(Path(ellipseIn: box),
@@ -465,7 +546,7 @@ struct BarreParticules: View, Animatable {
 
     private static func tete(_ ctx: inout GraphicsContext,
                              _ y: CGFloat, _ w: CGFloat) {
-        let r: CGFloat = 2.6
+        let r = rayonTete
         let box = CGRect(x: w - r, y: y - r, width: r * 2, height: r * 2)
         ctx.fill(Path(ellipseIn: box), with: .color(.white))
     }

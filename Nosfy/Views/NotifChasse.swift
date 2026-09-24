@@ -48,7 +48,7 @@ struct NotifChasse: View {
 
     var body: some View {
         ZStack {
-            VideoNosfy()
+            VideoBete(nom: "nosfy-notif-loop")
                 .frame(width: Self.largeurNosfy, height: Self.hauteurNosfy)
                 .allowsHitTesting(false)
             PoudreAiles(naissance: naissance, p: progres)
@@ -440,7 +440,15 @@ final class NosfyLayerView: UIView {
     var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
 }
 
-struct VideoNosfy: UIViewRepresentable {
+/// ⚠️ **ELLE PORTE UN NOM DE FICHIER DEPUIS LE 24-09**, parce que deux robes
+/// de plus s'en servent (`NotifAile`, `NotifClin`) et qu'un troisième calque
+/// copié-collé aurait été un troisième `AVPlayerLooper` à corriger le jour où
+/// celui-ci a un défaut. Le contrat ne change pas : un fichier sur du NOIR
+/// VRAI, recuit à la taille utile, sa boucle cuite dedans.
+struct VideoBete: UIViewRepresentable {
+    /// Le nom du fichier `.mp4` dans le bundle — sans extension.
+    var nom: String = "nosfy-notif-loop"
+
     final class Coordinator {
         var player: AVQueuePlayer?
         /// Relâché, la boucle s'arrête au premier tour et le plan se fige.
@@ -457,7 +465,7 @@ struct VideoNosfy: UIViewRepresentable {
         v.layer.masksToBounds = true
         // Le cadre est au ratio EXACT du fichier : rien n'est recadré.
         v.playerLayer.videoGravity = .resizeAspect
-        guard let url = Bundle.main.url(forResource: "nosfy-notif-loop",
+        guard let url = Bundle.main.url(forResource: nom,
                                         withExtension: "mp4") else {
             return v
         }

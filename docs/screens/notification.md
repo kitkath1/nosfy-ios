@@ -330,9 +330,10 @@ Les migrations du 28-08 au 30-08 (`booster_noir`, `wallet_coffre`,
 
 | Argument | Effet |
 |---|---|
-| `-notifLab` | le banc : les robes empilées sur du noir vrai, un tap rejoue les entrées |
-| `-notifSeule 1\|2` | une seule robe (la jauge, ou le gros texte) — **le cas vrai de l'app** |
-| `-notifSeule 3` | ⚠️ **n'isole PAS la châsse** : `NotifLab.swift:51` teste `seule != 2` au lieu de `seule != 2 && seule != 3`, la jauge reste montée avec elle (deux dalles, sonde étiquetée `notif-seule-3`). **Bug à corriger** (V9-0) — toujours là le 30-08 |
+| `-notifLab` | le banc : les **six** robes empilées sur du noir vrai, un tap rejoue les entrées. Depuis le 24-09 la pile se met **à l'échelle** pour tenir en une capture (six dalles = 898 pt, l'écran en offre 781) et le bandeau **imprime le facteur** — une planche réduite qu'on croit à l'échelle ment sur les cotes |
+| `-notifSeule <n>` | une seule robe, **à 1:1** — le cas vrai de l'app, et le seul régime où l'on juge une cote. `1` jauge · `2` gros texte · `3` châsse · `4` booster · `5` l'aile · `6` le clin d'œil |
+| `-robeNotif <1\|2\|3\|5\|6>` | **en SÉANCE** (24-09) : cloue la robe du toaster de fin de série, pour filmer sans enchaîner cinq séries. Avec `-exoLab -serieFin 1` |
+| `-sansVideoNotif` | le barreau de coût des robes vidéo (2, 3, 5, 6 — la jauge est la SEULE sans lecteur) : elles retombent sur la jauge. La chauffe fait la même chose toute seule (`ProtectionThermique.ambianceAuRepos`) |
 | `-notifFige` | les dalles naissent posées (captures immobiles) — l'équivalent du `banc: true` qui empêche `PillGain` de partir au banc |
 | `-notifT <s>` | l'horloge du projecteur et du tour de pièce, clouée |
 | `-notifNu` | sans bandeau |
@@ -349,8 +350,74 @@ la Châsse seule n'a jamais été mesurée. La pièce de la jauge : **84 % d'ima
 identiques, 9,6 pas/s** — le stroboscope de la planche à 72 cases sur 9 s
 (V8 §A ; remède : le fondu entre deux cases).
 
-Aucun banc n'existe pour la robe 4, la robe 5, la page noire ni la file
-(30-08) — ils viennent avec les jalons J2-J3 du plan §6.
+**Le 24-09 — les robes 5 et 6, et ce que le banc a révélé.** Les robes 5
+(« l'aile », Nosfy à gauche qui déploie son aile vers le chiffre) et 6 (« le
+clin d'œil », la dalle de la maison avec la petite tête à la place de la
+pièce) sont au banc. Au passage, la ligne « `-notifSeule 3` n'isole pas la
+châsse » de ce tableau était **périmée** : `NotifLab.montre(_:)` teste depuis
+longtemps l'égalité au rang, plus une exclusion — la mesure « Châsse seule »
+de l'été reste, elle, à refaire. Deux défauts trouvés ce jour-là, hors banc :
+
+1. **Les robes 2 et 3 n'avaient aucun site d'appel** depuis le 29-08 — elles
+   ne vivaient QUE dans ce banc. En séance une seule robe sortait, la jauge.
+   `ToasterSerie` (`NotifAile.swift`) fait tourner **CINQ robes en tour de
+   rôle** — gros texte, aile, clin d'œil, châsse, puis la jauge à la pièce
+   (sa règle : « toutes les robes sauf la booster, et tu alternes ; on voit
+   tout le temps celle de la pièce »). Chacune passe UNE fois avant qu'aucune
+   ne repasse, sur un **compteur de toasters posés** et non sur le rang de la
+   série (les rangs 3/5/10 sont des rangs de pop-up : ils ne posent aucun
+   toaster, certaines robes seraient tombées deux fois moins souvent). La
+   robe BOOSTER reste hors du tour : ce qu'elle pose à droite est le sachet
+   orange, la quittance d'un booster gagné — sur un « +20 COINS EARNED »
+   elle annoncerait un sachet que personne n'a eu.
+2. **La jauge ne bougeait jamais de la séance** : le site d'appel lisait
+   `EconomieWoop.reste` nu, qui n'est réécrit que quand le serveur répond —
+   or le serveur PAIE à la clôture. Corrigé au site d'appel
+   (`fractionCoffre(apres:)`), **non mesuré** : la preuve demande deux séries
+   de suite et la lecture de la barre entre les deux.
+
+**Le « glitch » de la vidéo (24-09) était TEMPOREL, pas graphique.** Les deux
+sources sont en **24 img/s** ; 60 / 24 = 2,5, donc sur un écran 60 Hz chaque
+image tient 2 puis 3 rafraîchissements, en alternance — le pulldown 3:2. Les
+images du film au simulateur sont propres une par une (pas max 0,91 pour un
+médian 0,42 : aucun artefact, aucun saut de contenu). Remède : **re-dater les
+mêmes images à 30 img/s** (`setpts=N/30/TB`) — 2 rafraîchissements à 60 Hz,
+4 à 120, cadence parfaitement régulière. Rien n'est dupliqué ni interpolé
+(`minterpolate` fabrique des fantômes sur les membranes). **À vérifier de ses
+yeux sur l'iPhone** : le simulateur enregistre à ~30 img/s, il ne peut pas
+juger un 60 Hz.
+
+**Deux défauts de la JAUGE, trouvés en la faisant enfin aller au bout.**
+
+3. **Le bout de la course était laid.** À `f = 1` le front arrivait
+   exactement sur le bord du `Canvas` : la tête blanche y était **coupée en
+   deux**, et le halo du front — à qui `NotifCard.swift` donne « le droit de
+   déborder, c'est de la lumière » — se faisait **trancher par les bornes du
+   Canvas**, ce qui posait un **rectangle gris** de 18 pt de haut à arêtes
+   droites (zoom ×3 : `captures/zoom-fin-barre.png`). Une lumière n'a pas
+   d'arête. Corrigé par deux gestes, aucun n'est un réglage : la course
+   s'arrête **un rayon de tête avant** le bord (la tête tient entière par
+   construction), et le halo **meurt** entre 0,88 et 1 — il n'y a plus rien
+   devant à éclairer.
+4. **La barre ne s'animait pas au rejeu du banc.** `rejouer()` posait
+   `tour += 1` (qui change l'**identité** de la pile, donc SwiftUI la détruit
+   et la recrée) et `pose = true` dans la **même transaction**. Or *une vue
+   qui naît ne s'anime pas* : elle apparaît avec la valeur qu'on lui donne,
+   il n'y a pas de « avant » à interpoler — `Animatable` n'était jamais
+   appelé, la barre naissait pleine. Un tour de boucle de plus (`asyncAfter`
+   de 0,05 s avant `poser()`) suffit.
+
+⚠️ **Et la mesure de cette animation a menti deux fois, ça vaut d'être écrit.**
+(a) `simctl io recordVideo` enregistre en **cadence variable** : compter les
+images décodées revient à compter des instants de durées différentes — il faut
+forcer `fps=60` au décodage. (b) Sur le banc **entier** (six dalles, trois
+lecteurs vidéo), le simulateur saute des images et l'animation *paraît*
+claquer même quand elle ne claque pas. La mesure valable se fait sur
+`-notifSeule 1` — la seule robe **sans vidéo**. Relevé là, à 60 img/s :
+`2 → 97 → 129 → 299 → 343 → 376 → 408 → 443`, une vraie rampe.
+
+Aucun banc n'existe pour la page noire ni la file (30-08) — ils viennent avec
+les jalons J2-J3 du plan §6.
 
 ---
 
