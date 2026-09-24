@@ -27,36 +27,64 @@ enum BordBanc {
 struct BoutonAjouter: View {
     let texte: String
     let enGeste: Bool
+    /// ⚠️ L'INVITATION (24-09) — un compteur, pas un booléen. Quand il
+    /// change, le bouton joue SON onde, celle du tap : c'est l'app qui
+    /// montre du doigt l'action suivante, avec le même geste que celui
+    /// qu'elle attend. Un booléen ne rejouerait pas deux invitations
+    /// d'affilée (deux exercices terminés dans la même séance).
+    var invite: Int = 0
     let action: () -> Void
 
     @State private var appuye = false
     @State private var scintille = false
+    /// Le tour de l'onde : il change à chaque tap, ce qui REMONTE la vue et
+    /// relance son animation depuis zéro. Un booléen ne rejouerait pas deux
+    /// taps rapprochés.
+    @State private var tour = 0
+    /// L'éclat du bord au moment du tap — il part à 1 et retombe.
+    @State private var eclat: Double = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private static let forme = RoundedRectangle(cornerRadius: 14, style: .continuous)
-    private static let teinte = Color(red: 1.0, green: 0.78, blue: 0.58)
-    /// Les trois nappes : leur opacité au repos et au sommet de leur cycle.
+    /// ⚠️ LES COTES SONT CELLES DU PRIMAIRE, à l'identique — c'est ce que
+    /// « le même thème » veut dire. Elles sont LUES chez lui
+    /// (`BoutonPrimaire.hauteur`) : le jour où il change, celui-ci suit.
+    private static let forme = Capsule()
+    private static let lumiere = Color(red: 0.90, green: 0.90, blue: 0.95)
+    /// Les trois nappes de particules : opacité au repos, et au sommet.
     private static let nappes: [(bas: Double, haut: Double)] =
         [(0.30, 0.95), (0.22, 0.80), (0.34, 0.70)]
 
+    /// L'appui, 0 → 1. Le primaire l'appelle `p` : même nom, même rôle.
+    private var p: Double { appuye ? 1 : 0 }
+
     var body: some View {
-        HStack(spacing: 8) {
-            Text("+").font(.inter(15, .medium))
-            Text(texte).font(.inter(13.5, .semibold))
+        ZStack {
+            plaque
+            halos
+            mot
         }
-        .foregroundStyle(Self.teinte)
+        .frame(height: BoutonPrimaire.hauteur)
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
-        .background {
-            // ⚠️ LE FOND MONTE SOUS LE DOIGT, ET SEULEMENT SOUS LE DOIGT.
-            // Il redescend au relâché : la cause reste le pouce, jamais une
-            // horloge. Une couleur est animable — rien n'est refabriqué.
-            Self.forme
-                .fill(Color(white: appuye ? 0.135 : 0.055))
-                .animation(.easeOut(duration: appuye ? 0.10 : 0.28), value: appuye)
+        .clipShape(Self.forme)
+        // LE LISERÉ — le même que le primaire, EN POINTILLÉ. C'est la seule
+        // différence entre les deux boutons, et c'est elle qui dit
+        // « celui-ci ajoute » : un trait continu ferme une forme, un
+        // pointillé laisse une place à prendre.
+        .overlay { liserePointille }
+        // Les cheveux blancs dans le bord (23-09) — ils suivent désormais
+        // la capsule, pas l'ancien coin de 14.
+        .overlay { bord }
+        // ⚠️ L'ONDE DU TAP (24-09 : « un effet wahou au clic »). Deux
+        // anneaux qui NAISSENT sur le contour et s'en éloignent — la même
+        // langue que le pulsar du point de séance. La lumière a une cause
+        // (le doigt) et un bord (le contour) : rien ne traverse le bouton.
+        .overlay {
+            if tour > 0 { OndeTap().id(tour).allowsHitTesting(false) }
         }
-        .background { bord }
         .contentShape(Self.forme)
+        // L'APPUI A DU POIDS — le même tassement que le primaire.
+        .scaleEffect(appuye ? 0.975 : 1)
+        .animation(.spring(response: 0.30, dampingFraction: 0.72), value: appuye)
         .highPriorityGesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in
@@ -73,6 +101,7 @@ struct BoutonAjouter: View {
                     let d = g.translation
                     guard abs(d.width) < 44, abs(d.height) < 44 else { return }
                     Haptique.moyen()
+                    wahou()
                     action()
                 }
         )
@@ -81,14 +110,94 @@ struct BoutonAjouter: View {
         // parent se fait avaler dès que ce parent est ré-évalué (piège payé
         // sur `PageCard.swift`), et le bord s'éteindrait sans rien dire.
         .task(id: anime) { scintille = anime }
+        .onChange(of: invite) { _, _ in wahou() }
     }
 
     private var anime: Bool { !BordBanc.sans && !reduceMotion && !enGeste }
 
+    /// L'onde part, et le bord flambe une demi-seconde. ⚠️ Deux temps dans
+    /// le MÊME tour de boucle : la valeur est posée à 1 sans animation,
+    /// puis animée vers 0 — sinon elle partirait de là où elle était et
+    /// deux taps rapprochés ne donneraient qu'un demi-éclat.
+    private func wahou() {
+        guard !reduceMotion else { return }
+        tour &+= 1
+        var tr = Transaction(); tr.disablesAnimations = true
+        withTransaction(tr) { eclat = 1 }
+        withAnimation(.easeOut(duration: 0.55)) { eclat = 0 }
+    }
+
+    // MARK: Le thème du primaire, repris à l'identique
+
+    /// NOIR : la plaque EST le noir de la page ; seuls le liseré et la
+    /// nappe du bas disent le bouton.
+    private var plaque: some View {
+        Self.forme.fill(LinearGradient(
+            colors: [Color(white: 0.016), Color(white: 0.004)],
+            startPoint: .top, endPoint: .bottom))
+    }
+
+    /// LA LUMIÈRE VIENT D'EN DESSOUS — deux nappes ancrées sous le bord
+    /// bas, qui montent et s'allument sous le doigt. La cause est le
+    /// pouce, jamais une horloge.
+    private var halos: some View {
+        ZStack {
+            Self.forme.fill(EllipticalGradient(
+                stops: [
+                    .init(color: Self.lumiere.opacity(0.125 + 0.25 * p), location: 0),
+                    .init(color: Self.lumiere.opacity(0.045 + 0.085 * p), location: 0.40),
+                    .init(color: Self.lumiere.opacity(0.016), location: 0.78),
+                    .init(color: .clear, location: 1)
+                ],
+                center: UnitPoint(x: 0.5, y: 1.10 - 0.18 * p),
+                startRadiusFraction: 0, endRadiusFraction: 1.15))
+            Self.forme.fill(EllipticalGradient(
+                colors: [Self.lumiere.opacity(0.065 + 0.18 * p), .clear],
+                center: UnitPoint(x: 0.5, y: 1.02 - 0.12 * p),
+                startRadiusFraction: 0, endRadiusFraction: 0.60))
+        }
+        .animation(.spring(response: 0.28, dampingFraction: 0.70), value: p)
+    }
+
+    /// Le mot, au corps du primaire, le « + » dans sa gouttière à gauche —
+    /// le texte reste CENTRÉ, comme chez lui.
+    private var mot: some View {
+        Text(texte)
+            .font(.inter(18, .semibold))
+            .tracking(-0.2)
+            .foregroundStyle(.white.opacity(0.96))
+            .shadow(color: .white.opacity(0.16 + 0.30 * p), radius: 7)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .padding(.horizontal, 52)
+            .frame(maxWidth: .infinity)
+            .overlay(alignment: .leading) {
+                Image(systemName: "plus")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.92))
+                    .padding(.leading, 22)
+            }
+            .animation(.spring(response: 0.28, dampingFraction: 0.70), value: p)
+    }
+
+    /// ⚠️⚠️ LE POINTILLÉ (24-09 : « quasiment le même thème que le bouton
+    /// primaire, mais en pointillé »). Le dégradé est celui du primaire —
+    /// presque rien en haut, la lumière le prend par le bas — posé sur un
+    /// trait DISCONTINU. Un point d'épaisseur : « la brillance vient de la
+    /// blancheur, jamais de l'épaisseur ».
+    private var liserePointille: some View {
+        Self.forme.strokeBorder(
+            LinearGradient(
+                colors: [.white.opacity(0.055 + 0.10 * eclat),
+                         .white.opacity(0.17 + 0.24 * p + 0.30 * eclat)],
+                startPoint: .top, endPoint: .bottom),
+            style: StrokeStyle(lineWidth: 1, lineCap: .round, dash: [5, 5]))
+            .animation(.spring(response: 0.28, dampingFraction: 0.70), value: p)
+    }
+
     @ViewBuilder private var bord: some View {
         if BordBanc.sans {
-            Self.forme.strokeBorder(Self.teinte.opacity(0.42),
-                                    style: StrokeStyle(lineWidth: 1.2, dash: [5, 4]))
+            EmptyView()          // le pointillé suffit : il est déjà là
         } else {
             ZStack {
                 ForEach(Array(Self.nappes.enumerated()), id: \.offset) { i, n in
@@ -103,9 +212,12 @@ struct BoutonAjouter: View {
                 }
             }
             // Sous le doigt, le bord se réveille franchement — la même
-            // cause que le fond, au même instant.
+            // cause que la lumière du bas, au même instant.
             .brightness(appuye ? 0.22 : 0)
             .animation(.easeOut(duration: appuye ? 0.10 : 0.28), value: appuye)
+            // ET IL FLAMBE AU RELÂCHÉ, une demi-seconde.
+            .brightness(0.45 * eclat)
+            .allowsHitTesting(false)
         }
     }
 }
@@ -126,7 +238,10 @@ private struct NappeBord: View {
 
     var body: some View {
         Canvas { ctx, taille in
-            let r: CGFloat = 14
+            // ⚠️ LE RAYON SUIT LA FORME (24-09). Le bouton est passé en
+            // CAPSULE : un contour dessiné avec un coin de 14 aurait semé
+            // les points à côté du bord, et on aurait vu deux traits.
+            let r: CGFloat = min(taille.height, taille.width) / 2
             let chemin = Self.contour(taille, r)
             guard chemin.count > 1 else { return }
             var h = graine &+ 0x9E3779B97F4A7C15
@@ -188,5 +303,38 @@ private struct NappeBord: View {
         seg(CGPoint(x: w - r, y: h), CGPoint(x: r, y: h));      arc(r, h - r, 90)
         seg(CGPoint(x: 0, y: h - r), CGPoint(x: 0, y: r));      arc(r, r, 180)
         return P
+    }
+}
+
+// MARK: - L'onde du tap
+
+/// ⚠️ ELLE SE REMONTE À CHAQUE TAP (`.id(tour)`), et c'est le seul moyen
+/// d'être sûr qu'elle rejoue : une animation relancée sur la même vue
+/// repart de l'état où elle en était, donc un double tap rapide ne
+/// donnerait qu'une demi-onde.
+///
+/// Deux anneaux, le second en retard d'un tiers : on voit une onde qui
+/// part, pas un clignotement. Ils s'éloignent de 6 % — assez pour se
+/// détacher du bouton, jamais assez pour cogner ses voisins.
+private struct OndeTap: View {
+    @State private var parti = false
+
+    private static let forme = Capsule()
+
+    var body: some View {
+        ZStack {
+            anneau(0)
+            anneau(0.13)
+        }
+        .onAppear { parti = true }
+    }
+
+    private func anneau(_ retard: Double) -> some View {
+        Self.forme
+            // Un point d'épaisseur : un cheveu de lumière, jamais un néon.
+            .strokeBorder(.white, lineWidth: 1)
+            .scaleEffect(parti ? 1.06 : 1.0)
+            .opacity(parti ? 0 : 0.85)
+            .animation(.easeOut(duration: 0.55).delay(retard), value: parti)
     }
 }
