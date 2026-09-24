@@ -1,85 +1,142 @@
 import SwiftUI
 
-// MARK: - LE POINT REC (23-09) — l'onglet Exercices pendant une séance
+// MARK: - LE POINT DE SÉANCE (24-09) — un point blanc, un pulsar, des paillettes
 //
-// « Pas de pastille, juste une icône ronde qui pulse, comme un REC — avec un
-//   effet diamant un peu à l'intérieur. » (Kathryn, 23-09.)
+// « Je revois le design de la pastille, c'est horrible. Je pensais à un point
+//   blanc minimal avec un effet pulsar et des petites paillettes autour,
+//   basta ! » (Kathryn, 24-09.)
 //
-// Pendant une séance, le coureur de l'onglet Exercices disparaît sous un
-// POINT : un brillant noir de 26 pt — couronne de huit facettes, table
-// étoilée, arêtes d'un demi-point en argent — avec au centre une braise
-// rouge qui respire. Le tap ne change pas : c'est l'onglet DESSOUS qui
-// répond, et `ongletChoisi` remonte déjà le lecteur depuis le 22-09.
+// Le diamant du 23-09 est SUPPRIMÉ, pas retravaillé — avec lui partent le
+// `Canvas`, ses huit facettes et son cœur de braise. Ce qui reste tient en
+// trois choses, et rien d'autre :
 //
-// ⚠️⚠️ POURQUOI IL EST POSÉ PAR-DESSUS LA BARRE, ET PAS DANS L'ONGLET.
-// Trois essais mesurés le 23-09, et c'est la seule route qui marche :
-//   · une `View` maison à `@State` dans le `label:` d'un `Tab` n'est
-//     JAMAIS ré-évaluée quand la séance s'ouvre — l'onglet gardait son
-//     coureur alors que l'île était déjà rouge ;
-//   · un `if/else` dans le `label:` change le TYPE de la vue
-//     (`_ConditionalContent`) et la barre garde la branche prise au montage ;
-//   · et surtout : le MÊME symbole passe par `Image(systemName:)` et **pas**
-//     par `Image(uiImage:)`. Une icône d'onglet n'accepte qu'un symbole ou
-//     un asset — jamais une image fabriquée à l'exécution.
-// En surimpression, le point est une vraie vue. C'est ce qui lui permet de
-// RESPIRER, ce qu'un item d'onglet ne fera jamais.
+//   · LE POINT — un disque blanc pur de 9 pt, qui respire à peine ;
+//   · LE PULSAR — deux anneaux d'un demi-point qui NAISSENT sur le point et
+//     s'en éloignent en s'effaçant. La lumière a une cause et un bord : elle
+//     part du point, elle n'est jamais une nappe posée autour ;
+//   · LES PAILLETTES — cinq grains d'un point, chacun sur SA période
+//     (1,7 · 2,3 · 2,9 · 3,3 · 3,7 s, aucune multiple d'une autre), sinon
+//     les cinq clignoteraient ensemble et ce serait une guirlande.
 //
-// ⚠️ ET IL NE REDESSINE RIEN POUR ANIMER. La pierre est dessinée UNE FOIS
-// et aplatie ; seules l'opacité et l'échelle du cœur et du halo sont
-// animées. Loi mesurée sur son iPhone le 05-09 : redessiner pour animer
-// coûte 33 à 38 % de processeur, animer une valeur en coûte 4 à 18 %.
+// ⚠️⚠️ OÙ IL VIT — CE QUI A CHANGÉ LE 24-09.
+// « Il n'apparaît que dans le menu et sur aucune page, et il doit être centré
+//   à côté des autres icônes dans le menu. »
+// Le 23-09 il était posé sur la barre d'onglets, donc il n'existait QUE là où
+// la barre existe — c'est-à-dire sur l'Accueil seul : les onglets Exercices et
+// Profil masquent la barre (`toolbarVisibility(.hidden, for: .tabBar)`).
+// Désormais c'est le témoin de la SÉANCE : même place, même taille, sur tous
+// les écrans tant qu'une séance tourne. Deux exceptions, et une seule règle
+// derrière :
+//   · sur le LECTEUR il ne se pose pas — on y est déjà, un témoin qui dit
+//     « ta séance t'attend » devant la séance elle-même ne dit rien (et c'est
+//     aussi ce qui libère le bas de l'écran, où vit le galet Stop) ;
+//   · pendant le film de départ non plus : la séance n'a pas encore commencé.
 //
-// Son barreau : `-sansRec` (l'onglet garde son coureur, rien n'est posé).
+// ⚠️ SA HAUTEUR EST MESURÉE, ET ELLE NE DÉPEND PLUS DU CONTENEUR.
+// Sur la dalle de l'iPhone 15 (1179 × 2556), le centre des glyphes d'onglet
+// est à 2436 px du haut, soit **40 pt au-dessus du bas de l'ÉCRAN**. Le 23-09
+// j'ai supposé que la surimpression de la racine s'arrêtait à la zone sûre et
+// j'ai écrit 6 pt : si le conteneur descend jusqu'au bas de l'écran, le point
+// tombe 34 pt trop bas. On ne suppose plus : la vue IGNORE la zone sûre, donc
+// son bas EST le bas de l'écran, et la cote mesurée s'applique telle quelle.
+//
+// ⚠️ ET IL NE REDESSINE RIEN POUR ANIMER. Huit valeurs animées (opacités,
+// échelles) et pas un pixel recalculé. Loi mesurée sur son iPhone le 05-09 :
+// redessiner pour animer coûte 33 à 38 % de processeur, animer une valeur en
+// coûte 4 à 18 %.
+//
+// Son barreau : `-sansRec` (rien n'est posé, l'onglet garde son coureur).
 
 enum RecBanc {
     static let sans = ProcessInfo.processInfo.arguments.contains("-sansRec")
 }
 
-// MARK: - Le point, posé sur la barre
+// MARK: - Le témoin
 
-struct PointRecSurBarre: View {
-    let enSeance: Bool
+struct PointSeance: View {
+    /// Une séance tourne, et le lecteur n'est pas déjà à l'écran.
+    let visible: Bool
+    /// La barre d'onglets est sous nos pieds : il faut couvrir le coureur.
+    /// Ailleurs, aucun disque noir — il se verrait sur un écran qui n'est
+    /// pas noir.
+    let surBarre: Bool
+    /// Le tap ouvre le lecteur. ⚠️ C'est LUI qui prend le doigt désormais,
+    /// y compris sur la barre : hors barre il n'y a aucun onglet dessous
+    /// pour répondre, et deux comportements pour un même point seraient
+    /// deux bugs à venir.
+    let ouvrir: () -> Void
 
-    /// Le côté du point. 26 pt : un témoin d'enregistrement, pas une pastille.
-    private static let cote: CGFloat = 26
-    /// ⚠️ MESURÉ, PAS DEVINÉ, et mesuré DEUX FOIS. Le centre des glyphes
-    /// d'onglet est à 2436 px du haut sur la dalle de l'iPhone 15
-    /// (1179 × 2556), soit 40 pt du bas de l'ÉCRAN. Mais cette
-    /// surimpression est posée à la RACINE, dont le bas s'arrête à la zone
-    /// sûre : 40 pt d'écran font 6 pt ici. Si la barre change, on la
-    /// remesure — on ne la devine pas.
-    private static let hauteur: CGFloat = 6
+    /// Le disque blanc. ⚠️ 14 pt et pas 9 (24-09 : « plus gros le bouton
+    /// REC, même taille que les autres »). Un glyphe d'onglet fait ~20 pt de
+    /// large mais il est CREUX (un trait) ; un disque PLEIN de la même cote
+    /// pèserait deux fois plus lourd à l'œil. À 14 pt plein, entouré de son
+    /// néon et de ses anneaux, la marque occupe la même place que la maison
+    /// et le profil — c'est la masse visuelle qu'on égalise, pas le nombre.
+    /// ⚠️ MESURÉ, PAS ESTIMÉ (capture du simulateur, seuil de luminance
+    /// 110) : le glyphe de la maison fait 24,7 × 15,7 pt ; le disque
+    /// blanc en fait 14 — la même masse — et ce sont ses anneaux et son
+    /// néon qui débordent jusqu'à 32 × 20. « Plus gros », sans écraser
+    /// ses voisines.
+    private static let cote: CGFloat = 14
+    /// Le centre du point, au-dessus du BAS DE L'ÉCRAN (mesuré, cf. l'entête).
+    private static let hauteur: CGFloat = 40
+    /// La zone qui prend le doigt. En dessous de 44 pt, c'est une cible qu'on
+    /// rate — et le point fait 9 pt.
+    private static let cible: CGFloat = 44
 
     @State private var respire = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var actif: Bool { enSeance && !RecBanc.sans }
+    private var actif: Bool { visible && !RecBanc.sans }
+    private var anime: Bool { respire && !reduceMotion }
 
     var body: some View {
         Group {
             if actif {
-                ZStack {
-                    // ⚠️ LE DISQUE QUI COUVRE LE COUREUR. L'onglet dessous
-                    // existe toujours — c'est lui qui prend le doigt — mais
-                    // on ne doit plus le voir. La barre est noire : un
-                    // disque noir un peu plus large suffit, sans bord.
-                    Circle()
-                        .fill(.black)
-                        .frame(width: Self.cote + 14, height: Self.cote + 14)
-                    Diamant()
-                        .frame(width: Self.cote, height: Self.cote)
-                    Coeur(respire: respire && !reduceMotion)
-                        .frame(width: Self.cote, height: Self.cote)
+                Button(action: ouvrir) {
+                    ZStack {
+                        // ⚠️ LE DISQUE QUI COUVRE LE COUREUR, seulement sur
+                        // la barre. La barre est noire : un disque noir un
+                        // peu plus large suffit, sans bord.
+                        if surBarre {
+                            Circle().fill(.black)
+                                .frame(width: 42, height: 42)
+                        }
+                        NeonBraise(anime: anime, cote: Self.cote)
+                        Pulsar(anime: anime, cote: Self.cote)
+                        PaillettesDuPoint(anime: anime)
+                        // LE POINT. Blanc pur, jamais gris : la brillance
+                        // vient de la blancheur.
+                        // ⚠️ IL BAT PLUS FRANCHEMENT (24-09 : « animation
+                        // dix fois plus poussée »). L'opacité descend plus
+                        // bas et l'échelle entre dans la danse : c'est
+                        // l'ÉCART qui se voit, jamais le niveau moyen.
+                        Circle()
+                            .fill(.white)
+                            .frame(width: Self.cote, height: Self.cote)
+                            .opacity(anime ? 1.0 : 0.55)
+                            .scaleEffect(anime ? 1.10 : 0.88)
+                            .animation(anime
+                                ? .easeInOut(duration: 1.15).repeatForever(autoreverses: true)
+                                : .easeOut(duration: 0.2), value: anime)
+                    }
+                    .frame(width: Self.cible, height: Self.cible)
+                    .contentShape(Circle())
                 }
-                .frame(height: Self.cote)
-                .padding(.bottom, Self.hauteur - Self.cote / 2)
-                // ⚠️ IL NE PREND JAMAIS LE DOIGT. Le tap doit descendre
-                // jusqu'à l'onglet natif, sinon on casse la navigation pour
-                // un ornement.
-                .allowsHitTesting(false)
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(L("Reprendre la séance", "Back to your session")))
+                .padding(.bottom, Self.hauteur - Self.cible / 2)
                 .transition(.opacity)
             }
         }
+        // ⚠️ IL SE POSE PAR RAPPORT AU BAS DE L'ÉCRAN, PAS À SON CONTENEUR.
+        // C'est l'erreur du 23-09 : la cote est mesurée sur la dalle, elle
+        // ne vaut donc que si le bas d'ici EST le bas de l'écran. On prend
+        // tout l'espace, hors zone sûre, et on s'aligne en bas.
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        .ignoresSafeArea()
+        // Hors séance, ce plein écran ne doit rien intercepter.
+        .allowsHitTesting(actif)
         .animation(.easeInOut(duration: 0.35), value: actif)
         // ⚠️ RÉ-ARMÉ DANS LA FEUILLE — un `repeatForever` posé par un parent
         // se fait avaler dès que ce parent est ré-évalué (piège payé sur
@@ -89,134 +146,125 @@ struct PointRecSurBarre: View {
     }
 }
 
-// MARK: - Le cœur de braise, la seule chose qui bouge
+// MARK: - Le pulsar
 
-/// ⚠️ SÉPARÉ DE LA PIERRE EXPRÈS. Si le cœur vivait dans le `Canvas`, faire
-/// respirer la braise obligerait à REDESSINER tout le brillant à chaque
-/// image. Ici la pierre est figée et seul ce petit disque s'anime —
-/// opacité et échelle, deux valeurs que le système interpole seul.
-private struct Coeur: View {
-    let respire: Bool
+/// Deux anneaux qui naissent SUR le point et s'en éloignent. Le second part à
+/// mi-course : on voit toujours une onde, jamais un battement à vide.
+///
+/// ⚠️ UN DEMI-POINT D'ÉPAISSEUR — un pixel et demi sur sa dalle. Un anneau
+/// épais serait un rond de néon ; c'est la finesse qui fait la lumière.
+private struct Pulsar: View {
+    let anime: Bool
+    let cote: CGFloat
+
+    /// ⚠️ TROIS ANNEAUX, ET PLUS VIFS (24-09). Avec deux, il y avait un
+    /// temps mort entre deux ondes ; avec trois décalés d'un tiers, il en
+    /// part toujours une. L'épaisseur, elle, NE BOUGE PAS : un demi-point.
+    /// « La brillance vient de la blancheur, jamais de l'épaisseur. »
+    private static let periode: Double = 1.9
 
     var body: some View {
-        GeometryReader { g in
-            let d = min(g.size.width, g.size.height)
-            let r = d * 0.44 * 0.36
-            ZStack {
-                // le halo : il reste dans la pierre, jamais un projecteur
+        ZStack {
+            anneau(0)
+            anneau(Self.periode / 3)
+            anneau(Self.periode * 2 / 3)
+        }
+    }
+
+    private func anneau(_ retard: Double) -> some View {
+        Circle()
+            .strokeBorder(.white, lineWidth: 0.5)
+            .frame(width: cote, height: cote)
+            .scaleEffect(anime ? 2.6 : 1.0)
+            .opacity(anime ? 0.0 : 0.85)
+            .animation(anime
+                ? .easeOut(duration: Self.periode)
+                    .repeatForever(autoreverses: false).delay(retard)
+                : .linear(duration: 0), value: anime)
+    }
+}
+
+// MARK: - Les paillettes
+
+/// Cinq grains d'un point autour du témoin. ⚠️ CHACUN SA PÉRIODE, et aucune
+/// n'est multiple d'une autre : cinq grains sur la même horloge, c'est une
+/// guirlande — elle l'a refusé pour les carrés de zones, ça vaut ici aussi.
+private struct PaillettesDuPoint: View {
+    let anime: Bool
+
+    /// angle (degrés), rayon (pt), côté (pt), période (s), creux
+    /// ⚠️ SEPT, ET AUCUNE PÉRIODE MULTIPLE D'UNE AUTRE — sinon elles
+    /// finissent par clignoter ensemble et c'est une guirlande.
+    private static let grains: [(Double, CGFloat, CGFloat, Double, Double)] = [
+        (-58,  16.0, 1.6, 1.3, 0.04),
+        ( 24,  19.5, 1.1, 1.7, 0.02),
+        (112,  15.0, 1.4, 2.1, 0.06),
+        (196,  21.0, 1.1, 2.3, 0.02),
+        (268,  17.5, 1.5, 2.9, 0.05),
+        (150,  22.5, 1.0, 3.1, 0.03),
+        (330,  14.0, 1.2, 3.7, 0.04),
+    ]
+
+    var body: some View {
+        ZStack {
+            ForEach(Array(Self.grains.enumerated()), id: \.offset) { _, g in
+                let (a, r, c, p, creux) = g
                 Circle()
-                    .fill(RadialGradient(
-                        colors: [Color(red: 1.0, green: 0.30, blue: 0.10).opacity(0.55),
-                                 .clear],
-                        center: .center, startRadius: 0, endRadius: d * 0.46))
-                    .frame(width: d, height: d)
-                    .opacity(respire ? 0.95 : 0.30)
-                Circle()
-                    .fill(RadialGradient(
-                        colors: [Color(red: 1.00, green: 0.24, blue: 0.10),
-                                 Color(red: 0.42, green: 0.05, blue: 0.02)],
-                        center: .center, startRadius: 0, endRadius: r))
-                    .frame(width: r * 2, height: r * 2)
-                    .opacity(respire ? 1.0 : 0.52)
-                    .scaleEffect(respire ? 1.0 : 0.80)
+                    .fill(.white)
+                    .frame(width: c, height: c)
+                    .offset(x: r * cos(a * .pi / 180), y: r * sin(a * .pi / 180))
+                    .opacity(anime ? 0.98 : creux)
+                    .animation(anime
+                        ? .easeInOut(duration: p).repeatForever(autoreverses: true)
+                        : .easeOut(duration: 0.2), value: anime)
             }
-            .frame(width: g.size.width, height: g.size.height)
-            .animation(respire
-                ? .easeInOut(duration: 1.25).repeatForever(autoreverses: true)
-                : .easeOut(duration: 0.2),
-                value: respire)
         }
     }
 }
 
-// MARK: - Le brillant
 
-/// ⚠️ UNE SOURCE DE LUMIÈRE FIXE, en haut à gauche. Chaque facette brille
-/// selon SON ORIENTATION — jamais parce qu'une bande lui passe dessus.
-/// C'est ce qui fait la pierre, et c'est aussi ce qui interdit le balayage.
-private struct Diamant: View {
-    /// L'éclat de la pierre est CONSTANT : c'est le cœur qui respire, pas
-    /// elle. Une pierre qui clignote, ce serait une lampe.
-    private static let eclat = 0.62
-    private static let source = -125.0 * .pi / 180.0
-    private static let facettes = 8
+// MARK: - Le néon de braise
+
+/// « Un mini néon orange rouge blanc derrière » (Kathryn, 24-09.)
+///
+/// Un foyer minuscule DERRIÈRE le point : blanc chaud au cœur, orange,
+/// puis le rouge de braise qui meurt — et plus rien. Ce sont ses trois
+/// couleurs, dans cet ordre, et il n'y en a pas d'autres.
+///
+/// ⚠️ EN FRACTIONS, jamais en points. Un dégradé dont le rayon dépasse son
+/// cadre est TRANCHÉ net au bord, et une lumière coupée net est un
+/// rectangle — c'est le défaut du calque orange du 24-09, payé le matin
+/// même. `endRadiusFraction: 0.5` garantit qu'il s'éteint avant son bord,
+/// quelle que soit la taille.
+///
+/// ⚠️ DEUX VALEURS ANIMÉES, aucun redessin. Et il respire sur 1,9 s quand
+/// le point bat sur 1,15 : les deux ne se rattrapent jamais.
+private struct NeonBraise: View {
+    let anime: Bool
+    let cote: CGFloat
 
     var body: some View {
-        Canvas { ctx, taille in
-            let c = CGPoint(x: taille.width / 2, y: taille.height / 2)
-            let R = min(taille.width, taille.height) / 2 - 0.5
-            let Rt = R * 0.44
-            let k = 0.32 + 0.68 * Self.eclat
-
-            // Le corps : une braise qui meurt, presque noire.
-            ctx.fill(Path(ellipseIn: CGRect(x: c.x - R, y: c.y - R,
-                                            width: R * 2, height: R * 2)),
-                     with: .radialGradient(
-                        Gradient(colors: [Self.encre(0.22, k), Self.encre(0.04, k)]),
-                        center: c, startRadius: 0, endRadius: R))
-
-            // LA COURONNE — une ou deux facettes seulement attrapent la
-            // lumière. Les remplir toutes donnait du plastique (23-09).
-            for i in 0..<Self.facettes {
-                let a0 = Double(i) / Double(Self.facettes) * 2 * .pi - .pi / 8
-                let a1 = a0 + 2 * .pi / Double(Self.facettes)
-                let g = pow(max(0, cos((a0 + a1) / 2 - Self.source)), 6.0)
-                var p = Path()
-                p.move(to: Self.pt(c, R, a0))
-                p.addLine(to: Self.pt(c, R, a1))
-                p.addLine(to: Self.pt(c, Rt, a1))
-                p.addLine(to: Self.pt(c, Rt, a0))
-                p.closeSubpath()
-                ctx.fill(p, with: .color(Self.argent(0.05 + 0.34 * g, k)))
-            }
-
-            // LA TABLE, sombre, étoilée de ses propres arêtes — jamais un aplat.
-            ctx.fill(Path(ellipseIn: CGRect(x: c.x - Rt, y: c.y - Rt,
-                                            width: Rt * 2, height: Rt * 2)),
-                     with: .color(Self.encre(0.09, k)))
-            for i in 0..<Self.facettes {
-                let a = Double(i) / Double(Self.facettes) * 2 * .pi
-                let f = pow(max(0, cos(a - Self.source)), 2.0)
-                var p = Path(); p.move(to: c); p.addLine(to: Self.pt(c, Rt, a))
-                ctx.stroke(p, with: .color(Self.argent(0.12 + 0.47 * f, k)),
-                           lineWidth: 0.5)
-            }
-            // LES ARÊTES — un demi-point, donc UN pixel sur sa dalle. Ce
-            // sont elles qui portent la brillance : jamais l'épaisseur.
-            for i in 0..<Self.facettes {
-                let a = Double(i) / Double(Self.facettes) * 2 * .pi - .pi / 8
-                let f = pow(max(0, cos(a - Self.source)), 1.5)
-                var p = Path()
-                p.move(to: Self.pt(c, Rt, a)); p.addLine(to: Self.pt(c, R, a))
-                ctx.stroke(p, with: .color(Self.argent(0.20 + 0.75 * f, k)),
-                           lineWidth: 0.5)
-            }
-            ctx.stroke(Path(ellipseIn: CGRect(x: c.x - Rt, y: c.y - Rt,
-                                              width: Rt * 2, height: Rt * 2)),
-                       with: .color(Self.argent(0.47, k)), lineWidth: 0.5)
-            ctx.stroke(Path(ellipseIn: CGRect(x: c.x - R, y: c.y - R,
-                                              width: R * 2, height: R * 2)),
-                       with: .color(Self.argent(0.36, k)), lineWidth: 0.5)
-
-            // L'ÉCLAT : un point, jamais plus large qu'un point.
-            let s = Self.pt(c, Rt * 0.46, Self.source)
-            let sr = 0.95
-            ctx.fill(Path(ellipseIn: CGRect(x: s.x - sr, y: s.y - sr,
-                                            width: sr * 2, height: sr * 2)),
-                     with: .color(.white.opacity(0.92)))
-        }
-        // ⚠️ APLATI UNE FOIS. Rien ici ne dépend du temps : la pierre est
-        // rastérisée et ne sera plus jamais recalculée.
-        .drawingGroup()
-    }
-
-    private static func pt(_ c: CGPoint, _ r: Double, _ a: Double) -> CGPoint {
-        CGPoint(x: c.x + r * cos(a), y: c.y + r * sin(a))
-    }
-    private static func encre(_ v: Double, _ k: Double) -> Color {
-        Color(red: v * k, green: v * k * 0.30, blue: v * k * 0.18)
-    }
-    private static func argent(_ v: Double, _ k: Double) -> Color {
-        Color(red: v * k, green: v * k * 0.96, blue: v * k * 0.92)
+        EllipticalGradient(
+            // ⚠️ SATURÉ ET SERRÉ, SINON C'EST DU MARRON. Des couleurs
+            // chaudes à mi-opacité étalées sur du noir donnent une fumée
+            // brune — son mot de rejet, dit le 06-09 : « pas de braises
+            // marrons !! ». Ce qui fait un NÉON, c'est l'inverse : très
+            // opaque, et sur un petit rayon. La couleur tient alors debout.
+            stops: [
+                .init(color: .white.opacity(0.72), location: 0),
+                .init(color: Color(red: 1.00, green: 0.50, blue: 0.13)
+                    .opacity(0.72), location: 0.24),
+                .init(color: Color(red: 0.92, green: 0.10, blue: 0.02)
+                    .opacity(0.42), location: 0.46),
+                .init(color: .clear, location: 1)
+            ],
+            center: .center,
+            startRadiusFraction: 0, endRadiusFraction: 0.5)
+            .frame(width: cote * 2.7, height: cote * 2.7)
+            .opacity(anime ? 1.0 : 0.30)
+            .scaleEffect(anime ? 1.14 : 0.84)
+            .animation(anime
+                ? .easeInOut(duration: 1.9).repeatForever(autoreverses: true)
+                : .easeOut(duration: 0.2), value: anime)
     }
 }
