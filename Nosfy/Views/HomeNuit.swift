@@ -1537,6 +1537,31 @@ struct MiniCardJour: View {
     /// pochette. `false` partout ailleurs : This Week inchangé.
     var stickerBasGauche: Bool = false
 
+    // ════════════════════════════════════════════════════════════════
+    // ⚠️ LE FLOTTEMENT (24-09) — « anime s'il te plaît le carré avec le
+    // jour et le sticker, ils flottent ». OPT-IN : la card vit aussi dans
+    // This Week et dans la Route, où rien ne doit bouger.
+    //
+    // DEUX OBJETS, DEUX FLOTTEMENTS. S'ils montent et descendent ensemble,
+    // ce n'est pas du flottement, c'est un ascenseur. La card dérive sur
+    // 5,7 s, le sticker sur 4,1 s — aucune multiple de l'autre — et EN
+    // SENS INVERSE. Chacun roule d'un demi-degré : un objet qui flotte ne
+    // monte pas droit.
+    //
+    // ⚠️ DEUX VALEURS ANIMÉES, PAS UN PIXEL REDESSINÉ (loi du 05-09).
+    // Son barreau : `-sansFlottement`.
+    // ════════════════════════════════════════════════════════════════
+    var flotte: Bool = false
+
+    @State private var derive = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var flotteActif: Bool {
+        flotte && !reduceMotion
+            && !ProcessInfo.processInfo.arguments.contains("-sansFlottement")
+    }
+    private var haut: Bool { flotteActif && derive }
+
     /// `-progressFlammeSticker` : l'A/B de la flamme vide — le sticker
     /// `sticker-flamme-serree` à 0,16 (la jauge de séries, `StickerFlamme`)
     /// au lieu du contour SF des galets.
@@ -1552,6 +1577,14 @@ struct MiniCardJour: View {
             if vide { corpsVide } else { corpsFaite }
         }
         .frame(width: largeur, height: hauteur)
+        .offset(y: haut ? -2.5 : 2.5)
+        .rotationEffect(.degrees(haut ? 0.55 : -0.55))
+        .animation(flotteActif
+            ? .easeInOut(duration: 5.7).repeatForever(autoreverses: true)
+            : .default, value: haut)
+        // ⚠️ RÉ-ARMÉ DANS LA FEUILLE : un `repeatForever` posé par un
+        // parent se fait avaler dès que ce parent est ré-évalué.
+        .task(id: flotteActif) { derive = flotteActif }
     }
 
     private var corpsFaite: some View {
@@ -1592,6 +1625,12 @@ struct MiniCardJour: View {
                           y: stickerBasGauche ? hauteur * 0.76
                                               : hauteur * 0.590)
                 .scaleEffect(faite ? 1 : 0.7)
+                // Son propre flottement, à contretemps de la card.
+                .offset(y: haut ? 1.6 : -1.6)
+                .rotationEffect(.degrees(haut ? -0.9 : 0.9))
+                .animation(flotteActif
+                    ? .easeInOut(duration: 4.1).repeatForever(autoreverses: true)
+                    : .default, value: haut)
         }
     }
 
