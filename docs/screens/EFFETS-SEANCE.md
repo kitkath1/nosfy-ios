@@ -232,6 +232,49 @@ C'est cette absence qui sert à lire l'état « exercice terminé » (§5).
 
 ---
 
+## 8bis. ⚠️ LA MESURE DU 24-09 — un seul moteur bat, et c'est le bon suspect
+
+Journal de sonde pris pendant une **vraie séance sur son iPhone**, 148 s.
+
+| écran | cadence | processeur | thermique | pire intervalle |
+|---|---|---|---|---|
+| home | 60,1 img/s | 38 % | 2 | 17 ms |
+| **exercices / séance** | **53,9 img/s** | 35 % | 2 | **54 ms** |
+| lecteur | 60,1 img/s | 34 % | 2 | 17 ms |
+
+**Qui bat, et où** — médiane des tics par seconde :
+
+| écran | la famille qui bat |
+|---|---|
+| home | *aucune* |
+| **exercices / séance** | **lentille de série : 19/s** |
+| lecteur | *aucune* |
+
+**Un seul suspect, un seul écran, et c'est le même.** La lentille
+(`LiquidLensLab.swift`) redessine TOUT l'écran — `compositingGroup` +
+`layerEffect` Metal + Canvas — à chaque battement, pendant chaque série et
+tout son repos.
+
+⚠️ **Sa porte thermique MARCHAIT** : 19 Hz et non 60, parce que le téléphone
+était à thermique 2. Le défaut n'est donc pas une porte manquante — c'est
+qu'à son régime le plus bas, ce moteur redessine encore l'écran entier vingt
+fois par seconde. Et la loi de la maison dit : *redessiner pour animer coûte
+3 à 8 fois plus que d'animer*.
+
+⚠️ **Ce que cette mesure ne dit PAS.** Le thermique était à 2 dès la première
+seconde — au-dessus de 1, iOS bride, donc ces pourcentages ne se comparent
+pas aux 5-10 % relevés sur la home le 22-09. Et une partie de cette chaleur
+venait des builds posés juste avant. **`corps = 0` sur toute la balade** :
+SwiftUI ne recalcule aucune vue, les douze effets déclaratifs de la séance ne
+passent pas par le fil principal.
+
+**Fait depuis** : la lentille a enfin son barreau (`-sansLentille`) et un cran
+de plus à l'état critique (10 Hz). **Reste à décider, et ça se voit** :
+descendre sa cadence à thermique 2, ou l'endormir pendant le REPOS entre deux
+séries — les deux changent ce qu'on voit, donc ce n'est pas à moi de trancher.
+
+---
+
 ## 9. La loi qui vaut pour tout ce qui précède
 
 - **Redessiner pour animer coûte 3 à 8 fois plus que d'animer** (mesuré sur

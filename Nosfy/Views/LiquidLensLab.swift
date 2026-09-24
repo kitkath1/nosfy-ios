@@ -236,8 +236,33 @@ struct LiquidLensLab: View {
     /// `-lentilleHorloge60` force 60 quelle que soit la chaleur.
     private static let horloge60 =
         CommandLine.arguments.contains("-lentilleHorloge60")
+
+    /// ⚠️⚠️ SON BARREAU, QUI MANQUAIT (24-09) — `-sansLentille`.
+    ///
+    /// C'est le moteur le plus cher d'une séance, et il n'avait AUCUN
+    /// interrupteur : seulement `-lentilleHorloge60`, un témoin qui le rend
+    /// PLUS cher. Aucune campagne ne pouvait donc ni l'accuser ni le
+    /// disculper — la règle de la maison, « tout moteur coûteux arrive avec
+    /// son barreau », n'était pas tenue ici.
+    ///
+    /// MESURÉ SUR SON iPHONE le 24-09, pendant une vraie séance : c'est la
+    /// SEULE famille d'horloges qui batte de toute la balade — 19 battements
+    /// par seconde — et elle ne bat que sur l'écran exercices/séance, qui est
+    /// précisément le seul écran à s'affaisser (53,9 img/s contre 60,1 sur la
+    /// home et sur le lecteur, avec des trous médians de 54 ms). La home et
+    /// le lecteur n'ont aucun tic. Un seul suspect, un seul écran, et c'est
+    /// le même.
+    static let sans = ProcessInfo.processInfo.arguments
+        .contains("-sansLentille")
+
     private var pasLentille: Double {
         if Self.horloge60 { return 1.0 / 60.0 }
+        // ⚠️ UN CRAN DE PLUS À L'ÉTAT CRITIQUE (24-09). `appelAuRepos` couvre
+        // thermique 2 ET 3 d'un seul palier à 20 Hz — or à 3 le téléphone
+        // est en détresse, et personne ne défend vingt redessins d'écran
+        // entier par seconde à ce moment-là. Le dessin ne change pas : il
+        // avance seulement moins vite, comme aux paliers du dessous.
+        if ProcessInfo.processInfo.thermalState == .critical { return 1.0 / 10.0 }
         if ProtectionThermique.shared.appelAuRepos { return 1.0 / 20.0 }
         if ProtectionThermique.shared.ambianceAuRepos { return 1.0 / 30.0 }
         return 1.0 / 60.0
@@ -248,7 +273,8 @@ struct LiquidLensLab: View {
             let w = geo.size.width
             let h = geo.size.height
             TimelineView(.animation(minimumInterval: pasLentille,
-                                    paused: scenePhaseLentille != .active)) { tl in
+                                    paused: scenePhaseLentille != .active
+                                        || Self.sans)) { tl in
                 let _ = SondeVol.shared.tic(6)
                 let now = tl.date
                 let t = now.timeIntervalSinceReferenceDate
@@ -529,23 +555,38 @@ struct LiquidLensLab: View {
                      maxSampleOffset: CGSize(width: 110, height: 110))
     }
 
-    /// Les trois chevrons de la montée : encre sourde, 22 pt d'écart, une
-    /// vague qui remonte (période 1,6 s, chacun un quart de temps après
-    /// celui du dessous). Ils vivent AU-DESSUS du titre, vers le haut de
-    /// l'écran — là où la bulle doit arriver, pas là où elle est — et
-    /// cèdent à la montée (éteints dès 0,45 de course : la bulle est en
-    /// route, plus rien à expliquer).
+    /// Les trois chevrons de la montée (17-09, ses deux verdicts : « très
+    /// minimal, élégant », puis « ils doivent rester jusqu'à ce que le user
+    /// mette tout en haut, plus petits, un geste très léger du doigt pour
+    /// montrer qu'il faut l'amener en haut, en gris dégradé »). Petits
+    /// (10 pt, 15 pt d'écart), en gris dégradé (l'encre s'éclaircit vers le
+    /// haut, comme ce qui s'éloigne), et LE GESTE : le trio glisse vers le
+    /// haut de 16 pt en 1,7 s et s'efface au bout de sa course, puis renaît
+    /// en bas — la trace d'un doigt qui pousse, jamais un panneau. Ils
+    /// vivent au-dessus du titre, là où la bulle doit arriver, et ne cèdent
+    /// qu'au SOMMET (0,85 → 1 de course) : tant que la bulle n'est pas tout
+    /// en haut, le chemin reste écrit.
     private func montee(t: Double, climb: Double, w: CGFloat, h: CGFloat) -> some View {
-        let vie = 1 - sstep(0.20, 0.45, climb)
+        let vie = 1 - sstep(0.85, 1.0, climb)
         let y0 = h * 0.33
+        // Le geste : une course de 1,7 s, montée lissée, naissance et
+        // extinction en douceur aux deux bouts.
+        let u = (t / 1.7).truncatingRemainder(dividingBy: 1)
+        let glisse = CGFloat(u * u * (3 - 2 * u)) * 16
+        let souffle = sin(u * .pi)
         return ZStack {
             ForEach(0..<3, id: \.self) { i in
-                let ph = (t * 3.9 - Double(i) * 1.15).truncatingRemainder(dividingBy: 2 * .pi)
-                let onde = 0.5 + 0.5 * sin(ph)
+                // Chaque chevron s'allume un peu après celui du dessous : la
+                // poussée monte le long du trio.
+                let retard = max(0, min(1, (u - Double(i) * 0.12) / 0.7))
+                let allume = 0.35 + 0.65 * (retard * (1 - retard) * 4)
                 Image(systemName: "chevron.up")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.black.opacity(0.10 + 0.22 * onde))
-                    .position(x: w / 2, y: y0 - CGFloat(i) * 22)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(LinearGradient(
+                        colors: [Color(white: 0.30), Color(white: 0.62)],
+                        startPoint: .bottom, endPoint: .top))
+                    .opacity((0.28 + 0.42 * allume) * souffle)
+                    .position(x: w / 2, y: y0 - CGFloat(i) * 15 - glisse)
             }
         }
         .opacity(vie)
