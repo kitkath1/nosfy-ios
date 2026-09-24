@@ -206,6 +206,11 @@ struct InviteAnimee: View {
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 20.0,
                                 paused: fige)) { tl in
+            // ⚠️ LA SEULE HORLOGE COÛTEUSE DU LECTEUR, enfin tiquée (24-09).
+            // 20 battements par seconde tant qu'un titre est à l'écran :
+            // c'est le premier suspect d'une campagne, et jusqu'ici aucune
+            // sonde ne pouvait le nommer.
+            let _ = SondeVol.shared.tic(8)
             let t = tl.date.timeIntervalSinceReferenceDate
                 .truncatingRemainder(dividingBy: 900)
             let u = CGFloat((t / 2.6).truncatingRemainder(dividingBy: 1))
@@ -2346,6 +2351,7 @@ struct GrandPlayer: View {
     /// tailles de tête.
     private var chronoSession: some View {
         TimelineView(.periodic(from: depart, by: 1)) { tl in
+            let _ = SondeVol.shared.tic(8)     // 1 Hz — le chrono de séance
             let s = max(0, Int(tl.date.timeIntervalSince(depart)))
             // ⚠️ DEUX LIGNES, PAS TROIS (24-09 : « trop de texte, faut
             // choisir, faut faire comme Apple »). L'état est monté dans le
@@ -2960,7 +2966,7 @@ private struct CarreZoneMini: View {
     private static let flots: [Double] = [3.3, 4.1, 3.6, 4.9, 4.4]
 
     private var pulseActif: Bool {
-        !reduceMotion
+        !reduceMotion && !EffetsSeanceBanc.sans
             && !ProcessInfo.processInfo.arguments.contains("-sansPulseZone")
     }
     /// ⚠️ PLUS D'ÉCART QU'HIER (0,58 → 1,00 : trop timide, ça se voyait à
@@ -3211,13 +3217,13 @@ private struct BancBoucleLecteur: ViewModifier {
 /// Son barreau : `-sansChaleurTete`, le même que la chaleur de la tête.
 private struct HaloCarte: View {
     let cote: CGFloat
-    @State private var v: CGFloat = 0.42
+    @State private var v: CGFloat = 0.22
 
     var body: some View {
         EllipticalGradient(
             stops: [
                 .init(color: Color(red: 1.00, green: 0.45, blue: 0.16)
-                    .opacity(0.34 * v), location: 0),
+                    .opacity(0.40 * v), location: 0),
                 .init(color: Color(red: 0.52, green: 0.11, blue: 0.02)
                     .opacity(0.16 * v), location: 0.42),
                 .init(color: .clear, location: 1)
@@ -3226,10 +3232,16 @@ private struct HaloCarte: View {
             startRadiusFraction: 0, endRadiusFraction: 0.5)
             // Il déborde largement la carte : c'est la couronne qu'on voit.
             .frame(width: cote * 2.6, height: cote * 2.6)
-            .scaleEffect(0.94 + 0.10 * v)
+            // ⚠️ IL RESPIRE FRANCHEMENT (24-09). 0,94→1,04 se voyait à
+            // peine ; ici la couronne enfle de près d'un tiers, et son
+            // creux descend bas. C'est l'ÉCART qui se voit, jamais le
+            // niveau moyen — la même leçon que les carrés de zones.
+            .scaleEffect(0.86 + 0.28 * v)
             .opacity(ChaleurTete.sans ? 0 : 1)
             .onAppear {
-                withAnimation(.easeInOut(duration: 4.7)
+                // 3,9 s : étrangère aux 5,7 de la carte et aux 4,1 du
+                // sticker. Les trois ne retombent jamais ensemble.
+                withAnimation(.easeInOut(duration: 3.9)
                     .repeatForever(autoreverses: true)) { v = 1.0 }
             }
     }
@@ -3238,8 +3250,8 @@ private struct HaloCarte: View {
 private struct ChaleurTete: View {
     @State private var v: CGFloat = 0.30
 
-    static let sans = ProcessInfo.processInfo.arguments
-        .contains("-sansChaleurTete")
+    static let sans = EffetsSeanceBanc.sans
+        || ProcessInfo.processInfo.arguments.contains("-sansChaleurTete")
 
     var body: some View {
         EllipticalGradient(

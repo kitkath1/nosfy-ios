@@ -1557,7 +1557,7 @@ struct MiniCardJour: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var flotteActif: Bool {
-        flotte && !reduceMotion
+        flotte && !reduceMotion && !EffetsSeanceBanc.sans
             && !ProcessInfo.processInfo.arguments.contains("-sansFlottement")
     }
     private var haut: Bool { flotteActif && derive }
@@ -1577,8 +1577,14 @@ struct MiniCardJour: View {
             if vide { corpsVide } else { corpsFaite }
         }
         .frame(width: largeur, height: hauteur)
-        .offset(y: haut ? -2.5 : 2.5)
-        .rotationEffect(.degrees(haut ? 0.55 : -0.55))
+        // ⚠️ AMPLIFIÉ ×2 (24-09 : « ce n'est pas du tout assez animé, trop
+        // discret, ça doit plus vivre »). 2,5 → 5 pt de dérive, un demi-degré
+        // → 1,2°, et une RESPIRATION d'échelle en plus : un objet qui flotte
+        // s'approche et s'éloigne, il ne fait pas que monter. Trois valeurs
+        // animées, toujours aucun pixel redessiné.
+        .offset(y: haut ? -5 : 5)
+        .rotationEffect(.degrees(haut ? 1.2 : -1.2))
+        .scaleEffect(haut ? 1.035 : 0.985)
         .animation(flotteActif
             ? .easeInOut(duration: 5.7).repeatForever(autoreverses: true)
             : .default, value: haut)
@@ -1625,9 +1631,12 @@ struct MiniCardJour: View {
                           y: stickerBasGauche ? hauteur * 0.76
                                               : hauteur * 0.590)
                 .scaleEffect(faite ? 1 : 0.7)
-                // Son propre flottement, à contretemps de la card.
-                .offset(y: haut ? 1.6 : -1.6)
-                .rotationEffect(.degrees(haut ? -0.9 : 0.9))
+                // Son propre flottement, à contretemps de la card — et
+                // plus ample qu'elle : c'est le petit objet qui bouge le
+                // plus, sinon les deux semblent collés.
+                .offset(y: haut ? 4 : -4)
+                .rotationEffect(.degrees(haut ? -2.4 : 2.4))
+                .scaleEffect(haut ? 1.06 : 0.97)
                 .animation(flotteActif
                     ? .easeInOut(duration: 4.1).repeatForever(autoreverses: true)
                     : .default, value: haut)
