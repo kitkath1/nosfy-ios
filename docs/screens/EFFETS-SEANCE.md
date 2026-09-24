@@ -268,6 +268,32 @@ venait des builds posés juste avant. **`corps = 0` sur toute la balade** :
 SwiftUI ne recalcule aucune vue, les douze effets déclaratifs de la séance ne
 passent pas par le fil principal.
 
+### L'A/B naturel caché dans le journal
+
+La lentille ne bat pas en continu : elle **s'arrête et repart** pendant la même
+séance, sur le même écran. Le journal contient donc quatre fenêtres muettes —
+secondes 15-16, 39-42, 56-57, 72-74 — et tout le reste bruyant.
+
+| sur l'écran exercices/séance | n | cadence | processeur | pire intervalle |
+|---|---|---|---|---|
+| la lentille bat | 34 s | **46,0 img/s** | 36 % | **62 ms** |
+| la lentille se tait | 11 s | **60,1 img/s** | 32 % | **17 ms** |
+
+⚠️ **Et les deux groupes sont identiques sur TOUT le reste du contexte** que la
+sonde capture : `corps` 0, `mouvement` 0, `drag` 0, `ile` 1, `story` 0. Ce
+n'est donc pas « page au repos contre page active » : c'est le même écran, le
+même contexte, quatre fois de suite, avec et sans ce moteur.
+
+⚠️ **Ce que ça reste quand même : un faisceau, pas une preuve.** On ne sait pas
+POURQUOI la lentille se tait dans ces fenêtres — si quelque chose d'autre varie
+avec elle, il varie aussi. Onze secondes muettes, c'est peu. Et le thermique
+était à 2 du début à la fin.
+
+**Ce qui clôt le débat, et rien d'autre** : téléphone froid, une balade avec
+`-sansLentille`, une sans, en alternant — trois fois soixante secondes de
+chaque côté. Le barreau existe maintenant ; la question tient en quatre
+minutes.
+
 **Fait depuis** : la lentille a enfin son barreau (`-sansLentille`) et un cran
 de plus à l'état critique (10 Hz). **Reste à décider, et ça se voit** :
 descendre sa cadence à thermique 2, ou l'endormir pendant le REPOS entre deux
