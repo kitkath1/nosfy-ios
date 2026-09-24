@@ -33,7 +33,12 @@ struct Passage {
     float2 taille;
     float2 foyer;
     float  avance;
-    float  _pad;
+    // La borne des ÉTINCELLES : tout point dont le numéro lui est
+    // inférieur en est une. ⚠️ Elles occupaient un tirage au hasard
+    // (24-09) ; les ranger au DÉBUT permet au rendu de ne dessiner que
+    // la queue du passage — 22 500 points au lieu de 900 000 pendant la
+    // seconde et demie où elles sont seules en vie.
+    float  etincelles;
 };
 
 struct Point {
@@ -113,7 +118,7 @@ vertex Point particuleSommet(uint id [[vertex_id]],
     //     blanches. C'est elles qu'on suit des yeux. Sa loi, mot pour mot :
     //     la brillance vient de la blancheur, jamais de l'épaisseur.
     bool fond   = hasard(id, 11u) < 0.45;
-    bool etincelle = hasard(id, 13u) > 0.975;
+    bool etincelle = float(id) < pa.etincelles;
 
     // ⚠️ L'OUVERTURE SE PROPAGE DEPUIS LE DOIGT. Plus on est loin du
     // foyer, plus on part tard : c'est ce délai qui donne sa CAUSE au
@@ -213,10 +218,27 @@ fragment half4 particuleFragment(PointDans s [[stage_in]],
     // La chute radiale : le point n'est pas un carré, c'est une tache.
     float r = length(dans - 0.5) * 2.0;
     float a = saturate(1.0 - r);
+    // ⚠️⚠️ LE GRAIN (24-09) — « elles doivent être encore plus fines,
+    // genre 0,4 px, en dégradé ».
+    // ON NE PEUT PAS ÉCRIRE « 0,4 PIXEL » ET L'OBTENIR : un point plus
+    // petit qu'un pixel ne devient pas plus fin, il devient plus DUR — le
+    // rastériseur lui donne quand même un fragment plein, et on obtient du
+    // poivre. Ce qui donne vraiment un grain sous le pixel, c'est la
+    // CHUTE : le point garde ses 2 à 3 px de dalle, mais son cœur visible
+    // se resserre et tout le reste devient dégradé.
+    //   · avant : a², le cœur visible faisait ≈ 1,2 px ;
+    //   · ici   : a⁴, il tombe à ≈ 0,4 px — et la tache autour n'est plus
+    //     qu'un halo qui s'ADDITIONNE à ses voisines.
+    // ⚠️ ET ÇA ASSOMBRIT LE NUAGE : a⁴ ne dépose que 40 % de la lumière de
+    // a² à pic égal. Le facteur passe donc de 3,2 à 5,0 — une compensation
+    // PARTIELLE, volontairement : le pic ne bouge presque pas (donc pas de
+    // néon), et c'est le nombre de points qui rattrapera le reste si elle
+    // trouve le nuage trop sombre. Le nombre, jamais l'épaisseur.
+    a = a * a;
     a = a * a;
     // ⚠️ ADDITIF : le fond est noir, les taches s'ajoutent. C'est
     // l'accumulation qui fait la matière, pas l'opacité de chacune.
-    return half4(s.couleur.rgb * half(a) * s.couleur.a * 3.2h, 0.0h);
+    return half4(s.couleur.rgb * half(a) * s.couleur.a * 5.0h, 0.0h);
 }
 
 // MARK: - LE VOILE
