@@ -557,3 +557,23 @@ Sur son « fix tout ça go ». **Rien commité.** Build simulateur vert.
   le +10 du jour a été encaissé par `-welcomeClaimAuto` (solde 46 → 56).
   ⚠️ Litige posé sur le site : widgets au jour de DÉBUT, Route au jour de FIN
   (`b-fn-fenetre-bornes`).
+
+## 24-09 · session TOASTERS DE SÉANCE — deux pièges à connaître
+
+- ⚠️ **`Nosfy/Views/NotifAile.swift` portait une SUPPRESSION en attente dans
+  l'index partagé** (index périmé d'une autre session), alors que le fichier
+  est vivant et que `ExerciseDetailView` l'appelle. Un `git commit` nu aurait
+  supprimé de `main` le fichier qui définit `ToasterSerie` / `RobeNotif` — et
+  `main` aurait cessé de compiler. Désamorcé par
+  `git reset HEAD -- Nosfy/Views/NotifAile.swift` (l'arbre n'a pas bougé).
+  **Si vous voyez `D` sur un fichier que vous n'avez pas supprimé : ne
+  commitez pas, désamorcez.**
+- ⚠️ **`7b1bbdfd` avait emporté `ExerciseDetailView.swift` avec l'appel au
+  nouveau toaster, SANS le fichier qui le définit** : `main` n'a pas compilé
+  seul entre `7b1bbdfd` et `bea9372c`. C'est le piège « fichier nouveau non
+  `git add` », vu de l'autre côté : le fichier MODIFIÉ part, le fichier NEUF
+  reste. Relire `git show --stat HEAD` après chaque commit.
+- Chantier : le toaster de fin de série tourne sur 5 robes (`-robeSuite`,
+  `-robeNotif`, `-sansVideoNotif`). Commits `bea9372c` et `6045a0d5`.
+  ⚠️ `main` est en avance de 30 sur `origin/main` — beaucoup ne sont pas de
+  cette session ; personne n'a poussé.
