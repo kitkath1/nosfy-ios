@@ -24,9 +24,16 @@ import SwiftUI
 // Le 23-09 il était posé sur la barre d'onglets, donc il n'existait QUE là où
 // la barre existe — c'est-à-dire sur l'Accueil seul : les onglets Exercices et
 // Profil masquent la barre (`toolbarVisibility(.hidden, for: .tabBar)`).
-// Désormais c'est le témoin de la SÉANCE : même place, même taille, sur tous
-// les écrans tant qu'une séance tourne. Deux exceptions, et une seule règle
-// derrière :
+// Il a vécu quelques heures sur TOUS les écrans — et sur le vrai téléphone
+// c'était un intrus : posé par-dessus le compteur d'une série, il regardait
+// par-dessus l'épaule d'une page immersive, qui n'a pas de barre justement
+// pour qu'on ne regarde qu'elle (verdict du 24-09 au soir : « pas de bouton
+// REC, juste dans le menu, pas dans les pages chrono »).
+//
+// Il est donc ce qu'il a toujours été : **l'onglet Exercices pendant une
+// séance**. Il vit là où la barre vit — l'Accueil seul, les deux autres
+// onglets la masquant (`toolbarVisibility(.hidden, for: .tabBar)`). Deux
+// exclusions de plus, et la même règle derrière :
 //   · sur le LECTEUR il ne se pose pas — on y est déjà, un témoin qui dit
 //     « ta séance t'attend » devant la séance elle-même ne dit rien (et c'est
 //     aussi ce qui libère le bas de l'écran, où vit le galet Stop) ;
@@ -47,8 +54,27 @@ import SwiftUI
 //
 // Son barreau : `-sansRec` (rien n'est posé, l'onglet garde son coureur).
 
+/// ⚠️⚠️ LE BARREAU MAÎTRE DE LA SÉANCE (24-09).
+///
+/// Les effets posés sur la séance sont des animations DÉCLARATIVES : aucune
+/// ligne ne s'exécute par image, c'est le compositeur qui les tient. Un tic
+/// de la sonde ne les verra jamais (et c'est pour ça que `corps` reste à 0).
+/// **Le seul instrument qui peut les accuser ou les disculper est leur
+/// barreau**, en A/B sur un téléphone froid.
+///
+/// Les allumer un par un, c'est six balades ; et la campagne du soir du 24-09
+/// a montré qu'on n'a même pas encore la réponse à la question d'avant : y
+/// a-t-il seulement un sujet ? `-sansEffetsSeance` éteint TOUT d'un coup et
+/// répond à celle-là en deux balades. Les barreaux individuels restent, pour
+/// la passe suivante — « une balade = un moteur ».
+enum EffetsSeanceBanc {
+    static let sans = ProcessInfo.processInfo.arguments
+        .contains("-sansEffetsSeance")
+}
+
 enum RecBanc {
-    static let sans = ProcessInfo.processInfo.arguments.contains("-sansRec")
+    static let sans = EffetsSeanceBanc.sans
+        || ProcessInfo.processInfo.arguments.contains("-sansRec")
 }
 
 // MARK: - Le témoin
