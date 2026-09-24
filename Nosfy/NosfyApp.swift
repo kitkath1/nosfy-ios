@@ -1082,7 +1082,38 @@ struct RootView: View {
     /// Le menu de la home route vers un onglet.
     private func routerVers(_ dest: WoopTab) {
         NavDiagnostic.noter("menu", destination: dest.rawValue)
+        // ⚠️ IL PASSE PAR LA PORTE, LUI AUSSI (24-09). Avant, il écrivait
+        // `selection` en direct — donc SANS la règle « pendant une séance,
+        // Exercices = le lecteur », qui n'était portée que par le binding
+        // du TabView. Son bug, mot pour mot : « sur la homepage le bouton
+        // choose exercice n'ouvre pas la page exercice rouge mais bien
+        // notre composant overlay ».
+        if dest == .exercises { allerAuxExercices(anime: true); return }
         withAnimation(.easeOut(duration: 0.3)) { selection = dest }
+    }
+
+    /// ⚠️⚠️ LA SEULE PORTE VERS LES EXERCICES (24-09).
+    ///
+    /// La règle — *pendant une séance, Exercices ouvre le LECTEUR, jamais la
+    /// page* — était écrite CHEZ LES APPELANTS : dans le binding du TabView
+    /// pour le doigt, nulle part pour le menu de la home. Le même défaut est
+    /// revenu trois fois sous trois costumes (le 22-09 « Page exercices »
+    /// qui basculait l'onglet sans retour, le 22-09 le chevron de la page,
+    /// le 24-09 le bouton « Choose an exercise »). Une deuxième garde aurait
+    /// fait une deuxième vérité : il n'y en a plus qu'une, et tout le monde
+    /// l'emprunte. Ce qui arrivera demain passera par elle — ou ne marchera
+    /// pas du tout, ce qui se voit tout de suite.
+    ///
+    /// ⚠️ ET C'EST UNE COUPE SOURDE, PAS LE FEU (§9 du plan du 24-09) : le
+    /// passage en particules ne joue plus qu'à l'ouverture de la séance.
+    /// Ici on ne fait que RENTRER quelque part où l'on était déjà.
+    private func allerAuxExercices(anime: Bool) {
+        if active != nil, filmDepart == nil, morphPlayer < 0.98 {
+            CoupeEtat.shared.couper { poserGrandPlayer() }
+            return
+        }
+        if anime { withAnimation(.easeOut(duration: 0.3)) { selection = .exercises } }
+        else { selection = .exercises }
     }
 
     /// Le chevron d'une page immersive rend la main à la home.
@@ -1099,7 +1130,8 @@ struct RootView: View {
             // se passe dans le lecteur, et la page Exercices est hors
             // séance. Le galet est la deuxième porte d'entrée après
             // l'onglet ; elle mène au même endroit.
-            CoupeEtat.shared.jouer { poserGrandPlayer() }
+            // ⚠️ LA COUPE SOURDE, PAS LE FEU (24-09) : c'est un RETOUR.
+            CoupeEtat.shared.couper { poserGrandPlayer() }
         } else {
             DepartEtat.shared.proposer()
         }
@@ -1469,9 +1501,29 @@ struct RootView: View {
     ///   quoi qu'il arrive à l'écran.
     @ViewBuilder private var couvercles: some View {
         ZStack {
+            // ⚠️ LE POINT DE SÉANCE EST ICI, SOUS L'OUVERTURE (24-09).
+            // Ici, et pas sur la barre d'onglets : posé sur la barre, il
+            // n'existait que là où la barre existe — c'est-à-dire sur
+            // l'Accueil seul (« il n'apparaît que dans le menu et sur
+            // aucune page »). Sous l'ouverture, parce que pendant un
+            // passage c'est le feu qui tient l'écran, pas lui.
+            PointSeance(visible: pointDeSeanceVisible,
+                        surBarre: selection == .home,
+                        // Le tap fait exactement ce que faisait l'onglet.
+                        ouvrir: { CoupeEtat.shared.couper { poserGrandPlayer() } })
             Ouverture()
             EcranErreurHote()
         }
+    }
+
+    /// Une séance tourne, et rien de plus important ne tient l'écran.
+    /// ⚠️ Le lecteur en fait partie : devant la séance elle-même, un témoin
+    /// « ta séance t'attend » ne dit rien — et le bas de l'écran y est déjà
+    /// pris par le galet Stop.
+    private var pointDeSeanceVisible: Bool {
+        active != nil && morphPlayer < 0.98 && filmDepart == nil
+            && !showSplash && !showAuth && !homeEclipsee
+            && !compte.enPorte && !depart.cheminOuvert
     }
 
     /// L'ONGLET QU'ON TAPE — et la seule chose qu'il fait de différent
@@ -1491,11 +1543,10 @@ struct RootView: View {
     private var ongletChoisi: Binding<WoopTab> {
         Binding(get: { selection },
                 set: { cible in
-                    if cible == .exercises, active != nil,
-                       filmDepart == nil, morphPlayer < 0.98 {
-                        CoupeEtat.shared.jouer { poserGrandPlayer() }
-                        return
-                    }
+                    // ⚠️ LA MÊME PORTE QUE LE MENU (24-09) — voir
+                    // `allerAuxExercices`. Le doigt et le code ne peuvent
+                    // plus avoir deux comportements différents.
+                    if cible == .exercises { allerAuxExercices(anime: false); return }
                     selection = cible
                 })
     }
@@ -1571,7 +1622,7 @@ struct RootView: View {
                 .frame(width: 74, height: 76)
             VStack(alignment: .leading, spacing: 3) {
                 if let e = exo {
-                    Text(e.name)
+                    Text(e.nomLocalise)          // la même règle qu'ailleurs
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.95))
                         .lineLimit(1)
@@ -1935,6 +1986,9 @@ struct RootView: View {
             // Une par événement ; la file vit dans Annonces.swift.
             PileAnnoncesHote()
                 .zIndex(9)
+            if CommandLine.arguments.contains("-storyProbe") {
+                BancRetourStory().zIndex(16)
+            }
 
             // LE PLAYER GLOBAL (§3, plan tools/player/PLAN-PLAYER-CARD.md) —
             // UNE instance, au-dessus des pages et des pop-ups de jeu
@@ -2016,7 +2070,14 @@ struct RootView: View {
                     morph: $morphPlayer,
                     ecranTaille: UIScreen.main.bounds.size,
                     depart: a.startedAt ?? .now,
-                    exoChoisi: a.orderedExercises.first?.exercise?.name,
+                    // ⚠️ `nomLocalise`, JAMAIS `name` (24-09). Le
+                    // catalogue garde ses noms SOURCES, en français ; la
+                    // partition, elle, affiche déjà le nom localisé. La
+                    // tête disait donc « Hip thrust à la machine » au-dessus
+                    // d'une rangée « Machine hip thrust » — le même
+                    // exercice, deux noms, deux langues, sur le même écran.
+                    // C'est ça qui trouble, pas la formulation du titre.
+                    exoChoisi: a.orderedExercises.first?.exercise?.nomLocalise,
                     groupes: groupesDeSeance(a),
                     sticker: WoopSticker.pour(a).asset,
                     onStop: { DepartEtat.shared.pauseOuverte = true },
@@ -2435,6 +2496,10 @@ struct RootView: View {
                     // « après le Go on arrive direct sur l'overlay »), et il
                     // est POSÉ sous la coupe blanche, pas monté : quand le
                     // blanc s'ouvre, il est déjà là.
+                    // ⚠️ C'EST L'UN DES DEUX SEULS SITES QUI GARDENT LE FEU
+                    // (24-09, « conserve-le que pour l'arrivée par le
+                    // compteur ») : le passage en particules joue UNE fois
+                    // par séance, à l'instant où elle s'ouvre.
                     CoupeEtat.shared.jouer { poserGrandPlayer() }
                 }
                 .id(film)
@@ -2446,13 +2511,10 @@ struct RootView: View {
         // dessus de tout (le film de départ, la visite, le rejeu) — la bête, le
         // titre, le sous-titre, Réessayer. Le mode avion s'y lit et s'y règle
         // seul. Démonté quand le rejeu réussit.
-        // ⚠️ LE POINT REC SE POSE ICI, À LA RACINE — PAS SUR LE `TabView`.
-        // Mesuré le 23-09 : la barre d'onglets NATIVE se dessine au-dessus
-        // des overlays du `TabView`, et le coureur repassait par-dessus le
-        // point. À la racine, il couvre. Il ne prend jamais le doigt :
-        // c'est l'onglet dessous qui répond, et `ongletChoisi` remonte
-        // déjà le lecteur au lieu d'ouvrir la page.
-        .overlay(alignment: .bottom) { PointRecSurBarre(enSeance: active != nil) }
+        // ⚠️ LA RACINE, ET PAS LE `TabView` (mesuré le 23-09) : la barre
+        // d'onglets NATIVE se dessine au-dessus des surimpressions du
+        // `TabView`, et le coureur repassait par-dessus le point. Ici, il
+        // couvre — et le point de séance voyage avec `couvercles`.
         .overlay { couvercles }
         // LE COMPTE (14-09, Compte.swift) — trois choses, à la racine :
         //  · la porte DEMANDÉE (déconnexion, suppression, session révoquée) :
@@ -2681,15 +2743,15 @@ struct RootView: View {
             }
         }
         .onChange(of: sacre.manegeOuvert) { _, ouvert in
+            #if DEBUG
+            traceQA("racine : manegeOuvert=\(ouvert)")
+            #endif
             if ouvert {
                 // Le Manège est LA SORTIE DU PARCOURS : la route se replie
                 // sous lui (sa sortie ramène à la home ou au profil, jamais à
                 // la route — audit §4, accepté).
                 if depart.cheminOuvert { depart.fermerChemin() }
                 // Le FILET : si la mise en place ne publie jamais sa
-            #if DEBUG
-            traceQA("racine : manegeOuvert=\(ouvert)")
-            #endif
                 // pose (banc -boosterCine sans galerie, chemin
                 // imprévu), la home s'éclipse quand même — tard, mais
                 // jamais pendant la roue.
@@ -2726,7 +2788,21 @@ struct RootView: View {
         }
         // Live Activity : une séance restée ouverte retrouve son île au
         // lancement ; démarrage/fin ailleurs suivent le cycle réel.
-        .onAppear { WorkoutActivityController.ensure(active) }
+        .onAppear {
+            // `-fermeSeance` (05-09) : clore PROPREMENT une séance restée
+            // ouverte — l'île coincée qui chauffe. `endedAt` est posé (la
+            // séance est enregistrée, rien n'est effacé) et la Live
+            // Activity de l'île est éteinte explicitement : la @Query ne
+            // se rafraîchit pas dans cette même fermeture.
+            if CommandLine.arguments.contains("-fermeSeance"),
+               let a = active, a.endedAt == nil {
+                a.endedAt = .now
+                try? modelContext.save()
+                WorkoutActivityController.ensure(nil)
+            } else {
+                WorkoutActivityController.ensure(active)
+            }
+        }
         .onChange(of: activeWorkouts.isEmpty) { _, _ in
             WorkoutActivityController.ensure(active)
             celebrateFinishedWorkout()
