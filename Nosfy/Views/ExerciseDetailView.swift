@@ -3185,7 +3185,13 @@ struct ExerciseDetailView: View {
     /// bascule derrière elle : la fiche, l'onglet rendu à la home, le
     /// lecteur posé. La racine ne relance PAS de coupe : elle est ici.
     private func rendreLaBibliotheque() {
-        CoupeEtat.shared.jouer {
+        // ⚠️ COUPE SOURDE, PAS LE FEU (24-09) : « il y a trop de fois
+        // l'effet paillette dans les transitions ». Mais la coupe RESTE —
+        // c'est elle qui tient l'écran pendant que trois choses se
+        // réordonnent (la fiche se dépile, l'onglet est rendu, le lecteur
+        // se pose) ; sans elle on revoit la page exercices entre les deux,
+        // ce qu'elle avait refusé le 22-09.
+        CoupeEtat.shared.couper {
             dismiss()
             // ET LE LECTEUR REVIENT (22-09) : la fiche se dépile, la racine
             // rend l'onglet à la home et pose le player, le suivant déjà en

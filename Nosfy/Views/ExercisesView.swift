@@ -819,7 +819,8 @@ struct ExercisesView: View {
                             // au lecteur, comme l'onglet et le galet.
                             // Sous la coupe blanche, comme partout.
                             if montreAccueil, enSeance {
-                                CoupeEtat.shared.jouer {
+                                // Coupe SOURDE (24-09) : c'est un retour.
+                                CoupeEtat.shared.couper {
                                     PlayerEtat.shared.ouvrirLecteur = true
                                 }
                                 return
