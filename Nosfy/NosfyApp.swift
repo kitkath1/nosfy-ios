@@ -1445,7 +1445,7 @@ struct RootView: View {
     @State private var retourDepuisIle = false
 
     private var peutReprendreDepuisIle: Bool {
-        retourDepuisIle && active != nil && !showSplash && !showAuth && !nosfyOuvert
+        retourDepuisIle && active != nil && !showSplash && !showAuth && !filmNosfy
     }
 
     /// L'ONGLET ACCUEIL, SORTI DU MUR (06-09). La home v2 rouge, son menu qui
@@ -1465,7 +1465,8 @@ struct RootView: View {
                      onDetailSeance: ouvrirGrandPlayer,
                      exoParRoute: true)
             .toolbarVisibility(.hidden, for: .tabBar)
-            .environment(\.ongletCache, selection != .home || filmDepart != nil)
+            .environment(\.ongletCache, selection != .home || filmDepart != nil
+                         || RythmeEcran.shared.storyVisible)
     }
 
     /// LES PROPOSITIONS, LUES UNE FOIS — les douze dernières séances
@@ -1517,11 +1518,24 @@ struct RootView: View {
     }
 
     /// Une séance tourne, et rien de plus important ne tient l'écran.
-    /// ⚠️ Le lecteur en fait partie : devant la séance elle-même, un témoin
-    /// « ta séance t'attend » ne dit rien — et le bas de l'écran y est déjà
-    /// pris par le galet Stop.
+    ///
+    /// ⚠️⚠️ **DANS LE MENU, ET NULLE PART AILLEURS** (24-09, après son essai
+    /// sur son téléphone : « pas de bouton REC juste dans le menu, pas dans
+    /// les pages chrono quand je lance un exercice »).
+    ///
+    /// Le matin même il avait été sorti de la barre pour vivre sur tous les
+    /// écrans — et vu sur le vrai téléphone, un témoin posé par-dessus le
+    /// compteur d'une série est un intrus : ces pages-là sont immersives,
+    /// elles n'ont pas de barre justement pour qu'on ne regarde qu'elles.
+    /// Il redevient ce qu'il est : **l'onglet Exercices pendant une
+    /// séance**. Donc là où la barre existe — l'Accueil seul, les deux
+    /// autres onglets la masquant.
+    ///
+    /// ⚠️ Le lecteur reste exclu par `morphPlayer` : devant la séance
+    /// elle-même, un témoin « ta séance t'attend » ne dit rien.
     private var pointDeSeanceVisible: Bool {
-        active != nil && morphPlayer < 0.98 && filmDepart == nil
+        selection == .home
+            && active != nil && morphPlayer < 0.98 && filmDepart == nil
             && !showSplash && !showAuth && !homeEclipsee
             && !compte.enPorte && !depart.cheminOuvert
     }
@@ -1598,7 +1612,7 @@ struct RootView: View {
                                                   seconds: 60,
                                                   done: false)])]
         }
-        return lignes.compactMap { le in
+        let tous: [SlateGroupe] = lignes.compactMap { le in
             guard let exo = le.exercise else { return nil }
             // Séries, intervalles cardio faits ou longueurs de piscine — la
             // même ligne, trois contenus (15-09, plan cardio §D).
@@ -1606,6 +1620,30 @@ struct RootView: View {
                                rows: SlateGroupe.lignes(de: le,
                                                         restSeconds: le.restSeconds))
         }
+        // ⚠️⚠️ LE DERNIER EXERCICE FAIT PASSE EN TÊTE (24-09 : « quand on
+        // revient sur le récap des exercices, on affiche en premier toujours
+        // le dernier exercice fait »).
+        //
+        // La partition suivait `order`, c'est-à-dire l'ordre où les exercices
+        // ont été AJOUTÉS : en revenant, elle retrouvait le plus ancien en
+        // haut et celui qu'elle venait de faire plus bas.
+        //
+        // ⚠️ Le modèle n'a AUCUNE date de réalisation (`StrengthSet` porte
+        // `isDone`, pas d'horodatage) : « le dernier fait » se lit donc au
+        // dernier `order` parmi ceux qui portent du travail. C'est juste tant
+        // qu'on ajoute les exercices dans l'ordre où on les fait — ce que le
+        // lecteur impose, puisqu'ajouter c'est lancer.
+        //
+        // ⚠️ Et c'est CETTE tête qui décide de tout le reste : le trait blanc
+        // (`SlateRang.courant` = rang 1) et la rangée dépliée
+        // (`SlateListe(courant:)` = `groupes.first`) la suivent d'eux-mêmes.
+        // Une seule vérité, trois lectures.
+        guard let i = tous.lastIndex(where: { $0.done > 0 }), i != 0 else {
+            return tous
+        }
+        var ordonnes = tous
+        ordonnes.insert(ordonnes.remove(at: i), at: 0)
+        return ordonnes
     }
 
     /// LE CONTENU DE LA PILULE — les vraies données de la séance, dans
@@ -1785,9 +1823,21 @@ struct RootView: View {
             .onChange(of: NavEtat.shared.page) { _, p in
                 NavDiagnostic.noter("page", destination: p.rawValue)
                 let cible = p.ongletWoop
-                if selection != cible {
-                    withAnimation(.easeOut(duration: 0.3)) { selection = cible }
-                }
+                guard selection != cible else { return }
+                // ⚠️⚠️ LA QUATRIÈME PORTE (24-09 au soir). Ce pont écrivait
+                // `selection` EN DIRECT, comme `routerVers` avant lui : il
+                // pouvait donc poser l'onglet Exercices en pleine séance —
+                // la page qu'on a justement décidé de masquer pendant une
+                // séance — sans passer par la règle.
+                //
+                // C'est le MÊME défaut, pour la quatrième fois, sous un
+                // quatrième costume (22-09 « Page exercices », 22-09 le
+                // chevron, 24-09 le bouton de la home, et ce pont). À
+                // chaque fois parce que la règle était écrite chez les
+                // appelants au lieu de l'être à la porte. Il n'y a qu'UNE
+                // porte : tout le monde l'emprunte, ou rien ne marche.
+                if cible == .exercises { allerAuxExercices(anime: true); return }
+                withAnimation(.easeOut(duration: 0.3)) { selection = cible }
             }
             .onChange(of: selection, initial: true) { _, s in
                 // Le contexte de la boîte noire — POSÉ, jamais deviné.
