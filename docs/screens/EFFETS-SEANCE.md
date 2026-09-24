@@ -82,6 +82,13 @@ reste noir.
 c'est la seule route qui passe au-dessus de la barre native — mais il ne
 s'affiche que **là où la barre existe**, c'est-à-dire sur l'Accueil seul.
 
+✅ **VÉRIFIÉ SUR SON iPHONE, le 24-09 au soir** — son verdict, mot pour mot :
+« je ne vois jamais le coureur, c'est que le REC, et on ne voit plus la page
+exercice quand la session est en cours ». C'est la seule chose de ce catalogue
+qui soit confirmée sur le vrai téléphone : les **quatre portes** vers les
+exercices sont fermées (le binding du TabView, `routerVers`, le bouton de la
+home, le pont `NavEtat`), et le témoin tient sa place.
+
 ⚠️ **Il a vécu quelques heures sur tous les écrans, et c'était une erreur**
 (corrigée le 24-09 au soir, après son essai sur le téléphone). Posé par-dessus
 le compteur d'une série, un témoin est un intrus : ces pages-là sont
