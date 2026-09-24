@@ -162,7 +162,20 @@ final class SondeVol {
     ///   5 coffre (18-09 : le projecteur — la page n'avait aucun tic) ·
     ///   6 lentille de série · 7 manège (21-09 : les deux angles morts de
     ///   toutes les campagnes — la séance et le booster n'avaient AUCUN tic,
-    ///   donc aucune campagne ne pouvait ni les accuser ni les disculper).
+    ///   donc aucune campagne ne pouvait ni les accuser ni les disculper) ·
+    ///   **8 les horloges du LECTEUR** (24-09 : la campagne du soir a mesuré
+    ///   une séance entière sans qu'AUCUN tic ne bouge — les seules familles
+    ///   qui battaient étaient les galets, la home et la lentille. Le lecteur
+    ///   restait l'angle mort annoncé le 21-09).
+    ///
+    /// ⚠️ CE QUI NE PEUT PAS ÊTRE TIQUÉ, ET POURQUOI C'EST IMPORTANT. Les
+    /// effets posés sur la séance les 23 et 24-09 — le point, les halos, les
+    /// carrés, le bord du bouton — sont des animations DÉCLARATIVES : aucune
+    /// ligne de code ne s'exécute par image, c'est le compositeur qui les
+    /// tient (et c'est bien pour ça que `corps` reste à 0). Un tic ne les
+    /// verra JAMAIS. Le seul instrument qui peut les accuser ou les
+    /// disculper est leur BARREAU, en A/B sur un téléphone froid :
+    /// `-sansEffetsSeance` les éteint tous d'un coup.
     /// ⚠️ `tools/perf/lire-vol.py` n'en lit que cinq : à étendre avant de
     /// lire une campagne qui vise ces deux-là.
     /// Ce sont des comptes par intervalle de publication, pas des images
@@ -170,11 +183,11 @@ final class SondeVol {
     /// et un intervalle de gel peut durer plus d'une seconde.
     @inline(__always)
     func tic(_ i: Int) {
-        guard i >= 0, i < 8 else { return }
+        guard i >= 0, i < 10 else { return }
         tics[i] &+= 1
     }
-    @ObservationIgnored private var tics = [Int](repeating: 0, count: 8)
-    private(set) var ticsParSeconde = [Int](repeating: 0, count: 8)
+    @ObservationIgnored private var tics = [Int](repeating: 0, count: 10)
+    private(set) var ticsParSeconde = [Int](repeating: 0, count: 10)
 
     /// Elle tape la pastille : « LÀ, ça a lagué ». La marque part dans la
     /// ligne de la seconde en cours.
@@ -283,7 +296,7 @@ final class SondeVol {
         if onglet == "?" { onglet = NavEtat.shared.page.rawValue }
         let bancHome: String = BancCoutHome.demande ? BancCoutHome.shared.phase.rawValue : "inactif"
         // Un format littéral évite une longue résolution des surcharges de +.
-        let format = "{\"t\":%.1f,\"img\":%.1f,\"pire\":%.0f,\"onglet\":\"%@\",\"seance\":%d,\"player\":%d,\"ile\":%d,\"drag\":%d,\"marque\":%d,\"gel\":%d,\"cpu\":%.0f,\"therm\":%d,\"corps\":%d,\"tics\":[%d,%d,%d,%d,%d,%d,%d,%d],\"chemin\":%d,\"protection\":%d,\"bancHome\":\"%@\",\"welcome\":%d,\"premiere\":%d,\"story\":%d,\"mouvement\":%d}\n"
+        let format = "{\"t\":%.1f,\"img\":%.1f,\"pire\":%.0f,\"onglet\":\"%@\",\"seance\":%d,\"player\":%d,\"ile\":%d,\"drag\":%d,\"marque\":%d,\"gel\":%d,\"cpu\":%.0f,\"therm\":%d,\"corps\":%d,\"tics\":[%d,%d,%d,%d,%d,%d,%d,%d,%d,%d],\"chemin\":%d,\"protection\":%d,\"bancHome\":\"%@\",\"welcome\":%d,\"premiere\":%d,\"story\":%d,\"mouvement\":%d}\n"
         let ligne = String(format: format,
             t, cadence, min(pireMs, 2000), onglet,
             enSeance ? 1 : 0,
@@ -296,6 +309,7 @@ final class SondeVol {
             ticsParSeconde[0], ticsParSeconde[1], ticsParSeconde[2],
             ticsParSeconde[3], ticsParSeconde[4], ticsParSeconde[5],
             ticsParSeconde[6], ticsParSeconde[7],
+            ticsParSeconde[8], ticsParSeconde[9],
             DepartEtat.shared.cheminOuvert ? 1 : 0,
             ProtectionThermique.shared.ambianceAuRepos ? 1 : 0,
             bancHome,
