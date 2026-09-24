@@ -1053,7 +1053,13 @@ struct FoyerPage: View {
     /// Le composant de la maison, pleine colonne — et LA LÈVRE : le feu le
     /// RASE par en dessous, on ne l'éclaire pas.
     private func boutonChoisir(_ W: CGFloat, _ B: CGFloat) -> some View {
-        BoutonPrimaire(title: Langue.en ? "Choose an exercise" : "Choisissez un exercice") { onChoisir() }
+        // ⚠️ LE MÊME MOT QUE L'OVERLAY (24-09 : « sur la home noire, mets le
+        // wording "add exercise" pour consistance avec l'overlay »). Cet
+        // écran-ci n'existe QU'EN SÉANCE — il porte le chrono, les séries et
+        // le lien Terminer : « ajouter » y est donc la vérité, comme dans le
+        // lecteur. Un même geste ne change plus de verbe selon la porte par
+        // laquelle on l'atteint.
+        BoutonPrimaire(title: L("Ajouter un exercice", "Add an exercise")) { onChoisir() }
             .overlay {
                 if feu {
                     ZStack {
