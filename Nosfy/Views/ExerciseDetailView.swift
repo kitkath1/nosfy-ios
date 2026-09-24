@@ -47,6 +47,16 @@ struct ExerciseDetailView: View {
     /// attend qu'elle se referme (verdict §12 : « une fois la pill ou la pop-up
     /// Reward fermée, on affiche l'overlay avec la flamme »).
     @State private var pillGain: (gain: Int, total: Int)?
+    /// LE COMBIENTIÈME TOASTER DE LA SÉANCE — c'est lui qui choisit la ROBE
+    /// (`RobeNotif.pour(tour:)`, 24-09 : jauge, aile, clin, jauge…).
+    ///
+    /// ⚠️ Un COMPTEUR, pas le rang de la série : les rangs 3, 5 et 10 sont
+    /// des rangs de pop-up et ne posent aucun toaster — sur le rang, la robe
+    /// du milieu serait tombée deux fois moins souvent. Et il sert les DEUX
+    /// chemins qui posent une pill : la fin de série ET la longueur de
+    /// piscine (`direLesPiecesDeLaLongueur`), sans quoi la piscine serait
+    /// clouée à une robe pour toujours.
+    @State private var tourRobe = 0
     /// Le jeton de la pill de la PISCINE (15-09) : chaque « + » la relance
     /// deux secondes ; seule la dernière relance a le droit de l'éteindre.
     @State private var pillJeton = 0
@@ -420,6 +430,11 @@ struct ExerciseDetailView: View {
     /// La pop-up de relance porte la série vécue jusqu'au choix de l'utilisateur.
     /// Sa fermeture déclenche l'écriture et, sans relance, le retour des pièces.
     @State private var restartAsk: FinishedSeries?
+    /// ⚠️ LE GESTE SUIVANT N'EST PLUS ÉVIDENT (24-09). Fermer la pop-up
+    /// flamme sans relancer ni choisir, c'est rester sur la fiche d'un
+    /// exercice qu'on vient de finir, sans rien qui dise où aller. Le
+    /// chevron s'allume alors — et seulement alors.
+    @State private var guideRetour = false
     /// La volée de pièces vers la carte Série : l'instant du départ.
     @State private var coinsAt: Date?
     /// L'ARRIVÉE DU TEXTE — « quand on arrive sur la page détail
@@ -1257,9 +1272,16 @@ struct ExerciseDetailView: View {
                     // pill rudimentaire — le gain en tête, la jauge du coffre
                     // (reste / prix), la pièce qui tourne. `total` n'est plus
                     // affiché ici (la jauge dit mieux « où en est le coffre »).
-                    ToasterGain(gain: pg.gain,
-                                fraction: Double(EconomieWoop.shared.reste)
-                                    / Double(max(EconomieWoop.shared.prixBooster, 1)))
+                    // ⚠️ **ET ELLE CHANGE DE ROBE** (24-09, son constat :
+                    // « je vois bien les toasters avec la pièce sur le côté
+                    // +20, mais pas les deux autres variants »). Les variants
+                    // 2 et 3 étaient codés depuis le 29-08 et n'avaient AUCUN
+                    // site d'appel — seul le banc `-notifLab` les montrait.
+                    // `ToasterSerie` fait tourner les robes sur le rang de la
+                    // série ; `-robeNotif <1|5|6>` en cloue une pour filmer.
+                    ToasterSerie(gain: pg.gain,
+                                 fraction: fractionCoffre(apres: pg.total),
+                                 tour: tourRobe)
                         // REMONTÉE + SOUS LE DYNAMIC ISLAND (15-09, Kathryn :
                         // « ça remonte mais ça ne disparaît pas dans le display
                         // island ») : on RESPECTE la safe-area du haut (elle
@@ -2228,7 +2250,8 @@ struct ExerciseDetailView: View {
         CommandLine.arguments.contains("-rewardAtelier")
 
     private var headerChips: some View {
-        RangeeChips(retour: { dismiss() }) {
+        RangeeChips(retour: { guideRetour = false; dismiss() },
+                    guide: guideRetour) {
             if Self.chipAtelier {
                 ChipVerre(symbole: "ellipsis", label: "Options") {
                     rewardVariant =
@@ -2827,6 +2850,7 @@ struct ExerciseDetailView: View {
         coinsAt = .now
         pillJeton += 1
         let jeton = pillJeton
+        tourRobe += 1
         withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
             pillGain = (gain: gain, total: total)
         }
@@ -3140,6 +3164,7 @@ struct ExerciseDetailView: View {
         issueEnCours = issue
         switch issue {
         case .pill(let g, let t):
+            tourRobe += 1
             withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
                 pillGain = (gain: g, total: t)
             }
@@ -3159,6 +3184,29 @@ struct ExerciseDetailView: View {
         case .moment, .reward:
             rewardShow = true
         }
+    }
+
+    /// OÙ EN EST LE COFFRE APRÈS CE GAIN — ce que dit la jauge du toaster.
+    ///
+    /// ⚠️⚠️ **ELLE NE BOUGEAIT JAMAIS, ET LA CAUSE EST ICI** (24-09, son
+    /// constat : « la barre de progression ne marche jamais, elle s'arrête au
+    /// milieu, enfin même ne bouge jamais »). Le site d'appel lisait
+    /// `EconomieWoop.reste` NU. Or `reste` vaut `solde_or mod prix_booster`
+    /// et n'est réécrit **que quand le serveur répond** (`etat_coffre`,
+    /// `cloturer_seance` — EconomieNosfy.swift:217, :332, :374, :451) : en
+    /// pleine séance le serveur n'a encore RIEN payé (la fiche DIT le gain,
+    /// le serveur PAIE à la clôture), donc `reste` ne bougeait pas d'une
+    /// pièce et les dix toasters d'une séance s'arrêtaient tous au même
+    /// point. La barre ne mentait pas : elle disait un chiffre d'avant.
+    ///
+    /// ⚠️ Ce qu'on ajoute n'est PAS inventé (la règle du compte vide) :
+    /// `total` est le cumul RÉEL de la séance, celui que la pill affiche
+    /// déjà. C'est une quittance locale, et le journal du serveur rattrape à
+    /// la clôture — la même règle que le +10 du Welcome Back.
+    private func fractionCoffre(apres total: Int) -> Double {
+        let prix = max(EconomieWoop.shared.prixBooster, 1)
+        let dedans = (EconomieWoop.shared.reste + max(total, 0)) % prix
+        return Double(dedans) / Double(prix)
     }
 
     /// La question de la fin de série — la pop-up à la flamme.
@@ -3185,6 +3233,7 @@ struct ExerciseDetailView: View {
     /// bascule derrière elle : la fiche, l'onglet rendu à la home, le
     /// lecteur posé. La racine ne relance PAS de coupe : elle est ici.
     private func rendreLaBibliotheque() {
+        guideRetour = false
         // ⚠️ COUPE SOURDE, PAS LE FEU (24-09) : « il y a trop de fois
         // l'effet paillette dans les transitions ». Mais la coupe RESTE —
         // c'est elle qui tient l'écran pendant que trois choses se
@@ -3202,6 +3251,12 @@ struct ExerciseDetailView: View {
 
     private func exitRestart(_ f: FinishedSeries, thenLaunch: Bool) {
         restartAsk = nil
+        // ⚠️ SEULEMENT QUAND ON NE RELANCE PAS. Relancer donne le geste
+        // suivant ; fermer ne le donne pas, et c'est là qu'il faut montrer
+        // la sortie. (« Choisir un autre exercice » appelle
+        // `rendreLaBibliotheque` juste après : la fiche se dépile, le
+        // guide n'a pas le temps de s'allumer.)
+        guideRetour = !thenLaunch
         if thenLaunch {
             // Le cadran couvre la scène dans un instant : la carte s'écrit
             // sans cérémonie — les pièces n'ont de sens qu'à l'air libre.
