@@ -189,7 +189,7 @@ struct InviteAnimee: View {
     /// lumière très Apple pour montrer que c'est en cours ». Une seule
     /// lueur dans toute la maison : deux balayages qui divergeraient ne
     /// seraient plus la même langue.
-    var texte: String = "Choisissez un exercice"
+    var texte: String = L("Choisissez un exercice", "Choose an exercise")
     /// LA COULEUR DE LA LUEUR (23-09, verdict Kathryn : « des couleurs de
     /// flamme braise aussi dans le header quand je suis en séance en
     /// cours »). Blanc par défaut : la pilule et l'invite ne changent pas.
@@ -922,7 +922,7 @@ struct PiluleVagabonde<Contenu: View>: View {
             .contentShape(PriseIle())
             .onTapGesture(perform: onOuvrir)
             .accessibilityElement(children: .contain)
-            .accessibilityLabel("Séance en cours")
+            .accessibilityLabel(L("Séance en cours", "Session in progress"))
             .accessibilityHint("Ouvrir le détail de la séance")
             .accessibilityAddTraits(.isButton)
             .accessibilityIdentifier("ile-seance-home")
@@ -1985,6 +1985,11 @@ struct GrandPlayer: View {
     let ecranTaille: CGSize
     var ancreY: CGFloat = 0
     let depart: Date
+    /// ⚠️ PLUS LU PAR LA TÊTE DEPUIS LE 24-09 : elle dit l'ÉTAT, et le
+    /// nom de l'exercice est descendu dans la partition, où il est mis
+    /// en évidence. On le garde branché — elle a changé d'avis trois
+    /// fois sur ce que la tête doit dire dans la même journée, et le
+    /// rebrancher coûte plus cher que de le laisser passer.
     let exoChoisi: String?
     let groupes: [SlateGroupe]
     /// Le sticker du jour — la vraie mini-card de séance.
@@ -2012,6 +2017,9 @@ struct GrandPlayer: View {
     /// rétrécit, il ne disparaît pas (la loi du 05-09, « redessiner pour
     /// animer coûte 3 à 8 fois plus qu'animer »).
     @State private var repli: CGFloat = GrandPlayer.bancRepli
+    /// Le compte des invitations envoyées au bouton d'ajout — il monte
+    /// d'un cran chaque fois qu'un exercice se termine.
+    @State private var inviteAjouter = 0
     /// L'exercice déjà lancé depuis CE lecteur : sa rangée de proposition
     /// se coche sans attendre l'aller-retour SwiftData.
     @State private var lances: Set<String> = []
@@ -2214,7 +2222,8 @@ struct GrandPlayer: View {
                 // du rideau — rien ne vit caché, et rien n'anime sous le
                 // doigt. Elle se démonte dès qu'on passe en mode choisir.
                 .background {
-                    if !enChoix, morph > 0.98, fermeture < 0.5 {
+                    if !enChoix, morph > 0.98, fermeture < 0.5,
+                       !ChaleurTete.sans {
                         ChaleurTete().allowsHitTesting(false)
                     }
                 }
@@ -2250,16 +2259,31 @@ struct GrandPlayer: View {
             .padding(.top, 10)
             .padding(.bottom, 20)
         } else {
-            HStack(spacing: 14) {
-                chevronRetour
-                miniCarte(carte: carte, echelle: echelle, r: r)
-                // La place du chevron est rendue de l'autre côté : la
-                // carte du jour reste CENTRÉE, elle ne glisse pas quand on
-                // entre ou sort du mode choisir.
-                if choisit { Color.clear.frame(width: 24, height: 1) }
+            // ⚠️⚠️ UNE SEULE VUE, ET C'EST UN CORRECTIF (24-09).
+            //
+            // Cette branche rendait TROIS vues sœurs (la ligne de la carte,
+            // le titre, le chrono). Un `@ViewBuilder` qui rend plusieurs
+            // vues rend un TUPLE — et un modificateur posé sur l'appel est
+            // appliqué À CHACUNE. Le `.background { ChaleurTete() }` du
+            // dessus était donc dessiné TROIS FOIS, chaque fois à la taille
+            // de sa vue : trois rectangles orange, un autour de la carte,
+            // un derrière le nom, un derrière « session · 15:16 ».
+            // C'est le calque orange qu'elle a photographié.
+            //
+            // ⚠️ L'ESPACEMENT EST REPRIS À L'IDENTIQUE (`10 - 5 * r`, celui
+            // du VStack parent) : la tête ne bouge pas d'un point.
+            VStack(spacing: 10 - 5 * r) {
+                HStack(spacing: 14) {
+                    chevronRetour
+                    miniCarte(carte: carte, echelle: echelle, r: r)
+                    // La place du chevron est rendue de l'autre côté : la
+                    // carte du jour reste CENTRÉE, elle ne glisse pas quand
+                    // on entre ou sort du mode choisir.
+                    if choisit { Color.clear.frame(width: 24, height: 1) }
+                }
+                titreOverlay(25).padding(.top, 2).opacity(Double(nom))
+                chronoSession.padding(.top, 2).padding(.bottom, 14)
             }
-            titreOverlay(25).padding(.top, 2).opacity(Double(nom))
-            chronoSession.padding(.top, 2).padding(.bottom, 14)
         }
     }
 
@@ -2283,9 +2307,16 @@ struct GrandPlayer: View {
 
     private func miniCarte(carte: CGFloat, echelle: CGFloat,
                            r: CGFloat) -> some View {
-        MiniCardJour(date: depart, sticker: sticker)
+        MiniCardJour(date: depart, sticker: sticker, flotte: true)
             .scaleEffect(echelle)
             .frame(width: carte, height: carte)
+            // ⚠️ LE HALO DE LA CARTE (24-09 : « renforcer les halos
+            // derrière lui »). Il est DERRIÈRE la carte, qui est noire :
+            // on n'en voit donc que la couronne, tout autour — une chose
+            // qui rayonne, jamais une nappe posée sur l'écran. Il respire
+            // sur 4,7 s, la chaleur de la tête sur 5,4 : aucune des deux
+            // n'est multiple de l'autre, elles ne se rattrapent jamais.
+            .background { HaloCarte(cote: carte).allowsHitTesting(false) }
                 // LE TICKET DE PAPIER — il RESTE ici, dans le DÉTAIL
                 // (verdict Kathryn 05-09, correction du même jour : « il
                 // fallait pas enlever le ticket avec le nombre de sets
@@ -2316,7 +2347,10 @@ struct GrandPlayer: View {
     private var chronoSession: some View {
         TimelineView(.periodic(from: depart, by: 1)) { tl in
             let s = max(0, Int(tl.date.timeIntervalSince(depart)))
-            Text("session · \(s / 60):\(String(format: "%02d", s % 60))")
+            // ⚠️ DEUX LIGNES, PAS TROIS (24-09 : « trop de texte, faut
+            // choisir, faut faire comme Apple »). L'état est monté dans le
+            // TITRE ; cette ligne ne porte plus que le temps.
+            Text("\(L("session", "session")) · \(s / 60):\(String(format: "%02d", s % 60))")
                 .monospacedDigit()
                 .foregroundStyle(.white.opacity(0.5))
         }
@@ -2339,14 +2373,29 @@ struct GrandPlayer: View {
     /// CE QUE MONTRE LE LECTEUR, dans l'ordre : la zone qu'on vient
     /// d'ouvrir, sinon la proposition de Nosfy tant que la séance est
     /// vide, sinon ta partition.
+    /// ⚠️⚠️ UNE SEULE GRAMMAIRE DE MOUVEMENT (24-09 : « la transition entre
+    /// l'écran de base et l'écran avec la liste d'exos dans l'overlay, plus
+    /// fluide ou cohérente »).
+    ///
+    /// Avant, les trois branches se remplaçaient sans transition : SwiftUI
+    /// faisait disparaître l'une et apparaître l'autre au même endroit, en
+    /// même temps — deux choses qui se traversent, et l'œil ne sait pas
+    /// laquelle suivre. Désormais tout obéit à la même phrase :
+    /// **ce qui arrive descend de la tête, ce qui part s'en va par le bas.**
+    /// Les carrés entrent déjà par le haut (`barreZones`) : le contenu les
+    /// suit, donc tout le panneau se dépose d'un seul geste.
+    private static let depuisLaTete = AnyTransition.asymmetric(
+        insertion: .opacity.combined(with: .offset(y: -16)),
+        removal: .opacity.combined(with: .offset(y: 16)))
+
     @ViewBuilder
     private var contenu: some View {
         if enChoix, let z = zone {
-            listeZone(z)
+            listeZone(z).transition(Self.depuisLaTete)
         } else if enChoix, !propositions.isEmpty {
-            listePropositions
+            listePropositions.transition(Self.depuisLaTete)
         } else {
-            partition
+            partition.transition(Self.depuisLaTete)
         }
     }
 
@@ -2384,7 +2433,7 @@ struct GrandPlayer: View {
                 .tracking(1.2)
                 .foregroundStyle(.white.opacity(0.5))
             if let z = propositions.first?.exercise.category {
-                Text(z.rawValue)
+                Text(z.nomLocalise)
                     .font(.inter(10.5, .medium))
                     .foregroundStyle(.white.opacity(0.32))
             }
@@ -2413,6 +2462,15 @@ struct GrandPlayer: View {
         withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
             choisit.toggle()
             if !choisit { zone = nil } else { zone = zoneCourante }
+            // ⚠️⚠️ LA TÊTE DIT DANS QUEL ÉTAT ON EST (24-09 : « quand je
+            // clique sur ajouter, j'ai le mode réduit direct, pour faire
+            // une vraie distinction entre les deux états »).
+            //   · séance  → tête EN GRAND, la carte du jour, le nom ;
+            //   · choisir → tête RÉDUITE, une rangée, les carrés dessous.
+            // Avant, le mode choisir héritait du repli du scroll : on
+            // pouvait entrer dans « choisir » avec la tête en grand, et les
+            // deux états se ressemblaient. Le chevron rend la grande tête.
+            repli = choisit ? 1 : 0
         }
     }
 
@@ -2425,10 +2483,20 @@ struct GrandPlayer: View {
         // chevron qui ferme — deux gestes différents pour deux sens
         // différents, c'est ce qu'elle a demandé.
         if !seanceVide, !choisit {
-            BoutonAjouter(texte: "Ajouter un exercice",
-                          enGeste: enGeste) { basculer() }
+            BoutonAjouter(texte: L("Ajouter un exercice", "Add an exercise"),
+                          enGeste: enGeste,
+                          invite: inviteAjouter) { basculer() }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 18)
+                // ⚠️ `task(id:)` ET PAS `onChange` : le bouton peut naître
+                // DÉJÀ dans l'état « exercice fini » — elle revient de la
+                // fiche, la vue se monte — et un `onChange` ne voit jamais
+                // la valeur d'arrivée. L'invitation partirait une fois sur
+                // deux, ce qui est pire que jamais.
+                .task(id: exerciceFini) {
+                    guard exerciceFini else { return }
+                    inviteAjouter &+= 1
+                }
         }
     }
 
@@ -2462,7 +2530,12 @@ struct GrandPlayer: View {
         // On repart de la séance au retour : elle vient d'y ajouter une
         // ligne, c'est elle qu'elle veut voir.
         choisit = false
-        CoupeEtat.shared.jouer {
+        // ⚠️ PLUS DE PAILLETTES ICI — c'est le site qu'elle a nommé le
+        // 24-09 (« pas au lancement d'un exercice, avec le galet blanc »).
+        // Il garde une coupe SOURDE parce que ce qui suit n'est pas un
+        // simple changement d'écran : l'exercice est ajouté à la séance,
+        // l'onglet est rendu, la fiche s'ouvre.
+        CoupeEtat.shared.couper {
             onChoisirExo(exo)
             poserFerme()
         }
@@ -2488,10 +2561,22 @@ struct GrandPlayer: View {
                     .contentShape(RoundedRectangle(cornerRadius: 13,
                                                    style: .continuous))
                     .highPriorityGesture(TapGesture().onEnded {
-                        Haptique.leger()
+                        // ⚠️ DEUX POIDS POUR DEUX SENS (24-09) : on SENT
+                        // qu'on ouvre une zone, on sent moins qu'on la
+                        // referme. Une seule vibration pour les deux, et
+                        // le doigt n'apprend rien.
+                        if zone == z { Haptique.leger() } else { Haptique.moyen() }
+                        // ⚠️ LE MÊME CARRÉ REFERME SA LISTE (24-09 : « je
+                        // dois pouvoir revenir en arrière si je reclique
+                        // dessus »). Il ne touche PLUS au repli : en mode
+                        // choisir la tête est réduite de bout en bout, et
+                        // c'est le chevron qui rend la grande tête. Un
+                        // carré qui rouvrirait la tête effacerait la
+                        // distinction des deux états.
+                        let meme = (zone == z)
                         withAnimation(.spring(response: 0.34,
                                               dampingFraction: 0.84)) {
-                            zone = (zone == z) ? nil : z
+                            zone = meme ? nil : z
                             repli = 1
                         }
                     })
@@ -2580,15 +2665,46 @@ struct GrandPlayer: View {
     /// Reste le médaillon, au même pixel du début à la fin de la séance —
     /// le seul geste qui termine, et le pouce le trouve sans regarder.
     private func piedExercices(encre: CGFloat, enGeste: Bool) -> some View {
-        MedaillonStop(lueur: true, action: {
-            Haptique.moyen()
-            onStop()
-        })
-            .scaleEffect(1.35)
-            .frame(width: 96, height: 96)
-            // Le stop DESCEND encore (verdict 04-09, 2e passe).
-            .padding(.bottom, 14)
-            .opacity(Double(encre))
+        // ⚠️⚠️ LE MOT NE CRÉE PAS UNE DEUXIÈME PORTE — IL NOMME CELLE QUI
+        // EXISTE (24-09 : « ajoute : Terminer »).
+        //
+        // Le mot « Terminer » n'existait NULLE PART : ni sur la fiche, ni
+        // dans le carrefour de fin de série (qui propose de recommencer ou
+        // de changer d'exercice, jamais de finir), et le seul chemin qui
+        // termine une séance était ce galet — un carré blanc dans un rond,
+        // un objet qu'on apprend au lieu d'un mot qu'on lit.
+        //
+        // Le poser À CÔTÉ du galet aurait fait deux portes pour une seule
+        // action, et « le Stop ne bouge jamais du début à la fin d'une
+        // séance » est une loi de la maison depuis le 04-09. Posé DESSOUS,
+        // il ne fait qu'étiqueter la porte : un seul chemin, enfin nommé.
+        // ⚠️ LE CADRE SERRE L'ENCRE (mesuré en capture) : le médaillon ne
+        // peint que 43 pt de haut dans un cadre de 96 — 26 pt de vide
+        // au-dessus et au-dessous. Le mot posé sous ce cadre flottait à
+        // 52 pt de son galet, et ne se lisait plus comme son étiquette.
+        VStack(spacing: 10) {
+            MedaillonStop(lueur: true, action: {
+                Haptique.moyen()
+                onStop()
+            })
+                .scaleEffect(1.35)
+                .frame(width: 96, height: 56)
+            Text(L("Terminer", "Finish"))
+                .font(.inter(12, .semibold))
+                .tracking(0.3)
+                .foregroundStyle(.white.opacity(0.52))
+                // Il ne prend pas le doigt : c'est le galet qui répond,
+                // et un mot qui déclencherait ferait la deuxième porte
+                // qu'on vient d'éviter.
+                .allowsHitTesting(false)
+        }
+        // ⚠️ 26 ET PLUS 14 : le mot a pris la place que le galet occupait
+        // au ras du bord. Mesuré en capture — à 14, « Terminer » tombait à
+        // 22 pt du bas de la dalle, là où vit la barre d'accueil. C'est le
+        // PIED entier qui remonte, pas le galet seul : il garde sa place
+        // relative sous son mot.
+        .padding(.bottom, 26)
+        .opacity(Double(encre))
     }
 
     /// LE DRAG-POUR-FERMER (école Spotify) — posé sur la TÊTE
@@ -2662,19 +2778,64 @@ struct GrandPlayer: View {
     /// déjà un exercice fait, deux séries et deux flammes — `exoChoisi`
     /// tombe à `nil` dès qu'aucun exercice n'est ouvert. On lit maintenant
     /// `groupes`, c'est-à-dire ce qui est RÉELLEMENT affiché dessous.
+    /// L'exercice en tête de partition n'a plus une seule série en
+    /// attente. ⚠️ `groupes.first` : la partition met TOUJOURS le courant
+    /// en premier (`groupesDeSeance`). Une partition vide ne dit rien —
+    /// on ne déclare pas fini ce qui n'a pas commencé.
+    private var exerciceFini: Bool {
+        guard let g = groupes.first, !g.rows.isEmpty else { return false }
+        return g.rows.allSatisfy(\.done)
+    }
+
     private var nomDeLaTete: String {
         // ⚠️ LA PAGE CHANGE, LE TITRE AUSSI (verdict Kathryn 23-09 : « ils
         // n'apparaissent que quand on clique sur ajouter un exercice ET LA
         // PAGE CHANGE »). Un écran qui change de métier change de nom :
         // sans ça, seuls les carrés bougeaient et on lisait encore
         // « Séance en cours » au-dessus d'une liste de choix.
-        if enChoix { return "Choisissez un exercice" }
-        if let nom = exoChoisi, !nom.isEmpty { return nom }
+        // ⚠️ DANS LES DEUX LANGUES (24-09). Tout le lecteur était écrit
+        // en français en dur alors que l'app tourne en anglais : la règle de
+        // la maison est qu'un texte ne naît JAMAIS dans une seule langue
+        // (`Langue.swift`). C'est l'autre moitié de « cela me confuse ».
+        //
+        // ⚠️⚠️ UN SEUL VERBE (24-09). Le bouton promettait « Ajouter » et
+        // l'écran qui s'ouvre répondait « Choisissez » : le même geste
+        // changeait de mot en chemin, et quand deux mots désignent une
+        // chose on croit qu'il y en a deux. C'est le MÊME `L(...)` que le
+        // bouton — s'il change, les deux changent.
+        if enChoix { return L("Ajouter un exercice", "Add an exercise") }
+        // ⚠️⚠️ LA TÊTE DIT L'ÉTAT, PAS LE SUJET (24-09, sa décision :
+        // « la logique sera donc de ne pas avoir Machine hip thrust mais
+        // l'état — Add an exercise, même si redondance, ou En cours — et
+        // highlighter aussi l'exo en cours et le set en cours »).
+        //
+        // Le nom de l'exercice ne DISPARAÎT pas : il descend là où il est
+        // utile, dans la partition, où il est désormais mis en évidence.
+        // Ce qui reste ici est la seule chose que la partition ne peut pas
+        // dire d'elle-même : où l'on est. Et les deux états portent
+        // maintenant le MÊME effet de texte — c'est sa « consistance » :
+        // « In progress » et « Add an exercise » sont la même ligne, au
+        // même endroit, avec le même dégradé qui la traverse.
+        if !seanceVide {
+            // ⚠️⚠️ L'ÉTAT DU MILIEU (24-09 : « il manque un état quand je
+            // dois comprendre que j'ai terminé un exercice et que je dois
+            // en ajouter un »). Il y avait « en cours » et « ajouter » ;
+            // entre les deux, rien ne disait que l'exercice était fini.
+            //
+            // ⚠️ ET IL NE S'INVENTE PAS — il se LIT. Un exercice est fini
+            // quand il ne lui reste aucune série en attente : c'est la
+            // même vérité que le cheveu blanc de la série en cours
+            // (`SlateRang.indexCourant`, 23-09), qui ne désigne plus rien
+            // quand tout est fait. Aucun drapeau nouveau, aucune donnée à
+            // tenir à jour : deux choses qui pourraient diverger.
+            return exerciceFini ? L("Exercice terminé", "Exercise done")
+                                : L("En cours", "In progress")
+        }
         // ⚠️ `seanceVide`, PAS `groupes.isEmpty` (mesuré au simulateur
         // 22-09) : la partition n'est JAMAIS vide — elle porte toujours au
         // moins un groupe, même sans une seule série faite. Elle disait donc
         // « Séance en cours » au-dessus d'un ticket « 0 SETS ».
-        return seanceVide ? "Choisissez un exercice" : "Séance en cours"
+        return L("Ajouter un exercice", "Add an exercise")
     }
 
     /// ⚠️ LA TAILLE SE PASSE EN PARAMÈTRE (relevé 22-09, le titre coupé
@@ -2687,6 +2848,19 @@ struct GrandPlayer: View {
     /// cours avec un effet de balayage très Apple pour montrer que c'est en
     /// cours ») — une seule lueur dans la maison, et elle se tait sous le
     /// doigt comme tout le reste.
+    /// ⚠️⚠️ L'ÉTAT, AU-DESSUS DU SUJET (24-09, sa demande : « il faut juste
+    /// mettre "En cours" et animer la police de l'exo en question »).
+    ///
+    /// Avant, le titre changeait de MÉTIER à la même place : il NOMMAIT en
+    /// séance (« Machine hip thrust »), il ORDONNAIT en choix (« Choisissez
+    /// un exercice »). L'œil ne savait pas si cette ligne le renseignait ou
+    /// lui demandait quelque chose. Désormais le premier mot dit toujours OÙ
+    /// ON EST, et ce qui suit dit SUR QUOI.
+    ///
+    /// ⚠️ ET LE BALAYAGE REVIENT À SA PLACE. Le 05-09 elle l'avait demandé
+    /// pour « montrer que l'exercice est en cours » — il était posé sur le
+    /// TITRE, donc il passait aussi sur « Choisissez un exercice », où il ne
+    /// voulait rien dire. Sur le NOM, il redit ce qu'elle avait demandé.
     private func titreOverlay(_ taille: CGFloat) -> some View {
         // EN SÉANCE, LE NOM EST CHAUD : un blanc tiré vers la braise, pas
         // un orange. « Aucune couleur hors blanc, argent, braise très
@@ -2741,17 +2915,94 @@ private struct CarreZoneMini: View {
     @State private var respire = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    // ════════════════════════════════════════════════════════════════
+    // ⚠️⚠️ LES CINQ RESPIRENT — ET C'EST LE CORRECTIF DU 24-09.
+    //
+    // « Les blancs s'illuminent assez fort pour inviter le user à choisir
+    //   une session, tu sais — ça ne donne pas encore envie de choisir une
+    //   catégorie ou un exercice, tu comprends. »
+    //
+    // Le 23-09 je n'avais fait respirer QUE la zone déjà choisie : la seule
+    // chose qui bougeait était celle qu'on avait DÉJÀ, et les quatre choix
+    // possibles restaient éteints. **J'avais animé la réponse, pas la
+    // question.** Ce qu'on éclaire, ce sont les choix.
+    //
+    // ⚠️ ET INÉGALEMENT — c'est son mot. Chaque carré a SA période, tirée
+    // de son rang, et aucune n'est multiple d'une autre ; chacun part avec
+    // SON avance. Cinq carrés sur la même horloge, c'est une guirlande de
+    // Noël, et une guirlande c'est cheap.
+    //
+    // ⚠️ LA ZONE CHOISIE RESTE LISIBLE PAR SON BORD (liseré blanc 1,2 pt,
+    // déjà là), jamais par sa lueur : sinon on ne sait plus lire ce qui est
+    // sélectionné dès que les cinq s'allument.
+    // ════════════════════════════════════════════════════════════════
+
+    /// Le rang du carré dans la barre — il décide de sa période et de son
+    /// avance. Rien n'est écrit pour une zone en particulier.
+    private var rang: Int {
+        ExerciseCategory.allCases.firstIndex(of: zone) ?? 0
+    }
+    /// Aucune n'est multiple d'une autre : elles ne se rattrapent jamais.
+    private static let periodes: [Double] = [2.3, 3.1, 2.7, 3.7, 2.9]
+    private static let avances: [Double] = [0.0, 0.7, 1.3, 0.4, 1.9]
+    /// ⚠️ ET L'AMPLITUDE AUSSI EST INÉGALE (24-09 : « anime davantage les
+    /// carrés de manière aléatoire »). Des périodes différentes mais une
+    /// même course, ça reste cinq fois le même geste : c'est le CREUX et le
+    /// PIC qui font qu'aucune ne ressemble à sa voisine.
+    private static let creux: [Double] = [0.14, 0.28, 0.18, 0.24, 0.20]
+    private static let pics:  [Double] = [1.00, 0.88, 1.00, 0.82, 0.94]
+    /// ⚠️ ET ILS FLOTTENT (24-09 : « anime les petits carrés en mode ils
+    /// flottent, on n'a pas envie de cliquer »). Une dérive de deux points
+    /// et demi et un demi-degré de roulis — un objet qui flotte ne monte
+    /// pas droit. Les périodes du FLOTTEMENT sont étrangères à celles du
+    /// souffle : si les deux battaient ensemble, les cinq carrés
+    /// retomberaient sur une seule horloge et ce serait une guirlande.
+    private static let flots: [Double] = [3.3, 4.1, 3.6, 4.9, 4.4]
+
     private var pulseActif: Bool {
-        choisie && !reduceMotion
+        !reduceMotion
             && !ProcessInfo.processInfo.arguments.contains("-sansPulseZone")
     }
+    /// ⚠️ PLUS D'ÉCART QU'HIER (0,58 → 1,00 : trop timide, ça se voyait à
+    /// peine). C'est l'écart qui attire l'œil, pas le niveau moyen.
     private var lueur: Double {
-        guard pulseActif else { return choisie ? 0.9 : 0.22 }
-        return respire ? 1.0 : 0.58
+        guard pulseActif else { return choisie ? 0.9 : 0.34 }
+        return respire ? Self.pics[rang % 5] : Self.creux[rang % 5]
     }
+    /// ⚠️⚠️ LE NÉON BLANC (24-09 : « on pousse beaucoup le néon blanc pour
+    /// inciter au clic »). L'image de lueur est déjà à fond : au-delà de 1
+    /// il n'y a plus rien à donner en OPACITÉ. Ce qui pousse la lumière,
+    /// c'est une SECONDE copie de la même zone blanche, floutée de 4 px,
+    /// posée DESSOUS — la tuile est noire, donc elle s'ajoute comme un
+    /// bloom. Sa loi, à la lettre : « la brillance vient de la blancheur,
+    /// jamais de l'épaisseur », et « blooms ≤ 5 px ».
+    /// ⚠️ PAS DE `blendMode` : sur du noir, un blanc posé normalement se lit
+    /// déjà comme de la lumière, et un blendMode force une passe hors écran.
+    private var neon: Double {
+        guard pulseActif else { return choisie ? 0.42 : 0.06 }
+        return respire ? 0.34 + 0.66 * Self.pics[rang % 5] : 0.0
+    }
+    /// Le cœur du bloom — un flou de 2 px seulement, serré sur la zone.
+    /// Il donne le BLANC vif ; le flou de 4 donne l'aura autour. Les deux
+    /// restent sous la barre des 5 px, c'est sa loi.
+    private var coeur: Double {
+        guard pulseActif else { return choisie ? 0.30 : 0.04 }
+        return respire ? 0.90 * Self.pics[rang % 5] : 0.0
+    }
+    /// Le flottement du carré — sa propre horloge.
+    private var flottement: Animation? {
+        guard pulseActif else { return nil }
+        return .easeInOut(duration: Self.flots[rang % Self.flots.count])
+            .repeatForever(autoreverses: true)
+            .delay(Self.avances[rang % Self.avances.count] * 0.6)
+    }
+    /// Un carré sur deux part vers le haut : ils ne montent jamais en bloc.
+    private var sens: CGFloat { rang % 2 == 0 ? 1 : -1 }
     private var souffle: Animation? {
-        pulseActif ? .easeInOut(duration: 1.7).repeatForever(autoreverses: true)
-                   : nil
+        guard pulseActif else { return nil }
+        return .easeInOut(duration: Self.periodes[rang % Self.periodes.count])
+            .repeatForever(autoreverses: true)
+            .delay(Self.avances[rang % Self.avances.count])
     }
 
     var body: some View {
@@ -2776,6 +3027,22 @@ private struct CarreZoneMini: View {
                     // n'est refabriquée. C'est la loi mesurée le 05-09 sur
                     // son iPhone (redessiner pour animer : 33-38 % de
                     // processeur ; animer une valeur : 4-18 %).
+                    // LE BLOOM — la même zone blanche, floutée, dessous.
+                    // Deux flous : 4 px pour l'aura, 2 px pour le cœur vif.
+                    Image("typo-\(zone.assetLecteur)-lueur")
+                        .resizable()
+                        .interpolation(.high)
+                        .aspectRatio(contentMode: .fill)
+                        .blur(radius: 4)
+                        .opacity(neon)
+                        .animation(souffle, value: respire)
+                    Image("typo-\(zone.assetLecteur)-lueur")
+                        .resizable()
+                        .interpolation(.high)
+                        .aspectRatio(contentMode: .fill)
+                        .blur(radius: 2)
+                        .opacity(coeur)
+                        .animation(souffle, value: respire)
                     Image("typo-\(zone.assetLecteur)-lueur")
                         .resizable()
                         .interpolation(.high)
@@ -2785,20 +3052,43 @@ private struct CarreZoneMini: View {
                 }
             }
             .overlay(alignment: .bottom) {
-                Text(zone.rawValue)
+                Text(zone.nomLocalise)
                     .font(.inter(8.5, .semibold))
                     .foregroundStyle(.white.opacity(choisie ? 0.95 : 0.7))
                     .padding(.bottom, 4)
             }
             .clipShape(Self.forme)
             .overlay {
+                // ⚠️ UNE BORDURE EN DÉGRADÉ (24-09), ET SA LUMIÈRE A UNE
+                // SOURCE FIXE : vive en haut à gauche, éteinte en bas à
+                // droite. Ce n'est PAS un dégradé qui tourne — un anneau
+                // qui tourne est un balayage, et les balayages sont morts
+                // depuis le 26-08. Ici le carré est simplement éclairé.
                 Self.forme.strokeBorder(
-                    .white.opacity(choisie ? 0.85 : 0.12),
-                    lineWidth: choisie ? 1.2 : 0.5)
+                    LinearGradient(
+                        colors: choisie
+                            ? [.white.opacity(0.98), .white.opacity(0.55),
+                               .white.opacity(0.18)]
+                            : [.white.opacity(0.14), .white.opacity(0.08)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing),
+                    lineWidth: choisie ? 1.4 : 0.5)
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(zone.rawValue)
+            .accessibilityLabel(zone.nomLocalise)
             .accessibilityAddTraits(choisie ? [.isButton, .isSelected] : .isButton)
+            // ⚠️ LE FLOTTEMENT EST POSÉ EN DERNIER, DONC IL PORTE TOUT le
+            // carré. Et il ne déplace QUE les pixels : la zone qui prend le
+            // doigt est posée par le parent (`contentShape`) sur le cadre
+            // de mise en page, qui ne bouge pas — on ne vise jamais une
+            // cible mouvante.
+            // ⚠️ LE CARRÉ CHOISI SE DÉTACHE — un ressort, pas un fondu.
+            // Le mouvement dit « c'est celui-ci » mieux qu'une opacité.
+            .scaleEffect(choisie ? 1.07 : 1.0)
+            .animation(.spring(response: 0.32, dampingFraction: 0.62),
+                       value: choisie)
+            .offset(y: respire ? -2.5 * sens : 2.5 * sens)
+            .rotationEffect(.degrees(respire ? 0.55 * sens : -0.55 * sens))
+            .animation(flottement, value: respire)
             .task(id: pulseActif) { respire = pulseActif }
     }
 }
@@ -2823,7 +3113,7 @@ private struct RangeeZoneLecteur: View {
                 .frame(width: 44, height: 44)
                 .clipShape(Self.vignette)
             VStack(alignment: .leading, spacing: 3) {
-                Text(exercise.name)
+                Text(exercise.nomLocalise)
                     .font(.inter(14, .semibold))
                     .foregroundStyle(Color.inkPrimary)
                     .lineLimit(1)
@@ -2843,7 +3133,7 @@ private struct RangeeZoneLecteur: View {
         .background(Self.forme.fill(.white.opacity(0.05)))
         .overlay { Self.forme.strokeBorder(.white.opacity(0.1), lineWidth: 0.5) }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(exercise.name), \(exercise.muscle)")
+        .accessibilityLabel("\(exercise.nomLocalise), \(exercise.muscle)")
         .accessibilityAddTraits(.isButton)
     }
 }
@@ -2894,15 +3184,74 @@ private struct BancBoucleLecteur: ViewModifier {
 /// ⚠️ PAS DE `blendMode` : sur du noir, un dégradé chaud posé normalement
 /// se lit déjà comme de la lumière, et un blendMode force une passe hors
 /// écran (la loi du verre).
+///
+/// ⚠️⚠️ ELLE S'ÉTEINT DANS SON PROPRE CADRE — CORRECTIF DU 24-09.
+/// Avant : un `RadialGradient` de rayon 210 pt posé en fond d'une vue qui
+/// n'en fait pas 420. Le dégradé n'atteignait JAMAIS son `.clear` : il
+/// était COUPÉ NET au bord du cadre, et une lumière coupée net est un
+/// rectangle. C'est la moitié du calque orange qu'elle a photographié —
+/// l'autre moitié était le tuple du `@ViewBuilder` (voir `teteLigne`).
+/// Une lumière a une cause ET UN BORD ; un bord droit n'en est pas un.
+/// `EllipticalGradient` en FRACTIONS règle ça par construction : quelle
+/// que soit la taille du fond, il finit transparent avant d'y toucher.
+///
+/// Son barreau : `-sansChaleurTete`.
+/// LE HALO DE LA CARTE DU JOUR (24-09) — « renforcer les halos derrière
+/// lui ». Il rayonne DEPUIS la carte : elle est noire et opaque, donc on
+/// n'en voit que la couronne autour d'elle. Une lumière avec une cause et
+/// un bord ; jamais une nappe.
+///
+/// ⚠️ EN FRACTIONS, comme `ChaleurTete` — un `RadialGradient` en points
+/// dont le rayon dépasse son cadre est TRANCHÉ net au bord, et c'est
+/// exactement le rectangle orange du 24-09. `endRadiusFraction: 0.5`
+/// garantit qu'il finit transparent avant de toucher son cadre, quelle que
+/// soit la taille de la carte pendant le repli.
+///
+/// ⚠️ DEUX VALEURS ANIMÉES (opacité, échelle), aucun redessin.
+/// Son barreau : `-sansChaleurTete`, le même que la chaleur de la tête.
+private struct HaloCarte: View {
+    let cote: CGFloat
+    @State private var v: CGFloat = 0.42
+
+    var body: some View {
+        EllipticalGradient(
+            stops: [
+                .init(color: Color(red: 1.00, green: 0.45, blue: 0.16)
+                    .opacity(0.34 * v), location: 0),
+                .init(color: Color(red: 0.52, green: 0.11, blue: 0.02)
+                    .opacity(0.16 * v), location: 0.42),
+                .init(color: .clear, location: 1)
+            ],
+            center: .center,
+            startRadiusFraction: 0, endRadiusFraction: 0.5)
+            // Il déborde largement la carte : c'est la couronne qu'on voit.
+            .frame(width: cote * 2.6, height: cote * 2.6)
+            .scaleEffect(0.94 + 0.10 * v)
+            .opacity(ChaleurTete.sans ? 0 : 1)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 4.7)
+                    .repeatForever(autoreverses: true)) { v = 1.0 }
+            }
+    }
+}
+
 private struct ChaleurTete: View {
     @State private var v: CGFloat = 0.30
 
+    static let sans = ProcessInfo.processInfo.arguments
+        .contains("-sansChaleurTete")
+
     var body: some View {
-        RadialGradient(
-            colors: [Color(red: 0.98, green: 0.36, blue: 0.10).opacity(0.26 * v),
-                     Color(red: 0.55, green: 0.12, blue: 0.02).opacity(0.10 * v),
-                     .clear],
-            center: .center, startRadius: 4, endRadius: 210)
+        EllipticalGradient(
+            stops: [
+                .init(color: Color(red: 0.98, green: 0.36, blue: 0.10)
+                    .opacity(0.26 * v), location: 0),
+                .init(color: Color(red: 0.55, green: 0.12, blue: 0.02)
+                    .opacity(0.10 * v), location: 0.45),
+                .init(color: .clear, location: 1)
+            ],
+            center: .center,
+            startRadiusFraction: 0, endRadiusFraction: 0.5)
             .onAppear {
                 withAnimation(.easeInOut(duration: 5.4)
                     .repeatForever(autoreverses: true)) { v = 1.0 }
