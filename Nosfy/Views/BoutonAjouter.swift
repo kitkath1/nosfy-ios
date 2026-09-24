@@ -20,8 +20,8 @@ import SwiftUI
 // Son barreau : `-sansBordParticules` (le bord redevient un trait sobre).
 
 enum BordBanc {
-    static let sans = ProcessInfo.processInfo.arguments
-        .contains("-sansBordParticules")
+    static let sans = EffetsSeanceBanc.sans
+        || ProcessInfo.processInfo.arguments.contains("-sansBordParticules")
 }
 
 struct BoutonAjouter: View {
