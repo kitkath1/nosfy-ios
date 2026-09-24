@@ -36,6 +36,10 @@ struct SetHistoryRow: View {
     /// passent pas, donc rien ne change chez elles.
     var courante: Bool = false
 
+    /// ⚠️ SA PORTE : « Réduire les animations » éteint le shimmer, et la
+    /// ligne retombe sur un texte blanc franc — jamais sur rien.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     init(rank: Int, reps: Int, kilos: Double, seconds: Int, done: Bool,
          coins: Int? = nil) {
         self.rank = rank
@@ -79,14 +83,33 @@ struct SetHistoryRow: View {
             // l'actif change — la loi de la lame de `SlateRang`.
             Capsule(style: .continuous)
                 .fill(.white)
-                .frame(width: 2, height: 22)
-                .opacity(courante ? 0.95 : 0)
-            Text(titre)
-                .font(.inter(15, courante ? .semibold : .medium))
-                .foregroundStyle(Color.white
-                    .opacity(courante ? 1.0 : (done ? 0.94 : 0.55)))
-                .lineLimit(1)
-                .fixedSize()
+                // 22 → 34 : c'est LUI qui désigne maintenant que le fond ne
+                // peint plus rien. Sa place reste toujours réservée, sinon
+                // les lignes glisseraient de 2 pt quand l'actif change.
+                .frame(width: 2, height: 34)
+                .opacity(courante ? 1.0 : 0)
+            // ⚠️ LE MÊME COMPOSANT QUE LA TÊTE DU LECTEUR (`InviteAnimee`)
+            // — pas une seconde lueur qui divergerait de la première. Une
+            // lumière traverse les lettres, et c'est elle qui dit « celle-ci
+            // est la tienne ».
+            //
+            // ⚠️ UNE SEULE LIGNE EST COURANTE À LA FOIS, donc UNE seule
+            // horloge, et elle ne vit que tant que la partition est à
+            // l'écran. Elle bat dans la famille 8 de la sonde (les horloges
+            // du lecteur) : une campagne peut enfin l'accuser ou la
+            // disculper. Hors séance — la story, l'ardoise, la fiche —
+            // `courante` est faux et il n'y a aucune horloge du tout.
+            if courante {
+                InviteAnimee(taille: 15, poids: .semibold, texte: titre,
+                             teinte: .white, fige: reduceMotion)
+                    .fixedSize()
+            } else {
+                Text(titre)
+                    .font(.inter(15, .medium))
+                    .foregroundStyle(Color.white.opacity(done ? 0.94 : 0.55))
+                    .lineLimit(1)
+                    .fixedSize()
+            }
 
             Spacer(minLength: 6)
 
@@ -112,20 +135,17 @@ struct SetHistoryRow: View {
         }
         .padding(.leading, 8)
         .padding(.trailing, 12)
-        // LA BRAISE QUI LA PORTE — un dégradé très sombre, qui s'éteint
-        // vers la droite. ⚠️ AUCUNE HORLOGE : c'est un état, pas une
-        // pulsation (« évite les animations génériques comme les
-        // pulsations ou les points qui respirent », 23-09).
-        .background {
-            if courante {
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .fill(LinearGradient(
-                        colors: [Color(red: 0.22, green: 0.07, blue: 0.02),
-                                 Color(red: 0.07, green: 0.03, blue: 0.02)
-                                     .opacity(0.0)],
-                        startPoint: .leading, endPoint: .trailing))
-            }
-        }
+        // ⚠️⚠️ AUCUN FOND DERRIÈRE LA LIGNE — NI BRAISE, NI VOILE (24-09).
+        //
+        // Deux essais, deux refus dans la même heure : un dégradé brun-rouge
+        // (« marron », « opaque »), puis un voile blanc à 5 % (« ton voile
+        // est horrible »). Son verdict : « la police s'anime uniquement, en
+        // mode shimmering — pas de background cheap ».
+        //
+        // C'est juste, et c'est déjà la grammaire de la maison : dans la
+        // tête du lecteur, c'est le MOT qui vit, jamais sa boîte. Un fond
+        // peint une zone ; une lumière qui traverse des lettres DÉSIGNE.
+        // Ce qui reste : le cheveu blanc à gauche, et le titre qui brille.
         // 58 → 66 : 4 pt d'air de plus en haut et en bas (15-08) — les
         // petites cartes noires respirent dans la carte dépliée.
         .frame(height: 66)

@@ -467,8 +467,18 @@ struct SlateListe: View, Equatable {
             } action: { _, y in onScroll(y) }
         }
         .scrollIndicators(.hidden)
+        // ⚠️ LE DÉPLIAGE SUIT `courant`, ET SE REJOUE QUAND IL CHANGE
+        // (24-09). Il était semé UNE fois, à la naissance : en revenant sur
+        // le récap après un exercice, la rangée ouverte restait celle d'avant.
+        // `task(id:)` couvre les deux moments — l'arrivée ET le changement —
+        // sans rien déplier de plus : un dépliage à la main ne bouge pas
+        // `courant`, donc son choix à elle est préservé.
+        .task(id: courant) {
+            guard !courant.isEmpty else { return }
+            seme = true
+            deplies = [courant]
+        }
         .onAppear {
-            if !seme { seme = true; deplies = [courant] }
             // LA SONDE DE NON-RÉGRESSION : `-slateSonde` déplie tout
             // seul la 2e rangée à +2 s puis la replie à +4 s — le tap
             // ne s'injecte pas au simctl, et c'est elle qui a prouvé le
@@ -554,11 +564,27 @@ private struct SlateRang: View {
     /// lecteur — une séance finie n'a plus d'exercice « en cours ».
     private var courant: Bool { marqueCourante && rang == 1 }
 
-    /// LA SÉRIE EN COURS — la première non faite. `nil` quand tout est
-    /// fait : on ne désigne rien plutôt que de désigner au hasard.
+    /// LA SÉRIE DÉSIGNÉE — et elle change de définition selon le moment.
+    ///
+    /// ⚠️ DEUX RÈGLES, TOUTES LES DEUX JUSTES (la seconde ajoutée le 24-09 :
+    /// « plusieurs séries : on highlight en ouvrant la série faite
+    /// récemment ») :
+    ///   · il reste une série à faire → c'est ELLE qu'on montre, c'est celle
+    ///     qu'elle est en train de vivre (règle du 23-09) ;
+    ///   · tout est fait → la DERNIÈRE FAITE, celle qu'elle vient de finir.
+    ///
+    /// Avant, le second cas rendait `nil` — « on ne désigne rien plutôt que
+    /// de désigner au hasard ». Ce n'est plus au hasard : la dernière faite
+    /// est exactement ce qu'elle cherche des yeux en revenant.
+    ///
+    /// ⚠️ ET ÇA DOIT RESTER COHÉRENT AVEC L'ÉTAT « Exercice terminé » de la
+    /// tête du lecteur : il se lit sur la MÊME donnée — plus aucune série en
+    /// attente. Quand la tête dit terminé, c'est la dernière faite qui est
+    /// désignée ici. Une seule vérité, deux lectures.
     private var indexCourant: Int? {
         guard marqueCourante else { return nil }
-        return groupe.rows.firstIndex { !$0.done }
+        if let i = groupe.rows.firstIndex(where: { !$0.done }) { return i }
+        return groupe.rows.lastIndex(where: \.done)
     }
 
     var body: some View {
