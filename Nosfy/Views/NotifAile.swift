@@ -89,9 +89,15 @@ enum RobeNotif: Int {
         return r
     }()
 
-    /// LA ROBE D'UN TOUR — déterministe, et chacune passe une fois avant
-    /// qu'aucune ne repasse. C'est son mot du 29-08 (« les robes VARIENT,
-    /// aucune n'est clouée à un moment ») tenu pour de bon.
+    /// LA ROBE SUIVANTE — déterministe, chacune passe une fois avant
+    /// qu'aucune ne repasse, et **la pièce ne tombe JAMAIS deux fois
+    /// d'affilée** (sa règle du 24-09 : « qu'elles tombent vraiment, pas que
+    /// la pièce ; la pièce tombe jamais deux fois d'affilée »).
+    ///
+    /// ⚠️ **ELLE SE CALCULE QUAND LE TOASTER NAÎT, JAMAIS DANS UN `body`.**
+    /// Un corps de vue est réévalué autant de fois que SwiftUI le décide :
+    /// une rotation qui avance là-dedans compterait n'importe quoi. C'est la
+    /// fiche qui la garde (`robePill`), et elle la passe toute faite.
     ///
     /// ⚠️ **LE TOUR, PAS LE RANG DE LA SÉRIE.** Premier jet : je comptais sur
     /// le rang. Mais les rangs 3, 5 et 10 sont des rangs de POP-UP
@@ -100,14 +106,29 @@ enum RobeNotif: Int {
     /// autres — une rotation qui boite. Un compteur de toasters POSÉS donne
     /// un tour égal à chacune, exactement.
     ///
-    /// ⚠️ **LA CHALEUR A LE DERNIER MOT.** Téléphone chaud, aucun lecteur ne
-    /// monte : la jauge dit la même chose sans vidéo.
-    static func pour(tour: Int) -> RobeNotif {
-        let choisie = forcee
-            ?? tourDeRole[(max(tour, 1) - 1) % tourDeRole.count]
-        guard choisie.porteUneVideo else { return choisie }
-        guard !sansVideo, !ProtectionThermique.shared.ambianceAuRepos else {
-            return .jauge
+    /// ⚠️⚠️ **ET LA CHALEUR N'A PLUS LE DERNIER MOT — SA RÈGLE L'A.** Premier
+    /// jet : téléphone tiède, toutes les robes vidéo retombaient sur la
+    /// jauge. C'est-à-dire que la pièce revenait à CHAQUE série — exactement
+    /// le défaut qu'elle venait de signaler, réintroduit par la porte
+    /// thermique. Maintenant la chaleur ne peut poser la pièce que si la
+    /// précédente n'était pas elle : sous chaleur on alterne pièce / vidéo,
+    /// ce qui divise par deux le nombre de lecteurs au lieu de tous les
+    /// supprimer. Le barreau `-sansVideoNotif`, lui, reste ABSOLU : il sert
+    /// à peser l'app SANS aucun lecteur, il ne peut pas en laisser passer un
+    /// sur deux.
+    @MainActor
+    static func suivante(apres precedente: RobeNotif?, tour: Int) -> RobeNotif {
+        if let f = forcee { return f }
+        if sansVideo { return .jauge }
+        let voulue = tourDeRole[(max(tour, 1) - 1) % tourDeRole.count]
+        var choisie = voulue
+        if choisie.porteUneVideo, ProtectionThermique.shared.ambianceAuRepos {
+            choisie = (precedente == .jauge) ? voulue : .jauge
+        }
+        // Le tour de rôle lui-même ne rend jamais la pièce deux fois : si
+        // c'était son tour et qu'elle vient de tomber, on prend la suivante.
+        if choisie == .jauge, precedente == .jauge {
+            choisie = tourDeRole[max(tour, 1) % tourDeRole.count]
         }
         return choisie
     }
@@ -287,9 +308,10 @@ struct ToasterSerie: View {
     let gain: Int
     /// La progression du coffre APRÈS ce gain [0,1] — ce que dit la jauge.
     var fraction: Double = 0
-    /// LE TOUR — le combientième toaster de la séance. C'est lui qui fait
-    /// tourner les robes (jamais le rang de la série : voir `RobeNotif.pour`).
-    var tour: Int = 1
+    /// LA ROBE, déjà choisie. ⚠️ Elle arrive TOUTE FAITE : le tour de rôle se
+    /// calcule quand le toaster naît (`RobeNotif.suivante`, gardé par la
+    /// fiche), jamais ici — un `body` est réévalué à la demande de SwiftUI.
+    var robe: RobeNotif = .jauge
     var libelle: String = "COINS EARNED"
 
     @State private var pose = false
@@ -297,7 +319,7 @@ struct ToasterSerie: View {
 
     var body: some View {
         Group {
-            switch RobeNotif.pour(tour: tour) {
+            switch robe {
             case .jauge:
                 ToasterGain(gain: gain, fraction: fraction, libelle: libelle)
             case .grosTexte:

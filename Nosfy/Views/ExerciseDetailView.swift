@@ -57,6 +57,10 @@ struct ExerciseDetailView: View {
     /// piscine (`direLesPiecesDeLaLongueur`), sans quoi la piscine serait
     /// clouée à une robe pour toujours.
     @State private var tourRobe = 0
+    /// LA ROBE DU TOASTER EN COURS — choisie au moment où il naît, jamais
+    /// dans un `body`. C'est elle qui porte sa règle du 24-09 : la pièce ne
+    /// tombe jamais deux fois d'affilée (`RobeNotif.suivante`).
+    @State private var robePill: RobeNotif = .jauge
     /// Le jeton de la pill de la PISCINE (15-09) : chaque « + » la relance
     /// deux secondes ; seule la dernière relance a le droit de l'éteindre.
     @State private var pillJeton = 0
@@ -533,6 +537,23 @@ struct ExerciseDetailView: View {
     /// frame (un `withAnimation`, lui, ne l'évalue qu'UNE fois et anime
     /// le rendu : il ne mesure rien). La cadence se compte au film.
     private static let carteAuto = CommandLine.arguments.contains("-carteAuto")
+    /// `-robeSuite [n]` — LE BANC DU TOUR DE RÔLE (24-09). `n` toasters de
+    /// fin de série s'enchaînent tout seuls, par le VRAI chemin
+    /// (`jouerIssue(.pill)`), un toutes les ~2,9 s.
+    ///
+    /// ⚠️ **C'est la seule prise qui prouve la ROTATION.** `-robeNotif <n>`
+    /// cloue une robe : il montre qu'elle sait s'afficher, pas qu'elle tombe
+    /// à son tour. Et un lancement par série ne prouve rien non plus — le
+    /// compteur repart de zéro à chaque lancement. Sa règle — « qu'elles
+    /// tombent vraiment, pas que la pièce ; la pièce tombe jamais deux fois
+    /// d'affilée » — ne se vérifie que sur une SUITE.
+    private static let robeSuiteBanc: Int? = {
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: "-robeSuite") else { return nil }
+        guard i + 1 < a.count, let n = Int(a[i + 1]) else { return 6 }
+        return max(n, 1)
+    }()
+
     /// `-serieFin <n>` — le banc de la chaîne de fin de série.
     private static let serieFinBanc: Int? = {
         let a = CommandLine.arguments
@@ -595,6 +616,29 @@ struct ExerciseDetailView: View {
                                          isDone: k < 3))
                 }
             }
+        }
+        // ⚠️ LE BANC DU TOUR DE RÔLE : `-robeSuite [n]` enchaîne n toasters.
+        if let n = Self.robeSuiteBanc {
+            try? await Task.sleep(for: .seconds(1.2))
+            if sets.isEmpty {
+                for _ in 0..<n {
+                    sets.append(DraftSet(reps: 12, weight: 20, isDone: true))
+                }
+            }
+            for rang in 1...n {
+                let f = FinishedSeries(index: rang - 1, reps: 12, kilos: 20,
+                                       rest: 60, seconds: 47)
+                rangIssue = rang
+                // `banc: true` : la pill ne part pas toute seule et la
+                // question « Recommencer ? » ne vient pas couvrir la
+                // suivante. C'est nous qui rythmons.
+                jouerIssue(.pill(gain: gainParSerie,
+                                 total: rang * gainParSerie), f, banc: true)
+                try? await Task.sleep(for: .seconds(2.3))
+                withAnimation(.easeIn(duration: 0.30)) { pillGain = nil }
+                try? await Task.sleep(for: .seconds(0.6))
+            }
+            return
         }
         // ⚠️ LE BANC DE LA CHAÎNE DE FIN DE SÉRIE : `-serieFin <n>` rejoue
         // l'issue de la n-ième série — 1 la pill, 3 le Moment, 5 la pop-up,
@@ -1281,7 +1325,7 @@ struct ExerciseDetailView: View {
                     // série ; `-robeNotif <1|5|6>` en cloue une pour filmer.
                     ToasterSerie(gain: pg.gain,
                                  fraction: fractionCoffre(apres: pg.total),
-                                 tour: tourRobe)
+                                 robe: robePill)
                         // REMONTÉE + SOUS LE DYNAMIC ISLAND (15-09, Kathryn :
                         // « ça remonte mais ça ne disparaît pas dans le display
                         // island ») : on RESPECTE la safe-area du haut (elle
@@ -2851,6 +2895,7 @@ struct ExerciseDetailView: View {
         pillJeton += 1
         let jeton = pillJeton
         tourRobe += 1
+        robePill = RobeNotif.suivante(apres: robePill, tour: tourRobe)
         withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
             pillGain = (gain: gain, total: total)
         }
@@ -3165,6 +3210,7 @@ struct ExerciseDetailView: View {
         switch issue {
         case .pill(let g, let t):
             tourRobe += 1
+            robePill = RobeNotif.suivante(apres: robePill, tour: tourRobe)
             withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
                 pillGain = (gain: g, total: t)
             }

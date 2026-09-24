@@ -332,7 +332,8 @@ Les migrations du 28-08 au 30-08 (`booster_noir`, `wallet_coffre`,
 |---|---|
 | `-notifLab` | le banc : les **six** robes empilées sur du noir vrai, un tap rejoue les entrées. Depuis le 24-09 la pile se met **à l'échelle** pour tenir en une capture (six dalles = 898 pt, l'écran en offre 781) et le bandeau **imprime le facteur** — une planche réduite qu'on croit à l'échelle ment sur les cotes |
 | `-notifSeule <n>` | une seule robe, **à 1:1** — le cas vrai de l'app, et le seul régime où l'on juge une cote. `1` jauge · `2` gros texte · `3` châsse · `4` booster · `5` l'aile · `6` le clin d'œil |
-| `-robeNotif <1\|2\|3\|5\|6>` | **en SÉANCE** (24-09) : cloue la robe du toaster de fin de série, pour filmer sans enchaîner cinq séries. Avec `-exoLab -serieFin 1` |
+| `-robeSuite [n]` | **en SÉANCE** (24-09) : `n` toasters de fin de série s'enchaînent seuls, par le VRAI chemin, un toutes les ~2,9 s. **C'est la seule prise qui prouve la ROTATION** — `-robeNotif` cloue une robe, il montre qu'elle sait s'afficher, pas qu'elle tombe à son tour. Avec `-exoLab` |
+| `-robeNotif <1\|2\|3\|5\|6>` | **en SÉANCE** : cloue la robe du toaster de fin de série, pour filmer une robe précise. Avec `-exoLab -serieFin 1` |
 | `-sansVideoNotif` | le barreau de coût des robes vidéo (2, 3, 5, 6 — la jauge est la SEULE sans lecteur) : elles retombent sur la jauge. La chauffe fait la même chose toute seule (`ProtectionThermique.ambianceAuRepos`) |
 | `-notifFige` | les dalles naissent posées (captures immobiles) — l'équivalent du `banc: true` qui empêche `PillGain` de partir au banc |
 | `-notifT <s>` | l'horloge du projecteur et du tour de pièce, clouée |
@@ -370,6 +371,24 @@ de l'été reste, elle, à refaire. Deux défauts trouvés ce jour-là, hors ban
    robe BOOSTER reste hors du tour : ce qu'elle pose à droite est le sachet
    orange, la quittance d'un booster gagné — sur un « +20 COINS EARNED »
    elle annoncerait un sachet que personne n'a eu.
+
+   ⚠️ **Sa règle dure : « la pièce tombe jamais deux fois d'affilée », et
+   elle tient MÊME SOUS CHALEUR.** Premier jet : la porte thermique ramenait
+   toutes les robes vidéo à la jauge — c'est-à-dire la pièce à *chaque*
+   série, exactement le défaut qu'elle venait de signaler, réintroduit par
+   la protection. Maintenant la chaleur ne peut poser la pièce que si la
+   précédente n'était pas elle : sous chaleur on **alterne** pièce / vidéo
+   (un lecteur sur deux au lieu de zéro). Le barreau `-sansVideoNotif`, lui,
+   reste absolu — il sert à peser l'app sans aucun lecteur.
+
+   ⚠️ **La robe se choisit quand le toaster NAÎT** (`RobeNotif.suivante`,
+   gardée par la fiche dans `robePill`), **jamais dans un `body`** : un corps
+   de vue est réévalué autant de fois que SwiftUI le décide, et une rotation
+   qui avance là-dedans compte n'importe quoi.
+
+   **Prouvé** au banc `-robeSuite` : séquence lue sur le film — YOU WIN,
+   l'aile, le clin d'œil, la châsse, la pièce, YOU WIN
+   (`captures/tour-de-role-2409.png`, `tour-de-role-film-2409.mp4`).
 2. **La jauge ne bougeait jamais de la séance** : le site d'appel lisait
    `EconomieWoop.reste` nu, qui n'est réécrit que quand le serveur répond —
    or le serveur PAIE à la clôture. Corrigé au site d'appel
