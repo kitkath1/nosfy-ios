@@ -59,6 +59,13 @@ enum OuvertureBanc {
     /// `-ouvertureBoucle` : elle rejoue sans fin, pour la juger au doigt.
     static let boucle = ProcessInfo.processInfo.arguments
         .contains("-ouvertureBoucle")
+    /// `-ouvertureUneFois` : LE BANC DE LA FIN (24-09). Elle joue UNE fois,
+    /// cinq secondes après l'arrivée, et rien d'autre. C'est le seul moyen
+    /// de prouver en capture que l'écran est PROPRE après le passage — le
+    /// défaut qu'elle a photographié le 24-09 (des étincelles et des taches
+    /// figées par-dessus le lecteur).
+    static let uneFois = ProcessInfo.processInfo.arguments
+        .contains("-ouvertureUneFois")
 }
 
 /// LE DÉCLENCHEUR. On ne lui demande pas d'animer : on lui donne le geste à
@@ -87,8 +94,39 @@ final class CoupeEtat: ObservableObject {
     /// shader : le voile n'est plein partout qu'à 0,60 (voir `voileFragment`).
     static let milieu: Double = 0.62
 
+    // ════════════════════════════════════════════════════════════════════
+    // ⚠️⚠️ LA FIN DU PASSAGE SE CALCULE — ELLE NE S'ÉCRIT PAS À LA MAIN.
+    //
+    // LE DÉFAUT DU 24-09, et il vient d'un nombre en dur. Pour « encore
+    // plus d'effet » j'ai donné aux étincelles une vie 2,8 fois plus
+    // longue — sans refaire le calcul de la fin, resté à 1,35. À 1,35 les
+    // étincelles sont encore VIVANTES, et un `MTKView` qu'on met en pause
+    // LAISSE SA DERNIÈRE IMAGE À L'ÉCRAN : elles ne disparaissaient pas,
+    // elles se figeaient — avec les taches sombres de la population de
+    // fond, née sur les pixels clairs de la photo (sa capture du 24-09).
+    //
+    // Ces deux bornes sont donc DÉRIVÉES des constantes du shader. Si on
+    // retouche une vie, un retard ou le front, elles suivent toutes
+    // seules — c'est le seul moyen que ce défaut ne revienne jamais.
+    // ════════════════════════════════════════════════════════════════════
+
+    /// La mort de la toute dernière étincelle, en fraction de `duree`.
+    /// `vie` max = (0,18 + 0,55 + 0,14) × 2,80 ; `retard` max = le coin le
+    /// plus éloigné du foyer, 0,44 × √2, plus 0,10 de dispersion.
+    static let fin: Double = 0.44 * 2.0.squareRoot() + 0.10
+        + (0.18 + 0.55 + 0.14) * 2.80
+
+    /// Passé ce point, AUCUNE particule ordinaire n'est plus vivante : il
+    /// ne reste que les 2,5 % d'étincelles. Même calcul, avec le facteur
+    /// de vie le plus long des ordinaires (le fond, 1,25). Le rendu s'en
+    /// sert pour ne plus dessiner que la queue — 22 500 points au lieu de
+    /// 900 000 pendant la dernière seconde et demie.
+    static let queue: Double = 0.44 * 2.0.squareRoot() + 0.10
+        + (0.18 + 0.55 + 0.14) * 1.25
+
     func jouer(depuis foyer: CGPoint? = nil, _ auMilieu: @escaping () -> Void) {
         guard !CoupeBanc.sans else { auMilieu(); return }
+        annulerVoile()
         // ⚠️ UN GESTE EN ATTENTE N'EST JAMAIS JETÉ. Deux `jouer` coup sur
         // coup (elle tape vite : deux exercices d'affilée), et l'ancien
         // `auMilieu` était ÉCRASÉ sans avoir tourné — c'est-à-dire un
@@ -113,6 +151,60 @@ final class CoupeEtat: ObservableObject {
             guard !Task.isCancelled else { return }
             self.honorer()
         }
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // MARK: - LA COUPE SOURDE (24-09) — la même coupe, sans le feu
+    //
+    // « Au global il y a trop de fois l'effet paillette dans les
+    //   transitions. Conserve-le que pour l'arrivée par le compteur, mais
+    //   pas au lancement d'un exercice. » (Kathryn, 24-09.)
+    //
+    // ⚠️ ON RETIRE LE COSTUME, PAS LA COUPE. Ce que la coupe blanche fait
+    // depuis le 22-09 n'est pas décoratif : elle tient l'écran pendant que
+    // TROIS choses se réordonnent (la fiche se dépile, l'onglet est rendu à
+    // la home, le lecteur se pose). Sans elle, on revoit exactement ce
+    // qu'elle avait refusé le 22-09 — « on voit la page exercices entre les
+    // deux ». Les retours gardent donc une coupe : un voile noir de 0,30 s,
+    // sans une particule, sans haptique, que l'œil ne remarque pas.
+    //
+    // Le feu, lui, ne joue plus qu'UNE fois par séance : à l'ouverture.
+    // ════════════════════════════════════════════════════════════════════
+
+    /// L'opacité du voile sourd, lue par `Ouverture`.
+    @Published fileprivate var voile: Double = 0
+    /// Le tour du voile en cours : un voile qui se réveille annulé ne doit
+    /// jamais effacer celui qui a pris sa place (sinon : écran noir tenu).
+    private var tourVoile = 0
+
+    static let dureeVoile: Double = 0.30
+
+    func couper(_ auMilieu: @escaping () -> Void) {
+        guard !CoupeBanc.sans else { auMilieu(); return }
+        // Même contrat que `jouer` : un geste en attente n'est jamais jeté.
+        honorer()
+        self.auMilieu = auMilieu
+        tourVoile &+= 1
+        let mien = tourVoile
+        chien?.cancel()
+        chien = Task { [d = Self.dureeVoile] in
+            withAnimation(.easeIn(duration: d * 0.45)) { self.voile = 1 }
+            try? await Task.sleep(for: .seconds(d * 0.45))
+            // ⚠️ LE GARDE-FOU DU NOIR TENU. Si un autre passage a pris la
+            // main pendant le sommeil, on se retire sans toucher au voile
+            // — son geste, lui, a déjà été honoré par l'appel suivant.
+            guard self.tourVoile == mien else { return }
+            self.honorer()                       // l'écran change SOUS le noir
+            withAnimation(.easeOut(duration: d * 0.55)) { self.voile = 0 }
+        }
+    }
+
+    /// Le feu reprend la main sur un voile en cours : on le lève, sinon il
+    /// resterait posé pour toujours par-dessus la combustion.
+    private func annulerVoile() {
+        tourVoile &+= 1
+        guard voile != 0 else { return }
+        withAnimation(.easeOut(duration: 0.18)) { voile = 0 }
     }
 
     /// Exécute le geste confié, AU PLUS UNE FOIS. Le rendu et le chien de
@@ -151,7 +243,12 @@ struct Ouverture: View {
     @ObservedObject private var etat = CoupeEtat.shared
 
     var body: some View {
-        NuageVue(top: etat.top)
+        ZStack {
+            NuageVue(top: etat.top)
+            // LE VOILE SOURD — noir, court, sans une particule. Il ne coûte
+            // qu'une opacité animée : à 0 il n'est même pas composé.
+            Color.black.opacity(etat.voile)
+        }
             .ignoresSafeArea()
             // ⚠️ ELLE NE PREND JAMAIS LE DOIGT. Le calque couvre l'écran en
             // permanence (le monter à la demande coûterait une compilation
@@ -164,12 +261,18 @@ struct Ouverture: View {
             // braises, sur une photo vide — et fait croire à un échec
             // (payé le 23-09).
             .task {
-                guard OuvertureBanc.fige != nil || OuvertureBanc.boucle else { return }
+                guard OuvertureBanc.fige != nil || OuvertureBanc.boucle
+                        || OuvertureBanc.uneFois else { return }
                 try? await Task.sleep(for: .seconds(5))   // l'écran se pose
                 CoupeEtat.shared.jouer {}
                 guard OuvertureBanc.boucle else { return }
+                // ⚠️ LE REPOS DE LA BOUCLE SUIT LA VRAIE FIN (24-09).
+                // `duree + 0,6` relançait le passage alors que les
+                // étincelles du précédent vivaient encore : le banc
+                // empilait deux passages et ne montrait plus rien de juste.
                 while !Task.isCancelled {
-                    try? await Task.sleep(for: .seconds(CoupeEtat.duree + 0.6))
+                    try? await Task.sleep(
+                        for: .seconds(CoupeEtat.duree * CoupeEtat.fin + 0.6))
                     CoupeEtat.shared.jouer {}
                 }
             }
@@ -184,7 +287,11 @@ private struct Passage {
     var taille: SIMD2<Float>
     var foyer: SIMD2<Float>
     var avance: Float
-    var _pad: Float
+    /// La borne des étincelles : les points dont le numéro est inférieur
+    /// sont des étincelles. ⚠️ C'est ce qui permet de ne dessiner QUE la
+    /// queue à la fin du passage — un tirage au hasard les aurait semées
+    /// dans tout l'intervalle, et il aurait fallu les 900 000 jusqu'au bout.
+    var etincelles: Float
 }
 
 
@@ -229,6 +336,9 @@ private final class Nuage: NSObject, MTKViewDelegate {
     /// Grossir les points donnerait du coton ; les éclaircir, du néon.
     /// À 900 000 le nuage se recouvre enfin (≈ 1,3 fois l'écran).
     private let nombre = 900_000
+    /// Les 2,5 % d'étincelles occupent les PREMIERS numéros — voir
+    /// `Passage.etincelles`.
+    private var borne: Int { nombre / 40 }
 
     private var file: MTLCommandQueue?
     private var pipePoints: MTLRenderPipelineState?
@@ -241,6 +351,15 @@ private final class Nuage: NSObject, MTKViewDelegate {
     private var dernierTop = 0
     private var milieuFait = false
     private var taille = CGSize(width: 1, height: 1)
+    /// Le prochain cadre doit être VIDE, puis la boucle s'arrête.
+    private var doitNettoyer = false
+    /// Le filet : si le rendu se tait en plein passage, il nettoie quand même.
+    private var chien: Task<Void, Never>?
+    nonisolated(unsafe) private var observateur: NSObjectProtocol?
+
+    deinit {
+        if let observateur { NotificationCenter.default.removeObserver(observateur) }
+    }
 
     func preparer(_ v: MTKView) {
         guard let d = v.device, let bib = d.makeDefaultLibrary() else { return }
@@ -281,6 +400,23 @@ private final class Nuage: NSObject, MTKViewDelegate {
         noir?.replace(region: MTLRegionMake2D(0, 0, 1, 1), mipmapLevel: 0,
                       withBytes: &zero, bytesPerRow: 4)
 
+        // ⚠️ LA DEUXIÈME PORTE (24-09). L'app qui passe en arrière-plan
+        // pendant un passage arrête le rendu — et la dernière image reste
+        // affichée, exactement comme à la mise en pause. On la ferme avec
+        // la même règle : on n'éteint jamais sans avoir nettoyé. Le geste
+        // confié, lui, est honoré tout de suite : une séance ne perd pas
+        // une ligne parce qu'on a reçu un appel.
+        observateur = NotificationCenter.default.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification,
+            object: nil, queue: .main
+        ) { [weak self, weak v] _ in
+            MainActor.assumeIsolated {
+                guard let self, let v, !v.isPaused else { return }
+                CoupeEtat.shared.honorer()
+                self.nettoyer(v)
+            }
+        }
+
         if OuvertureBanc.fige != nil || OuvertureBanc.boucle {
             depart = CACurrentMediaTime()
             v.isPaused = false
@@ -295,7 +431,28 @@ private final class Nuage: NSObject, MTKViewDelegate {
         if let photo { ecran = try? chargeur?.newTexture(cgImage: photo, options: nil) }
         depart = CACurrentMediaTime()
         milieuFait = false
+        doitNettoyer = false
         vue.isPaused = false
+        // ⚠️ LA TROISIÈME PORTE : l'écran change de hiérarchie sous le
+        // calque et `draw(in:)` cesse d'être appelé. Le chien ne réveille
+        // pas le passage — il le NETTOIE, une fois son temps écoulé.
+        chien?.cancel()
+        chien = Task { [attente = CoupeEtat.duree * CoupeEtat.fin + 0.5] in
+            try? await Task.sleep(for: .seconds(attente))
+            guard !Task.isCancelled, !vue.isPaused else { return }
+            self.nettoyer(vue)
+        }
+    }
+
+    /// ⚠️⚠️ LA SEULE FAÇON DE S'ARRÊTER — ON N'ÉTEINT JAMAIS SANS NETTOYER.
+    /// Un `MTKView` mis en pause laisse sa dernière image à l'écran. Trois
+    /// chemins mènent à l'extinction (la fin du passage, l'arrière-plan, le
+    /// chien de garde) et tous les trois passent par ici : on redemande un
+    /// cadre, ce cadre-là est VIDE, et c'est lui qui reste.
+    private func nettoyer(_ v: MTKView) {
+        doitNettoyer = true
+        v.isPaused = false
+        v.draw()                  // un cadre tout de suite, synchrone
     }
 
     func mtkView(_ v: MTKView, drawableSizeWillChange size: CGSize) { taille = size }
@@ -308,6 +465,20 @@ private final class Nuage: NSObject, MTKViewDelegate {
               let enc = tampon.makeRenderCommandEncoder(descriptor: desc)
         else { return }
 
+        // ─── LE CADRE VIDE, PUIS LE SOMMEIL ────────────────────────────
+        // Il est encodé sans un seul dessin : le `loadAction` du `MTKView`
+        // efface déjà la cible avec `clearColor` (transparent). Rien à
+        // effacer à la main, rien à laisser derrière.
+        if doitNettoyer {
+            doitNettoyer = false
+            chien?.cancel(); chien = nil
+            enc.endEncoding()
+            tampon.present(dessin)
+            tampon.commit()
+            v.isPaused = true
+            return
+        }
+
         // ─── L'HORLOGE EST ICI, pas dans SwiftUI ───────────────────────
         var avance: Float
         if let f = OuvertureBanc.fige {
@@ -317,13 +488,25 @@ private final class Nuage: NSObject, MTKViewDelegate {
             if OuvertureBanc.boucle {
                 avance = Float(t.truncatingRemainder(dividingBy: 1.0))
             } else {
-                avance = Float(min(max(t, 0), 1.35))
+                avance = Float(min(max(t, 0), CoupeEtat.fin))
                 // LE CHANGEMENT, sous le voile, exactement une fois.
                 if !milieuFait, t >= CoupeEtat.milieu {
                     milieuFait = true
                     if !OuvertureBanc.sansGeste { CoupeEtat.shared.honorer() }
                 }
-                if t > 1.35 { v.isPaused = true }      // la boucle s'arrête
+                // ⚠️ LA FIN EST CALCULÉE (`CoupeEtat.fin`), et on ne s'y
+                // endort pas : on nettoie. C'est le défaut du 24-09.
+                // Ici le cadre courant EST le cadre vide — on n'encode
+                // rien de plus, et on ne rappelle pas `nettoyer` : on est
+                // déjà dans un `draw`, le relancer serait ré-entrant.
+                if t > CoupeEtat.fin {
+                    chien?.cancel(); chien = nil
+                    enc.endEncoding()
+                    tampon.present(dessin)
+                    tampon.commit()
+                    v.isPaused = true
+                    return
+                }
             }
         }
 
@@ -333,7 +516,7 @@ private final class Nuage: NSObject, MTKViewDelegate {
         var pa = Passage(taille: SIMD2(Float(taille.width), Float(taille.height)),
                          foyer: SIMD2(Float(CoupeEtat.shared.foyer.x),
                                       Float(CoupeEtat.shared.foyer.y)),
-                         avance: avance, _pad: 0)
+                         avance: avance, etincelles: Float(borne))
         let octets = MemoryLayout<Passage>.stride
 
         // LE VOILE d'abord : il noircit ce que les braises ont quitté.
@@ -346,7 +529,14 @@ private final class Nuage: NSObject, MTKViewDelegate {
         enc.setVertexBytes(&pa, length: octets, index: 0)
         enc.setVertexTexture(curl, index: 0)
         enc.setVertexTexture(ecran ?? noir, index: 1)
-        enc.drawPrimitives(type: .point, vertexStart: 0, vertexCount: nombre)
+        // ⚠️ LA QUEUE NE COÛTE PLUS QUE SA QUEUE. Passé `CoupeEtat.queue`,
+        // il ne reste que les étincelles en vie — et comme elles occupent
+        // les premiers numéros, on s'arrête à leur borne : 22 500 points
+        // au lieu de 900 000 pendant la dernière seconde et demie. Les
+        // autres seraient de toute façon jetées hors du cadre par le
+        // shader ; autant ne pas les appeler.
+        let combien = Double(avance) > CoupeEtat.queue ? borne : nombre
+        enc.drawPrimitives(type: .point, vertexStart: 0, vertexCount: combien)
 
         enc.endEncoding()
         tampon.present(dessin)
