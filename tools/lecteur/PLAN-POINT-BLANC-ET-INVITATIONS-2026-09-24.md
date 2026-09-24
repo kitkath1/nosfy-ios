@@ -721,6 +721,47 @@ deux, ce qui est pire que jamais.
 
 ---
 
+## 17. NOTÉ, PAS CODÉ — le récap doit désigner le DERNIER FAIT
+
+> « on revient sur le récap des exercices : on affiche en premier toujours le
+> dernier exercice fait, et on highlight toujours le dernier exercice fait avec
+> le trait blanc. Et plusieurs séries : on highlight en ouvrant la série faite
+> récemment. » (24-09, après son essai sur le téléphone.)
+
+Trois règles, et elles changent une définition qui existe déjà — donc à lire
+avant de coder.
+
+1. **L'ordre** : la partition remet **toujours le dernier exercice FAIT en
+   premier**. Aujourd'hui elle suit `a.orderedExercises` et `groupesDeSeance`
+   met en tête le premier de cette liste — ce qui n'est le dernier fait que par
+   accident.
+2. **Le trait blanc** désigne **toujours le dernier exercice fait**. Aujourd'hui
+   `SlateRang.courant` vaut `rang == 1` : si l'ordre change (règle 1), il suit
+   tout seul. C'est donc la règle 1 qui porte les deux.
+3. **La série** : la rangée s'ouvre sur **la série faite le plus récemment**, et
+   c'est elle qui porte le cheveu blanc.
+
+⚠️ **La règle 3 RENVERSE la définition du 23-09.** `SetHistoryRow.courante` est
+aujourd'hui **la première série NON faite** — « nil quand tout est fait : on ne
+désigne rien plutôt que de désigner au hasard ». Elle demande l'inverse :
+quand tout est fait, on désigne **la dernière faite**. Les deux règles sont
+justes, mais à des moments différents :
+- il reste une série à faire → c'est elle (la règle du 23-09) ;
+- tout est fait → c'est la dernière faite (la règle du 24-09).
+
+⚠️ **Et ça touche l'état « Exercice terminé » (§16).** Cet état se lit
+justement sur « plus aucune série en attente ». Les deux doivent rester
+cohérents : quand la tête dit *terminé*, c'est la dernière faite qui est
+ouverte et désignée. Une seule source de vérité pour les deux, sinon elles
+divergeront.
+
+⚠️ **`SessionSlate.swift` est PARTAGÉ avec la story de fin et l'ardoise.**
+`marqueCourante` est `false` par défaut pour elles — toute nouvelle règle doit
+entrer par le même chemin, sinon une séance finie se met à désigner une série
+« en cours » qui n'existe plus.
+
+---
+
 ## 10. Ce que ça coûte, et ce qu'il faut mesurer
 
 **Tout ce plan tient en opacités, échelles, décalages et rotations.** Aucune

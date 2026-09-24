@@ -78,9 +78,15 @@ reste noir.
 | les paillettes | 7 grains d'un point, périodes 1,3 · 1,7 · 2,1 · 2,3 · 2,9 · 3,1 · 3,7 s | aucune multiple d'une autre |
 | le néon de braise | blanc chaud → orange → rouge qui meurt | 1,9 s |
 
-**Où il vit** : à la RACINE, dans `couvercles` (`NosfyApp.swift`), pas sur la
-barre d'onglets. Il se pose sur tous les écrans pendant une séance **sauf le
-lecteur** (on y est déjà, et le bas de l'écran y est pris par le galet Stop).
+**Où il vit** : monté à la RACINE, dans `couvercles` (`NosfyApp.swift`) —
+c'est la seule route qui passe au-dessus de la barre native — mais il ne
+s'affiche que **là où la barre existe**, c'est-à-dire sur l'Accueil seul.
+
+⚠️ **Il a vécu quelques heures sur tous les écrans, et c'était une erreur**
+(corrigée le 24-09 au soir, après son essai sur le téléphone). Posé par-dessus
+le compteur d'une série, un témoin est un intrus : ces pages-là sont
+immersives, elles n'ont pas de barre **justement** pour qu'on ne regarde
+qu'elles. Il est l'onglet Exercices pendant une séance, rien d'autre.
 
 ### ⚠️ Les pièges
 
