@@ -179,7 +179,15 @@ final class CoupeEtat: ObservableObject {
 
     static let dureeVoile: Double = 0.30
 
-    func couper(_ auMilieu: @escaping () -> Void) {
+    /// `tenue` (25-09) : le noir TENU après la bascule, avant de se lever.
+    /// Zéro par défaut — les retours qui ne changent qu'une vue n'en ont
+    /// pas besoin. La sortie de la fiche, si : filmée au simulateur, le
+    /// voile se levait sur la fiche en train de glisser (le dépilement
+    /// garde l'animation de navigation, transaction ou pas), la page
+    /// Exercices et ses catégories 66 ms, puis la home 170 ms avant que le
+    /// lecteur ne se pose — l'onglet et le lecteur basculent au rendu
+    /// SUIVANT, par le canal `ouvrirLecteur`, pas sous ce noir-ci.
+    func couper(tenue: Double = 0, _ auMilieu: @escaping () -> Void) {
         guard !CoupeBanc.sans else { auMilieu(); return }
         // Même contrat que `jouer` : un geste en attente n'est jamais jeté.
         honorer()
@@ -195,7 +203,18 @@ final class CoupeEtat: ObservableObject {
             // — son geste, lui, a déjà été honoré par l'appel suivant.
             guard self.tourVoile == mien else { return }
             self.honorer()                       // l'écran change SOUS le noir
-            withAnimation(.easeOut(duration: d * 0.55)) { self.voile = 0 }
+            guard tenue > 0 else {
+                withAnimation(.easeOut(duration: d * 0.55)) { self.voile = 0 }
+                return
+            }
+            // ⚠️ UNE TÂCHE NEUVE : `honorer()` vient d'annuler celle-ci (elle
+            // EST le chien), et un `Task.sleep` annulé rend la main aussitôt
+            // — la tenue n'aurait jamais tenu.
+            Task {
+                try? await Task.sleep(for: .seconds(tenue))
+                guard self.tourVoile == mien else { return }
+                withAnimation(.easeOut(duration: d * 0.55)) { self.voile = 0 }
+            }
         }
     }
 

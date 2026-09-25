@@ -1110,7 +1110,9 @@ struct ExerciseDetailView: View {
             guard ProcessInfo.processInfo.arguments.contains("-boucleAuto")
             else { return }
             try? await Task.sleep(for: .seconds(3.4))
-            rendreLaBibliotheque()
+            // La porte du chevron (25-09) : le banc filme donc aussi SON
+            // retour, pas un chemin à côté.
+            quitterLaFiche()
             #endif
         }
         .task { await runAubeBench() }
@@ -1297,7 +1299,7 @@ struct ExerciseDetailView: View {
                         onLaunch: { exitRestart(ask, thenLaunch: true) },
                         onDismiss: { exitRestart(ask, thenLaunch: false) },
                         onAutreExercice: { exitRestart(ask, thenLaunch: false)
-                                           rendreLaBibliotheque() })
+                                           quitterLaFiche() })
                 }
                 // LES PIÈCES DE LA SÉRIE — au-dessus de tout : la carte
                 // s'écrit en lumière pendant que le panneau descend.
@@ -2294,7 +2296,7 @@ struct ExerciseDetailView: View {
         CommandLine.arguments.contains("-rewardAtelier")
 
     private var headerChips: some View {
-        RangeeChips(retour: { guideRetour = false; dismiss() },
+        RangeeChips(retour: { quitterLaFiche() },
                     guide: guideRetour) {
             if Self.chipAtelier {
                 ChipVerre(symbole: "ellipsis", label: "Options") {
@@ -3266,6 +3268,28 @@ struct ExerciseDetailView: View {
         restartAsk = f
     }
 
+    /// ⚠️⚠️ LA SEULE PORTE DE SORTIE DE LA FICHE (25-09).
+    ///
+    /// Retour TestFlight 83 : « en séance, le chevron d'un détail
+    /// d'exercice me ramène sur la page exercices avec les catégories — on
+    /// avait dit non », et « pareil pour le cardio » (c'est la MÊME vue
+    /// depuis le 15-09). Le chevron faisait un `dismiss()` nu : le lecteur
+    /// ouvre la fiche EN PASSANT PAR l'onglet Exercices, donc ce qu'il y a
+    /// dessous, c'est la page — interdite en séance depuis le 22-09. Seul
+    /// « Choisir un autre exercice » connaissait le chemin du lecteur.
+    /// Quatrième costume du même défaut (cf. `allerAuxExercices` à la
+    /// racine) : la règle vit à la PORTE, plus chez les appelants.
+    /// En séance → le lecteur, sous la coupe sourde ; hors séance → la
+    /// page Exercices, sur la zone qu'on avait quittée.
+    private func quitterLaFiche() {
+        guard active != nil else {
+            guideRetour = false
+            dismiss()
+            return
+        }
+        rendreLaBibliotheque()
+    }
+
     /// Tous les choix de la pop-up passent ici, après son fondu de sortie.
     /// « CHOISIR UN AUTRE EXERCICE » (21-09) : la série est réglée par
     /// `exitRestart`, puis la fiche se dépile — la page Exercices reprend la
@@ -3286,7 +3310,10 @@ struct ExerciseDetailView: View {
         // réordonnent (la fiche se dépile, l'onglet est rendu, le lecteur
         // se pose) ; sans elle on revoit la page exercices entre les deux,
         // ce qu'elle avait refusé le 22-09.
-        CoupeEtat.shared.couper {
+        // ⚠️ ET LE NOIR TIENT 0,25 s APRÈS LA BASCULE (25-09) : sans tenue,
+        // il se levait avant que l'onglet et le lecteur ne se posent — la
+        // page Exercices passait 66 ms, la home 170 ms (film au simulateur).
+        CoupeEtat.shared.couper(tenue: 0.25) {
             dismiss()
             // ET LE LECTEUR REVIENT (22-09) : la fiche se dépile, la racine
             // rend l'onglet à la home et pose le player, le suivant déjà en

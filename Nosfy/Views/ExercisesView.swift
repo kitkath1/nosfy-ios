@@ -818,7 +818,11 @@ struct ExercisesView: View {
                             // séance : pendant, toutes ses sorties mènent
                             // au lecteur, comme l'onglet et le galet.
                             // Sous la coupe blanche, comme partout.
-                            if montreAccueil, enSeance {
+                            // ⚠️ DEPUIS UNE ZONE AUSSI (25-09) : la garde
+                            // ne valait que sur l'accueil — découverte en
+                            // séance sur une zone, la page rendait ses
+                            // catégories au lieu du lecteur.
+                            if enSeance {
                                 // Coupe SOURDE (24-09) : c'est un retour.
                                 CoupeEtat.shared.couper {
                                     PlayerEtat.shared.ouvrirLecteur = true
