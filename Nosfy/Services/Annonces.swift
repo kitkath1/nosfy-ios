@@ -67,6 +67,12 @@ final class FileAnnonces {
     private(set) var visible: AnnonceVisible?
     /// Ce qui attend son tour.
     private var attente: [AnnonceVisible] = []
+
+    /// LA FILE A-T-ELLE ENCORE QUELQUE CHOSE À DIRE ? Lue par la fin de
+    /// séance : la pop-up du booster attend que les dalles soient passées —
+    /// posée par-dessus, elle les couvrirait, et l'ordre demandé est les
+    /// toasters PUIS le booster (29-09).
+    var enCours: Bool { visible != nil || !attente.isEmpty }
     /// Le temps qu'une carte tient avant de céder la place.
     var duree: TimeInterval = 2.8
     /// Le souffle entre deux cartes (l'une sort, l'autre entre).

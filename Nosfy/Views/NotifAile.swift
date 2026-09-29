@@ -125,12 +125,54 @@ enum RobeNotif: Int {
         if choisie.porteUneVideo, ProtectionThermique.shared.ambianceAuRepos {
             choisie = (precedente == .jauge) ? voulue : .jauge
         }
-        // Le tour de rôle lui-même ne rend jamais la pièce deux fois : si
-        // c'était son tour et qu'elle vient de tomber, on prend la suivante.
-        if choisie == .jauge, precedente == .jauge {
-            choisie = tourDeRole[max(tour, 1) % tourDeRole.count]
+        // ⚠️⚠️ **AUCUNE ROBE NE TOMBE DEUX FOIS D'AFFILÉE** — et plus
+        // seulement la pièce (29-09 : « des fois je vois deux fois d'affilée
+        // le même texte, erreur, d'une session jamais ! »). La garde du
+        // 24-09 ne regardait que `.jauge` : elle laissait passer le mot
+        // géant deux fois de suite dès que le compteur sautait. On prend
+        // alors la première du tour qui n'est pas celle qui vient de tomber.
+        if choisie == precedente {
+            for k in 1...tourDeRole.count {
+                let c = tourDeRole[(max(tour, 1) - 1 + k) % tourDeRole.count]
+                if c != precedente { choisie = c; break }
+            }
         }
         return choisie
+    }
+}
+
+// MARK: - Le tour de rôle, et il vit AU-DESSUS des fiches
+
+/// LE COMPTEUR DU TOUR DE RÔLE — il appartient à la SÉANCE, pas à l'écran
+/// qui l'affiche.
+///
+/// ⚠️⚠️ **IL ÉTAIT DANS LA FICHE, ET C'ÉTAIT LE BUG** (29-09 : « des fois je
+/// vois deux fois d'affilée le même texte »). `tourRobe` et `robePill`
+/// étaient deux `@State` d'`ExerciseDetailView`. Or **une séance enchaîne
+/// PLUSIEURS fiches** : changer d'exercice détruit la vue et ses `@State`,
+/// le compteur repartait à **zéro** — c'est-à-dire à `tourDeRole[0]`, le mot
+/// géant. La dernière série d'un exercice et la première du suivant
+/// montraient donc le même « YOU WIN », l'un derrière l'autre ; et le mot
+/// géant tombait bien plus souvent que les quatre autres robes.
+///
+/// ⚠️ **IL NE SE REMET JAMAIS À ZÉRO**, pas même entre deux séances : c'est
+/// ce qui garantit qu'aucune robe ne se répète à cheval sur une frontière
+/// (fin d'un exercice, fin d'une séance). Un compteur qu'on remet à zéro est
+/// exactement ce qui a produit ce défaut.
+///
+/// ⚠️ On l'avance quand le toaster NAÎT, jamais dans un `body` — un corps de
+/// vue est réévalué autant de fois que SwiftUI le décide.
+@MainActor
+enum TourDesRobes {
+    private(set) static var tour = 0
+    private(set) static var derniere: RobeNotif?
+
+    /// Avance d'un cran et rend la robe du toaster qui vient de naître.
+    static func avancer() -> RobeNotif {
+        tour += 1
+        let r = RobeNotif.suivante(apres: derniere, tour: tour)
+        derniere = r
+        return r
     }
 }
 

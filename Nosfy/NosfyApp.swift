@@ -661,6 +661,10 @@ struct RootView: View {
     /// une troisième est REFUSÉE à toutes les portes — la pop-up native Apple.
     @State private var refusPlafondJour = false
     @State private var recompensesApresRoute = false
+    /// La proposition d'ouvrir un booster a-t-elle DÉJÀ été faite pour cette
+    /// fin de séance ? Depuis le 29-09 elle se pose sur la Route ; ce drapeau
+    /// empêche la sortie de la Route de la reposer une seconde fois.
+    @State private var boosterPropose = false
 
     private func terminerSeance() {
         guard let a = active else {
@@ -787,6 +791,7 @@ struct RootView: View {
         storyGain = 0
         storyCardio = false
         guard gain > 0 || cardio else { compte.finSeancePresentee = false; return }
+        boosterPropose = false
         let finies = ((try? modelContext.fetch(FetchDescriptor<Workout>())) ?? [])
             .filter { $0.endedAt != nil && $0.faitPourRoute }
             .sorted { ($0.endedAt!, $0.remoteID.uuidString) < ($1.endedAt!, $1.remoteID.uuidString) }
@@ -812,12 +817,54 @@ struct RootView: View {
         recompensesApresRoute = false
         compte.finSeancePresentee = false
         EconomieWoop.shared.viderFinSeance()
+        // ⚠️ LA SORTIE DE LA ROUTE N'EST PLUS QUE LE FILET (29-09) : quand la
+        // séance a un galet, la proposition est déjà tombée SUR la Route
+        // (`proposerBoosterSurLaRoute`). Ce chemin-ci reste pour les séances
+        // SANS galet (au-delà du plafond du jour) — elles n'ouvrent aucune
+        // route, leurs gains partent par la home.
+        guard !boosterPropose else { return }
+        boosterPropose = true
         let generation = compte.generationDonnees
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(3.4))
             guard !Task.isCancelled, generation == compte.generationDonnees,
                   !compte.enPorte, active == nil, !depart.cheminOuvert,
                   storyFin == nil else { return }
+            SacreEtat.shared.proposer()
+        }
+    }
+
+    /// LA PROPOSITION D'OUVRIR UN BOOSTER, POSÉE SUR LA ROUTE.
+    ///
+    /// ⚠️⚠️ **ELLE ATTENDAIT LA SORTIE DE LA ROUTE, ET C'ÉTAIT LE DÉFAUT**
+    /// (29-09 : « on voit les toasters à la fin, pièces et booster, mais on
+    /// doit revenir sur la home pour voir la pop-up ouvrir un booster »).
+    /// Le 20-09 on avait libéré les GAINS au galet accompli — les dalles
+    /// défilent donc bien sur la Route. La proposition, elle, était restée
+    /// accrochée à `libererFinSeance`, que seule la FERMETURE du chemin
+    /// appelle, et dont la garde `!depart.cheminOuvert` l'interdisait
+    /// explicitement pendant la route. Rien à déplacer dans le dessin : la
+    /// pop-up vit déjà au-dessus (zIndex 5 contre 4 pour la route). C'était
+    /// le MOMENT qui était faux, pas la place.
+    ///
+    /// ⚠️ **ELLE ATTEND QUE LES DALLES SOIENT PASSÉES.** Posée par-dessus la
+    /// file, elle couvrirait les toasters — et l'ordre demandé est celui-là :
+    /// les pièces et le sachet d'abord, la proposition ensuite. La file est
+    /// interrogée (`FileAnnonces.enCours`), avec un plafond de 12 s pour
+    /// qu'une dalle coincée ne retienne jamais la proposition.
+    private func proposerBoosterSurLaRoute() {
+        guard !boosterPropose else { return }
+        boosterPropose = true
+        let generation = compte.generationDonnees
+        Task { @MainActor in
+            for _ in 0..<40 {
+                if !FileAnnonces.shared.enCours { break }
+                try? await Task.sleep(for: .milliseconds(300))
+            }
+            try? await Task.sleep(for: .seconds(0.6))
+            guard !Task.isCancelled, generation == compte.generationDonnees,
+                  !compte.enPorte, active == nil, storyFin == nil,
+                  depart.cheminOuvert else { return }
             SacreEtat.shared.proposer()
         }
     }
@@ -966,6 +1013,7 @@ struct RootView: View {
                               onCelebrationJouee: {
                                   guard recompensesApresRoute else { return }
                                   EconomieWoop.shared.viderFinSeance()
+                                  proposerBoosterSurLaRoute()
                               })
                     .onAppear { print("[SONDE-CHEMIN] la page du chemin est MONTÉE") }
             }
@@ -2609,7 +2657,39 @@ struct RootView: View {
             // le banc paraît « ne rien faire ».
             guard a.contains("-cheminAuto") || a.contains("-departAuto")
                     || a.contains("-goAuto") || a.contains("-boucleAuto")
+                    || a.contains("-boosterRoute")
             else { return }
+            // ⚠️ `-boosterRoute` (29-09) — LE BANC DE LA FIN DE SÉANCE SUR LA
+            // ROUTE. Il rejoue ce que produit une vraie fin de séance : le
+            // drapeau `recompensesApresRoute`, les dalles de gain, et la
+            // Route ouverte sur un galet À FÊTER. Sans lui, la seule façon
+            // de voir la pop-up du booster tomber sur la Route serait de
+            // finir une vraie séance sur l'appareil — et c'est exactement ce
+            // qui a laissé vivre le défaut : les toasters avaient été
+            // libérés au galet le 20-09, la proposition était restée à la
+            // sortie, et aucun banc ne montrait la suite complète.
+            //
+            // ⚠️ NON JOUÉ au simulateur : kat-notif et iPhone 15 sont tous
+            // deux derrière la porte Apple (aucun compte), la Route ne
+            // s'ouvre donc pas. À passer sur son iPhone.
+            if a.contains("-boosterRoute") {
+                // LA PORTE D'ABORD : un banc qui ouvre la Route pendant que
+                // le film de Nosfy tient l'écran n'ouvre rien du tout —
+                // `ouvrirChemin` part dans le vide et le banc paraît muet.
+                for _ in 0..<60 {
+                    if !compte.enPorte { break }
+                    try? await Task.sleep(for: .milliseconds(300))
+                }
+                try? await Task.sleep(for: .seconds(1.5))
+                boosterPropose = false
+                recompensesApresRoute = true
+                depart.ouvrirChemin(etape: 3, faits: [1, 2], celebration: 3)
+                // Les dalles partent AVANT la fête : quand la célébration
+                // tombe, la file est déjà en cours — c'est le cas qui
+                // compte, celui où la proposition doit ATTENDRE son tour.
+                FileAnnonces.shared.pousser([.pieces(120), .sachet(1)])
+                return
+            }
             // `-plafondBanc` : trois séances FINIES AVEC TRAVAIL aujourd'hui (une
             // série cochée chacune — la démo n'en coche aucune, donc aucun galet),
             // semées une fois : la Route en compte deux, la troisième est refusée.

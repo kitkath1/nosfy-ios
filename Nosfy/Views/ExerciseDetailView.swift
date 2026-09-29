@@ -56,10 +56,10 @@ struct ExerciseDetailView: View {
     /// chemins qui posent une pill : la fin de série ET la longueur de
     /// piscine (`direLesPiecesDeLaLongueur`), sans quoi la piscine serait
     /// clouée à une robe pour toujours.
-    @State private var tourRobe = 0
-    /// LA ROBE DU TOASTER EN COURS — choisie au moment où il naît, jamais
-    /// dans un `body`. C'est elle qui porte sa règle du 24-09 : la pièce ne
-    /// tombe jamais deux fois d'affilée (`RobeNotif.suivante`).
+    /// LA ROBE DU TOASTER EN COURS — seulement pour l'AFFICHER. Le tour de
+    /// rôle, lui, vit dans `TourDesRobes` : il doit survivre au changement
+    /// d'exercice, sinon il repart à zéro au milieu d'une séance et la même
+    /// robe tombe deux fois de suite (29-09).
     @State private var robePill: RobeNotif = .jauge
     /// Le jeton de la pill de la PISCINE (15-09) : chaque « + » la relance
     /// deux secondes ; seule la dernière relance a le droit de l'éteindre.
@@ -2896,8 +2896,7 @@ struct ExerciseDetailView: View {
         coinsAt = .now
         pillJeton += 1
         let jeton = pillJeton
-        tourRobe += 1
-        robePill = RobeNotif.suivante(apres: robePill, tour: tourRobe)
+        robePill = TourDesRobes.avancer()
         withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
             pillGain = (gain: gain, total: total)
         }
@@ -3211,8 +3210,7 @@ struct ExerciseDetailView: View {
         issueEnCours = issue
         switch issue {
         case .pill(let g, let t):
-            tourRobe += 1
-            robePill = RobeNotif.suivante(apres: robePill, tour: tourRobe)
+            robePill = TourDesRobes.avancer()
             withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
                 pillGain = (gain: g, total: t)
             }
