@@ -2563,6 +2563,16 @@ struct ExerciseDetailView: View {
             let compte = st.debutCompte != nil ? LiquidLensLab.igniteSpan : 0
             Task { @MainActor [weak st] in
                 try? await Task.sleep(for: .seconds(compte))
+                if mode.auLong, CommandLine.arguments.contains("-cardioConstant") {
+                    // `-cardioConstant` (30-09) : SA course, une allure
+                    // tenue sans toucher, puis Finish — le pointage seul
+                    // découpe (avec `-tranchePointage`, trois tranches).
+                    try? await Task.sleep(for: .seconds(dureeSet > 0 ? dureeSet : 13))
+                    guard seanceTapis === st else { return }
+                    finirTapis()
+                    await ouvrirLecteurAuBanc()
+                    return
+                }
                 if mode.auLong {
                     // 6 s, pas 5 : le segment doit dépasser les 5 s sous
                     // lesquels `sceller` ne découpe pas (l'arrivée en mange
@@ -2584,6 +2594,7 @@ struct ExerciseDetailView: View {
                     try? await Task.sleep(for: .seconds(pas))
                     guard seanceTapis === st else { return }
                     finirTapis()
+                    await ouvrirLecteurAuBanc()
                     return
                 }
                 for tour in 0..<3 {
@@ -2599,8 +2610,18 @@ struct ExerciseDetailView: View {
                 try? await Task.sleep(for: .seconds(1.5))
                 guard seanceTapis === st else { return }
                 finirTapis()
+                await ouvrirLecteurAuBanc()
             }
         }
+    }
+
+    /// `-cardioLecteur` (30-09) : 3 s après Finish, le lecteur se pose comme
+    /// sous le doigt — pour VOIR la partition d'une course (une ligne) ou
+    /// d'un HIIT (une ligne par set) sans poser de doigt.
+    private func ouvrirLecteurAuBanc() async {
+        guard CommandLine.arguments.contains("-cardioLecteur") else { return }
+        try? await Task.sleep(for: .seconds(3))
+        PlayerEtat.shared.ouvrirLecteur = true
     }
 
     /// FINISH = la fin de l'EXERCICE, pas de la séance (verdict 15-09). La

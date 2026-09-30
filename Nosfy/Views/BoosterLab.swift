@@ -604,12 +604,6 @@ struct BoosterLab: View {
 
     @StateObject private var handle = BoosterHandle()
     @State private var carteOpacity: Double = 0
-    /// LA CÉRÉMONIE DE LA LÉGENDAIRE (30-09) : une Quatre Lunes dont la
-    /// matière est prête sort de la porte de lumière, par-dessus l'étage
-    /// résultat, puis s'y fond. Les autres raretés ne la voient jamais.
-    @State private var ceremonie: (matiere: LuneMatiere, nom: String, monde: String)?
-    @State private var ceremonieVisible = false
-    @State private var ceremonieDebut: Date?
     // ---- l'étage d'ENREGISTREMENT (post-sacre) ----
     /// Le tirage du balayage (points, brut) et le départ du vol.
     @State private var envolY: CGFloat = 0
@@ -778,7 +772,6 @@ struct BoosterLab: View {
                                                  .map(Image.init(uiImage:)),
                                              depth: handle.carteDepth
                                                  .map(Image.init(uiImage:)),
-                                             cardId: handle.cardId,
                                              rarete: handle.rarete,
                                              onDive: { carteEnPlongee = $0 },
                                              diveOnTap: true)
@@ -904,8 +897,6 @@ struct BoosterLab: View {
                     Spacer()
                     Button {
                         carteOpacity = 0
-                        handle.carteSort = false
-                        ceremonie = nil
                         handle.revealed = false
                         handle.flown = false
                         envolY = 0
@@ -1010,35 +1001,7 @@ struct BoosterLab: View {
         // est le seul geste que le film ne peut pas jouer tout seul. Ici
         // la carte part d'elle-même une fois le registre écrit — de la
         // pop-up à la carte posée dans la collection, sans un doigt.
-        .overlay { ceremonieCouche }
-        // LA LÉGENDAIRE SORT DE LA LUMIÈRE, pas du sachet : dès que la carte
-        // quitte le sachet déchiré, la cérémonie la couvre (noir, point,
-        // cheveu, fente, la carte qui se tourne, le nom) — la sortie 3D se
-        // joue dessous, invisible. Un filet : si la révélation ne vient
-        // pas, la cérémonie s'efface quand même.
-        .onChange(of: handle.carteSort) { _, sort in
-            guard sort, handle.rarete == "legendary", ceremonie == nil,
-                  let m = LuneMatiere.enMemoire(cardId: handle.cardId) else { return }
-            ceremonie = (m, L(m.noms["fr"] ?? "", m.noms["en"] ?? ""),
-                         L(m.mondeNoms["fr"] ?? "", m.mondeNoms["en"] ?? ""))
-            ceremonieDebut = Date()
-            ceremonieVisible = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 12) {
-                if ceremonieVisible {
-                    withAnimation(.easeInOut(duration: 0.6)) { ceremonieVisible = false }
-                }
-            }
-        }
         .onChange(of: handle.revealed) { _, ouvert in
-            // La carte posée sous la cérémonie : le nom lu une seconde
-            // (≥ 5,6 s après la porte), puis le fondu dans l'étage résultat
-            // — la même carte, à la même place.
-            if ouvert, ceremonieVisible, let debut = ceremonieDebut {
-                let reste = max(5.6 - Date().timeIntervalSince(debut), 0.3)
-                DispatchQueue.main.asyncAfter(deadline: .now() + reste) {
-                    withAnimation(.easeInOut(duration: 0.6)) { ceremonieVisible = false }
-                }
-            }
             if ouvert, let booster = handle.boosterId, let owner = handle.userId {
                 Task {
                     do {
@@ -1057,27 +1020,6 @@ struct BoosterLab: View {
                       envolStart == nil else { return }
                 envoler()
             }
-        }
-    }
-
-    /// La cérémonie par-dessus l'étage résultat : la carte à la taille et à
-    /// la place de la carte vivante du résultat (`projW`, le même calcul).
-    @ViewBuilder
-    private var ceremonieCouche: some View {
-        if ceremonieVisible, let c = ceremonie,
-           let art = handle.carteArt, let depth = handle.carteDepth {
-            GeometryReader { g in
-                let H = g.size.height
-                let w = min(H * 0.41647, 380)
-                CeremonieLegendaire(art: Image(uiImage: art),
-                                    depth: Image(uiImage: depth),
-                                    matiere: c.matiere, nom: c.nom, monde: c.monde,
-                                    taille: CGSize(width: w, height: w * 1448 / 1086),
-                                    decalageY: -0.01322 * H)
-            }
-            .ignoresSafeArea()
-            .allowsHitTesting(false)
-            .transition(.opacity)
         }
     }
 
@@ -1157,9 +1099,6 @@ final class BoosterHandle: ObservableObject {
     var boosterId: String?
     var userId: String?
     @Published var cartePrete = false
-    /// La carte SORT du sachet déchiré (juste avant `extractCard`) : le
-    /// moment où une légendaire passe par la porte de lumière à la place.
-    @Published var carteSort = false
     @Published var attenteReseau = false
     @Published var erreurForge: String?
     weak var coordinator: BoosterStage.Coordinator?
@@ -3374,7 +3313,6 @@ struct BoosterStage: UIViewRepresentable {
                 // ici : à lacet π ambiant, la composante relue est le
                 // piège de la forme alternative. Le pilote fait le reste.
                 stage.cardNode.isHidden = false
-                self.handle?.carteSort = true
                 self.extractCard()
             }
         }

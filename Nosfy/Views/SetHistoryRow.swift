@@ -182,6 +182,8 @@ struct SetHistoryRow: View {
     /// « Set 3 » — pour la piscine, « Piscine » (une seule ligne).
     private var titre: String {
         if case .longueurs = genre { return "Piscine" }
+        // Une course au long n'est pas un « Set 1 » (30-09).
+        if case .course(_, let niveau) = genre { return niveau ? L("Escalier", "Stairs") : L("Course", "Run") }
         return "Set \(rank)"
     }
 
@@ -215,7 +217,7 @@ struct SetHistoryRow: View {
                     }
                 }
             }
-        case .intervalle(let v, let niveau):
+        case .intervalle(let v, let niveau), .course(let v, let niveau):
             HStack(spacing: 8) {
                 metric(ChambreFmt.mmss(seconds), "")
                 sep

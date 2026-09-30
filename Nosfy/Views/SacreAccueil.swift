@@ -118,12 +118,6 @@ final class CollectionLune: ObservableObject {
             acquisitions = Set(familles.flatMap { $0.acquisitions })
             totaux = compte; lueAuServeur = true
             print("[collection] \(familles.count) références · \(familles.reduce(0) { $0 + $1.nombre }) exemplaires")
-            // Les légendaires DÉJÀ obtenues reçoivent la matière publiée
-            // (sa demande du 30-09 : « même celles déjà obtenues ») :
-            // préchargée ici, la carte s'ouvre gravée au premier tap.
-            for f in familles where f.rarete == "legendary" {
-                Task { _ = await LuneMatiere.publiee(cardId: f.cardId) }
-            }
         } catch { print("[collection] relecture en attente : \(error.localizedDescription)") }
     }
 

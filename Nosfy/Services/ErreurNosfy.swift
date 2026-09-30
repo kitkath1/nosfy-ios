@@ -42,7 +42,18 @@ final class Reseau {
     @ObservationIgnored private let moniteur = NWPathMonitor()
 
     private init() {
-        if Self.forceHorsLigne { enLigne = false; mesure = true; return }
+        if Self.forceHorsLigne {
+            enLigne = false; mesure = true
+            #if DEBUG
+            // LE VRAI MODE AVION, AU BANC (30-09) : le drapeau ne faisait que
+            // DIRE « hors ligne » — les appels, eux, partaient et répondaient.
+            // Ici chaque requête échoue comme sur le téléphone en avion
+            // (`notConnectedToInternet`), pour juger une séance entière sans
+            // réseau, et pas seulement le message.
+            URLProtocol.registerClass(ReseauCoupe.self)
+            #endif
+            return
+        }
         moniteur.pathUpdateHandler = { [weak self] chemin in
             let ok = chemin.status == .satisfied
             Task { @MainActor in
@@ -137,3 +148,18 @@ final class ErreurNosfy {
 
     func fermer() { courante = nil }
 }
+
+#if DEBUG
+/// `-erreurHorsLigne` (30-09) : toute requête de l'app échoue comme en mode
+/// avion — `URLError(.notConnectedToInternet)`, sans attendre. `URLSession.shared`
+/// consulte les protocoles enregistrés : c'est la seule session de l'app.
+final class ReseauCoupe: URLProtocol {
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func startLoading() {
+        print("[reseau] coupé (banc) : \(request.url?.path ?? "?")")
+        client?.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet))
+    }
+    override func stopLoading() {}
+}
+#endif

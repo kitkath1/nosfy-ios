@@ -246,6 +246,9 @@ struct InviteAnimee: View {
 /// ombre haute, une lumière basse), le talon à gauche, et une ombre
 /// portée courte qui le décolle de son support.
 struct TicketSeries: View {
+    /// « 1 SET », « 2 SETS » — jamais « 1 SETS » (30-09, vu sur l'accueil).
+    static func sets(_ n: Int) -> String { n == 1 ? "1 SET" : "\(n) SETS" }
+
     var texte: String
     /// L'échelle du ticket (1 = ~104 × 34 pt).
     var echelle: CGFloat = 1
@@ -1747,7 +1750,7 @@ struct PiluleLab: View {
                 }
                 PiluleVagabonde(utile: hautUtile...basUtile,
                                 departSeance: depart,
-                                ticketTexte: "\(setsFaits) SETS",
+                                ticketTexte: TicketSeries.sets(setsFaits),
                                 surHome: PiluleBanc.homeNoire,
                                 onOuvrir: {
                                     ouvertures += 1
@@ -2257,7 +2260,7 @@ struct GrandPlayer: View {
                     chronoSession.font(.system(size: 11, weight: .medium))
                 }
                 Spacer(minLength: 10)
-                TicketSeries(texte: "\(setsFaits) SETS", echelle: 0.58)
+                TicketSeries(texte: TicketSeries.sets(setsFaits), echelle: 0.58)
                     .fixedSize()
             }
             .padding(.horizontal, 24)
@@ -2333,7 +2336,7 @@ struct GrandPlayer: View {
             // grande ; replié, il passe à droite de la ligne (voir
             // `teteLigne`), jamais il ne disparaît.
             .overlay(alignment: .trailing) {
-                TicketSeries(texte: "\(setsFaits) SETS", echelle: 0.95)
+                TicketSeries(texte: TicketSeries.sets(setsFaits), echelle: 0.95)
                     .rotationEffect(.degrees(-4))
                     .offset(x: 44, y: 10)
                     .opacity(Double(1 - r))

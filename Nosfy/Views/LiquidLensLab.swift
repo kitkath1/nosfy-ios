@@ -930,9 +930,15 @@ struct LiquidLensLab: View {
             effortIgnite = d
         }
         // Le banc de l'envol : le repos s'arme tout seul, chip levé.
+        // (30-09 : au temps seul, il attend le GO et 4 s de chrono, et
+        // garde le temps compté — la série part avec son duree_s.)
+        let attenteEnvol = saisie == .tempsSeul ? 4.5 + Self.igniteSpan + 4 : 7.2
         if Self.envolFire, restStart == nil, let s = summitAt,
            d.timeIntervalSince(s) > SummitCine.cutAt + SummitCine.enter
-               + SummitCine.descend + 7.2 {
+               + SummitCine.descend + attenteEnvol {
+            if let ei = effortIgnite {
+                effortSeconds = max(0, Int(d.timeIntervalSince(ei) - Self.igniteSpan))
+            }
             restDuration = 3
             restStart = d
         }

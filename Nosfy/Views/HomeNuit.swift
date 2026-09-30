@@ -3487,6 +3487,7 @@ struct HomeNuitPage: View {
     private func foyerEnSeance() -> some View {
         FoyerPage(depuisSeance: debutSeance ?? Date(),
                   series: seancesOuvertes.first?.seriesPayantes ?? 0,
+                  sets: seancesOuvertes.first?.setsAffiches,
                   minutes: minutesSeance,
                   arrivee: arrivee,
                   sticker: seancesOuvertes.first

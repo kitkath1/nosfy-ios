@@ -484,6 +484,18 @@ struct StoryEnded: View {
 
     private var effort: (valeur: Int, unite: String) {
         if session.series > 0 { return (session.series, L("séries", "sets")) }
+        // LA COURSE AU LONG (30-09) : une ligne de partition, pas des
+        // intervalles — elle dit sa DISTANCE (km/h × temps), l'escalier le
+        // nombre de montées. « 3 intervalles » pour 12 min à 7 km/h mentait.
+        let courses = session.groupes.flatMap(\.rows).compactMap { r -> (Double, Bool, Int)? in
+            guard r.done, case .course(let v, let niveau) = r.genre else { return nil }
+            return (v, niveau, r.seconds)
+        }
+        if session.intervalles == 0, !courses.isEmpty {
+            let metres = courses.filter { !$0.1 }.reduce(0.0) { $0 + $1.0 * Double($1.2) / 3.6 }
+            if metres >= 1 { return (Int(metres.rounded()), "m") }
+            return (courses.count, courses.count > 1 ? L("montées", "climbs") : L("montée", "climb"))
+        }
         if session.intervalles > 0 {
             return (session.intervalles, L("intervalles", "intervals"))
         }

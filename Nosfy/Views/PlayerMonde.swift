@@ -527,10 +527,8 @@ struct PlayerMondeHote: View {
         exoCourant?.exo.name ?? "Session"
     }
 
-    private var setsFaits: Int {
-        (seance?.orderedExercises ?? [])
-            .flatMap(\.orderedSets).filter(\.isDone).count
-    }
+    /// Le ticket compte ce que l'overlay compte (30-09, `setsAffiches`).
+    private var setsFaits: Int { seance?.setsAffiches ?? 0 }
 
     /// La partition : l'exo courant d'abord (id "courant"), puis les
     /// autres — le barème de l'ardoise (le pattern de la fiche).

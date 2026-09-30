@@ -86,13 +86,6 @@ enum ForgeServeur {
         let dossier = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appending(path: "cartes-lune")
         try? FileManager.default.createDirectory(at: dossier, withIntermediateDirectories: true)
         try? png.write(to: dossier.appending(path: "\(id).png"), options: .atomic)
-        // Une LÉGENDAIRE : sa matière publiée est chargée PENDANT
-        // l'ouverture (la révélation attend déjà ses pixels) — la carte
-        // arrive gravée, jamais d'abord en V5. Au mieux : sans réseau ou
-        // sans kit, elle reste en V5.
-        if rarete == "legendary" {
-            _ = await LuneMatiere.publiee(cardId: id)
-        }
         let noms = carte["noms"] as? [String: String] ?? [:]
         let nomLocal = await MainActor.run { L(noms["fr"] ?? nom, noms["en"] ?? nom) }
         return LuneForge.Carte(

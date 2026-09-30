@@ -179,7 +179,15 @@ final class SeanceTapis {
     /// course (loi d'`ecrirePhase` : « une app tuée ne perd que le set en
     /// cours »).
     private var pointageJeton = 0
-    static let tranchePointage: TimeInterval = 300
+    /// `-tranchePointage <s>` (banc, 30-09) : rejouer la course de 12 min
+    /// (trois tranches) en quelques secondes. 5 min hors banc.
+    static let tranchePointage: TimeInterval = {
+        #if DEBUG
+        let s = UserDefaults.standard.double(forKey: "tranchePointage")
+        if s > 0 { return s }
+        #endif
+        return 300
+    }()
     /// La vitesse COURANTE — la commande l'écrit ; c'est elle que la phase
     /// emporte au stop (l'intervalle) et à la relance (la récup).
     var vitesse: Double

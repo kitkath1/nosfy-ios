@@ -1,0 +1,10 @@
+30-09 ~14:24 Paris — une série de gainage JOUÉE PAR L'APP jusqu'au serveur (compte de test « Kiki »).
+Simulateur 0B48F143, réseau allumé, session du compte de test gardée (pas de -skipAuth).
+1. -openTab exercises -openExercise gainage -aubeFire -envolFire
+   console : [flow] série ancrée : exo=gainage bloc=1 séance=1 payantes (1 écrites)
+2. relance -fermeSeance : la séance est close, le lancement pousse les séances closes (synchroniser_seance)
+3. seances_depuis, lu sur le compte de test :
+   séance bd87a411 début 2026-09-30T12:24:08 fin 2026-09-30T12:24:58
+      gainage: séries (reps, kg, duree_s) = [(0, 0, 3)]
+Le banc -envolFire attend désormais le GO et 4 s de chrono au temps seul, et garde le temps compté.
+Film : etape3b-gainage-bout-en-bout.jpg (3-2-1, chrono, repos, envol).

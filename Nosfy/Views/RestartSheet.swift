@@ -601,9 +601,6 @@ enum DecideurSerie {
         let minTapis = (j["cardio_tapis_min_minutes"] as? NSNumber)?.doubleValue
         let minEscalier = (j["cardio_escalier_min_minutes"] as? NSNumber)?.doubleValue
         let hiitMinS = (j["cardio_hiit_effort_min_s"] as? NSNumber)?.doubleValue
-        // L'interrupteur de la matière des légendaires (30-09) : absent =
-        // allumé ; faux = toutes reviennent au rendu d'avant.
-        let matiere = j["legendaire_matiere"] as? Bool
         await MainActor.run {
             regles = r
             reglesLues = true
@@ -611,7 +608,6 @@ enum DecideurSerie {
             if let minTapis, minTapis > 0 { ModeCardio.minMinutesTapis = minTapis }
             if let minEscalier, minEscalier > 0 { ModeCardio.minMinutesEscalier = minEscalier }
             if let hiitMinS, hiitMinS > 0 { ModeCardio.hiitEffortMinS = hiitMinS }
-            if let matiere { LuneMatiere.interrupteur = matiere }
         }
         print("[annonces] regles_annonces() → rangs \(r.rangsFixes), vidéo \(r.rangVideo), "
               + "hasard \(r.hasardEcartMin)-\(r.hasardEcartMax) après \(r.hasardApres), "

@@ -268,6 +268,10 @@ struct SlateLigne {
         case serie(reps: Int, kilos: Double)
         /// Un intervalle cardio : sa vitesse (km/h, ou un niveau).
         case intervalle(vitesse: Double, niveau: Bool)
+        /// LA COURSE AU LONG (30-09) : le tapis modéré ou l'escalier, UNE
+        /// ligne pour tout le temps couru, à l'allure moyenne — jamais des
+        /// « sets ».
+        case course(vitesse: Double, niveau: Bool)
         /// La piscine : les longueurs, le bassin.
         case longueurs(n: Int, metres: Int)
     }
@@ -309,6 +313,12 @@ struct SlateGroupe: Identifiable {
         if let l = rows.first, case .longueurs(let n, let m) = l.genre {
             return "\(n) \(L("longueur", "length"))\(n > 1 ? "s" : "") · \(n * m) m"
         }
+        // La course au long (30-09) : son temps et son allure, pas « 1 intervalle ».
+        if let l = rows.first, case .course(let v, let niveau) = l.genre {
+            let allure = niveau ? L("niveau \(Int(v.rounded()))", "level \(Int(v.rounded()))")
+                : "\(ChambreFmt.kmh(v)) km/h"
+            return "\(ChambreFmt.mmss(l.seconds)) · \(allure)"
+        }
         let n = rows.filter(\.done).count
         let s = rows.filter(\.done).reduce(0) { $0 + $1.seconds }
         return "\(n) \(L("intervalle", "interval"))\(n > 1 ? "s" : "") · \(ChambreFmt.mmss(s))"
@@ -342,9 +352,41 @@ extension SlateGroupe {
                                seconds: 0, done: true)]
         }
         let niveau = le.exerciseID == "escalier"
+        // ⚠️ LA COURSE AU LONG EST UNE LIGNE, PAS DES SETS (30-09, TestFlight
+        // 85 : « j'ai couru 12 min à 7 km/h et le récap de l'overlay dit que
+        // j'ai fait 3 sets »). Au long, la scène ÉCRIT la course par tranches
+        // de cinq minutes (le pointage : une app tuée ne perd que la tranche
+        // en cours) et à chaque changement d'allure — 12 min = 5 + 5 + 2,
+        // trois phases. Lues comme des intervalles, elles devenaient trois
+        // « Set » dans la partition, « 3 SETS » au ticket, « 3 intervalles »
+        // dans la story. Ici elles redeviennent ce qu'elles sont : une course,
+        // son temps, son allure moyenne pondérée par le temps. Le HIIT garde
+        // une ligne par set ; `cardioFait` (la paie) ne lit pas ces lignes.
+        if let exo = le.exercise, ModeCardio.pour(exo)?.auLong == true {
+            let efforts = le.phasesFaites.filter(\.isEffort)
+            guard !efforts.isEmpty else { return [] }
+            let secondes = efforts.reduce(0) { $0 + $1.seconds }
+            let allure = efforts.reduce(0.0) { $0 + $1.speed * Double($1.seconds) }
+                / Double(max(secondes, 1))
+            return [SlateLigne(genre: .course(vitesse: allure, niveau: niveau),
+                               seconds: secondes, done: true)]
+        }
         return le.phasesFaites.filter(\.isEffort).map {
             SlateLigne(genre: .intervalle(vitesse: $0.speed, niveau: niveau),
                        seconds: $0.seconds, done: true)
+        }
+    }
+}
+
+extension Workout {
+    /// LE COMPTE DES TICKETS (30-09) : les lignes faites de la partition —
+    /// ce que l'overlay compte. Une course au long vaut 1, un HIIT un set
+    /// par intervalle ; l'accueil disait « 0 SETS » après 12 min de tapis.
+    /// La paie et la chaleur du foyer restent sur `seriesPayantes`.
+    var setsAffiches: Int {
+        orderedExercises.reduce(0) { n, le in
+            n + SlateGroupe.lignes(de: le, restSeconds: le.restSeconds)
+                .filter(\.done).count
         }
     }
 }

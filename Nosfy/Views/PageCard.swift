@@ -596,7 +596,7 @@ struct PiedPlayer: View {
                 MiniCardJour(date: jour, sticker: sticker,
                              stickerBasGauche: true)
                     .overlay(alignment: .trailing) {
-                        BadgeSetsNeon(texte: "\(setsFaits) SETS",
+                        BadgeSetsNeon(texte: TicketSeries.sets(setsFaits),
                                       vivant: t > 0.98)
                             .offset(x: 26)
                             .opacity(Double(max(0, (t - 0.25) * 1.6)))

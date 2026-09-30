@@ -774,6 +774,9 @@ struct FoyerPage: View {
     var depuisSeance: Date
     /// `Workout.seriesPayantes` — jamais `setCount` (l'écart a coûté un audit).
     var series: Int
+    /// Le compte du ticket (30-09, `Workout.setsAffiches`) : ce que l'overlay
+    /// compte — une course vaut 1. `nil` : le ticket lit `series` (le banc).
+    var sets: Int? = nil
     /// Relues sur ÉVÉNEMENT par l'hôte, jamais dérivées dans un corps.
     var minutes: Int
     var arrivee: Double = 1
@@ -955,7 +958,8 @@ struct FoyerPage: View {
         ZStack(alignment: .topLeading) {
             MiniCardJour(date: depuisSeance, sticker: sticker,
                          stickerBasGauche: true)
-            TicketSeries(texte: "\(seriesAffichees) SETS", echelle: 0.82)
+            TicketSeries(texte: TicketSeries.sets(FoyerBanc.palier ?? sets ?? series),
+                         echelle: 0.82)
                 .rotationEffect(.degrees(-4))
                 .offset(x: 46, y: 34)
         }
