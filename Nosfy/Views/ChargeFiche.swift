@@ -413,7 +413,7 @@ struct CourbeCharge: View {
     }
 
     private func libelleX(_ d: Date) -> String {
-        let f = DateFormatter(); f.locale = Locale(identifier: "fr_FR")
+        let f = DateFormatter(); f.locale = Locale(identifier: L("fr_FR", "en_US"))
         switch periode {
         case .semaine: f.dateFormat = "EEEEE"      // L M M J V S D
         case .mois:    f.dateFormat = "d"

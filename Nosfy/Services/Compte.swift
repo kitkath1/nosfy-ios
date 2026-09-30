@@ -168,6 +168,7 @@ enum Compte {
             PremiereArrivee.clePremiereFois, PremiereArrivee.cleVue, PremiereArrivee.cleVisite,
             "woop.onboarding.du",
             Goal.cleHebdo, "woop.chambre.objectif.attente",
+            DepartSerie.cle, DepartSerie.cleAttente,
             SupabaseSync.cleDepuis,
             "chemin.tirages", "chemin.revele", "chemin.reclamees",
             "woop.outbox.gains",

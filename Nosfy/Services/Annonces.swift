@@ -38,11 +38,15 @@ enum Annonce: Equatable {
     /// « +N cardio » — le barème de séance calculé par le serveur (15-09),
     /// dit quand `cloturer_seance` répond.
     case cardio(Int)
+    /// « LANGUE · English — Enregistré » — un choix de Réglages (30-09), en
+    /// cours puis fait. Pas un gain : aucun montant. Voir `poserReglage`.
+    case reglage(ReglageAnnonce)
 
     var montant: Int {
         switch self {
         case .pieces(let n), .sachet(let n), .argent(let n), .retour(let n),
              .cardio(let n): return n
+        case .reglage: return 0
         }
     }
 }
@@ -143,6 +147,39 @@ final class FileAnnonces {
         jeton += 1
         attente.removeAll()
         withAnimation(.easeOut(duration: 0.25)) { visible = nil }
+    }
+
+    /// UN RÉGLAGE, EN COURS PUIS FAIT (30-09, Réglages) — une seule dalle par
+    /// geste. Si la dalle du MÊME réglage est à l'écran, elle change SUR
+    /// PLACE (même identité : la peau ne se referme pas, seul son contenu
+    /// passe de l'attente à la coche) et sa minuterie repart ; si elle attend
+    /// son tour, elle est remplacée dans la file ; sinon elle est poussée.
+    /// « En cours » tient plus longtemps (8 s) : c'est la réponse qui le
+    /// relaie, pas la minuterie.
+    func poserReglage(_ r: ReglageAnnonce) {
+        let neuve = Annonce.reglage(r)
+        if let v = visible, case .reglage(let actuel) = v.annonce, actuel.cle == r.cle {
+            jeton += 1
+            let j = jeton
+            visible = AnnonceVisible(id: v.id, annonce: neuve)
+            let tient: TimeInterval = r.etat == .enCours ? 8 : duree
+            DispatchQueue.main.asyncAfter(deadline: .now() + tient) { [weak self] in
+                guard let self, self.jeton == j else { return }
+                withAnimation(.easeOut(duration: 0.35)) { self.visible = nil }
+                DispatchQueue.main.asyncAfter(deadline: .now() + self.entredeux) {
+                    self.avancer()
+                }
+            }
+            return
+        }
+        if let i = attente.firstIndex(where: {
+            if case .reglage(let a) = $0.annonce { return a.cle == r.cle }
+            return false
+        }) {
+            attente[i] = AnnonceVisible(id: attente[i].id, annonce: neuve)
+            return
+        }
+        pousser(neuve)
     }
 }
 
@@ -251,6 +288,8 @@ struct ToasterAnnonce: View {
         case .sachet(let n):
             ToasterGain(gain: n, fraction: fraction, robe: .booster,
                         libelle: "BOOSTER")
+        case .reglage(let r):
+            ToasterReglage(reglage: r)
         }
     }
 }
@@ -272,6 +311,7 @@ struct DalleAnnonce: View {
         case .retour:        return "retour du jour"
         case .sachet(let n): return n > 1 ? "sachets" : "sachet"
         case .argent(let n): return n > 1 ? "pièces d'argent" : "pièce d'argent"
+        case .reglage(let r): return r.valeur
         }
     }
 
@@ -335,6 +375,10 @@ struct DalleAnnonce: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 20, height: 20)
+        case .reglage:
+            Image(systemName: "gearshape")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(Color.inkMuted)
         }
     }
 

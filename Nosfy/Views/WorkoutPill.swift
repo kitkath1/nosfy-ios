@@ -233,7 +233,7 @@ struct WorkoutPill: View {
                 // format qu'on impose.
                 Text(docked
                      ? (titreCourant
-                        ?? "Session · \((startedAt ?? .now).formatted(.dateTime.month(.wide).day().locale(Locale(identifier: "en_US"))))")
+                        ?? "\(L("Séance", "Session")) · \((startedAt ?? .now).formatted(.dateTime.month(.wide).day().locale(Locale(identifier: L("fr_FR", "en_US")))))")
                      : exercise.name)
                     .font(.inter(14, .semibold))
                     .foregroundStyle(Color.inkPrimary)

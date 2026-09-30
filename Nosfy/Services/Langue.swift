@@ -35,6 +35,44 @@ enum Langue {
     }
 }
 
+extension Langue {
+    /// CHANGER DE LANGUE DEPUIS RÉGLAGES (30-09) — le même appel que la revisite
+    /// (`RootView.reecrireRevisite`) : `definir_profil` avec la langue SEULE, les
+    /// champs omis sont conservés (mesuré le 20-09, 32 PASS). On ATTEND le
+    /// serveur : il gagne à chaque `home()`, un cache posé seul serait défait
+    /// au prochain retour à l'accueil. Poser le cache fait renaître toute l'app
+    /// (`.id(langueApp)` à la racine).
+    ///
+    /// Rend `true` si la langue est posée. Un appel qui échoue alors que le
+    /// serveur porte déjà le changement (la réponse perdue en route) compte
+    /// comme un succès, comme dans la revisite.
+    @MainActor
+    static func changer(_ nouvelle: String) async -> Bool {
+        guard nouvelle == "fr" || nouvelle == "en" else { return false }
+        guard nouvelle != courante else { return true }
+        if AppleAuth.Maquette.active || !WoopConfig.isConfigured {
+            poser(nouvelle)
+            print("[langue] maquette : \(nouvelle) en cache seulement")
+            return true
+        }
+        do {
+            let p = try await ProfilServeur.definirProfil(langue: nouvelle, prenom: nil,
+                                                         but: nil, objectifHebdo: nil)
+            poser(p.langue)
+            print("[langue] definir_profil → \(p.langue ?? "—")")
+            return p.langue == nouvelle
+        } catch {
+            if let p = try? await ProfilServeur.profil(), p.langue == nouvelle {
+                poser(p.langue)
+                print("[langue] l'appel a échoué (\(error)) mais le serveur porte déjà \(nouvelle)")
+                return true
+            }
+            print("[langue] definir_profil ✗ \(error)")
+            return false
+        }
+    }
+}
+
 /// Le texte dans la langue courante — `L("Bienvenue", "Welcome")`.
 func L(_ fr: String, _ en: String) -> String { Langue.en ? en : fr }
 

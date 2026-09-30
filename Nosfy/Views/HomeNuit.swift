@@ -2017,11 +2017,20 @@ struct SemaineStrip: View {
         f.locale = Locale(identifier: "fr_FR"); f.dateFormat = "d"
         return f
     }()
-    private static let fMois: DateFormatter = {
+    /// Le mois suit la langue de l'app (30-09, Réglages) : deux formateurs
+    /// posés une fois, et le bon lu à chaque appel — un `static let` unique
+    /// resterait figé dans la langue du lancement, même après la renaissance.
+    private static let fMoisFr: DateFormatter = {
         let f = DateFormatter()
         f.locale = Locale(identifier: "fr_FR"); f.dateFormat = "MMM"
         return f
     }()
+    private static let fMoisEn: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US"); f.dateFormat = "MMM"
+        return f
+    }()
+    private static var fMois: DateFormatter { Langue.en ? fMoisEn : fMoisFr }
     static func jour(_ d: Date) -> String { fJour.string(from: d) + "." }
     static func mois(_ d: Date) -> String {
         fMois.string(from: d).replacingOccurrences(of: ".", with: "")

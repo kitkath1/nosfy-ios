@@ -27,21 +27,26 @@ import SwiftUI
 enum NavDest: String, CaseIterable, Hashable {
     /// TROIS destinations (04-09) : Progression est archivée — la nav
     /// porte Accueil · Exercices · Profil.
-    case home, exos, profil
+    /// QUATRE depuis le 30-09 : Réglages, en dernier (la langue et le départ
+    /// de série — `ReglagesPage`). La géométrie suit `allCases` toute seule.
+    case home, exos, profil, reglages
 
     var glyphe: String {
         switch self {
         case .home: "house.fill"
         case .exos: "figure.strengthtraining.functional"
         case .profil: "person"
+        case .reglages: "gearshape"
         }
     }
 
+    /// Ce que VoiceOver dit du glyphe — dans la langue de l'app (30-09).
     var nom: String {
         switch self {
-        case .home: "Accueil"
-        case .exos: "Entraînements"
-        case .profil: "Profil"
+        case .home: L("Accueil", "Home")
+        case .exos: L("Entraînements", "Workouts")
+        case .profil: L("Profil", "Profile")
+        case .reglages: L("Réglages", "Settings")
         }
     }
 }
@@ -53,6 +58,7 @@ extension NavDest {
         case .home: .home
         case .exos: .exercises
         case .profil: .profile
+        case .reglages: .settings
         }
     }
 
@@ -61,6 +67,7 @@ extension NavDest {
         case .home: self = .home
         case .exercises: self = .exos
         case .profile: self = .profil
+        case .settings: self = .reglages
         }
     }
 }
@@ -860,7 +867,7 @@ struct NavEncreLab: View {
         switch pageBanc {
         case .home: contenuHome
         case .exos: contenuExos
-        case .profil: contenuFiche
+        case .profil, .reglages: contenuFiche
         }
     }
 

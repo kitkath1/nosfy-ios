@@ -101,6 +101,9 @@ enum ProfilServeur {
         // Les règles du rythme des annonces (15-09) : lues une fois par
         // lancement, ici parce que la home apparaît AVANT toute séance.
         await DecideurSerie.chargerRegles()
+        // Le départ de série du compte (30-09) : lu ici pour la même raison —
+        // la fiche le trouve déjà en cache quand on y arrive.
+        await DepartSerie.rafraichir()
         #if DEBUG
         // Les bancs sans écran (15-09) — des gestes de debug, sur leur banc :
         // `-bilanBanc` imprime les deux phrases du bilan IA, `-decideurBanc`
@@ -245,6 +248,23 @@ enum ProfilServeur {
         InscriptionCompte.retenir(onboardingTermine: p.onboardingTermine)
         garder(p)
         return p
+    }
+
+    /// `depart_serie()` — le format de départ de série du compte (30-09,
+    /// migration 20260930120000) : le choix, sinon le défaut de la règle.
+    static func departSerie() async throws -> String {
+        let o = try await objet("depart_serie")
+        guard o["ok"] as? Bool == true, let d = o["depart_serie"] as? String else { throw Erreur.reponse }
+        return d
+    }
+
+    /// `definir_depart_serie(format)` — écrit le choix, rend l'état tenu.
+    /// Un format inconnu est un refus MÉTIER (200, `format_inconnu`).
+    static func definirDepartSerie(_ format: String) async throws -> String {
+        let o = try await objet("definir_depart_serie", corps: ["p_format": format])
+        guard o["ok"] as? Bool == true else { throw Erreur.refus(o["raison"] as? String ?? "depart_refuse") }
+        guard let d = o["depart_serie"] as? String else { throw Erreur.reponse }
+        return d
     }
 
     /// `choisir_exercices(ids)` — l'ensemble des exercices choisis, dans l'ordre.

@@ -465,7 +465,7 @@ struct ChambreDonnees {
                              finies: [Workout], cal: Calendar,
                              maintenant: Date) {
         let seuil = SemaineStats.seuilEffort
-        let fmt = DateFormatter(); fmt.locale = Locale(identifier: "fr_FR")
+        let fmt = DateFormatter(); fmt.locale = Locale(identifier: L("fr_FR", "en_US"))
         fmt.dateFormat = "EEEE dd.MM"
 
         func seances(_ ws: [Workout]) -> [ChambreSeanceHiit] {
@@ -592,13 +592,13 @@ struct ChambreDonnees {
     }
 
     private static func nomMois(_ d: Date) -> String {
-        let f = DateFormatter(); f.locale = Locale(identifier: "fr_FR")
+        let f = DateFormatter(); f.locale = Locale(identifier: L("fr_FR", "en_US"))
         f.dateFormat = "MMMM"
         return f.string(from: d)
     }
 
     private static func libelle(debut: Date, fin: Date, cal: Calendar, mois: Bool) -> String {
-        let f = DateFormatter(); f.locale = Locale(identifier: "fr_FR")
+        let f = DateFormatter(); f.locale = Locale(identifier: L("fr_FR", "en_US"))
         if mois {
             f.dateFormat = "dd.MM"
             return "\(f.string(from: debut)) → \(f.string(from: fin))"
@@ -650,17 +650,17 @@ enum ChambreFmt {
         v == v.rounded() ? "\(Int(v))" : String(format: "%.1f", v).replacingOccurrences(of: ".", with: ",")
     }
     static func jourCourt(_ d: Date) -> String {
-        let f = DateFormatter(); f.locale = Locale(identifier: "fr_FR")
+        let f = DateFormatter(); f.locale = Locale(identifier: L("fr_FR", "en_US"))
         f.dateFormat = "dd.MM"; return f.string(from: d)
     }
     /// « mardi 08.09 »
     static func jourLong(_ d: Date) -> String {
-        let f = DateFormatter(); f.locale = Locale(identifier: "fr_FR")
+        let f = DateFormatter(); f.locale = Locale(identifier: L("fr_FR", "en_US"))
         f.dateFormat = "EEEE dd.MM"; return f.string(from: d)
     }
     /// « 26 septembre »
     static func dateLongue(_ d: Date) -> String {
-        let f = DateFormatter(); f.locale = Locale(identifier: "fr_FR")
+        let f = DateFormatter(); f.locale = Locale(identifier: L("fr_FR", "en_US"))
         f.dateFormat = "d MMMM"; return f.string(from: d)
     }
 }

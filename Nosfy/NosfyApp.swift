@@ -158,7 +158,10 @@ enum WoopTab: String, Hashable {
     /// `WoopTab(rawValue:)` rend `nil`. La migration les rattrape
     /// explicitement plutôt que de laisser le repli silencieux ramener
     /// l'utilisatrice à l'accueil sans raison.
-    case home, exercises, profile
+    ///
+    /// RÉGLAGES (30-09) : le quatrième onglet — la langue et le départ de
+    /// série (`ReglagesPage`). Au banc : `-openTab settings`.
+    case home, exercises, profile, settings
 }
 
 struct RootView: View {
@@ -544,12 +547,13 @@ struct RootView: View {
     /// L'ordre des onglets et leurs glyphes, tenus ici : la barre bijou parle
     /// en INDICE, le TabView en `WoopTab`, et ce pont est le seul endroit qui
     /// connaisse les deux.
-    private static let order: [WoopTab] = [.home, .exercises, .profile]
+    private static let order: [WoopTab] = [.home, .exercises, .profile, .settings]
     private static let tabItems: [(icon: String, label: String)] = [
         ("house.fill", "Accueil"),
         ("figure.strengthtraining.functional", "Entraînements"),
         ("chart.line.uptrend.xyaxis", "Progression"),
         ("person", "Profil"),
+        ("gearshape", "Réglages"),
     ]
     private var tabIndex: Binding<Int> {
         Binding(get: { Self.order.firstIndex(of: selection) ?? 0 },
@@ -1123,8 +1127,11 @@ struct RootView: View {
     /// La barre bijou est MORTE (la home v2 n'a plus de nav bar) : cette
     /// condition vaut toujours `false`, le code reste pour l'archive de la v1.
     private var barreBijouVisible: Bool {
+        // ⚠️ Une liste NÉGATIVE : tout onglet qu'elle ne nomme pas fait
+        // réapparaître la barre archivée (vu le 30-09 à l'arrivée de
+        // Réglages, capture à l'appui). Chaque onglet neuf s'ajoute ici.
         selection != .exercises && selection != .profile
-            && selection != .home
+            && selection != .home && selection != .settings
     }
 
     /// Le menu de la home route vers un onglet.
@@ -1897,6 +1904,14 @@ struct RootView: View {
                     ProfilLuneView(selection: $selection)
                         .toolbarVisibility(.hidden, for: .tabBar)
                         .environment(\.ongletCache, selection != .profile || filmDepart != nil)
+                }
+                // RÉGLAGES (30-09) : la langue et le départ de série. Page
+                // immersive comme Profil — son chevron rend la home. Aucune
+                // horloge dedans : rien à endormir quand elle est cachée.
+                Tab(L("Réglages", "Settings"), systemImage: "gearshape",
+                    value: WoopTab.settings) {
+                    ReglagesPage(selection: $selection)
+                        .toolbarVisibility(.hidden, for: .tabBar)
                 }
             }
             // (Le bouclier système a déménagé le 04-09 à la RACINE de

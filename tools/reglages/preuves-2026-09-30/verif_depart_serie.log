@@ -1,0 +1,42 @@
+compte de test : be69f505-1d62-4fa2-8894-c898e8da1f8f
+
+[1] la colonne, et son témoin
+      200 []
+  ✓ user_prefs.depart_serie → 200
+      400 {"code":"42703","details":null,"hint":null,"message":"column user_prefs.colonne_temoin_inexistante does not exist"}
+  ✓ colonne témoin → 400 « does not exist » (la sonde sait échouer)
+
+[2] sans session : fermé
+      401 {"code":"42501","details":null,"hint":null,"message":"permission denied for function depart_serie"}
+  ✓ depart_serie() sans session → refusé
+      401 {"code":"42501","details":null,"hint":null,"message":"permission denied for function definir_depart_serie"}
+  ✓ definir_depart_serie() sans session → refusé
+
+[3] la lecture
+      200 {'ok': True, 'choisi': False, 'depart_serie': 'slider'}
+  ✓ depart_serie() → 200, galet|slider
+      objectif_hebdo() avant : 200 5
+
+[4] l'écriture, et son rejeu
+      200 {'ok': True, 'choisi': True, 'depart_serie': 'galet'}
+  ✓ definir_depart_serie('galet') → ok, rend « galet »
+      200 {'ok': True, 'choisi': True, 'depart_serie': 'galet'}
+  ✓ rejeu identique
+      200 {'ok': True, 'choisi': True, 'depart_serie': 'galet'}
+  ✓ relu : galet, choisi
+
+[5] un format inconnu : 200 et un motif, rien d'écrit
+      200 {'ok': False, 'raison': 'format_inconnu', 'formats': ['galet', 'slider'], 'depart_serie': 'galet'}
+  ✓ → 200 {ok:false, raison:format_inconnu}
+  ✓ relu : toujours galet
+
+[6] le slider, et l'objectif intact
+      200 {'ok': True, 'choisi': True, 'depart_serie': 'slider'}
+  ✓ definir_depart_serie('slider') → slider
+      objectif_hebdo() après : 200 5
+  ✓ objectif hebdo inchangé (5)
+
+[7] remise de l'état de départ
+      le compte n'avait jamais choisi : il garde « slider » (= le défaut), dit ici
+
+PASS — 12 ✓, 0 ✗

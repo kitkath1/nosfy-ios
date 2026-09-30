@@ -1,0 +1,19 @@
+=== AttributeGraph: cycle detected through attribute 27952 ===
+[booster-bench] makeHDRStudio: envCal=false
+IOSurfaceClientSetSurfaceNotify failed e00002c7
+[reseau] en ligne
+[pull] bilans historiques : 0 retrouvés
+[pull] seances_depuis(2026-09-30T10:16:28.436224+00:00) → total 27, rendues 27 · insérées 0, ignorées 27 · local 62
+[welcome-back] retenue : la porte, le film ou le splash tient l'écran
+[depart-serie] depart_serie() → galet
+[pull] bilans historiques : 0 retrouvés
+[pull] seances_depuis(2026-09-30T10:17:07.996138+00:00) → total 21, rendues 21 · insérées 0, ignorées 21 · local 62
+[depart-serie] definir_depart_serie(slider) → slider
+[home-serveur] home() → prénom Kiki · 0 / 5, reste 5 · en séance false (0 min) · 62 séances en tout · première fois false · visite false · langue en
+[home-serveur] phrases → active, active_zero, seance, seance_debut, vide
+[welcome-back] ouverte (le serveur dit que le jour est à prendre) · robe video
+[langue] definir_profil → fr
+[depart-serie] depart_serie() → slider
+[booster-bench] lune: geo=false op=1.0
+[booster-bench] scène : mylar=false env=booster-studio.hdr emission=0.6000000238418579
+fr.kathryn.woop: 81817
