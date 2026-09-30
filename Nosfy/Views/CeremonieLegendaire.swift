@@ -20,9 +20,11 @@ import SwiftUI
 ///   4,0 s  le temps reprend ; sous la carte, gravé : le nom · Quatre Lunes ·
 ///          le monde
 ///
-/// Au banc seulement pour l'instant (`-luneLab -luneCarte <nom>
-/// -luneCeremonie`, rejouée toutes les 7 s pour la filmer). Une seule
-/// horloge, le temps d'une cérémonie ; le manège ne l'appelle pas encore.
+/// AU MANÈGE (BoosterLab) : jouée une fois quand une légendaire est révélée
+/// et que sa matière publiée est prête, par-dessus l'étage résultat, puis
+/// fondue en lui. AU BANC : `-luneLab -luneCarte <nom> -luneCeremonie`,
+/// rejouée toutes les 7 s pour la filmer. Une seule horloge, le temps
+/// d'une cérémonie.
 struct CeremonieLegendaire: View {
     var art: Image
     var depth: Image
@@ -31,6 +33,11 @@ struct CeremonieLegendaire: View {
     var monde: String
     /// Rejouer en boucle (banc) — sinon une fois, puis la carte reste posée.
     var boucle = false
+    /// La taille et la place de la carte à l'arrivée : au manège, CELLES de
+    /// la carte vivante de l'étage résultat — la cérémonie se fond en elle
+    /// sans un saut. nil : le gabarit de la carte vivante plein écran.
+    var taille: CGSize? = nil
+    var decalageY: CGFloat = 0
 
     @State private var depart = Date()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -60,15 +67,18 @@ struct CeremonieLegendaire: View {
 
     var body: some View {
         GeometryReader { geo in
-            let cs = CarteVivante.cardSize(in: geo.size)
+            let cs = taille ?? CarteVivante.cardSize(in: geo.size)
             TimelineView(.animation) { tl in
                 let t = age(tl.date)
                 ZStack {
                     Color.black
-                    porte(t, carte: cs)
-                    carte(t, taille: cs)
-                    legende(t)
-                        .offset(y: cs.height / 2 + 34)
+                    ZStack {
+                        porte(t, carte: cs)
+                        carte(t, taille: cs)
+                        legende(t)
+                            .offset(y: cs.height / 2 + 34)
+                    }
+                    .offset(y: decalageY)
                 }
                 .frame(width: geo.size.width, height: geo.size.height)
             }
