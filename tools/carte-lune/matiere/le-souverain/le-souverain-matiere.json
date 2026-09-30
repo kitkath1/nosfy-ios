@@ -1,0 +1,18 @@
+{
+ "reference": "foret-des-veilles/le-souverain/1",
+ "nom": "le-souverain",
+ "rarete": "legendary",
+ "monde": "foret-des-veilles",
+ "monde_code": 0,
+ "illustration": "tools/carte-lune/references-2026-09-18/04-legendaire-le-souverain-v3.png",
+ "centre": [
+  0.4367,
+  0.4116
+ ],
+ "sujet": "d\u00e9tourage du kit",
+ "astres_ecartes": 1,
+ "part_matiere": 0.2261,
+ "part_feu": 0.0012,
+ "part_ciel": 0.1878,
+ "part_nacre": 0.0054
+}

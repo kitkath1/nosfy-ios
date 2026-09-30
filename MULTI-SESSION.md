@@ -1,5 +1,21 @@
 # Règle multi-session (Nosfy)
 
+## 🃏 LÉGENDAIRE EN MAIN — étapes 1-2 AU BANC, 30-09 (session Cartes/légendaire), commité et poussé
+
+Sur son « ça me va je valide » puis « continue et commit tout » : les trois
+légendaires publiées gravées, qui brûlent / neigent / nacrent, **au
+simulateur seulement** (`-luneLab -luneCarte <nom>`). Le produit (manège,
+profil) ne change PAS : `CarteVivante(matiere:)` vaut nil partout ailleurs
+qu'au banc, tant que les masques ne sont pas livrés par le serveur (D3).
+Fichiers du chantier : `Nosfy/CarteLune.metal` (`carteLuneV6`, V5 intacte),
+`Nosfy/Views/CarteLuneLab.swift`, `Nosfy/Views/LuneMatiere.swift`,
+`tools/carte-lune/cuire_matiere.py`, `poser_matiere_sim.sh`, `matiere/`,
+`legendaire-2026-09-30/`, brique `b-legendaire-matiere-vie`. Simulateur à
+moi : `nosfy-legendaire-20260930` (E973A813). ⚠️ Piège payé : un
+`layerEffect` à plus de TROIS textures est refusé par RenderBox — carte
+NOIRE, aucune erreur de build, seul `log show` le dit (« Too many texture
+arguments »).
+
 ## Route — PLAFOND « deux séances par jour » : FAIT, serveur POSÉ, 20-09 (session sortie de Nosfy), NON commité
 
 Sur son « vas-y fais tout » : migration **`20260920160000`** POSÉE (API de

@@ -388,3 +388,338 @@ static float cRoundBox(float2 p, float2 b, float r) {
     outc *= half(1.0 - 0.40 * dive * vign);
     return half4(outc, c.a);
 }
+
+// MARK: - LA LÉGENDAIRE EN MAIN — la matière et la vie (30-09-2026)
+//
+// La Quatre Lunes se reconnaît par sa MATIÈRE et sa VIE, jamais par une bande
+// (règle HARDCORE du CLAUDE.md). Ce passage REMPLACE carteLuneV5 sur une
+// légendaire qui a son kit ; la Trois Lunes garde V5, intacte. Tout ce qui
+// est propre à la carte est CUIT par `tools/carte-lune/cuire_matiere.py`
+// depuis son image — ici, aucune coordonnée de carte, seulement la géométrie
+// du cadre (commune au set) :
+//   relief   R, G la normale de la gravure · B son poids (matière, filigrane)
+//   vie      R les sources du feu · G le ciel · B les éclats de la créature
+//   souffle  R le sujet · G la lueur des sources · B la nacre (demi-taille)
+// réunis dans UN atlas (2172×2172).
+//
+// Deux causes de lumière seulement : l'INCLINAISON (la lampe du monde, qui
+// allume la gravure fil par fil, le chant qui fait face, les paillettes à
+// leur angle propre) et la MÉTÉO de la carte, qui vit sans cause (les
+// braises montent, la neige tombe, la créature respire). Ce qui n'y est
+// PLUS : le foil en bande, la nappe de vitre, l'éclat qui court le liseré,
+// la poussière V5, la brume procédurale.
+//
+// `monde` : 0 Forêt (neige + braises) · 1 Cimes (cendres + lave) · 2 Bois
+// (neige + nacre, PAS de feu). `barreaux` (bits) : 1 -sansRelief ·
+// 2 -sansBraises · 4 -sansNeige · 8 -sansPaillettes · 16 -sansSouffle.
+// L'ARITÉ est soudée à `CarteLuneCard` : un paramètre de plus ou de moins et
+// la carte est BLANCHE, sans une erreur. Et TROIS textures au plus (la
+// carte, la profondeur, l'atlas) : à cinq, RenderBox refuse le passage
+// (« Too many texture arguments ») et la carte reste NOIRE — seul le
+// journal système le dit (payé au banc le 30-09).
+
+// Le canvas du set (LuneForge.canvas) et la fenêtre d'art, en pixels.
+// Des MACROS, pas des `constant` de portée programme : un stitchable est lié
+// à l'exécution par SwiftUI, et une variable globale y laisse la carte NOIRE
+// sans une erreur (payé au banc le 30-09).
+#define kCanvas float2(1086.0, 1448.0)
+#define kFen float4(128.1, 120.2, 956.8, 1290.2)   // x0 y0 x1 y1
+// L'atlas de matière : relief (0,0), vie (1086,0), souffle (0,1448) à
+// demi-taille — `cuire_matiere.py`.
+#define kAtlas float2(2172.0, 2172.0)
+#define kRelief float2(0.0, 0.0), float2(1086.0, 1448.0)
+#define kVie float2(1086.0, 0.0), float2(1086.0, 1448.0)
+#define kSouffle float2(0.0, 1448.0), float2(543.0, 724.0)
+
+/// Une carte de l'atlas, lue en uv de la carte ; l'échantillon reste un
+/// demi-texel à l'intérieur (le filtre linéaire ne bave pas sur la voisine).
+static half4 atlasLu(texture2d<half> t, sampler s, float2 uv01,
+                     float2 origine, float2 taille) {
+    float2 p = clamp(origine + uv01 * taille, origine + 0.5, origine + taille - 0.5);
+    return t.sample(s, p / kAtlas);
+}
+
+/// Une paillette par cellule, à son angle propre : elle s'allume quand
+/// l'inclinaison passe sur lui (l'horloge n'y ajoute qu'un souffle lent).
+/// Cœur de 1 px, bloom ≤ 2 px — jamais la cellule entière (un carré).
+/// L'exposant 24 est SERRÉ : ~10 % des éclats vivent à un angle donné, et
+/// 0,1 d'inclinaison suffit à en changer — c'est ce qui fait « diamant »
+/// (à l'exposant 6 de la maquette, 19 000 points allumés : un voile de
+/// grain, mesuré au banc le 30-09).
+static float paillette(float2 cp, float c, float gate, float graine,
+                       float2 tilt, float t) {
+    float2 cid = floor(cp / c);
+    if (chash21(cid + graine) < 1.0 - gate) { return 0.0; }
+    float2 j = float2(chash21(cid + graine + 3.1),
+                      chash21(cid + graine + 5.7)) * 0.6 + 0.2;
+    float2 d = cp - (cid + j) * c;
+    float ph = 6.2831 * chash21(cid + graine + 9.3);
+    float tw = pow(max(cos(ph + 2.6 * tilt.x + 1.9 * tilt.y + t * 0.25), 0.0), 24.0);
+    float taille = (chash21(cid + graine + 13.9) < 0.10 ? 1.6 : 0.8)
+                 * (chash21(cid + graine + 17.2) < 0.02 ? 1.4 : 1.0);
+    float s2 = 0.2304 * taille * taille;            // (0,48 · taille)²
+    float d2 = dot(d, d);
+    return tw * (exp(-d2 / (2.0 * s2))
+                 + 0.35 * exp(-d2 / (2.0 * (s2 + 0.81))) * s2 / (s2 + 0.81));
+}
+
+/// Une population qui NAÎT d'une source cuite et monte (braises, étincelles,
+/// nacre). La grille dérive vers le haut ; chaque cellule porte UNE
+/// particule qui a sa vie propre. Son point de naissance B = sa position +
+/// le chemin déjà parcouru — B reste FIXE pendant toute une vie (la grille
+/// monte à la vitesse où l'âge avance) : la particule n'existe que si la
+/// peinture est chaude en B. Rend (intensité, âge).
+static float2 naissance(float2 cp, float t, float c, float vitesse,
+                        float dMin, float dMax, float gate, float graine,
+                        float derive, float seuil,
+                        texture2d<half> atlas, sampler s,
+                        float2 origineCarte, float2 tailleCarte, float4 canal) {
+    float2 ep = float2(cp.x - derive, cp.y + t * vitesse);
+    float2 cid = floor(ep / c);
+    if (chash21(cid + graine) < 1.0 - gate) { return float2(0.0); }
+    float dist = mix(dMin, dMax, chash21(cid + graine + 2.3));
+    float vie = dist / vitesse;
+    float age = fract((t + 40.0 * chash21(cid + graine + 4.9)) / vie);
+    float2 j = float2(chash21(cid + graine + 6.1),
+                      chash21(cid + graine + 8.7)) * 0.5 + 0.25;
+    float amp = c * 0.22 * chash21(cid + graine + 11.3);
+    float per = 0.6 + 1.0 * chash21(cid + graine + 12.9);
+    float2 p = (cid + j) * c;
+    p.x += amp * sin(6.2831 * chash21(cid + graine + 14.1) + t * 6.2831 / per);
+    float2 pCanvas = float2(p.x + derive, p.y - t * vitesse);
+    float2 b = pCanvas + float2(0.0, age * dist);
+    float chaud = dot(float4(atlasLu(atlas, s, b / kCanvas, origineCarte, tailleCarte)),
+                      canal);
+    float vivant = csstep(seuil, seuil + 0.25, chaud);
+    if (vivant <= 0.0) { return float2(0.0); }
+    float2 d = ep - p;
+    float taille = chash21(cid + graine + 16.7);
+    taille = taille < 0.55 ? 1.0 : (taille < 0.85 ? 1.6 : 2.5);
+    float sig = max(taille / 2.6, 0.45);
+    // Un CŒUR d'un pixel plein (la maquette) : sans lui, une braise de
+    // 1 px tombe entre deux pixels d'écran et s'éteint en demi-teinte.
+    float d2p = dot(d, d);
+    float k = max(exp(-d2p / (2.0 * sig * sig)), d2p < 0.36 ? 1.0 : 0.0);
+    return float2(k * vivant, age);
+}
+
+/// La couleur d'une braise selon son âge : blanc-orangé à la naissance,
+/// braise, rouge sombre qui meurt, puis un point noir.
+static float3 ageBraise(float age, float3 col0) {
+    if (age < 0.08) { return float3(1.0, 0.86, 0.62); }
+    if (age < 0.5) { return col0; }
+    if (age < 0.85) {
+        float u = (age - 0.5) / 0.35;
+        return (col0 - float3(0.40, 0.43, 0.16) * u) * (1.0 - 0.5 * u);
+    }
+    return float3(0.35, 0.05, 0.01) * 0.5 * (1.0 - (age - 0.85) / 0.15);
+}
+
+/// Neige ou cendres : une couche de flocons qui TOMBE, penchée par le geste
+/// (la parallaxe vend l'épaisseur entre la peinture et le verre).
+static float flocons(float2 cp, float t, float c, float gate, float graine,
+                     float taille, float gite, float vitesse, float tiltX) {
+    float derive = 22.0 * gite * tiltX;
+    float2 ep = float2(cp.x - derive, cp.y - t * vitesse);
+    float2 cid = floor(ep / c);
+    if (chash21(cid + graine) < 1.0 - gate) { return 0.0; }
+    float2 j = float2(chash21(cid + graine + 1.9),
+                      chash21(cid + graine + 3.3)) * 0.7 + 0.15;
+    float2 p = (cid + j) * c;
+    float per = 2.5 + 3.5 * chash21(cid + graine + 5.1);
+    p.x += 4.0 * gite * sin(6.2831 * chash21(cid + graine + 7.7) + t * 6.2831 / per);
+    float2 d = ep - p;
+    float sig = max(taille / 2.6, 0.45);
+    float k = exp(-dot(d, d) / (2.0 * sig * sig));
+    // Le gros flocon traîne un second point à contre-sens du geste.
+    if (taille > 2.0) {
+        float2 d2 = d - float2(gite * tiltX * 0.9, -0.8);
+        k += 0.55 * exp(-dot(d2, d2) / (2.0 * sig * sig * 0.49));
+    }
+    return k;
+}
+
+[[stitchable]] half4 carteLuneV6(float2 position, SwiftUI::Layer layer,
+                                 float2 size, float2 tilt, float time,
+                                 float amp, float eveil, float dive,
+                                 float dolly, float monde, float barreaux,
+                                 float2 centre,
+                                 texture2d<half> depthTex,
+                                 texture2d<half> atlas) {
+    constexpr sampler ds(address::clamp_to_edge, filter::linear);
+    float2 uv = position / size;
+    float2 cp = uv * kCanvas;                       // en pixels du canvas
+    int bar = int(barreaux + 0.5);
+    bool avecRelief = (bar & 1) == 0;
+    bool avecFeu = (bar & 2) == 0;
+    bool avecMeteo = (bar & 4) == 0;
+    bool avecPaillettes = (bar & 8) == 0;
+    bool avecSouffle = (bar & 16) == 0;
+    int m = int(monde + 0.5);
+
+    // — La fenêtre : la parallaxe de V5, à l'identique (mêmes gardes, même
+    //   pivot, même signe) — la Quatre Lunes ne change pas de géométrie.
+    float depth = float(depthTex.sample(ds, uv).r);
+    float inWin = csstep(0.118, 0.135, uv.x) * (1.0 - csstep(0.864, 0.881, uv.x))
+                * csstep(0.083, 0.096, uv.y) * (1.0 - csstep(0.878, 0.891, uv.y));
+    float env = csstep(0.118, 0.165, uv.x) * (1.0 - csstep(0.834, 0.881, uv.x))
+              * csstep(0.083, 0.130, uv.y) * (1.0 - csstep(0.844, 0.891, uv.y));
+    float ar0 = size.y / size.x;
+    float2 q2 = float2(uv.x, uv.y * ar0);
+    float2 pA = float2(0.118, 0.205 * ar0);
+    float2 pB = float2(0.315, 0.056 * ar0);
+    float2 dAB = normalize(pB - pA);
+    float sdPlate = dAB.x * (q2.y - pA.y) - dAB.y * (q2.x - pA.x);
+    float plate = 1.0 - csstep(0.0, 0.055, sdPlate);
+    float disc = 1.0 - csstep(0.075, 0.150,
+                              length(q2 - float2(0.200, 0.135 * ar0)));
+    float calm = 1.0 - max(plate, disc);
+    float2 shift = float2(tilt.x, tilt.y * 0.72)
+                 * ((depth - 0.45) * amp * (1.0 + 4.8 * dive))
+                 * env * inWin * calm;
+    shift += (position - float2(0.4995, 0.487) * size)
+           * ((depth - 0.45) * dolly * 0.15) * env * inWin * calm;
+
+    // — LE SOUFFLE (la mini-vie) : la cage de la créature se soulève de
+    //   0,6 % sur 4,2 s, autour du centre de SON sujet (cuit).
+    if (avecSouffle) {
+        float suj = float(atlasLu(atlas, ds, uv, kSouffle).r);
+        float s = 0.006 * sin(time * 6.2831 / 4.2) * eveil;
+        shift += (position - centre * size) * float2(0.5, 1.0) * s * suj * inWin;
+    }
+
+    // — LE BISEAU (E5) : sur 12 px le long du chant, la peinture se
+    //   réfracte à contre-sens de l'inclinaison ; sur 16 px, l'ombre de
+    //   l'épaisseur. La carte est une lame, pas une feuille.
+    float dBord = min(min(cp.x - kFen.x, kFen.z - cp.x),
+                      min(cp.y - kFen.y, kFen.w - cp.y));
+    float dedans = step(0.0, dBord);
+    float bande = clamp((12.0 - dBord) / 12.0, 0.0, 1.0) * dedans;
+    float ombre = clamp((16.0 - dBord) / 16.0, 0.0, 1.0) * dedans;
+    float px = size.x / kCanvas.x;                  // un pixel du canvas, en points
+    if (avecRelief) { shift -= 3.0 * px * float2(tilt.x, tilt.y) * bande; }
+
+    float2 lo = float2(0.121, 0.086) * size + 2.0;
+    float2 hi = float2(0.878, 0.888) * size - 2.0;
+    float2 sPos = mix(position, clamp(position + shift, lo, hi), inWin);
+    half4 c = layer.sample(sPos);
+    float3 base = float3(c.rgb);
+    if (avecRelief) { base *= 1.0 - 0.30 * ombre; }
+    // Les textures suivent la PEINTURE déplacée : la gravure colle au poil.
+    float2 suv = sPos / size;
+    float2 scp = suv * kCanvas;
+    float3 add = float3(0.0);
+
+    // — LA GRAVURE (E1) et LE FILIGRANE (E6) : la lampe du monde est
+    //   déplacée par l'inclinaison ; un fil ne s'allume que si SA pente fait
+    //   face (exposant serré : allumé ou éteint, jamais à moitié). Le cadre
+    //   argent et ses croissants sont rainurés dans la même carte de relief.
+    float3 L = normalize(float3(0.30 + 1.35 * tilt.x, -0.45 + 1.35 * tilt.y, 1.0));
+    float3 H = normalize(L + float3(0.0, 0.0, 1.0));
+    if (avecRelief) {
+        half4 re = atlasLu(atlas, ds, suv, kRelief);
+        float2 nxy = float2(re.rg) * 2.0 - 1.0;
+        float3 n = float3(nxy, sqrt(max(1.0 - dot(nxy, nxy), 0.0)));
+        float spec = max(pow(saturate(dot(n, H)), 110.0) - 0.04, 0.0);
+        float3 gravCol = m == 1 ? float3(1.0, 0.96, 0.90)
+                       : (m == 2 ? float3(0.95, 0.97, 1.0) : float3(1.0));
+        add += gravCol * min(spec * float(re.b) * 1.6, 1.0);
+        // LE CHANT : un cheveu de 1 px sur le côté de la fenêtre qui fait
+        // face à la lampe, qui disparaît de l'autre côté.
+        float spanX = step(kFen.x, cp.x) * step(cp.x, kFen.z);
+        float spanY = step(kFen.y, cp.y) * step(cp.y, kFen.w);
+        float4 dE = float4(cp.x - kFen.x, cp.x - kFen.z, cp.y - kFen.y, cp.y - kFen.w);
+        float4 face = float4(max(-tilt.x, 0.0), max(tilt.x, 0.0),
+                             max(-tilt.y, 0.0), max(tilt.y, 0.0)) * 1.2;
+        float4 fil = exp(-dE * dE / 0.72) + 0.35 * exp(-dE * dE / 2.88);
+        float chant = (fil.x * face.x + fil.y * face.y) * spanY
+                    + (fil.z * face.z + fil.w * face.w) * spanX;
+        add += float3(0.95, 0.97, 1.0) * min(chant, 1.0);
+    }
+
+    half4 vi = atlasLu(atlas, ds, suv, kVie);
+    // LA SONDE (-luneSonde) : blanc là où l'atlas rend R > 0,4. Le cadre plat
+    // vaut 128 dans le PNG : blanc = les valeurs arrivent BRUTES (pas de
+    // conversion sRGB → linéaire, qui les ferait tomber à 0,22).
+    if ((bar & 64) != 0) {
+        return half4(half3(float(atlasLu(atlas, ds, uv, kRelief).r) > 0.4 ? 1.0 : 0.0), 1.0h);
+    }
+
+    // — LES PAILLETTES (E3) : le ciel entier (le fond sombre et lisse) en
+    //   deux grilles, puis les reliefs clairs de la créature — le poil, les
+    //   écailles, les plumes paillettent aussi.
+    if (avecPaillettes) {
+        float pc = paillette(scp, 4.0, 0.18, 11.0, tilt, time) * 1.3
+                 + paillette(scp, 7.0, 0.40, 23.0, tilt, time) * 1.4;
+        float pe = paillette(scp, 3.0, 0.12, 37.0, tilt, time) * 1.8;
+        float pail = min(pc * float(vi.g) + pe * float(vi.b), 1.3);
+        add += float3(1.0, 0.98, 0.94) * pail;
+    }
+
+    // — LE FEU (E2), Forêt et Cimes : des braises qui NAISSENT des pixels
+    //   chauds de la peinture (trois tailles, trois vitesses), les
+    //   étincelles de 1 px crachées vite, et la lueur des sources qui
+    //   respire sur deux houles (7,3 s et 1,9 s) — jamais un métronome.
+    if (avecFeu && m != 2) {
+        float3 col0 = m == 1 ? float3(1.0, 0.50, 0.16) : float3(1.0, 0.55, 0.18);
+        float gate = m == 1 ? 1.0 : 0.9;
+        float derive = -18.0 * tilt.x;
+        float4 lueurG = float4(0.0, 1.0, 0.0, 0.0);
+        float2 b1 = naissance(scp, time, 4.0, 60.0, 70.0, 260.0, gate, 3.0,
+                              derive, 0.12, atlas, ds, kSouffle, lueurG);
+        float2 b2 = naissance(scp, time, 7.0, 45.0, 90.0, 240.0, gate, 17.0,
+                              derive * 0.8, 0.12, atlas, ds, kSouffle, lueurG);
+        float2 b3 = naissance(scp, time, 12.0, 35.0, 60.0, 180.0, gate * 0.7, 29.0,
+                              derive * 0.6, 0.30, atlas, ds, kSouffle, lueurG);
+        // Le feu vit DANS la peinture : jamais une braise sur le cadre.
+        add += (ageBraise(b1.y, col0) * b1.x + ageBraise(b2.y, col0) * b2.x
+                + ageBraise(b3.y, col0) * b3.x) * dedans;
+        float2 e = naissance(scp, time, 5.0, 200.0, 80.0, 100.0, 0.5, 41.0,
+                             derive * 0.4, 0.35, atlas, ds, kVie,
+                             float4(1.0, 0.0, 0.0, 0.0));
+        add += float3(1.0, 0.92, 0.75) * e.x * pow(1.0 - e.y, 1.5) * 0.9 * dedans;
+        float resp = 0.42 + 0.16 * sin(time * 6.2831 / 7.3)
+                   + 0.08 * sin(time * 6.2831 / 1.9) + 0.06 * sin(time * 6.2831 / 0.37);
+        float lueur = float(atlasLu(atlas, ds, suv, kSouffle).g);
+        float3 warm = lueur * resp * 0.8 * float3(col0.x, col0.y * 0.9, col0.z * 0.8)
+                    + float(vi.r) * 0.35 * float3(1.0, 0.80, 0.50);
+        add += min(warm, float3(1.0, 0.62, 0.30));
+    }
+    // — LA NACRE, Bois : pas de feu — des poussières blanches qui MONTENT
+    //   lentement des blancs froids de la peinture.
+    if (avecFeu && m == 2) {
+        float2 n1 = naissance(scp, time, 6.0, 30.0, 40.0, 120.0, 0.8, 53.0,
+                              -8.0 * tilt.x, 0.10, atlas, ds, kSouffle,
+                              float4(0.0, 0.0, 1.0, 0.0));
+        add += float3(0.96, 0.97, 1.0) * n1.x * pow(sin(n1.y * 3.14159), 0.7) * dedans;
+    }
+
+    // — LA MÉTÉO (E3b) : trois profondeurs dans l'épaisseur du verre —
+    //   neige fine (Forêt, Bois) ou cendres plus lentes (Cimes).
+    if (avecMeteo) {
+        float f;
+        float3 col;
+        if (m == 1) {
+            col = float3(0.80, 0.72, 0.66);
+            f = flocons(cp, time, 38.0, 0.17, 61.0, 0.9, 0.9, 9.0, tilt.x) * 0.40
+              + flocons(cp, time, 44.0, 0.15, 67.0, 1.5, 1.5, 16.0, tilt.x) * 0.65
+              + flocons(cp, time, 56.0, 0.13, 71.0, 2.3, 2.4, 24.0, tilt.x) * 0.75;
+        } else {
+            col = float3(0.96, 0.97, 1.0);
+            f = flocons(cp, time, 40.0, 0.15, 61.0, 0.8, 0.4, 14.0, tilt.x) * 0.30
+              + flocons(cp, time, 48.0, 0.14, 67.0, 1.4, 0.8, 26.0, tilt.x) * 0.80
+              + flocons(cp, time, 60.0, 0.13, 71.0, 2.2, 1.6, 40.0, tilt.x) * 1.00;
+        }
+        add += col * f * dedans;
+    }
+
+    // L'ÉVEIL : tout monte avec l'éveil de la carte (le raccord reste plat).
+    add *= eveil;
+    float3 outc = 1.0 - (1.0 - base) * (1.0 - min(add, float3(1.0)));
+    // LE GRAIN (E8) : argentique, fixe, porté par la lumière — le noir reste noir.
+    outc *= 1.0 + (chash21(floor(position * 3.0)) - 0.5) * 0.07;
+    float vign = csstep(0.38, 0.80, length(float2(uv.x - 0.4991,
+                                                  (uv.y - 0.4976) * ar0 * 0.78)));
+    outc *= 1.0 - 0.40 * dive * vign;
+    return half4(half3(outc), c.a);
+}

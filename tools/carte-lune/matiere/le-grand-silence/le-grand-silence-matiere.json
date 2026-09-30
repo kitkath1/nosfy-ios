@@ -1,0 +1,18 @@
+{
+ "reference": "bois-sans-lune/le-grand-silence/1",
+ "nom": "le-grand-silence",
+ "rarete": "legendary",
+ "monde": "bois-sans-lune",
+ "monde_code": 2,
+ "illustration": "tools/carte-lune/bois-sans-lune-2026-09-18/04-legendaire-le-grand-silence-v3.png",
+ "centre": [
+  0.4543,
+  0.4131
+ ],
+ "sujet": "d\u00e9tourage du kit",
+ "astres_ecartes": 0,
+ "part_matiere": 0.1754,
+ "part_feu": 0.0,
+ "part_ciel": 0.234,
+ "part_nacre": 0.0062
+}

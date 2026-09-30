@@ -1,0 +1,18 @@
+{
+ "reference": "cimes-eteintes/dragon-d-obsidienne/1",
+ "nom": "dragon-d-obsidienne",
+ "rarete": "legendary",
+ "monde": "cimes-eteintes",
+ "monde_code": 1,
+ "illustration": "tools/carte-lune/cimes-eteintes-2026-09-18/04-legendaire-dragon-d-obsidienne-v3.png",
+ "centre": [
+  0.5657,
+  0.1619
+ ],
+ "sujet": "d\u00e9tourage du kit",
+ "astres_ecartes": 0,
+ "part_matiere": 0.0867,
+ "part_feu": 0.0087,
+ "part_ciel": 0.3687,
+ "part_nacre": 0.0004
+}

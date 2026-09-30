@@ -67,11 +67,19 @@ struct CarteLuneLab: View {
         .string(forKey: "luneDiveAt").flatMap(Float.init)
     private static let forgeNow = CommandLine.arguments.contains("-luneForgeNow")
     private static let forgeServeur = CommandLine.arguments.contains("-luneForgeServeur")
+    /// `-luneCarte <nom>` (30-09) : une référence PUBLIÉE, habillée par le
+    /// même code que le produit (`LuneForge.habiller`), depuis le kit posé
+    /// dans Documents/matiere/<nom>/ (`poser_matiere_sim.sh`). Une
+    /// légendaire y reçoit sa MATIÈRE (carteLuneV6) ; `-sansMatiere` la lui
+    /// retire — c'est la légendaire telle que le produit la montre.
+    private static let carteBanc = UserDefaults.standard.string(forKey: "luneCarte")
+    private static let sansMatiere = CommandLine.arguments.contains("-sansMatiere")
 
     /// La FORGE : la carte générée du moment remplace carte-lune-1 dans la
     /// même scène — même shader, même cadre, mêmes gestes. C'est le contrat
     /// du set rendu visible : seule l'illustration change.
     @State private var carte: LuneForge.Carte?
+    @State private var matiere: LuneMatiere?
     @State private var chauffe = false
     @State private var forgeNote: String?
 
@@ -84,41 +92,70 @@ struct CarteLuneLab: View {
                          diveFreeze: Self.diveFreeze,
                          art: carte.map { Image(uiImage: $0.art) },
                          depth: carte.map { Image(uiImage: $0.depth) },
+                         matiere: matiere,
                          // La musique du sacre suit la carte forgée ;
                          // `-luneRarete <r>` force une typologie au banc
                          // (l'écoute des quatre pistes sans forger).
                          rarete: UserDefaults.standard
                              .string(forKey: "luneRarete")
                              ?? carte?.famille.rarete)
-            VStack(spacing: 10) {
-                Spacer()
-                if let note = forgeNote {
-                    Text(note)
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundStyle(.white.opacity(0.45))
-                        .multilineTextAlignment(.center)
-                        .lineLimit(2)
-                        .padding(.horizontal, 40)
-                }
-                Button(action: forger) {
-                    HStack(spacing: 8) {
-                        if chauffe { ProgressView().tint(.white.opacity(0.6)) }
-                        Text(chauffe ? "la forge chauffe…" : "Forger une carte")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(.white.opacity(chauffe ? 0.5 : 0.85))
-                    }
-                    .padding(.horizontal, 22)
-                    .padding(.vertical, 11)
-                    .background(Capsule().stroke(.white.opacity(0.22), lineWidth: 1))
-                }
-                .disabled(chauffe)
-                .padding(.bottom, 26)
-            }
+            if Self.carteBanc == nil { atelier }
         }
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         .preferredColorScheme(.dark)
-        .task { if Self.forgeNow { forger() } }
+        .task {
+            if let nom = Self.carteBanc { chargerCarteBanc(nom) }
+            else if Self.forgeNow { forger() }
+        }
+    }
+
+    /// La référence publiée du banc, habillée comme au produit.
+    private func chargerCarteBanc(_ nom: String) {
+        guard let illustration = LuneMatiere.illustration(nom: nom) else {
+            print("[lune] -luneCarte \(nom) : kit absent de Documents/matiere")
+            return
+        }
+        let rarete = UserDefaults.standard.string(forKey: "luneRarete")
+            ?? LuneMatiere.rarete(nom: nom) ?? "common"
+        guard let habit = try? LuneForge.habiller(
+            illustration: illustration, rarete: rarete) else { return }
+        carte = LuneForge.Carte(
+            art: habit.art, depth: habit.depth,
+            famille: LuneForge.Famille(nom: nom, rarete: rarete, brief: "", dur: ""),
+            scene: "")
+        matiere = rarete == "legendary" && !Self.sansMatiere
+            ? LuneMatiere.charger(nom: nom) : nil
+        print("[lune] banc \(nom) · \(rarete) · matière "
+              + (matiere != nil ? "OUI" : "non")
+              + " · barreaux \(Int(LuneMatiere.barreaux))")
+    }
+
+    private var atelier: some View {
+        VStack(spacing: 10) {
+            Spacer()
+            if let note = forgeNote {
+                Text(note)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(.white.opacity(0.45))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .padding(.horizontal, 40)
+            }
+            Button(action: forger) {
+                HStack(spacing: 8) {
+                    if chauffe { ProgressView().tint(.white.opacity(0.6)) }
+                    Text(chauffe ? "la forge chauffe…" : "Forger une carte")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.white.opacity(chauffe ? 0.5 : 0.85))
+                }
+                .padding(.horizontal, 22)
+                .padding(.vertical, 11)
+                .background(Capsule().stroke(.white.opacity(0.22), lineWidth: 1))
+            }
+            .disabled(chauffe)
+            .padding(.bottom, 26)
+        }
     }
 
     private func forger() {
@@ -246,6 +283,9 @@ struct CarteVivante: View {
     /// La carte FORGÉE du moment (art + depth) — nil : carte-lune-1.
     var art: Image? = nil
     var depth: Image? = nil
+    /// La MATIÈRE d'une légendaire (son kit cuit) : présente, la carte
+    /// passe par carteLuneV6 ; absente, rien ne change (V5).
+    var matiere: LuneMatiere? = nil
     /// La TYPOLOGIE de la carte (common/rare/epic/legendary — les 4
     /// lunes de la forge) : elle choisit la musique du sacre à la
     /// plongée. nil : les cordes de sacre-lune.
@@ -502,7 +542,7 @@ struct CarteVivante: View {
                                       0.15, 1.8,
                                       Float(tl.date.timeIntervalSince(mountAt)))
                                       + 0.7 * caresse(at: tl.date), 1.45),
-                                  art: art, depth: depth)
+                                  art: art, depth: depth, matiere: matiere)
                     // La pose 3D : la carte se penche VERS l'œil qui se
                     // déplace. Dans le monde elle s'amortit : la parallaxe
                     // raconte le voyage, la rotation ne fait qu'y vaciller.
@@ -789,20 +829,44 @@ struct CarteLuneCard: View {
     /// shader, lui, ne sait même pas que l'image a changé (le contrat).
     var art: Image? = nil
     var depth: Image? = nil
+    /// La matière d'une légendaire : carteLuneV6 à la place de V5.
+    var matiere: LuneMatiere? = nil
 
     private static let card = luneBundled("carte-lune-1")
     private static let depth = luneBundled("carte-lune-1-depth")
 
     var body: some View {
+        if let matiere {
+            legendaire(matiere)
+        } else {
+            (art ?? Self.card)
+                .resizable()
+                .frame(width: size.width, height: size.height)
+                .layerEffect(Self.dithered(ShaderLibrary.carteLuneV5(
+                    .float2(size.width, size.height),
+                    .float2(CGFloat(tilt.x), CGFloat(tilt.y)),
+                    .float(t), .float(amp), .float(foil),
+                    .float(CGFloat(dive)), .float(CGFloat(dolly)),
+                    .image(depth ?? Self.depth))),
+                    maxSampleOffset: CGSize(width: 36, height: 30))
+        }
+    }
+
+    /// LA QUATRE LUNES : la gravure, le feu, la météo, les paillettes et
+    /// le souffle de SA peinture (kit cuit), plus aucun foil en bande.
+    /// `foil` n'y est plus que l'éveil (la montée au montage, 0 → 1).
+    private func legendaire(_ m: LuneMatiere) -> some View {
         (art ?? Self.card)
             .resizable()
             .frame(width: size.width, height: size.height)
-            .layerEffect(Self.dithered(ShaderLibrary.carteLuneV5(
+            .layerEffect(Self.dithered(ShaderLibrary.carteLuneV6(
                 .float2(size.width, size.height),
                 .float2(CGFloat(tilt.x), CGFloat(tilt.y)),
-                .float(t), .float(amp), .float(foil),
+                .float(t), .float(amp), .float(min(foil, 1)),
                 .float(CGFloat(dive)), .float(CGFloat(dolly)),
-                .image(depth ?? Self.depth))),
+                .float(m.monde), .float(LuneMatiere.barreaux),
+                .float2(m.centre.x, m.centre.y),
+                .image(depth ?? Self.depth), .image(m.atlas))),
                 maxSampleOffset: CGSize(width: 36, height: 30))
     }
 
