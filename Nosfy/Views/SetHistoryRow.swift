@@ -35,14 +35,18 @@ struct SetHistoryRow: View {
     /// ⚠️ `false` PAR DÉFAUT : la story de fin, l'ardoise et la fiche ne la
     /// passent pas, donc rien ne change chez elles.
     var courante: Bool = false
+    /// CE QUE LA SÉRIE DEMANDE (30-09) : sans charge, pas de « kg » ; au
+    /// temps seul, le temps tenu et rien d'autre.
+    var saisie: Exercise.Saisie = .repsEtCharge
 
     /// ⚠️ SA PORTE : « Réduire les animations » éteint le shimmer, et la
     /// ligne retombe sur un texte blanc franc — jamais sur rien.
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(rank: Int, reps: Int, kilos: Double, seconds: Int, done: Bool,
-         coins: Int? = nil) {
+         coins: Int? = nil, saisie: Exercise.Saisie = .repsEtCharge) {
         self.rank = rank
+        self.saisie = saisie
         self.reps = reps
         self.kilos = kilos
         self.seconds = seconds
@@ -60,6 +64,7 @@ struct SetHistoryRow: View {
         self.done = ligne.done
         self.coins = nil
         self.genre = ligne.genre
+        self.saisie = ligne.saisie
     }
 
     /// La même, en disant que c'est CELLE-LÀ qu'on est en train de faire.
@@ -168,7 +173,9 @@ struct SetHistoryRow: View {
         // sous-carte par ligne cassait la lecture « une seule dalle ».
         .accessibilityElement(children: .combine)
         .accessibilityLabel(done
-            ? "Série \(rank) faite : \(reps) répétitions, \(kiloText) kilos"
+            ? "Série \(rank) faite : " + (saisie == .repsEtCharge
+                ? "\(reps) répétitions, \(kiloText) kilos"
+                : saisie.serie(reps: reps, kilos: kilos, secondes: seconds))
             : "Série \(rank) à venir")
     }
 
@@ -185,11 +192,28 @@ struct SetHistoryRow: View {
         switch genre {
         case .serie:
             HStack(spacing: 8) {
-                metric("\(reps)", "reps")
-                sep
-                metric(kiloText, "kg")
-                sep
-                metric("\(seconds)", "s")
+                switch saisie {
+                case .repsEtCharge:
+                    metric("\(reps)", "reps")
+                    sep
+                    metric(kiloText, "kg")
+                    sep
+                    metric("\(seconds)", "s")
+                case .repsSeules:
+                    metric("\(reps)", "reps")
+                    sep
+                    metric("\(seconds)", "s")
+                case .tempsSeul:
+                    // Faite : le temps tenu. À venir : « au chrono », et le
+                    // repos prévu.
+                    if done {
+                        metric(ChambreFmt.mmss(seconds), "")
+                    } else {
+                        metric(L("au chrono", "timed"), "")
+                        sep
+                        metric("\(seconds)", "s")
+                    }
+                }
             }
         case .intervalle(let v, let niveau):
             HStack(spacing: 8) {

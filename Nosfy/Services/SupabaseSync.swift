@@ -38,6 +38,9 @@ actor SupabaseSync {
         let reps: Int
         let weight: Double
         let position: Int
+        /// Les secondes sous tension (30-09, 20260930150000) — la seule mesure
+        /// d'un gainage.
+        let duree_s: Int
     }
 
     private struct CardioPhaseRow: Encodable {
@@ -64,7 +67,7 @@ actor SupabaseSync {
             let id: String
             let exerciseID: String
             let position: Int
-            let sets: [(id: String, reps: Int, weight: Double, position: Int)]
+            let sets: [(id: String, reps: Int, weight: Double, position: Int, duree: Int)]
             let phases: [(id: String, kind: String, seconds: Int, speed: Double, incline: Double, cycleIndex: Int, position: Int)]
             /// LA PISCINE (15-09, session cardio) : les longueurs nagées et le
             /// bassin — une ligne `piscine_longueurs` par exercice, seulement
@@ -148,7 +151,8 @@ actor SupabaseSync {
                 let sets = lot.flatMap(\.exercises).flatMap { exercise in
                     exercise.sets.map {
                         StrengthSetRow(id: $0.id, logged_exercise_id: exercise.id, user_id: userID,
-                                       reps: $0.reps, weight: $0.weight, position: $0.position)
+                                       reps: $0.reps, weight: $0.weight, position: $0.position,
+                                       duree_s: $0.duree)
                     }
                 }
                 let phases = lot.flatMap(\.exercises).flatMap { exercise in
@@ -259,11 +263,13 @@ extension SupabaseSync {
                 for st in (e["series"] as? [[String: Any]]) ?? [] {
                     guard let sid = st["id"] as? String, let suuid = UUID(uuidString: sid) else { continue }
                     // Une séance FINIE : ses séries ont été faites (l'économie ne paie que
-                    // celles-là) ; la durée sous tension, le serveur ne la porte pas.
+                    // celles-là). La durée sous tension revient aussi depuis le 30-09
+                    // (`duree_s`, 20260930150000) ; absente d'un serveur d'avant → 0.
                     let set = StrengthSet(reps: (st["reps"] as? NSNumber)?.intValue ?? 0,
                                           weight: (st["weight"] as? NSNumber)?.doubleValue ?? 0,
                                           order: (st["position"] as? NSNumber)?.intValue ?? 0,
-                                          isDone: true)
+                                          isDone: true,
+                                          durationSeconds: (st["duree_s"] as? NSNumber)?.intValue ?? 0)
                     set.remoteID = suuid
                     set.loggedExercise = l
                     contexte.insert(set)
@@ -405,7 +411,8 @@ extension Workout {
                     position: logged.order,
                     sets: logged.orderedSets.filter(\.isDone).map {
                         (id: $0.remoteID.uuidString, reps: $0.reps,
-                         weight: $0.weight, position: $0.order)
+                         weight: $0.weight, position: $0.order,
+                         duree: $0.durationSeconds)
                     },
                     phases: logged.phasesFaites.filter { $0.seconds > 0 }.map {
                         (id: $0.remoteID.uuidString, kind: $0.kindRaw, seconds: $0.seconds,

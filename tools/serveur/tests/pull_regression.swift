@@ -42,8 +42,8 @@ final class LoggedExercise {
  init(exerciseID:String,order:Int){self.exerciseID=exerciseID;self.order=order}
 }
 final class StrengthSet {
- var remoteID=UUID();var loggedExercise:LoggedExercise?;let isDone:Bool
- init(reps:Int,weight:Double,order:Int,isDone:Bool){self.isDone=isDone}
+ var remoteID=UUID();var loggedExercise:LoggedExercise?;let isDone:Bool;let durationSeconds:Int
+ init(reps:Int,weight:Double,order:Int,isDone:Bool,durationSeconds:Int=0){self.isDone=isDone;self.durationSeconds=durationSeconds}
 }
 enum PhaseKind:String {case effort,recuperation}
 final class CardioPhase {
@@ -80,12 +80,13 @@ final class Transport:URLProtocol {
   defer{UserDefaults.standard.removeObject(forKey:SupabaseSync.cleDepuis)}
   UserDefaults.standard.removeObject(forKey:SupabaseSync.cleDepuis)
   let ctx=ModelContext();let id=UUID();let now="2026-09-18T10:00:00Z"
-  let ex:[String:Any] = ["id":UUID().uuidString,"exercise_id":"hip-thrust","series":[["id":UUID().uuidString,"reps":10]],"phases":[["id":UUID().uuidString,"kind":"effort","seconds":30]],"piscine":["longueurs":20,"metres_par_longueur":25]]
+  let ex:[String:Any] = ["id":UUID().uuidString,"exercise_id":"hip-thrust","series":[["id":UUID().uuidString,"reps":10,"duree_s":45]],"phases":[["id":UUID().uuidString,"kind":"effort","seconds":30]],"piscine":["longueurs":20,"metres_par_longueur":25]]
   let body=try JSONSerialization.data(withJSONObject:["serveur_at":now,"total":1,"rendues":1,"seances":[["id":id.uuidString,"started_at":"2026-09-18T09:00:00Z","ended_at":now,"exercices":[ex]]]])
   let first=Task{@MainActor in await SupabaseSync.relire(dans:ctx)}
   let p=try await waiting();p.reply(body);let r=await first.value
   check(r?.inserees==1 && ctx.workouts.first?.remoteID==id,"historique serveur réinséré avec son identité")
   check(ctx.sets.count==1 && ctx.sets[0].isDone,"séries faites restaurées pour la Route")
+  check(ctx.sets[0].durationSeconds==45,"temps de la série restauré (duree_s)")
   check(ctx.phases.count==1 && ctx.phases[0].isDone && ctx.exercises[0].longueurs==20,"cardio et piscine restaurés")
   check(UserDefaults.standard.string(forKey:SupabaseSync.cleDepuis)==now,"curseur posé après lecture")
   let replay=Task{@MainActor in await SupabaseSync.relire(dans:ctx)}

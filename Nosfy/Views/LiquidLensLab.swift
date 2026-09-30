@@ -89,6 +89,13 @@ struct LiquidLensLab: View {
     /// rien : tout départ au geste passe toujours par le sommet.
     var posedStart: Bool = false
 
+    /// CE QUE LA SÉRIE DEMANDE (30-09, TestFlight 85). Au temps seul (le
+    /// gainage), le cadran compte 3, 2, 1, GO à l'arrivée du geste — le
+    /// temps ne part qu'au GO — et la feuille ne demande que le repos. Sans
+    /// charge, la règle des kilos disparaît de la feuille. `.repsEtCharge`,
+    /// le défaut, laisse le banc et le parcours d'hier identiques.
+    var saisie: Exercise.Saisie = .repsEtCharge
+
     /// LA HUITIÈME PRISE : le SOL DU GESTE. Le dock du player remonte le
     /// galet de la fiche de Δ points — l'origine de la règle de montée
     /// se décale d'autant (le sommet, lui, ne bouge pas), sinon le
@@ -102,15 +109,18 @@ struct LiquidLensLab: View {
 
     private var livePhase: WorkoutLivePhase? {
         guard let summitAt else { return nil }
+        // Ce que la série n'a pas demandé, l'île ne le dit pas (30-09).
+        let reps: Int? = saisie.avecReps ? draftReps : nil
+        let kilos: Double? = saisie.avecCharge ? draftKilos : nil
         if envolAt != nil {
             return .init(kind: .ready, elapsed: Double(effortSeconds),
-                         reps: draftReps, kilos: draftKilos)
+                         reps: reps, kilos: kilos)
         }
         if let restStart {
             let start = restStart.addingTimeInterval(Self.igniteSpan)
             return .init(kind: .rest, startedAt: start,
                          endsAt: start.addingTimeInterval(Double(restDuration)),
-                         reps: draftReps, kilos: draftKilos)
+                         reps: reps, kilos: kilos)
         }
         if entering { return .init(kind: .logging, elapsed: Double(effortSeconds)) }
         let start = effortIgnite.map { $0.addingTimeInterval(Self.igniteSpan) }
@@ -398,6 +408,8 @@ struct LiquidLensLab: View {
                                       reps: $draftReps,
                                       kilos: $draftKilos,
                                       rest: $draftRest,
+                                      saisie: saisie,
+                                      secondes: effortSeconds,
                                       onDismiss: { entering = false }) {
                             guard let secs = draftRest else { return }
                             // Le slide est allé au bout : la série est prise,
@@ -412,7 +424,9 @@ struct LiquidLensLab: View {
                         // DÉBORDAIT — la VStack rognait alors l'air rendu
                         // aux pastilles (« trop collé »). Le panneau monte
                         // juste assez pour que rien ne se compresse.
-                        .frame(height: g.size.height * 0.67)
+                        // (30-09 : moins de règles, panneau plus bas —
+                        // `SetEntrySheet.hauteur`.)
+                        .frame(height: g.size.height * SetEntrySheet.hauteur(saisie))
                         .transition(.move(edge: .bottom))
                     }
                 }
@@ -901,6 +915,20 @@ struct LiquidLensLab: View {
     /// l'envol s'achève (le résultat remonte à la fiche, UNE fois).
     private func heartbeat(_ d: Date) {
         guard isJourney else { return }
+        // LE GAINAGE PART SUR UN GO (30-09, TestFlight 85 : « c'est que le
+        // temps, un chrono qui commence avec 1, 2, 3, GO, et le cadran »).
+        // Quand les chiffres affleurent (`landed = 4,5`), le MÊME allumage que
+        // la porte posée : ils naissent en « 3 » — partir au 0:00 de la
+        // partition (5,6) montrait « 0:00 » une seconde avant le compte
+        // (film du 30-09). Le temps ne part qu'au GO, le « Finish set »
+        // attend lui aussi (`effortGate`). Un événement, écrit une fois —
+        // jamais dans le rendu.
+        if saisie == .tempsSeul, effortIgnite == nil, restStart == nil,
+           !entering, let s = summitAt,
+           d.timeIntervalSince(s) >= SummitCine.cutAt + SummitCine.enter
+               + SummitCine.descend + 4.5 {
+            effortIgnite = d
+        }
         // Le banc de l'envol : le repos s'arme tout seul, chip levé.
         if Self.envolFire, restStart == nil, let s = summitAt,
            d.timeIntervalSince(s) > SummitCine.cutAt + SummitCine.enter
@@ -909,9 +937,15 @@ struct LiquidLensLab: View {
             restStart = d
         }
         // Le banc de la feuille : elle s'ouvre toute seule, chip levé.
+        // (30-09 : au temps seul, elle attend le GO et 4 s de chrono, et
+        // prend le temps compté — sinon elle montrerait « 0:00 ».)
+        let attenteFeuille = saisie == .tempsSeul ? 4.5 + Self.igniteSpan + 4 : 7.2
         if Self.sheetFire, !entering, restStart == nil, let s = summitAt,
            d.timeIntervalSince(s) > SummitCine.cutAt + SummitCine.enter
-               + SummitCine.descend + 7.2 {
+               + SummitCine.descend + attenteFeuille {
+            if let ei = effortIgnite {
+                effortSeconds = max(0, Int(d.timeIntervalSince(ei) - Self.igniteSpan))
+            }
             draftRest = Self.restPick
             entering = true
         }
@@ -923,8 +957,10 @@ struct LiquidLensLab: View {
         if let ea = envolAt, !envolFired,
            d.timeIntervalSince(ea) >= Self.envolSpan {
             envolFired = true
-            onFinish?(SeriesOutcome(reps: draftReps,
-                                    kilos: draftKilos,
+            // Ce que la série n'a pas demandé vaut zéro — jamais le
+            // brouillon d'une règle restée cachée (30-09).
+            onFinish?(SeriesOutcome(reps: saisie.avecReps ? draftReps : 0,
+                                    kilos: saisie.avecCharge ? draftKilos : 0,
                                     restSeconds: restDuration,
                                     effortSeconds: effortSeconds))
         }
@@ -1421,7 +1457,10 @@ struct LiquidLensLab: View {
                 // s'allume, et il ne reste jamais un instant sans sortie.
                 // (Passé la pose, `chipInS` vaut 1 pour toujours : le lien ne
                 // peut plus revenir, ni croiser « Passer le repos ».)
-                let skipIn = Self.cycling ? 0
+                // (30-09 : il s'éteint aussi quand le compte d'effort part —
+                // le gainage — comme dans la porte posée : il n'y a plus
+                // d'animation à passer, `skipCine` refuserait.)
+                let skipIn = Self.cycling || effortIgnite != nil ? 0
                     : sstep(-2.4, -2.0, landed) * (1 - chipInS)
                 if skipIn > 0.001 {
                     Button { skipCine(now) } label: {

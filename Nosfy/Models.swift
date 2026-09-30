@@ -83,6 +83,53 @@ struct Exercise: Identifiable, Hashable {
     let cue: String
     /// L'erreur la plus fréquente sur ce mouvement.
     let mistake: String
+    /// Ce que la saisie d'une série demande (voir `Saisie`).
+    var saisie: Saisie = .repsEtCharge
+
+    /// CE QUE LA SAISIE D'UNE SÉRIE DEMANDE (30-09, TestFlight 85 : « je ne
+    /// rentre pas de kilos, je mets que le nombre de reps — crunch au sol et
+    /// toucher de chevilles ; gainage, c'est que le temps »). Une série de
+    /// muscu reste une série de muscu — `tracking` ne bouge pas, tout ce qui
+    /// sépare muscu et cardio continue de marcher : seul ce qu'on lui DEMANDE
+    /// change.
+    enum Saisie: String {
+        /// Des reps et une charge — le reste du catalogue.
+        case repsEtCharge
+        /// Des reps, sans charge : le poids du corps.
+        case repsSeules
+        /// Le temps seul : 3, 2, 1, GO, le cadran compte, on arrête.
+        case tempsSeul
+
+        var avecCharge: Bool { self == .repsEtCharge }
+        var avecReps: Bool { self != .tempsSeul }
+
+        /// UNE SÉRIE, ÉCRITE — la seule façon de la dire dans l'app :
+        /// « 12 reps · 20 kg », « 12 reps », « 0:45 ». Un gainage qui n'a pas
+        /// encore été tenu dit « Au chrono », jamais « 0:00 ».
+        func serie(reps: Int, kilos: Double, secondes: Int) -> String {
+            switch self {
+            case .repsEtCharge: return "\(reps) reps · \(Self.kg(kilos)) kg"
+            case .repsSeules: return "\(reps) reps"
+            case .tempsSeul:
+                guard secondes > 0 else { return L("Au chrono", "Timed") }
+                return String(format: "%d:%02d", secondes / 60, secondes % 60)
+            }
+        }
+
+        /// Ce que la courbe d'un passage mesure, pour une série faite : la
+        /// charge, les reps, ou les secondes tenues.
+        func mesure(reps: Int, kilos: Double, secondes: Int) -> Double {
+            switch self {
+            case .repsEtCharge: return kilos
+            case .repsSeules: return Double(reps)
+            case .tempsSeul: return Double(secondes)
+            }
+        }
+
+        static func kg(_ k: Double) -> String {
+            k.formatted(.number.precision(.fractionLength(0...1)))
+        }
+    }
 
     /// La photo de l'exercice — fond noir pur, corps en silhouette, muscle
     /// travaillé en lumière. Nommée d'après l'identifiant : un exercice sans
@@ -147,19 +194,22 @@ enum ExerciseCatalog {
             category: .abdos, equipment: .poidsDuCorps, tracking: .setsRepsWeight,
             muscle: "Transverse et gainage profond",
             cue: "Une ligne droite des talons à la tête, tenue sans creuser.",
-            mistake: "Laisser le bassin s'affaisser, ou remonter les fesses pour souffler."),
+            mistake: "Laisser le bassin s'affaisser, ou remonter les fesses pour souffler.",
+            saisie: .tempsSeul),
         Exercise(
             id: "crunch-sol", name: "Crunch au sol",
             category: .abdos, equipment: .poidsDuCorps, tracking: .setsRepsWeight,
             muscle: "Grand droit",
             cue: "Tu décolles les omoplates en soufflant, le bas du dos au sol.",
-            mistake: "Tirer sur la nuque avec les mains."),
+            mistake: "Tirer sur la nuque avec les mains.",
+            saisie: .repsSeules),
         Exercise(
             id: "chevilles", name: "Toucher de chevilles",
             category: .abdos, equipment: .poidsDuCorps, tracking: .setsRepsWeight,
             muscle: "Obliques",
             cue: "Le buste relevé, tu touches une cheville puis l'autre.",
-            mistake: "Tendre les bras vers les pieds sans fléchir le buste."),
+            mistake: "Tendre les bras vers les pieds sans fléchir le buste.",
+            saisie: .repsSeules),
 
         // MARK: Haut du corps
         Exercise(
@@ -548,6 +598,17 @@ final class LoggedExercise {
             let count = orderedSets.count
             guard count > 0 else { return "Aucune série" }
             let reps = orderedSets.map { "\($0.reps)" }.joined(separator: "/")
+            // Le poids du corps ne dit pas « 0 kg », le gainage ne dit que son
+            // temps (30-09, `Exercise.Saisie`).
+            switch exercise?.saisie ?? .repsEtCharge {
+            case .tempsSeul:
+                return "\(count) séries · \(WoopDuration.label(timedSeconds))"
+            case .repsSeules:
+                var line = "\(count) séries · \(reps) reps"
+                if timedSeconds > 0 { line += " · \(WoopDuration.label(timedSeconds))" }
+                return line
+            case .repsEtCharge: break
+            }
             var line = "\(count) séries · \(reps) reps · \(maxWeight.formatted(.number.precision(.fractionLength(0...1)))) kg"
             // Le temps sous tension n'apparaît que s'il a été mesuré : sur un
             // exercice simplement planifié, il n'existe pas.

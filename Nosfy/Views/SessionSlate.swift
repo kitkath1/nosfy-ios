@@ -190,10 +190,12 @@ struct SessionSlate: View {
         // lignes du brouillon s'écrivent ; s'il n'y en a aucune, une
         // ligne d'attente unique tient la place.
         for d in drafts {
-            courant.append(SlateLigne(
+            var ligne = SlateLigne(
                 reps: d.reps, kilos: d.weight,
                 seconds: d.isDone ? d.durationSeconds : restSeconds,
-                done: d.isDone))
+                done: d.isDone)
+            ligne.saisie = exercise.saisie
+            courant.append(ligne)
         }
         if courant.isEmpty {
             courant.append(SlateLigne(reps: 12, kilos: 20,
@@ -272,6 +274,9 @@ struct SlateLigne {
     var genre: Genre
     var seconds: Int
     var done: Bool
+    /// Ce que la série demande (30-09) — la ligne ne dit pas « kg » au poids
+    /// du corps, ni des reps au gainage.
+    var saisie: Exercise.Saisie = .repsEtCharge
 
     /// Le constructeur d'avant — la série de muscu, telle quelle.
     init(reps: Int, kilos: Double, seconds: Int, done: Bool) {
@@ -323,10 +328,13 @@ extension SlateGroupe {
     /// dans le graphe de la fiche, pas ici) ; une ligne pour la piscine.
     static func lignes(de le: LoggedExercise, restSeconds: Int) -> [SlateLigne] {
         if !le.orderedSets.isEmpty {
+            let saisie = le.exercise?.saisie ?? .repsEtCharge
             return le.orderedSets.map {
-                SlateLigne(reps: $0.reps, kilos: $0.weight,
-                           seconds: $0.isDone ? $0.durationSeconds : restSeconds,
-                           done: $0.isDone)
+                var ligne = SlateLigne(reps: $0.reps, kilos: $0.weight,
+                                       seconds: $0.isDone ? $0.durationSeconds : restSeconds,
+                                       done: $0.isDone)
+                ligne.saisie = saisie
+                return ligne
             }
         }
         if le.longueurs > 0 {

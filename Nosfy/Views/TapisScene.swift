@@ -256,8 +256,34 @@ final class SeanceTapis {
         let payable: Bool
     }
 
-    /// La durée de l'arrivée : le set 1 démarre quand les pastilles se posent.
+    /// La durée de l'arrivée : le compte part quand les pastilles se posent.
     static let arrivee: Double = 0.85
+
+    /// LE COMPTE DU DÉPART (30-09, TestFlight 85 : « de même pour la partie
+    /// HIIT et cardio, au départ du premier set ») : 3, 2, 1, GO — le MÊME
+    /// compte que le cadran de la muscu (`LiquidLensLab.igniteBeats` et
+    /// `igniteSpan`), aux mêmes cotes. Le set 1 part au GO, jamais pendant.
+    /// `nil` quand la scène naît déjà en course (bancs `-cardioAvance`,
+    /// scène figée) : il n'y a rien à compter.
+    let debutCompte: Date?
+
+    /// Le mot du compte à cet instant — « 3 », « 2 », « 1 », « GO » — ou
+    /// `nil` quand le chrono a la parole. Les pastilles qui arrivent portent
+    /// déjà le « 3 » : pas de « 0:00 » avant le compte.
+    func motDuCompte(_ now: Date) -> String? {
+        guard let d = debutCompte, etat == .court else { return nil }
+        let beat = now.timeIntervalSince(d)
+        guard beat < LiquidLensLab.igniteSpan else { return nil }
+        let n = beat >= LiquidLensLab.igniteBeats
+            ? 0 : Int(LiquidLensLab.igniteBeats - max(beat, 0)) + 1
+        return n >= 1 ? String(min(n, Int(LiquidLensLab.igniteBeats))) : "GO"
+    }
+
+    /// Le compte tient la pastille : aucun tap ne compte avant le GO.
+    private func compteEnCours(_ now: Date) -> Bool {
+        guard let d = debutCompte else { return false }
+        return now.timeIntervalSince(d) < LiquidLensLab.igniteSpan
+    }
 
     /// `avance` : le banc `-cardioAvance <s>` fait naître la scène comme si
     /// elle courait depuis s secondes — la seule façon de mesurer un barème
@@ -278,7 +304,11 @@ final class SeanceTapis {
         self.setIndex = setsFaits + 1
         self.secondesAvancees = dejaSecondes
         self.effortAuSeuil = dejaAuSeuil
-        let depart = self.naissance.addingTimeInterval(Self.arrivee)
+        // Le set 1 part au GO : l'arrivée, puis le compte (30-09).
+        let compte = !figee && avance == 0
+        let pose = self.naissance.addingTimeInterval(Self.arrivee)
+        self.debutCompte = compte ? pose : nil
+        let depart = pose.addingTimeInterval(compte ? LiquidLensLab.igniteSpan : 0)
         self.setDebut = depart
         self.segmentDebut = depart
         self.vitesse = mode.depart
@@ -309,7 +339,7 @@ final class SeanceTapis {
     /// écrit : stop / start set (HIIT), pause / reprise (au long). Le banc et
     /// le lab passent par ici, jamais à côté (deux chemins = un banc qui ment).
     func basculer(_ now: Date = .now) {
-        guard !terminee else { return }
+        guard !terminee, !compteEnCours(now) else { return }
         switch etat {
         case .court: mode.auLong ? pauser(now) : stopper(now)
         case .repos: relancer(now)
@@ -928,11 +958,17 @@ struct TapisScene: View {
                     .animation(.easeOut(duration: 0.45), value: seance.rangAffiche)
                     .padding(.bottom, 2)
             }
-            Text(chrono(secondes))
+            // Pendant le compte du départ (30-09), la pastille dit le compte :
+            // « 3 », « 2 », « 1 », « GO » — puis le chrono, à 0:00.
+            let mot = seance.motDuCompte(now)
+            Text(mot ?? chrono(secondes))
                 .font(.inter(52, .medium))
                 .monospacedDigit()
                 .foregroundStyle(Color.white.opacity(court ? 0.94 : 0.66))
             if fini {
+                EmptyView()
+            } else if mot != nil {
+                // Rien à taper tant que le compte tient la pastille.
                 EmptyView()
             } else if court {
                 glyphe(seance.mode.auLong ? "pause.fill" : "stop.fill", corps: 19)

@@ -68,6 +68,9 @@ struct CourbeChargeFiche: View {
     let passages: [PassageCharge]
     /// Le record tous temps (pas seulement les passages montrés).
     let recordKg: Double?
+    /// Ce que la courbe mesure (30-09) : la charge, les reps au poids du
+    /// corps, le temps tenu du gainage. `maxKg` porte alors cette mesure.
+    var mesure: Exercise.Saisie = .repsEtCharge
     var vide: Bool = false
     /// Le compte des records battus pendant ce passage : chaque hausse fait
     /// pulser le point et vibrer « succès ».
@@ -90,7 +93,8 @@ struct CourbeChargeFiche: View {
                          recordKg: vide ? nil : recordKg,
                          periode: vide ? .sixMois : periode,
                          recordsBattus: recordsBattus,
-                         vide: vide)
+                         vide: vide,
+                         mesure: mesure)
                 .frame(minHeight: 60, idealHeight: 108, maxHeight: 108)
                 .modifier(ArriveeDouce(vu: vu, retard: 0.58))
                 .chambreVide(vide)
@@ -111,7 +115,7 @@ struct CourbeChargeFiche: View {
         let delta = avant.map { dernier - $0 } ?? 0
         return HStack(alignment: .bottom, spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(L("DERNIÈRE CHARGE", "LAST LOAD"))
+                Text(CourbeCharge.titre(mesure))
                     .font(.inter(9.5, .semibold))
                     .tracking(1.2)
                     .foregroundStyle(Color.white.opacity(0.38))
@@ -119,16 +123,18 @@ struct CourbeChargeFiche: View {
                     if vide {
                         Text("·").font(.inter(34, .light)).foregroundStyle(Color.white.opacity(0.25))
                     } else {
-                        Text(ChambreFmt.poids(dernier))
+                        Text(CourbeCharge.nombre(dernier, mesure))
                             .font(.inter(34, .light))
                             .tracking(-1)
                             .monospacedDigit()
                             .encreMetal()
-                        Text("kg")
-                            .font(.inter(13, .medium))
-                            .foregroundStyle(Color.white.opacity(0.42))
+                        if !CourbeCharge.unite(mesure).isEmpty {
+                            Text(CourbeCharge.unite(mesure))
+                                .font(.inter(13, .medium))
+                                .foregroundStyle(Color.white.opacity(0.42))
+                        }
                         if delta > 0.01 {
-                            Text("+" + ChambreFmt.poids(delta))
+                            Text("+" + CourbeCharge.nombre(delta, mesure))
                                 .font(.inter(13, .semibold))
                                 .monospacedDigit()
                                 .foregroundStyle(CardTon.encreChaude)
@@ -198,6 +204,27 @@ struct CourbeCharge: View {
     let periode: PeriodeCharge
     var recordsBattus: Int = 0
     var vide = false
+    /// Ce que `maxKg` mesure (30-09) — l'étiquette sous le doigt suit.
+    var mesure: Exercise.Saisie = .repsEtCharge
+
+    /// LES MOTS DE LA COURBE, selon ce qu'elle mesure (30-09).
+    static func titre(_ m: Exercise.Saisie) -> String {
+        switch m {
+        case .repsEtCharge: return L("DERNIÈRE CHARGE", "LAST LOAD")
+        case .repsSeules: return L("DERNIÈRES REPS", "LAST REPS")
+        case .tempsSeul: return L("DERNIER TEMPS", "LAST HOLD")
+        }
+    }
+    static func nombre(_ v: Double, _ m: Exercise.Saisie) -> String {
+        m == .tempsSeul ? ChambreFmt.mmss(Int(v)) : ChambreFmt.poids(v)
+    }
+    static func unite(_ m: Exercise.Saisie) -> String {
+        switch m {
+        case .repsEtCharge: return "kg"
+        case .repsSeules: return "reps"
+        case .tempsSeul: return ""
+        }
+    }
 
     /// La date sous le doigt (Swift Charts la donne), le passage le plus proche.
     @State private var doigt: Date?
@@ -350,7 +377,8 @@ struct CourbeCharge: View {
     private func etiquette(_ p: PassageCharge) -> some View {
         let reps = p.series.map { "\($0.reps)" }.joined(separator: " ")
         return VStack(alignment: .leading, spacing: 1) {
-            Text("\(ChambreFmt.poids(p.maxKg)) kg")
+            Text([Self.nombre(p.maxKg, mesure), Self.unite(mesure)]
+                    .filter { !$0.isEmpty }.joined(separator: " "))
                 .font(.system(size: 11, weight: .semibold, design: .rounded))
                 .foregroundStyle(CardTon.encre)
             Text("\(p.enCours ? L("auj.", "today") : ChambreFmt.jourCourt(p.date)) · \(reps)")

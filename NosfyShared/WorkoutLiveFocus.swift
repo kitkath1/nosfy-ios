@@ -92,6 +92,8 @@ struct WorkoutLiveFocus: Codable, Hashable {
         if let reps = phase.reps, let kilos = phase.kilos {
             return "\(reps) reps · \(number(kilos)) kg"
         }
+        // Le poids du corps : des reps, pas de charge (30-09).
+        if let reps = phase.reps { return "\(reps) reps" }
         return nil
     }
 }

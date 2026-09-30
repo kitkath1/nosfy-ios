@@ -663,7 +663,9 @@ struct ExerciseDetailView: View {
             jouerIssue(DecideurSerie.pour(serie: n, gain: gainParSerie,
                                           total: n * gainParSerie,
                                           reps: f.reps, kilos: f.kilos,
-                                          seance: active?.remoteID), f,
+                                          seance: active?.remoteID,
+                                          saisie: exercise.saisie,
+                                          secondes: f.seconds), f,
                        banc: true)
             return
         }
@@ -1262,6 +1264,7 @@ struct ExerciseDetailView: View {
                         handoff: lensHandoff,
                         onSummit: { summited = true },
                         posedStart: posedLaunch,
+                        saisie: exercise.saisie,
                         onLivePhase: { phase in suivreMuscu(phase, serie: series.id + 1) }
                     )
                     .opacity(lensShown
@@ -1838,6 +1841,7 @@ struct ExerciseDetailView: View {
                             // description »). Le même slot, la même vague.
                             CourbeChargeFiche(passages: passages,
                                               recordKg: recordKg,
+                                              mesure: exercise.saisie,
                                               vide: passages.isEmpty,
                                               recordsBattus: recordsBattus,
                                               phraseCoach: phraseCoach,
@@ -2187,6 +2191,12 @@ struct ExerciseDetailView: View {
         // le nombre de reps et les kilos, basta ».
         let reps = sets.last?.reps ?? 12
         let kg = sets.last?.weight ?? 20
+        // 30-09 : le poids du corps ne promet pas de kilos, le gainage
+        // promet son dernier temps tenu (`Exercise.Saisie`).
+        guard exercise.saisie == .repsEtCharge else {
+            let tenu = sets.last(where: \.isDone)?.durationSeconds ?? 0
+            return exercise.saisie.serie(reps: reps, kilos: kg, secondes: tenu)
+        }
         let kgText = kg == kg.rounded()
             ? String(format: "%.0f", kg) : String(format: "%.1f", kg)
         return "\(reps) reps · \(kgText) kg"
@@ -2233,13 +2243,15 @@ struct ExerciseDetailView: View {
                                           seconds: sets[i].isDone
                                               ? sets[i].durationSeconds
                                               : restSeconds,
-                                          done: sets[i].isDone)
+                                          done: sets[i].isDone,
+                                          saisie: exercise.saisie)
                         } else {
                             SetHistoryRow(rank: i + 1,
                                           reps: sets.last?.reps ?? 12,
                                           kilos: sets.last?.weight ?? 20,
                                           seconds: restSeconds,
-                                          done: false)
+                                          done: false,
+                                          saisie: exercise.saisie)
                         }
                     }
                     .opacity(p)
@@ -2546,7 +2558,11 @@ struct ExerciseDetailView: View {
             // court pour le barème, qui veut 20 s d'effort : mesurer la paie
             // demande `-cardioSet 25`).
             let dureeSet = Double(UserDefaults.standard.integer(forKey: "cardioSet"))
+            // Le compte du départ (30-09) tient la pastille : le banc attend
+            // le GO avant son premier geste, comme un doigt le ferait.
+            let compte = st.debutCompte != nil ? LiquidLensLab.igniteSpan : 0
             Task { @MainActor [weak st] in
+                try? await Task.sleep(for: .seconds(compte))
                 if mode.auLong {
                     // 6 s, pas 5 : le segment doit dépasser les 5 s sous
                     // lesquels `sceller` ne découpe pas (l'arrivée en mange
@@ -2719,9 +2735,16 @@ struct ExerciseDetailView: View {
             for l in w.orderedExercises.reversed() where l.exerciseID == exercise.id {
                 let faites = l.orderedSets.filter(\.isDone)
                 guard !faites.isEmpty else { continue }
+                // La courbe mesure ce que la série demande (30-09) : la charge,
+                // les reps au poids du corps, les secondes du gainage.
+                let saisie = exercise.saisie
                 tous.append(PassageCharge(
                     id: l.remoteID, date: w.startedAt, enCours: w.isActive,
-                    series: faites.map { .init(reps: $0.reps, kg: $0.weight) }))
+                    series: faites.map {
+                        .init(reps: $0.reps,
+                              kg: saisie.mesure(reps: $0.reps, kilos: $0.weight,
+                                                secondes: $0.durationSeconds))
+                    }))
             }
         }
         // `workouts` est trié du plus récent au plus ancien : on renverse.
@@ -2770,6 +2793,15 @@ struct ExerciseDetailView: View {
             phraseCoach = phrase
             return
         }
+        // ⚠️ SANS CHARGE, LE SERVEUR N'EST PAS APPELÉ (30-09). Sa phrase
+        // raisonne en kilos (« 45 kg × 12 ») ; sur le poids du corps ou le
+        // gainage elle dirait « 0 kg ». Le téléphone dit ce qu'il sait : les
+        // reps, ou le temps tenu.
+        guard exercise.saisie == .repsEtCharge else {
+            coachAttend = false
+            phraseCoach = phraseLocale()
+            return
+        }
         // LE SERVEUR : l'étoile respire pendant qu'il écrit ; sa phrase arrive
         // au shimmer ; s'il se tait (hors ligne, 8 s, `-sansServeur`), la fiche
         // dit ce qu'elle sait seule. Une réponse en retard ne parle pas
@@ -2793,6 +2825,15 @@ struct ExerciseDetailView: View {
         guard let d = passages.last, let s = d.series.max(by: { $0.kg < $1.kg }) else {
             return L("Première fois ici. Pars léger, on mesure.",
                      "First time here. Start light, we measure.")
+        }
+        // `kg` porte la mesure de la courbe : reps ou secondes (30-09).
+        switch exercise.saisie {
+        case .repsSeules:
+            return L("Dernière fois \(s.reps) reps.", "Last time \(s.reps) reps.")
+        case .tempsSeul:
+            let t = exercise.saisie.serie(reps: 0, kilos: 0, secondes: Int(s.kg))
+            return L("Dernière fois \(t).", "Last time \(t).")
+        case .repsEtCharge: break
         }
         return L("Dernière fois \(ChambreFmt.poids(s.kg)) kg × \(s.reps).",
                  "Last time \(ChambreFmt.poids(s.kg)) kg × \(s.reps).")
@@ -3112,7 +3153,8 @@ struct ExerciseDetailView: View {
     private func target(for index: Int) -> String {
         guard sets.indices.contains(index) else { return "" }
         let set = sets[index]
-        return "\(set.reps) reps · \(set.weight.formatted(.number.precision(.fractionLength(0...1)))) kg"
+        return exercise.saisie.serie(reps: set.reps, kilos: set.weight,
+                                     secondes: set.durationSeconds)
     }
 
     /// L'ENVOL S'ACHÈVE, ET LA FICHE REVIENT. Le cadran rend la main, le
@@ -3177,7 +3219,9 @@ struct ExerciseDetailView: View {
                                        gain: gainParSerie,
                                        total: rang * gainParSerie,
                                        reps: f.reps, kilos: f.kilos,
-                                       seance: active?.remoteID)
+                                       seance: active?.remoteID,
+                                       saisie: exercise.saisie,
+                                       secondes: f.seconds)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
             jouerIssue(issue, f)
         }
@@ -3545,6 +3589,13 @@ struct ExerciseDetailView: View {
         let count = logged.orderedSets.count
         let reps = logged.orderedSets.first?.reps ?? 0
         let weight = logged.maxWeight
+        switch exercise.saisie {
+        case .repsSeules: return "\(count) × \(reps) reps"
+        case .tempsSeul:
+            let tenu = logged.orderedSets.map(\.durationSeconds).max() ?? 0
+            return "\(count) × \(exercise.saisie.serie(reps: 0, kilos: 0, secondes: tenu))"
+        case .repsEtCharge: break
+        }
         return "\(count) × \(reps) à \(weight.formatted(.number.precision(.fractionLength(0...1)))) kg"
     }
 

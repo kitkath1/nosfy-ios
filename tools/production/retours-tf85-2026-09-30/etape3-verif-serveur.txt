@@ -1,0 +1,13 @@
+compte de test be69f505…
+✔ ① strength_sets.duree_s existe — {"code": 200, "corps": [{"duree_s": 0}]}
+✔ ① témoin : une colonne bidon est refusée — {"code": 400, "corps": {"code": "42703", "details": null, "hint": null, "message": "column strength_sets.duree_bidon does not exist"}}
+✔ ② exercices.saisie — {"gainage": "tempsSeul", "crunch-sol": "repsSeules", "chevilles": "repsSeules", "developpe-couche": "repsEtCharge"}
+✔ ③ synchroniser_seance accepte 0 rep · 0 kg · 45 s — {"code": 200, "corps": {"ok": true, "phases": 0, "series": 1, "workout_id": "854944cf-55c2-416b-b09b-fc8cc6206aa8"}}
+✔ ③ le rejeu rend la même réponse — {"code": 200, "corps": {"ok": true, "phases": 0, "series": 1, "workout_id": "854944cf-55c2-416b-b09b-fc8cc6206aa8"}}
+✔ ④ seances_depuis rend duree_s = 45 — {"id": "308fdb9a-d880-400c-9718-0e1ed0513f0d", "reps": 0, "weight": 0, "duree_s": 45, "position": 0}
+✔ ⑤ un client sans duree_s écrit 0 — {"code": 200, "serie": {"id": "eee95bf7-3bd6-4e15-9fbe-e1dc33cf3db7", "reps": 10, "weight": 40, "duree_s": 0, "position": 0}}
+✔ ⑤ une durée négative est refusée — {"code": 400, "corps": {"code": "PT400", "details": null, "hint": null, "message": "travail_invalide"}}
+✔ ⑥ séance de la sonde effacée 854944cf — {"code": 200, "lignes": 1}
+✔ ⑥ séance de la sonde effacée f9a782b7 — {"code": 200, "lignes": 1}
+
+✔ TOUT EST VERT

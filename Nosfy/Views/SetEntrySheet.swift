@@ -18,6 +18,11 @@ struct SetEntrySheet: View {
     /// Le repos choisi, en secondes. `nil` = pas encore choisi, et c'est LUI
     /// qui fait refuser le slide : sans repos, il n'y a rien à lancer.
     @Binding var rest: Int?
+    /// CE QUE LA SÉRIE DEMANDE (30-09) : sans charge, la règle des kilos
+    /// n'existe pas ; au temps seul, rien ne se saisit — le cadran a mesuré.
+    var saisie: Exercise.Saisie = .repsEtCharge
+    /// Le temps que le cadran a compté (montré au temps seul).
+    var secondes: Int = 0
     /// Tirer la feuille vers le bas la range — notre panneau n'a plus de
     /// système pour le faire à sa place.
     var onDismiss: () -> Void = {}
@@ -67,10 +72,15 @@ struct SetEntrySheet: View {
                 // 20 d'interligne (et non 14) : « repos est trop collé »
                 // (verdict Kathryn) — les trois blocs respirent.
                 VStack(spacing: 20) {
-                    FluidPicker(title: "REPS", unit: "reps",
-                                value: repsBinding, range: 1...50, step: 1)
-                    FluidPicker(title: "WEIGHT", unit: "kg",
-                                value: $kilos, range: 4...100, step: 1)
+                    if saisie.avecReps {
+                        FluidPicker(title: "REPS", unit: "reps",
+                                    value: repsBinding, range: 1...50, step: 1)
+                    }
+                    if saisie.avecCharge {
+                        FluidPicker(title: "WEIGHT", unit: "kg",
+                                    value: $kilos, range: 4...100, step: 1)
+                    }
+                    if saisie == .tempsSeul { tenueRow }
                     restRow
                 }
                 .padding(.horizontal, 20)
@@ -242,6 +252,36 @@ struct SetEntrySheet: View {
         // dessine par-dessus le contenu. À 20, la poignée tombait exactement
         // sur la ligne du titre.
         .padding(.top, 34)
+    }
+
+    /// LA HAUTEUR DU PANNEAU, en part de l'écran : 0,67 porte deux règles et
+    /// les pastilles sans rien comprimer ; une règle de moins (≈ 94 pt), ou
+    /// deux remplacées par le temps tenu (≈ 76 pt), et le panneau descend
+    /// d'autant — sinon il montrerait un grand vide au-dessus du slider.
+    static func hauteur(_ saisie: Exercise.Saisie) -> CGFloat {
+        switch saisie {
+        case .repsEtCharge: return 0.67
+        case .repsSeules: return 0.56
+        case .tempsSeul: return 0.54
+        }
+    }
+
+    // MARK: Le temps tenu
+
+    /// LE GAINAGE NE SE SAISIT PAS, IL SE MESURE (30-09) : le cadran a compté
+    /// après le GO, la feuille montre ce qu'il a compté. Rien à régler.
+    private var tenueRow: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("HELD")
+                .font(.inter(9.5, .medium))
+                .tracking(1.6)
+                .foregroundStyle(Color.white.opacity(0.42))
+            Text(String(format: "%d:%02d", secondes / 60, secondes % 60))
+                .font(.inter(34, .light))
+                .monospacedDigit()
+                .foregroundStyle(Color.inkPrimary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: Le repos

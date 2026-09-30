@@ -19,10 +19,16 @@ import re, sys, datetime
 
 RACINE = __file__.rsplit("/tools/", 1)[0]
 swift = open(RACINE + "/Nosfy/Models.swift", encoding="utf-8").read()
-pat = re.compile(r'Exercise\(\s*id: "([^"]+)", name: "([^"]+)",\s*category: \.(\w+), equipment: \.(\w+), tracking: \.(\w+),\s*muscle: "([^"]*)",\s*cue: "([^"]*)",\s*mistake: "([^"]*)"\s*\)', re.S)
+pat = re.compile(r'Exercise\(\s*id: "([^"]+)", name: "([^"]+)",\s*category: \.(\w+), equipment: \.(\w+), tracking: \.(\w+),\s*muscle: "([^"]*)",\s*cue: "([^"]*)",\s*mistake: "([^"]*)"(?:,\s*saisie: \.(\w+))?\s*\)', re.S)
 rows = pat.findall(swift)
 if not rows:
     sys.exit("aucun exercice lu dans Models.swift — le format a changé ?")
+# ⚠️ LE COMPTE SE VÉRIFIE (30-09) : un argument de plus dans un `Exercise(...)`
+# faisait sortir l'exercice de l'expression SANS BRUIT — la migration aurait
+# posé un catalogue amputé. Chaque `Exercise(` du catalogue doit être lu.
+attendus = len(re.findall(r'^\s*Exercise\(\s*$', swift, re.M))
+if attendus and len(rows) != attendus:
+    sys.exit(f"{len(rows)} exercices lus pour {attendus} `Exercise(` dans Models.swift — le format a changé ?")
 
 CATEGORIE = {"haut": "Haut", "abdos": "Abdos", "bas": "Bas", "fessiers": "Fessiers", "cardio": "Cardio"}
 def q(s): return "'" + s.replace("'", "''") + "'"
@@ -58,17 +64,20 @@ begin
   end if;
 end $$;
 grant select on public.exercices to authenticated;
+-- 30-09 : ce que la saisie d'une série demande (Exercise.Saisie) — repsEtCharge ·
+-- repsSeules (le poids du corps) · tempsSeul (le gainage : le chrono seul).
+alter table public.exercices add column if not exists saisie text not null default 'repsEtCharge';
 comment on table public.exercices is 'Le miroir du catalogue Swift (ExerciseCatalog.all), écrit par migration seulement (tools/widgets/catalogue_sql.py). Lu par widget_volume, widget_peak, profil() pour nommer les exercices. Aucune écriture depuis l''app.';
 """)
-lignes.append("insert into public.exercices (id, nom, categorie, equipement, tracking, muscle, consigne, erreur) values")
+lignes.append("insert into public.exercices (id, nom, categorie, equipement, tracking, muscle, consigne, erreur, saisie) values")
 vals = []
-for (id_, nom, cat, equip, track, muscle, cue, mistake) in rows:
-    vals.append(f"  ({q(id_)}, {q(nom)}, {q(CATEGORIE[cat])}, {q(equip)}, {q(track)}, {q(muscle)}, {q(cue)}, {q(mistake)})")
+for (id_, nom, cat, equip, track, muscle, cue, mistake, saisie) in rows:
+    vals.append(f"  ({q(id_)}, {q(nom)}, {q(CATEGORIE[cat])}, {q(equip)}, {q(track)}, {q(muscle)}, {q(cue)}, {q(mistake)}, {q(saisie or 'repsEtCharge')})")
 lignes.append(",\n".join(vals))
 lignes.append("""on conflict (id) do update set
   nom = excluded.nom, categorie = excluded.categorie, equipement = excluded.equipement,
   tracking = excluded.tracking, muscle = excluded.muscle, consigne = excluded.consigne,
-  erreur = excluded.erreur, updated_at = now();
+  erreur = excluded.erreur, saisie = excluded.saisie, updated_at = now();
 """)
 sql = "\n".join(lignes)
 if out:

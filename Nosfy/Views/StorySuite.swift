@@ -579,6 +579,10 @@ struct StoryCard: View {
         let f = faits
         let minutes = session.minutes
         let series = session.series
+        // LE PLURIEL SE GÈRE (30-09, TestFlight 85 : « 1 sets of core ») :
+        // « 1 série », « 2 séries » ; « 1 set », « 2 sets ».
+        let nS = L(series > 1 ? "\(series) séries" : "\(series) série",
+                   series == 1 ? "1 set" : "\(series) sets")
         switch planche.first ?? .bras {
         case .basket:
             let n = f.intervalles
@@ -593,7 +597,7 @@ struct StoryCard: View {
                     [(L("Soufflez. Reprenez.", "Breathe. Repeat."), false)]]
         case .chocolat:
             return [[(L("Abdos travaillés.", "Core day locked."), false)],
-                    [(L("\(series) séries", "\(series) sets"), false), (L(" pour les abdos,", " of core,"), true)],
+                    [(nS, false), (L(" pour les abdos,", " of core,"), true)],
                     [(L("en \(minutes) minutes.", "in \(minutes) minutes."), true)],
                     [(L("Gardez le cap.", "Hold the line."), false)]]
         case .piscine:
@@ -605,17 +609,17 @@ struct StoryCard: View {
             return [[(L("Jambes sollicitées.", "Leg day loaded."), false)],
                     [("\(f.kg) kg", false), (L(" sur", " on"), true)],
                     [("\(f.exo),", true)],
-                    [(L("\(series) séries, \(minutes) min.", "\(series) sets, \(minutes) min."), false)]]
+                    [("\(nS), \(minutes) min.", false)]]
         case .abricot:
             return [[(L("Fessiers en feu.", "Glutes on fire."), false)],
                     [("\(f.kg) kg", false), (L(" sur", " on"), true)],
                     [("\(f.exo),", true)],
-                    [(L("\(series) séries, \(minutes) min.", "\(series) sets, \(minutes) min."), false)]]
+                    [("\(nS), \(minutes) min.", false)]]
         default:
             return [[(L("Belle poussée.", "Big push day."), false)],
                     [("\(f.kg) kg", false), (L(" sur", " on"), true)],
                     [("\(f.exo),", true)],
-                    [(L("\(series) séries en \(minutes) min.", "\(series) sets in \(minutes) min."), false)]]
+                    [(L("\(nS) en \(minutes) min.", "\(nS) in \(minutes) min."), false)]]
         }
     }
 

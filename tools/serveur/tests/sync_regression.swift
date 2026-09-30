@@ -21,7 +21,7 @@ actor OutboxGains {
 }
 struct Serie {
     let remoteID = UUID()
-    var reps = 10, weight = 20.0, order = 0, isDone = true
+    var reps = 10, weight = 20.0, order = 0, isDone = true, durationSeconds = 45
 }
 struct Phase {
     let remoteID = UUID()
@@ -78,6 +78,8 @@ final class Transport: URLProtocol {
         let json = try JSONSerialization.jsonObject(with:data) as! [String:Any]
         check((json["p_workout"] as! [String:Any])["id"] as? String == snap.id,"UUID de séance conservé")
         check((json["p_series"] as! [[String:Any]]).count == 1 && (json["p_phases"] as! [[String:Any]]).count == 1 && (json["p_piscines"] as! [[String:Any]]).count == 1,"réalisations groupées dans le même corps")
+        // 30-09 : le temps de la série part avec elle (20260930150000).
+        check((json["p_series"] as! [[String:Any]])[0]["duree_s"] as? Int == 45,"temps de la série envoyé (duree_s)")
         Transport.code = 503
         do { try await sync.pousser([snap]);preconditionFailure("503 avalé") } catch { check(true,"échec remonte pour préserver le compte local") }
         await sync.push([snap])

@@ -660,11 +660,26 @@ enum DecideurSerie {
         return pool[Int(stable("\(cle)|vid|\(serie)") % UInt64(pool.count))]
     }
 
+    /// CE QUE LA SÉRIE A ÉTÉ, en mots : « 12 reps à 20 kg » ; sans charge,
+    /// « 12 reps » ; au temps seul, « 0:45 » (30-09, `Exercise.Saisie`).
+    private static func faitSerie(reps: Int, kilos: Double,
+                                  saisie: Exercise.Saisie, secondes: Int) -> String {
+        guard saisie == .repsEtCharge else {
+            return saisie.serie(reps: reps, kilos: kilos, secondes: secondes)
+        }
+        let poids = kilos.formatted(.number.precision(.fractionLength(0...1)))
+        return L("\(reps) reps à \(poids) kg", "\(reps) reps at \(poids) kg")
+    }
+
     /// `serie` : le rang de la série qu'on vient de finir (1-based).
     /// `reps`/`kilos` : ce qu'elle a réellement pesé. `seance` : l'identité
     /// de la séance ouverte (le budget est le sien).
+    /// `saisie`/`secondes` (30-09) : ce que la série a demandé — le poids du
+    /// corps ne dit pas « 0 kg », le gainage dit son temps tenu.
     static func pour(serie: Int, gain: Int, total: Int,
-                     reps: Int, kilos: Double, seance: UUID? = nil) -> IssueSerie {
+                     reps: Int, kilos: Double, seance: UUID? = nil,
+                     saisie: Exercise.Saisie = .repsEtCharge,
+                     secondes: Int = 0) -> IssueSerie {
         if !reglesLues { Task { await chargerRegles() } }
         let cle = seance?.uuidString ?? "banc"
         if etat.cle != cle { etat = EtatSeance(cle: cle) }
@@ -704,10 +719,11 @@ enum DecideurSerie {
             etat.videos += 1
         } else if fixe, r.rangsFixes.firstIndex(of: serie) == 0 {
             // Le premier rang fixe : un MOMENT, et il dit quelque chose de VRAI.
-            let poids = kilos.formatted(.number.precision(.fractionLength(0...1)))
+            let fait = Self.faitSerie(reps: reps, kilos: kilos,
+                                      saisie: saisie, secondes: secondes)
             issue = .moment(titre: "Set \(serie)",
-                            fait: L("\(reps) reps à \(poids) kg — déjà \(total) pièces.",
-                                    "\(reps) reps at \(poids) kg — that's \(total) coins so far."),
+                            fait: L("\(fait) — déjà \(total) pièces.",
+                                    "\(fait) — that's \(total) coins so far."),
                             style: .galet)
         } else if etat.monetaires < r.rewardMonetaireMax {
             // La pop-up de récompense en pièces — une par séance, avec une VIDÉO
@@ -716,10 +732,11 @@ enum DecideurSerie {
             etat.monetaires += 1
         } else {
             // Le budget « pièces » est pris : un moment sans pièces.
-            let poids = kilos.formatted(.number.precision(.fractionLength(0...1)))
+            let fait = Self.faitSerie(reps: reps, kilos: kilos,
+                                      saisie: saisie, secondes: secondes)
             issue = .moment(titre: "Set \(serie)",
-                            fait: L("\(reps) reps à \(poids) kg — déjà \(total) pièces.",
-                                    "\(reps) reps at \(poids) kg — that's \(total) coins so far."),
+                            fait: L("\(fait) — déjà \(total) pièces.",
+                                    "\(fait) — that's \(total) coins so far."),
                             style: .galet)
         }
         etat.popups += 1
