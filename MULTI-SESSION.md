@@ -1,21 +1,32 @@
 # Règle multi-session (Nosfy)
 
-## 🃏 LÉGENDAIRE EN MAIN — étapes 1-2 AU BANC, 30-09 (session Cartes/légendaire), commité et poussé (a8d1aeee)
+## 🃏 LÉGENDAIRE DANS L'APP — 30-09 soir (session Cartes/légendaire) — COMMITÉ et poussé
 
-30-09 soir, commités à leur tour : lampe du pouce,
-filigrane renforcé, correctif de l'éclair blanc (la gravure ne s'allume plus
-que sur une pente), drapeau `-luneTilt` lu dans les arguments —
-`Nosfy/CarteLune.metal`, `Nosfy/Views/CarteLuneLab.swift`,
-`Nosfy/Views/LuneMatiere.swift`, `Nosfy/Views/CeremonieLegendaire.swift` (neuf,
-la cérémonie de sortie, banc `-luneCeremonie`), `tools/carte-lune/cuire_matiere.py`,
-`tools/carte-lune/matiere/*/…-matiere.{png,json}`, `tools/carte-lune/legendaire-2026-09-30/`
-(planches, films, capturer.sh, planche.py, README), ma ligne de
-`docs/site/content/briques.ts`. 
-Sur son « ça me va je valide » puis « continue et commit tout » : les trois
-légendaires publiées gravées, qui brûlent / neigent / nacrent, **au
-simulateur seulement** (`-luneLab -luneCarte <nom>`). Le produit (manège,
-profil) ne change PAS : `CarteVivante(matiere:)` vaut nil partout ailleurs
-qu'au banc, tant que les masques ne sont pas livrés par le serveur (D3).
+Sur son ordre « commite ta session en plusieurs commits » : trois commits
+après c5711cb5 — ① le tap ne zoome plus (pincement ×2, `CarteLuneLab.swift`) ;
+② la matière livrée par le serveur (`LuneMatiere.swift`, `CarteLuneLab.swift`,
+`RestartSheet.swift`, `SacreAccueil.swift`, `ForgeServeur.swift`,
+`ProfilLune.swift`, migration `20260930200000_legendaire_matiere.sql`
+**DÉPLOYÉE**, `publier_matiere.py`, `cuire_matiere.py`, mes lignes de
+`docs/site/content/` `briques.ts` · `serveur.ts` · `qa.ts` + le livrable) ;
+③ la cérémonie au manège (`BoosterLab.swift`, `CeremonieLegendaire.swift`,
+preuves `tools/carte-lune/legendaire-2026-09-30/`). Site v109.
+⚠️ Le livrable `docs/site/index.html` commité est celui de l'arbre partagé
+(publié v109) : il porte aussi des lignes d'autres sessions non commitées —
+depuis les seules sources de HEAD il pèse 2,03 Mo, au-dessus du plafond, tant
+que la passe `alleger()` de `scripts/captures.py` n'est pas commitée.
+Reste ouvert : la mesure de chauffe sur son iPhone (QA 25).
+
+➜ **Session Cartes / production du catalogue** : après CHAQUE publication de
+nouvelles cartes (`publier_catalogue.py`), lancer
+`python3 tools/carte-lune/publier_matiere.py --upload` — il cuit et dépose la
+matière de toute légendaire publiée qui n'en a pas (bucket `cards`,
+`matiere/<card_id>.json` + `matiere/<sha256>.png`). Sans lui, une nouvelle
+légendaire reste au rendu d'avant.
+
+Avant (sur son « ça me va je valide » puis « continue et commit tout ») : les
+trois légendaires publiées gravées, qui brûlent / neigent / nacrent, au banc
+(`-luneLab -luneCarte <nom>`).
 Fichiers du chantier : `Nosfy/CarteLune.metal` (`carteLuneV6`, V5 intacte),
 `Nosfy/Views/CarteLuneLab.swift`, `Nosfy/Views/LuneMatiere.swift`,
 `tools/carte-lune/cuire_matiere.py`, `poser_matiere_sim.sh`, `matiere/`,
