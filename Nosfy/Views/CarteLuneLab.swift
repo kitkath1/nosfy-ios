@@ -364,6 +364,15 @@ struct CarteVivante: View {
     /// lui (aucune couture), le noir se lève (0,35 s) sur la carte
     /// reposée. nil = pas de sortie en cours.
     @State private var sortieAt: Date?
+    /// LE ZOOM CONDUIT PAR LE DOIGT (30-09, son verdict « le zoom quand on
+    /// clique, c'est de la merde » et sa règle « le doigt conduit, jamais un
+    /// film, ×2 au plus ») : le pincement approche la carte là où sont les
+    /// doigts, le relâcher la rend. Il REMPLACE la plongée-film au tap et à
+    /// l'appui long (14 s de caméra scriptée jusqu'à ×4,8 — morte).
+    @GestureState private var pincement: CGFloat = 1
+    @State private var pinceAncre: UnitPoint = .center
+    /// `-lunePlongee` : la plongée-film d'avant, au BANC seulement.
+    private static let plongeeFilm = CommandLine.arguments.contains("-lunePlongee")
     /// La naissance du toucher courant — la sortie du voyage n'écoute
     /// que les touchers nés APRÈS le départ de la plongée.
     @State private var touchBeganAt: Date = .distantPast
@@ -671,6 +680,9 @@ struct CarteVivante: View {
                     }())
                     .rotationEffect(.degrees(
                         Double(dEnv) * 1.6 * Double(sin(dAge * 0.5))))
+                    .scaleEffect(pincement, anchor: pinceAncre)
+                    .animation(.spring(response: 0.32, dampingFraction: 0.82),
+                               value: pincement)
                     // L'aura NE TOURNE PAS avec la carte (la loi de la
                     // révélation) — et elle passe DEVANT : la marge noire de
                     // l'image est opaque, derrière elle serait mangée. Elle
@@ -733,6 +745,8 @@ struct CarteVivante: View {
                         lampePoseeA = .now
                     }
                 }
+                // Deux doigts qui pincent ne penchent pas la carte.
+                if pincement > 1.01 { return }
                 let travel = abs(v.translation.width) + abs(v.translation.height)
                 if !dragging && travel > 10 {
                     dragging = true
@@ -787,7 +801,7 @@ struct CarteVivante: View {
                         y: (sceneSize.height - cs.height) / 2,
                         width: cs.width, height: cs.height)
                         .insetBy(dx: -16, dy: -16)
-                    if diveOnTap, !reduceMotion, sceneSize != .zero,
+                    if Self.plongeeFilm, diveOnTap, !reduceMotion, sceneSize != .zero,
                        cardRect.contains(v.location) {
                         // L'état résultat : le tap EST le voyage.
                         // (Reduce Motion : le repli est l'expiration —
@@ -817,7 +831,18 @@ struct CarteVivante: View {
         // les cordes s'élèvent quand on passe la vitre, s'éteignent au
         // retour — partout où la carte vit, manège ou page profil.
         .simultaneousGesture(LongPressGesture(minimumDuration: 0.6)
-            .onEnded { _ in plonger() })
+            .onEnded { _ in if Self.plongeeFilm { plonger() } })
+        .simultaneousGesture(MagnifyGesture()
+            .updating($pincement) { v, etat, _ in
+                etat = min(max(v.magnification, 1), 2)
+            }
+            .onChanged { v in
+                let cs = Self.cardSize(in: sceneSize)
+                guard cs.width > 0, cs.height > 0 else { return }
+                let x = (v.startLocation.x - (sceneSize.width - cs.width) / 2) / cs.width
+                let y = (v.startLocation.y - (sceneSize.height - cs.height) / 2) / cs.height
+                pinceAncre = UnitPoint(x: min(max(x, 0), 1), y: min(max(y, 0), 1))
+            })
         .onAppear {
             mountAt = Date()
             // Le neutre gyro = la pose de tenue de CET écran.
