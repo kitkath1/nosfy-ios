@@ -4,5 +4,13 @@
  "rarete": "epic",
  "monde": "cimes-eteintes",
  "monde_code": 1,
- "illustration": "tools/carte-lune/cimes-eteintes-2026-09-18/03-epique-loup-de-cendre-v3.png"
+ "illustration": "tools/carte-lune/cimes-eteintes-2026-09-18/03-epique-loup-de-cendre-v3.png",
+ "noms": {
+  "fr": "Loup de Cendre",
+  "en": "Ash Wolf"
+ },
+ "monde_noms": {
+  "fr": "Les Cimes \u00c9teintes",
+  "en": "The Darkened Peaks"
+ }
 }

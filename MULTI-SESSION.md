@@ -1,7 +1,16 @@
 # Règle multi-session (Nosfy)
 
-## 🃏 LÉGENDAIRE EN MAIN — étapes 1-2 AU BANC, 30-09 (session Cartes/légendaire), commité et poussé
+## 🃏 LÉGENDAIRE EN MAIN — étapes 1-2 AU BANC, 30-09 (session Cartes/légendaire), commité et poussé (a8d1aeee)
 
+30-09 soir, commités à leur tour : lampe du pouce,
+filigrane renforcé, correctif de l'éclair blanc (la gravure ne s'allume plus
+que sur une pente), drapeau `-luneTilt` lu dans les arguments —
+`Nosfy/CarteLune.metal`, `Nosfy/Views/CarteLuneLab.swift`,
+`Nosfy/Views/LuneMatiere.swift`, `Nosfy/Views/CeremonieLegendaire.swift` (neuf,
+la cérémonie de sortie, banc `-luneCeremonie`), `tools/carte-lune/cuire_matiere.py`,
+`tools/carte-lune/matiere/*/…-matiere.{png,json}`, `tools/carte-lune/legendaire-2026-09-30/`
+(planches, films, capturer.sh, planche.py, README), ma ligne de
+`docs/site/content/briques.ts`. 
 Sur son « ça me va je valide » puis « continue et commit tout » : les trois
 légendaires publiées gravées, qui brûlent / neigent / nacrent, **au
 simulateur seulement** (`-luneLab -luneCarte <nom>`). Le produit (manège,

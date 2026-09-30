@@ -129,6 +129,25 @@ def croissants(n=4):
     return m
 
 
+def noms(cle):
+    """Les noms FR/EN d'une carte ou d'un monde, lus dans le catalogue des
+    familles (la cérémonie grave le nom sous la carte)."""
+    d = json.load(open(os.path.join(ICI, "familles-2026-09-18.json")))
+    trouve = []
+
+    def fouiller(x):
+        if isinstance(x, dict):
+            if x.get("key") == cle and isinstance(x.get("name"), dict):
+                trouve.append(x["name"])
+            for v in x.values():
+                fouiller(v)
+        elif isinstance(x, list):
+            for v in x:
+                fouiller(v)
+    fouiller(d)
+    return trouve[0] if trouve else {"fr": cle, "en": cle}
+
+
 def cuire(entree):
     nom = entree["reference"].split("/")[1]
     rarete = entree["rarete"]
@@ -138,7 +157,8 @@ def cuire(entree):
     source = os.path.join(DEPOT, entree["fichier"])
     meta = dict(reference=entree["reference"], nom=nom, rarete=rarete,
                 monde=monde, monde_code=MONDES.get(monde, 0),
-                illustration=entree["fichier"])
+                illustration=entree["fichier"],
+                noms=noms(nom), monde_noms=noms(monde))
     if rarete != "legendary":
         json.dump(meta, open(os.path.join(dossier, f"{nom}-matiere.json"), "w"), indent=1)
         print(f"OK {nom} ({rarete}) : json seul (témoin sans matière)")
@@ -206,12 +226,16 @@ def cuire(entree):
     c = np.asarray(Image.open(os.path.join(MEDIA, "carte-cadre-legendaire.png"))
                    .convert("RGBA")).astype(np.float32) / 255
     cadre_a = np.clip(c[..., 3] + croissants(), 0, 1)
-    hc = ndi.gaussian_filter(lum_of(c[..., :3]) * c[..., 3] + croissants() * 0.9, 0.8) * 6.0
+    # Le relief du cadre déborde d'un pixel ou deux de chaque filet argent :
+    # à σ 0,8 et ×6 (la maquette), le flanc allumé restait SUR le filet déjà
+    # clair et ne se voyait pas (planche du 30-09) ; à σ 1,4 et ×10, un
+    # cheveu de lumière longe le filet du côté qui fait face.
+    hc = ndi.gaussian_filter(lum_of(c[..., :3]) * c[..., 3] + croissants() * 0.9, 1.4) * 10.0
     n_cadre = normalize(np.dstack([-ndi.sobel(hc, axis=1) / 8,
                                    -ndi.sobel(hc, axis=0) / 8, np.ones_like(hc)]))
     w = np.clip(cadre_a * 3, 0, 1)
     n = normalize(n_art * (1 - w[..., None]) + n_cadre * w[..., None])
-    poids = np.clip(poids_art * (1 - w) + 0.42 * w, 0, 1)
+    poids = np.clip(poids_art * (1 - w) + 0.85 * w, 0, 1)
     relief = np.dstack([n[..., 0] * 0.5 + 0.5, n[..., 1] * 0.5 + 0.5, poids])
 
 

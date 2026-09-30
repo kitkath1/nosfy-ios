@@ -34,6 +34,13 @@ for t in "-0.5,0" "0,0" "0.5,0.2"; do
   echo "capturé : $LEG $t"
 done
 
+# La lampe du pouce, figée au centre de la créature (le json du kit), carte posée.
+CENTRE=$(python3 -c "import json,sys; c=json.load(open(sys.argv[1]))['centre']; print(f'{c[0]},{c[1]}')" \
+  "$ICI/../matiere/$LEG/$LEG-matiere.json")
+lancer "$LEG" "0,0" -luneLampe "$CENTRE"; attendre 5
+xcrun simctl io "$SIM" screenshot "$CAP/lampe_0,0.png" > /dev/null 2>&1
+echo "capturé : $LEG lampe au pouce ($CENTRE)"
+
 # Le film : la vie (braises, neige, souffle, paillettes) et la lampe du monde
 # qui suit l'inclinaison. simctl enregistre en cadence VARIABLE (piège
 # payé le 24-09) : le film se ré-encode à 30 i/s constants.
@@ -47,3 +54,13 @@ ffmpeg -y -loglevel error -i "$CAP/film-brut.mp4" -vf "fps=30,scale=590:-2" \
 rm -f "$CAP/film-brut.mp4"
 echo "film : $ICI/$LEG-en-main.mp4"
 python3 "$ICI/planche.py" "$LEG" "$TEM" "$CAP"
+
+# La cérémonie de sortie (la porte de lumière), un cycle filmé.
+lancer "$LEG" - -luneCeremonie
+xcrun simctl io "$SIM" recordVideo --codec h264 --force "$CAP/ceremonie-brut.mp4" > /dev/null 2>&1 &
+REC=$!
+attendre 8.5
+kill -INT "$REC"; wait "$REC" 2>/dev/null || true
+ffmpeg -y -loglevel error -i "$CAP/ceremonie-brut.mp4" -vf "fps=30,scale=394:-2" \
+  -c:v libx264 -pix_fmt yuv420p -crf 20 "$ICI/$LEG-ceremonie.mp4"
+echo "cérémonie : $ICI/$LEG-ceremonie.mp4"

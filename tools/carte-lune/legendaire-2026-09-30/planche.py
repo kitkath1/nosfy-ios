@@ -9,6 +9,8 @@ vrai shader), faites par capturer.sh.
     ligne 2  même angle : Trois Lunes · Quatre Lunes d'aujourd'hui · neuve
     ligne 3  crops ×3 de la neuve (le feu, la créature, le ciel, le cadre)
     ligne 4  les MÊMES crops, la Quatre Lunes d'aujourd'hui
+    ligne 5  la lampe du pouce (avec / sans doigt, même angle) et le
+             filigrane du cadre (penché à gauche / à droite)
 
 Les zones des crops viennent des masques cuits (le point le plus chaud, la
 matière la plus dense), comme la maquette du 20-09 — rien à la main.
@@ -102,10 +104,29 @@ def main():
             c = Image.fromarray(src[sy - h:sy + h, sx - h:sx + h])
             dest.append((nom, c.resize((540, 540), Image.BICUBIC)))
 
+    # La lampe et le filigrane : crops ×3 au pouce (avec / sans) et au coin
+    # du cadre (penché à gauche / à droite).
+    crops_l = []
+    lampe_img = charger("lampe_0,0.png") if os.path.exists(os.path.join(CAP, "lampe_0,0.png")) else None
+    if lampe_img is not None:
+        b0 = boite(neuves[1])
+        c0 = TITRES[LEG]["centre"]
+        lx, ly = (int(v) for v in vers_ecran(b0, c0[0] * 1086, c0[1] * 1448))
+        for nom, src in (("la lampe du pouce", lampe_img), ("sans doigt, même angle", neuves[1])):
+            c = Image.fromarray(src[ly - 90:ly + 90, lx - 90:lx + 90])
+            crops_l.append((nom, c.resize((540, 540), Image.BICUBIC)))
+        # La boîte de la carte POSÉE pour les deux : penchée, la lueur au
+        # pied de la carte élargit la boîte détectée et décale le point.
+        for nom, src, b_ in (("filigrane, penchée à gauche", neuves[0], b0),
+                             ("filigrane, penchée à droite", neuves[2], b0)):
+            fx, fy = (int(v) for v in vers_ecran(b_, 140, 420))
+            c = Image.fromarray(src[fy - 90:fy + 90, fx - 90:fx + 90])
+            crops_l.append((nom, c.resize((540, 540), Image.BICUBIC)))
+
     gut = 28
     largeur = max(3 * 560 + 4 * gut, 4 * 540 + 5 * gut)
     h1 = ligne1[0].height
-    hauteur = 60 + h1 + 70 + h1 + 70 + 540 + 70 + 540 + 90
+    hauteur = 60 + h1 + 70 + h1 + 70 + 540 + 70 + 540 + 90 + (620 if crops_l else 0)
     pl = Image.new("RGB", (largeur, hauteur), (4, 4, 6))
     d = ImageDraw.Draw(pl)
     y = 16
@@ -125,7 +146,10 @@ def main():
         x += 560 + gut
     y += h1 + 50
     for titre, crops in (("Crops ×3 — NEUVE, penchée à droite", crops_n),
-                         ("Les mêmes crops ×3 — AUJOURD'HUI (produit)", crops_p)):
+                         ("Les mêmes crops ×3 — AUJOURD'HUI (produit)", crops_p),
+                         ("La lampe du pouce et le filigrane du cadre — crops ×3", crops_l)):
+        if not crops:
+            continue
         d.text((gut, y), titre, fill=(215, 220, 230), font=f)
         y += 36
         x = gut

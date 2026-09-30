@@ -404,14 +404,18 @@ static float cRoundBox(float2 p, float2 b, float r) {
 //
 // Deux causes de lumière seulement : l'INCLINAISON (la lampe du monde, qui
 // allume la gravure fil par fil, le chant qui fait face, les paillettes à
-// leur angle propre) et la MÉTÉO de la carte, qui vit sans cause (les
+// leur angle propre) et le POUCE (la lampe de la main, qui éclaire la
+// gravure sous le doigt). Et la MÉTÉO de la carte, qui vit sans cause (les
 // braises montent, la neige tombe, la créature respire). Ce qui n'y est
 // PLUS : le foil en bande, la nappe de vitre, l'éclat qui court le liseré,
 // la poussière V5, la brume procédurale.
 //
 // `monde` : 0 Forêt (neige + braises) · 1 Cimes (cendres + lave) · 2 Bois
 // (neige + nacre, PAS de feu). `barreaux` (bits) : 1 -sansRelief ·
-// 2 -sansBraises · 4 -sansNeige · 8 -sansPaillettes · 16 -sansSouffle.
+// 2 -sansBraises · 4 -sansNeige · 8 -sansPaillettes · 16 -sansSouffle ·
+// 32 -sansLampe. `lampe` = (u, v, intensité) du pouce, en fractions de la
+// carte — intensité 0 : pas de doigt. `vie` (0 → 1) éveille la météo et le
+// feu seuls (la cérémonie : la gravure d'abord, la vie ensuite) ; 1 ailleurs.
 // L'ARITÉ est soudée à `CarteLuneCard` : un paramètre de plus ou de moins et
 // la carte est BLANCHE, sans une erreur. Et TROIS textures au plus (la
 // carte, la profondeur, l'atlas) : à cinq, RenderBox refuse le passage
@@ -543,7 +547,7 @@ static float flocons(float2 cp, float t, float c, float gate, float graine,
                                  float2 size, float2 tilt, float time,
                                  float amp, float eveil, float dive,
                                  float dolly, float monde, float barreaux,
-                                 float2 centre,
+                                 float2 centre, float3 lampe, float vie,
                                  texture2d<half> depthTex,
                                  texture2d<half> atlas) {
     constexpr sampler ds(address::clamp_to_edge, filter::linear);
@@ -555,6 +559,7 @@ static float flocons(float2 cp, float t, float c, float gate, float graine,
     bool avecMeteo = (bar & 4) == 0;
     bool avecPaillettes = (bar & 8) == 0;
     bool avecSouffle = (bar & 16) == 0;
+    bool avecLampe = (bar & 32) == 0;
     int m = int(monde + 0.5);
 
     // — La fenêtre : la parallaxe de V5, à l'identique (mêmes gardes, même
@@ -610,6 +615,18 @@ static float flocons(float2 cp, float t, float c, float gate, float graine,
     float2 scp = suv * kCanvas;
     float3 add = float3(0.0);
 
+    // — LA LAMPE (E4) : le pouce est une source posée à 70 px au-dessus de
+    //   la carte. Sur ~110 pt autour du doigt, chaque fil de la gravure prend
+    //   SA lumière selon sa pente face au doigt ; le bord est net (chute sur
+    //   les 20 derniers points), jamais un dégradé qui s'étale. Pas de doigt,
+    //   pas de lampe : rien ne bouge tant que le doigt ne bouge pas.
+    float cone = 0.0;
+    float2 lp = lampe.xy * kCanvas;
+    if (avecLampe && lampe.z > 0.001) {
+        float rayon = 55.0 / px;
+        cone = (1.0 - csstep(rayon - 20.0 / px, rayon, length(scp - lp))) * lampe.z;
+    }
+
     // — LA GRAVURE (E1) et LE FILIGRANE (E6) : la lampe du monde est
     //   déplacée par l'inclinaison ; un fil ne s'allume que si SA pente fait
     //   face (exposant serré : allumé ou éteint, jamais à moitié). Le cadre
@@ -620,10 +637,22 @@ static float flocons(float2 cp, float t, float c, float gate, float graine,
         half4 re = atlasLu(atlas, ds, suv, kRelief);
         float2 nxy = float2(re.rg) * 2.0 - 1.0;
         float3 n = float3(nxy, sqrt(max(1.0 - dot(nxy, nxy), 0.0)));
-        float spec = max(pow(saturate(dot(n, H)), 110.0) - 0.04, 0.0);
+        // SEULE UNE PENTE ACCROCHE : un aplat (le corps du cadre, une marge,
+        // un pelage lisse) renverrait la lampe d'un BLOC quand elle passe
+        // dans l'axe du regard — un éclair blanc sur toute la carte, le lavis
+        // interdit (vu au banc le 30-09 : la marge à 254 sur une image).
+        // Les fils et les flancs des filets ont une pente ; l'aplat, jamais.
+        float pente = csstep(0.06, 0.22, length(nxy));
+        float spec = max(pow(saturate(dot(n, H)), 110.0) - 0.04, 0.0) * pente;
         float3 gravCol = m == 1 ? float3(1.0, 0.96, 0.90)
                        : (m == 2 ? float3(0.95, 0.97, 1.0) : float3(1.0));
         add += gravCol * min(spec * float(re.b) * 1.6, 1.0);
+        if (cone > 0.0) {
+            float3 L2 = normalize(float3(lp - scp, 70.0));
+            float3 H2 = normalize(L2 + float3(0.0, 0.0, 1.0));
+            float spec2 = max(pow(saturate(dot(n, H2)), 60.0) - 0.05, 0.0) * pente;
+            add += gravCol * min(spec2 * float(re.b) * 2.2, 1.0) * cone;
+        }
         // LE CHANT : un cheveu de 1 px sur le côté de la fenêtre qui fait
         // face à la lampe, qui disparaît de l'autre côté.
         float spanX = step(kFen.x, cp.x) * step(cp.x, kFen.z);
@@ -660,7 +689,7 @@ static float flocons(float2 cp, float t, float c, float gate, float graine,
     //   chauds de la peinture (trois tailles, trois vitesses), les
     //   étincelles de 1 px crachées vite, et la lueur des sources qui
     //   respire sur deux houles (7,3 s et 1,9 s) — jamais un métronome.
-    if (avecFeu && m != 2) {
+    if (avecFeu && m != 2 && vie > 0.001) {
         float3 col0 = m == 1 ? float3(1.0, 0.50, 0.16) : float3(1.0, 0.55, 0.18);
         float gate = m == 1 ? 1.0 : 0.9;
         float derive = -18.0 * tilt.x;
@@ -672,31 +701,32 @@ static float flocons(float2 cp, float t, float c, float gate, float graine,
         float2 b3 = naissance(scp, time, 12.0, 35.0, 60.0, 180.0, gate * 0.7, 29.0,
                               derive * 0.6, 0.30, atlas, ds, kSouffle, lueurG);
         // Le feu vit DANS la peinture : jamais une braise sur le cadre.
+        // Sous le pouce, les braises CHAUFFENT : plus vives.
         add += (ageBraise(b1.y, col0) * b1.x + ageBraise(b2.y, col0) * b2.x
-                + ageBraise(b3.y, col0) * b3.x) * dedans;
+                + ageBraise(b3.y, col0) * b3.x) * dedans * (1.0 + 0.8 * cone) * vie;
         float2 e = naissance(scp, time, 5.0, 200.0, 80.0, 100.0, 0.5, 41.0,
                              derive * 0.4, 0.35, atlas, ds, kVie,
                              float4(1.0, 0.0, 0.0, 0.0));
-        add += float3(1.0, 0.92, 0.75) * e.x * pow(1.0 - e.y, 1.5) * 0.9 * dedans;
+        add += float3(1.0, 0.92, 0.75) * e.x * pow(1.0 - e.y, 1.5) * 0.9 * dedans * vie;
         float resp = 0.42 + 0.16 * sin(time * 6.2831 / 7.3)
                    + 0.08 * sin(time * 6.2831 / 1.9) + 0.06 * sin(time * 6.2831 / 0.37);
         float lueur = float(atlasLu(atlas, ds, suv, kSouffle).g);
         float3 warm = lueur * resp * 0.8 * float3(col0.x, col0.y * 0.9, col0.z * 0.8)
                     + float(vi.r) * 0.35 * float3(1.0, 0.80, 0.50);
-        add += min(warm, float3(1.0, 0.62, 0.30));
+        add += min(warm, float3(1.0, 0.62, 0.30)) * (0.35 + 0.65 * vie);
     }
     // — LA NACRE, Bois : pas de feu — des poussières blanches qui MONTENT
     //   lentement des blancs froids de la peinture.
-    if (avecFeu && m == 2) {
+    if (avecFeu && m == 2 && vie > 0.001) {
         float2 n1 = naissance(scp, time, 6.0, 30.0, 40.0, 120.0, 0.8, 53.0,
                               -8.0 * tilt.x, 0.10, atlas, ds, kSouffle,
                               float4(0.0, 0.0, 1.0, 0.0));
-        add += float3(0.96, 0.97, 1.0) * n1.x * pow(sin(n1.y * 3.14159), 0.7) * dedans;
+        add += float3(0.96, 0.97, 1.0) * n1.x * pow(sin(n1.y * 3.14159), 0.7) * dedans * vie;
     }
 
     // — LA MÉTÉO (E3b) : trois profondeurs dans l'épaisseur du verre —
     //   neige fine (Forêt, Bois) ou cendres plus lentes (Cimes).
-    if (avecMeteo) {
+    if (avecMeteo && vie > 0.001) {
         float f;
         float3 col;
         if (m == 1) {
@@ -710,7 +740,8 @@ static float flocons(float2 cp, float t, float c, float gate, float graine,
               + flocons(cp, time, 48.0, 0.14, 67.0, 1.4, 0.8, 26.0, tilt.x) * 0.80
               + flocons(cp, time, 60.0, 0.13, 71.0, 2.2, 1.6, 40.0, tilt.x) * 1.00;
         }
-        add += col * f * dedans;
+        // Les flocons qui traversent le cône du pouce s'allument.
+        add += col * f * dedans * (1.0 + 1.5 * cone) * vie;
     }
 
     // L'ÉVEIL : tout monte avec l'éveil de la carte (le raccord reste plat).

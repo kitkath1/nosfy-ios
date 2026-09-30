@@ -23,6 +23,9 @@ struct LuneMatiere {
     let monde: Float
     /// Le centre du sujet, en fractions de la carte (le souffle s'y ancre).
     let centre: CGPoint
+    /// Le nom de la carte et de son monde, FR / EN (la cérémonie les grave).
+    var noms: [String: String] = [:]
+    var mondeNoms: [String: String] = [:]
 
     /// LES BARREAUX du passage légendaire (bits de `carteLuneV6`) : chaque
     /// moteur peut être accusé seul, au banc comme sur le téléphone.
@@ -34,6 +37,7 @@ struct LuneMatiere {
         if a.contains("-sansNeige") { b |= 4 }
         if a.contains("-sansPaillettes") { b |= 8 }
         if a.contains("-sansSouffle") { b |= 16 }
+        if a.contains("-sansLampe") { b |= 32 }
         // -luneSonde : la sonde de l'atlas (valeurs brutes ou linéarisées ?)
         if a.contains("-luneSonde") { b |= 64 }
         return Float(b)
@@ -69,6 +73,8 @@ struct LuneMatiere {
         } ?? CGPoint(x: 0.5, y: 0.5)
         return LuneMatiere(atlas: Image(uiImage: atlas),
                            monde: Float((m["monde_code"] as? Int) ?? 0),
-                           centre: centre)
+                           centre: centre,
+                           noms: m["noms"] as? [String: String] ?? [:],
+                           mondeNoms: m["monde_noms"] as? [String: String] ?? [:])
     }
 }

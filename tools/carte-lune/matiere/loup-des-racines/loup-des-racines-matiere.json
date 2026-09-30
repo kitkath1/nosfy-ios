@@ -4,5 +4,13 @@
  "rarete": "epic",
  "monde": "bois-sans-lune",
  "monde_code": 2,
- "illustration": "tools/carte-lune/bois-sans-lune-2026-09-18/03-epique-loup-des-racines-v3.png"
+ "illustration": "tools/carte-lune/bois-sans-lune-2026-09-18/03-epique-loup-des-racines-v3.png",
+ "noms": {
+  "fr": "Loup des Racines",
+  "en": "Rootbound Wolf"
+ },
+ "monde_noms": {
+  "fr": "Les Bois Sans Lune",
+  "en": "The Moonless Woods"
+ }
 }

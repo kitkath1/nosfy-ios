@@ -50,7 +50,14 @@ private func luneBundled(_ name: String) -> Image {
 /// carte. Huit secondes, aller-retour compris.
 struct CarteLuneLab: View {
     private static let frozen: SIMD2<Float>? = {
-        guard let raw = UserDefaults.standard.string(forKey: "luneTilt")
+        // Lu dans les ARGUMENTS d'abord : `-luneTilt -0.5,0` commence par un
+        // tiret, et UserDefaults le prend pour un autre drapeau — la carte
+        // « penchée à gauche » se balançait librement (payé le 30-09).
+        let args = CommandLine.arguments
+        let brut = args.firstIndex(of: "-luneTilt").flatMap { i in
+            i + 1 < args.count ? args[i + 1] : nil
+        }
+        guard let raw = brut ?? UserDefaults.standard.string(forKey: "luneTilt")
         else { return nil }
         let parts = raw.split(separator: ",").compactMap { Float($0) }
         guard parts.count == 2 else { return nil }
@@ -74,6 +81,16 @@ struct CarteLuneLab: View {
     /// retire — c'est la légendaire telle que le produit la montre.
     private static let carteBanc = UserDefaults.standard.string(forKey: "luneCarte")
     private static let sansMatiere = CommandLine.arguments.contains("-sansMatiere")
+    /// `-luneCeremonie` : la sortie de la légendaire (la porte de lumière),
+    /// rejouée toutes les 7 s — au lieu de la carte en main.
+    private static let ceremonie = CommandLine.arguments.contains("-luneCeremonie")
+    /// `-luneLampe <u,v>` fige la lampe du pouce à cet endroit de la carte
+    /// (captures : la lampe sans courir après le doigt).
+    private static let lampeFigee: SIMD2<Float>? = {
+        guard let raw = UserDefaults.standard.string(forKey: "luneLampe") else { return nil }
+        let parts = raw.split(separator: ",").compactMap { Float($0) }
+        return parts.count == 2 ? SIMD2(parts[0], parts[1]) : nil
+    }()
 
     /// La FORGE : la carte générée du moment remplace carte-lune-1 dans la
     /// même scène — même shader, même cadre, mêmes gestes. C'est le contrat
@@ -86,19 +103,16 @@ struct CarteLuneLab: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            CarteVivante(frozen: Self.frozen, still: Self.still,
-                         flat: Self.flat, smokeFreeze: Self.smokeFreeze,
-                         glow: Self.glow, diveAuto: Self.diveAuto,
-                         diveFreeze: Self.diveFreeze,
-                         art: carte.map { Image(uiImage: $0.art) },
-                         depth: carte.map { Image(uiImage: $0.depth) },
-                         matiere: matiere,
-                         // La musique du sacre suit la carte forgée ;
-                         // `-luneRarete <r>` force une typologie au banc
-                         // (l'écoute des quatre pistes sans forger).
-                         rarete: UserDefaults.standard
-                             .string(forKey: "luneRarete")
-                             ?? carte?.famille.rarete)
+            if Self.ceremonie, let c = carte, let m = matiere {
+                CeremonieLegendaire(
+                    art: Image(uiImage: c.art), depth: Image(uiImage: c.depth),
+                    matiere: m,
+                    nom: L(m.noms["fr"] ?? c.famille.nom, m.noms["en"] ?? c.famille.nom),
+                    monde: L(m.mondeNoms["fr"] ?? "", m.mondeNoms["en"] ?? ""),
+                    boucle: true)
+            } else {
+                carteEnMain
+            }
             if Self.carteBanc == nil { atelier }
         }
         .statusBarHidden()
@@ -108,6 +122,23 @@ struct CarteLuneLab: View {
             if let nom = Self.carteBanc { chargerCarteBanc(nom) }
             else if Self.forgeNow { forger() }
         }
+    }
+
+    private var carteEnMain: some View {
+            CarteVivante(frozen: Self.frozen, still: Self.still,
+                         flat: Self.flat, smokeFreeze: Self.smokeFreeze,
+                         glow: Self.glow, diveAuto: Self.diveAuto,
+                         diveFreeze: Self.diveFreeze,
+                         art: carte.map { Image(uiImage: $0.art) },
+                         depth: carte.map { Image(uiImage: $0.depth) },
+                         matiere: matiere,
+                         lampeFigee: Self.lampeFigee,
+                         // La musique du sacre suit la carte forgée ;
+                         // `-luneRarete <r>` force une typologie au banc
+                         // (l'écoute des quatre pistes sans forger).
+                         rarete: UserDefaults.standard
+                             .string(forKey: "luneRarete")
+                             ?? carte?.famille.rarete)
     }
 
     /// La référence publiée du banc, habillée comme au produit.
@@ -286,6 +317,8 @@ struct CarteVivante: View {
     /// La MATIÈRE d'une légendaire (son kit cuit) : présente, la carte
     /// passe par carteLuneV6 ; absente, rien ne change (V5).
     var matiere: LuneMatiere? = nil
+    /// La lampe du pouce figée (banc `-luneLampe`) — nil : le doigt.
+    var lampeFigee: SIMD2<Float>? = nil
     /// La TYPOLOGIE de la carte (common/rare/epic/legendary — les 4
     /// lunes de la forge) : elle choisit la musique du sacre à la
     /// plongée. nil : les cordes de sacre-lune.
@@ -334,6 +367,17 @@ struct CarteVivante: View {
     /// La naissance du toucher courant — la sortie du voyage n'écoute
     /// que les touchers nés APRÈS le départ de la plongée.
     @State private var touchBeganAt: Date = .distantPast
+    /// LA LAMPE DU POUCE (légendaire, E4) : où le doigt éclaire, en
+    /// fractions de la carte. La lumière REJOINT le doigt en ~60 ms (la
+    /// masse, pas un curseur), monte en 0,12 s, s'éteint en ~0,5 s au
+    /// relâcher — fonctions pures du temps, rien ne s'accumule par image.
+    @State private var lampeDe = SIMD2<Float>(0.5, 0.5)
+    @State private var lampeVers = SIMD2<Float>(0.5, 0.5)
+    @State private var lampeBougeeA: Date = .distantPast
+    @State private var lampeTouche = false
+    @State private var lampePoseeA: Date = .distantPast
+    @State private var lampeLacheeA: Date = .distantPast
+    @State private var lampeAuLacher: Float = 0
 
     /// La partition de la plongée : 1,4 s de traversée, un LONG voyage, et
     /// le retour amorcé à 8,4 s — dix secondes en tout (« trop timide » à
@@ -444,6 +488,41 @@ struct CarteVivante: View {
         return 1 - exp(-max(age - 0.6, 0) / 0.8)
     }
 
+    /// La lampe du pouce rendue : (u, v, intensité), zéro sans matière.
+    private func lampe(at date: Date) -> SIMD3<Float> {
+        guard matiere != nil else { return .zero }
+        if let f = lampeFigee { return SIMD3(f.x, f.y, 1) }
+        let i = lampeIntensite(at: date)
+        guard i > 0.002 else { return .zero }
+        let p = lampePosition(at: date)
+        return SIMD3(p.x, p.y, i)
+    }
+
+    private func lampePosition(at date: Date) -> SIMD2<Float> {
+        let dt = Float(date.timeIntervalSince(lampeBougeeA))
+        guard dt.isFinite, dt >= 0 else { return lampeVers }
+        return lampeVers + (lampeDe - lampeVers) * exp(-dt / 0.06)
+    }
+
+    private func lampeIntensite(at date: Date) -> Float {
+        if lampeTouche {
+            let a = Float(date.timeIntervalSince(lampePoseeA))
+            return a.isFinite ? min(max(a / 0.12, 0), 1) : 1
+        }
+        let a = Float(date.timeIntervalSince(lampeLacheeA))
+        guard a.isFinite, a >= 0, a < 1 else { return 0 }
+        return lampeAuLacher * exp(-a / 0.16)
+    }
+
+    /// Le doigt en fractions de la carte (la pose 3D, quelques degrés,
+    /// est ignorée : la lampe tombe à un ou deux points près).
+    private func versCarte(_ p: CGPoint) -> SIMD2<Float> {
+        let cs = Self.cardSize(in: sceneSize)
+        guard cs.width > 0, cs.height > 0 else { return SIMD2(0.5, 0.5) }
+        return SIMD2(Float((p.x - (sceneSize.width - cs.width) / 2) / cs.width),
+                     Float((p.y - (sceneSize.height - cs.height) / 2) / cs.height))
+    }
+
     /// La brillance de caresse à une date donnée : ce que le frottement
     /// a chargé, éteint en exponentielle — la comète.
     private func caresse(at date: Date) -> Float {
@@ -542,7 +621,8 @@ struct CarteVivante: View {
                                       0.15, 1.8,
                                       Float(tl.date.timeIntervalSince(mountAt)))
                                       + 0.7 * caresse(at: tl.date), 1.45),
-                                  art: art, depth: depth, matiere: matiere)
+                                  art: art, depth: depth, matiere: matiere,
+                                  lampe: lampe(at: tl.date))
                     // La pose 3D : la carte se penche VERS l'œil qui se
                     // déplace. Dans le monde elle s'amortit : la parallaxe
                     // raconte le voyage, la rotation ne fait qu'y vaciller.
@@ -642,6 +722,17 @@ struct CarteVivante: View {
                     touchBeganAt = .now
                     tiltAtGrab = tilt(at: .now)
                 }
+                // La lampe du pouce suit le doigt (légendaire seulement).
+                if matiere != nil, sceneSize != .zero {
+                    let p = versCarte(v.location)
+                    lampeDe = lampeTouche ? lampePosition(at: .now) : p
+                    lampeVers = p
+                    lampeBougeeA = .now
+                    if !lampeTouche {
+                        lampeTouche = true
+                        lampePoseeA = .now
+                    }
+                }
                 let travel = abs(v.translation.width) + abs(v.translation.height)
                 if !dragging && travel > 10 {
                     dragging = true
@@ -713,6 +804,11 @@ struct CarteVivante: View {
                         DustChime.shared.puff()
                     }
                 }
+                if lampeTouche {
+                    lampeAuLacher = lampeIntensite(at: .now)
+                    lampeLacheeA = .now
+                    lampeTouche = false
+                }
                 began = false
                 dragging = false
             })
@@ -748,6 +844,9 @@ struct CarteVivante: View {
             LuneBreath.shared.prepare()
             DustChime.shared.prepare()
         } else {
+            // Un relâcher jamais reçu (app en arrière-plan) n'allume pas
+            // la lampe pour toujours.
+            lampeTouche = false
             LuneMotion.shared.stop()
             LuneBreath.shared.stop()
             DustChime.shared.stop()
@@ -831,6 +930,11 @@ struct CarteLuneCard: View {
     var depth: Image? = nil
     /// La matière d'une légendaire : carteLuneV6 à la place de V5.
     var matiere: LuneMatiere? = nil
+    /// La lampe du pouce (u, v, intensité) — légendaire seulement.
+    var lampe: SIMD3<Float> = .zero
+    /// La vie de la légendaire (météo, feu, nacre) : 1 en main ; la
+    /// cérémonie la fait naître APRÈS la gravure.
+    var vie: Float = 1
 
     private static let card = luneBundled("carte-lune-1")
     private static let depth = luneBundled("carte-lune-1-depth")
@@ -866,6 +970,8 @@ struct CarteLuneCard: View {
                 .float(CGFloat(dive)), .float(CGFloat(dolly)),
                 .float(m.monde), .float(LuneMatiere.barreaux),
                 .float2(m.centre.x, m.centre.y),
+                .float3(CGFloat(lampe.x), CGFloat(lampe.y), CGFloat(lampe.z)),
+                .float(CGFloat(vie)),
                 .image(depth ?? Self.depth), .image(m.atlas))),
                 maxSampleOffset: CGSize(width: 36, height: 30))
     }

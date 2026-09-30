@@ -5,6 +5,14 @@
  "monde": "foret-des-veilles",
  "monde_code": 0,
  "illustration": "tools/carte-lune/references-2026-09-18/04-legendaire-le-souverain-v3.png",
+ "noms": {
+  "fr": "Le Souverain",
+  "en": "The Sovereign"
+ },
+ "monde_noms": {
+  "fr": "La For\u00eat des Veilles",
+  "en": "The Vigil Woods"
+ },
  "centre": [
   0.4367,
   0.4116

@@ -5,6 +5,14 @@
  "monde": "cimes-eteintes",
  "monde_code": 1,
  "illustration": "tools/carte-lune/cimes-eteintes-2026-09-18/04-legendaire-dragon-d-obsidienne-v3.png",
+ "noms": {
+  "fr": "Dragon d\u2019Obsidienne",
+  "en": "Obsidian Dragon"
+ },
+ "monde_noms": {
+  "fr": "Les Cimes \u00c9teintes",
+  "en": "The Darkened Peaks"
+ },
  "centre": [
   0.5657,
   0.1619
