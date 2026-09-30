@@ -1169,6 +1169,56 @@ struct RootView: View {
         else { selection = .exercises }
     }
 
+    /// ⚠️⚠️ LA FICHE DE SÉANCE, SANS LA PAGE DESSOUS (30-09, TestFlight 85).
+    ///
+    /// Son retour : « je suis dans l'overlay, je veux rajouter un exo, quand
+    /// je clique sur un exercice je reviens sur la page Exercices — on l'a
+    /// dit 10 fois ». Le 85 portait déjà les deux portes du chevron : ce
+    /// costume-là était l'ALLER. La page poussait la fiche par-dessus elle
+    /// (`navigationDestination`) ; ouvrir la pilule depuis une fiche A puis
+    /// choisir B remplaçait une destination présentée par une autre, et la
+    /// pile pouvait retomber sur sa racine — la page.
+    ///
+    /// Maintenant l'onglet n'empile plus rien en séance : il EST la fiche
+    /// (`ExercisesView.body`). Ce qui n'est pas construit ne peut pas se
+    /// montrer — ni au glissement du bord, ni entre deux fiches. Le retour
+    /// passe toujours par `quitterLaFiche` → `ouvrirLecteur`, qui la retire.
+    private func ouvrirFicheDeSeance(_ exo: Exercise) {
+        PlayerEtat.shared.ficheSeance = exo
+        selection = .exercises
+    }
+
+    /// `-boucleAuto -boucleAjout` (30-09) — SON GESTE EXACT, sans doigt : la
+    /// boucle pose la fiche A, puis la pilule s'ouvre PAR-DESSUS la fiche
+    /// (le lecteur en entier, l'onglet resté sur Exercices) et un AUTRE
+    /// exercice est lancé, sous la même coupe que `GrandPlayer.lancer`.
+    /// Le film doit montrer A, le lecteur, la coupe, B — jamais la page.
+    private func bancAjoutDepuisFiche() async {
+        for _ in 0..<80 {
+            if PlayerEtat.shared.ficheSeance != nil { break }
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+        guard let a = PlayerEtat.shared.ficheSeance else {
+            print("[banc-ajout] aucune fiche posée : rien à rejouer")
+            return
+        }
+        try? await Task.sleep(for: .seconds(3))
+        print("[banc-ajout] pilule ouverte depuis la fiche \(a.id)")
+        ouvrirGrandPlayer()
+        try? await Task.sleep(for: .seconds(2))
+        guard let b = ExerciseCatalog.all.first(where: {
+            $0.id != a.id && $0.tracking == .setsRepsWeight
+        }) else { return }
+        print("[banc-ajout] lecteur → \(b.id)")
+        CoupeEtat.shared.couper(tenue: 0.25) {
+            ouvrirFicheDeSeance(b)
+            CouvertureFoyer.shared.retirer()
+            var tr = Transaction()
+            tr.disablesAnimations = true
+            withTransaction(tr) { morphPlayer = 0 }
+        }
+    }
+
     /// Le chevron d'une page immersive rend la main à la home.
     private func retourHome() {
         withAnimation(.easeOut(duration: 0.3)) { selection = .home }
@@ -1704,12 +1754,24 @@ struct RootView: View {
         return ordonnes
     }
 
+    /// « Mercredi 30 septembre » · « Wednesday, Sep 30 » — dans la langue
+    /// de l'app, pas celle du téléphone. Le mois anglais est abrégé : en
+    /// entier, « Wednesday, September 30 » se coupait dans la pilule
+    /// (capture du 30-09).
+    private static func dateDeSeance(_ d: Date) -> String {
+        let s = Langue.en
+            ? d.formatted(.dateTime.weekday(.wide).day().month(.abbreviated)
+                .locale(Locale(identifier: "en_US")))
+            : d.formatted(.dateTime.weekday(.wide).day().month(.wide)
+                .locale(Locale(identifier: "fr_FR")))
+        return s.prefix(1).uppercased() + s.dropFirst()
+    }
+
     /// LE CONTENU DE LA PILULE — les vraies données de la séance, dans
-    /// la robe validée au banc : la mini-card du jour, le nom de
-    /// l'exercice courant (ou l'invite animée), le chrono, le stop.
+    /// la robe validée au banc : la mini-card du jour, la date de la
+    /// séance, le chrono, le stop.
     @ViewBuilder
     private func contenuPilule(_ a: Workout) -> some View {
-        let exo = a.orderedExercises.first?.exercise
         HStack(spacing: 10) {
             MiniCardJour(date: a.startedAt ?? .now,
                          sticker: WoopSticker.pour(a).asset)
@@ -1717,34 +1779,30 @@ struct RootView: View {
                 .frame(width: 68, height: 68)
                 .frame(width: 74, height: 76)
             VStack(alignment: .leading, spacing: 3) {
-                if let e = exo {
-                    Text(e.nomLocalise)          // la même règle qu'ailleurs
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.95))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                } else {
-                    // Elle se tait sous le doigt (cause n° 7) — la loi de
-                    // la maison : rien ne s'anime pendant un geste.
-                    InviteAnimee(taille: 17,
-                                 fige: PiluleEtat.shared.enMouvement
-                                     || morphPlayer > 0.98)
-                        .minimumScaleFactor(0.8)
-                }
-                // ⚠️ UNE SEULE LIGNE SOUS LE NOM (verdict Kathryn 05-09 :
+                // ⚠️ LA DATE DE LA SÉANCE, JAMAIS UN EXERCICE (30-09,
+                // TestFlight 85 : « je vois le nom du premier exercice que
+                // j'ai fait, gainage : non, je dois voir la date de la
+                // session en cours »). Le titre lisait
+                // `orderedExercises.first` — le PREMIER exercice de la
+                // séance, figé jusqu'au Stop. La date ne ment jamais, et
+                // elle ne bouge pas : plus d'invite animée ici non plus.
+                Text(Self.dateDeSeance(a.startedAt ?? .now))
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.95))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                // ⚠️ UNE SEULE LIGNE SOUS LE TITRE (verdict Kathryn 05-09 :
                 // « juste le timer de la session et le nombre de reps, et
                 // basta, allège »). Les flammes y ont vécu une heure,
                 // elles en repartent ; le ticket « N SETS » aussi — le
                 // compte des séries ne se lit plus que dans le DÉTAIL.
+                // (30-09 : les reps sont parties avec le nom — c'étaient
+                // celles de la 1re série du premier exercice.)
                 TimelineView(.periodic(from: a.startedAt ?? .now,
                                        by: 1)) { tl in
                     let s = max(0, Int(tl.date
                         .timeIntervalSince(a.startedAt ?? .now)))
-                    let reps = a.orderedExercises.first?
-                        .orderedSets.first?.reps
-                    Text(reps.map {
-                        "\(s / 60):\(String(format: "%02d", s % 60)) · \($0) reps"
-                    } ?? "\(s / 60):\(String(format: "%02d", s % 60))")
+                    Text("\(s / 60):\(String(format: "%02d", s % 60))")
                         .font(.system(size: 13))
                         .monospacedDigit()
                         .foregroundStyle(.white.opacity(0.55))
@@ -2190,18 +2248,13 @@ struct RootView: View {
                     groupes: groupesDeSeance(a),
                     sticker: WoopSticker.pour(a).asset,
                     onStop: { DepartEtat.shared.pauseOuverte = true },
-                    // LE LECTEUR A CHOISI (22-09) : il pose l'exercice
-                    // dans `PlayerEtat`, on rend l'onglet Exercices, et
-                    // la page ouvre la fiche. Le player ne navigue pas
-                    // lui-même : un seul chemin de navigation dans l'app.
+                    // LE LECTEUR A CHOISI (22-09) : l'onglet Exercices
+                    // devient la fiche (30-09, `ouvrirFicheDeSeance`).
                     // ⚠️ SANS ANIMATION : l'appel arrive DÉJÀ sous la coupe
                     // blanche (`lancer()` l'y enveloppe). Animer ici ferait
                     // durer sous le blanc un mouvement que personne ne voit,
                     // et qui dépasserait de l'autre côté.
-                    onChoisirExo: { exo in
-                        PlayerEtat.shared.exerciceDemande = exo
-                        selection = .exercises
-                    },
+                    onChoisirExo: { exo in ouvrirFicheDeSeance(exo) },
                     propositions: propositions,
                     seanceVide: a.orderedExercises.isEmpty)
                     // Même loi que la pilule : il reçoit `UIScreen.bounds`,
@@ -2666,6 +2719,7 @@ struct RootView: View {
             // fois : `-goAuto` le 22-09 matin, `-boucleAuto` le soir). La
             // garde rejette silencieusement ce qu'elle ne connaît pas, et
             // le banc paraît « ne rien faire ».
+            // (`-boucleAjout` ne vit qu'avec `-boucleAuto` : pas de garde à part.)
             guard a.contains("-cheminAuto") || a.contains("-departAuto")
                     || a.contains("-goAuto") || a.contains("-boucleAuto")
                     || a.contains("-boosterRoute")
@@ -2736,7 +2790,11 @@ struct RootView: View {
             // la fiche, puis son retour — de quoi FILMER la boucle entière
             // et juger sa fluidité. « Le simulateur ne pose pas de doigt »
             // est la raison d'être de tous les bancs de ce dépôt.
-            if a.contains("-boucleAuto") { demarrerDepuisChemin(); return }
+            if a.contains("-boucleAuto") {
+                demarrerDepuisChemin()
+                if a.contains("-boucleAjout") { await bancAjoutDepuisFiche() }
+                return
+            }
             if a.contains("-departAuto") { startWorkout(); return }
             let finies = ((try? modelContext.fetch(FetchDescriptor<Workout>())) ?? [])
                 .filter { $0.endedAt != nil && $0.faitPourRoute }
@@ -2770,6 +2828,9 @@ struct RootView: View {
             // le lecteur se pose. Rouvrir une coupe par-dessus la première
             // en ferait clignoter deux.
             selection = .home
+            // La fiche de séance part avec l'onglet (30-09) : il est déjà
+            // caché, rien ne se voit, et le prochain exercice naîtra neuf.
+            PlayerEtat.shared.ficheSeance = nil
             poserGrandPlayer()
         }
         .onChange(of: depart.cheminOuvert) { _, ouverte in
@@ -2944,7 +3005,11 @@ struct RootView: View {
                 WorkoutActivityController.ensure(active)
             }
         }
-        .onChange(of: activeWorkouts.isEmpty) { _, _ in
+        .onChange(of: activeWorkouts.isEmpty) { _, vide in
+            // Plus de séance, plus de fiche de séance (30-09) : Terminer,
+            // la purge des fantômes, une séance close ailleurs — tous
+            // passent ici. L'onglet redevient la page, hors séance.
+            if vide { PlayerEtat.shared.ficheSeance = nil }
             WorkoutActivityController.ensure(active)
             celebrateFinishedWorkout()
         }

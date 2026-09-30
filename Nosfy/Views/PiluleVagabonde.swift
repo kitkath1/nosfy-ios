@@ -2541,7 +2541,11 @@ struct GrandPlayer: View {
         // Il garde une coupe SOURDE parce que ce qui suit n'est pas un
         // simple changement d'écran : l'exercice est ajouté à la séance,
         // l'onglet est rendu, la fiche s'ouvre.
-        CoupeEtat.shared.couper {
+        // ⚠️ ET LE NOIR TIENT 0,25 s (30-09) — le remède du retour (25-09),
+        // posé enfin sur l'aller. Filmé à 30 i/s : le voile se levait dès la
+        // bascule, l'onglet Exercices mettait quelques images à naître, et
+        // la home restait visible ~0,25 s entre le lecteur et la fiche.
+        CoupeEtat.shared.couper(tenue: 0.25) {
             onChoisirExo(exo)
             poserFerme()
         }

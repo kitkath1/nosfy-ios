@@ -1107,7 +1107,10 @@ struct ExerciseDetailView: View {
         // filmer que l'aller : il ne pose pas de doigt.
         .task {
             #if DEBUG
-            guard ProcessInfo.processInfo.arguments.contains("-boucleAuto")
+            guard ProcessInfo.processInfo.arguments.contains("-boucleAuto"),
+                  // `-boucleAjout` (30-09) : la racine rejoue l'ajout
+                  // depuis la pilule, la fiche ne rend pas la main seule.
+                  !ProcessInfo.processInfo.arguments.contains("-boucleAjout")
             else { return }
             try? await Task.sleep(for: .seconds(3.4))
             // La porte du chevron (25-09), avec son feu (29-09) : le banc
@@ -3313,10 +3316,16 @@ struct ExerciseDetailView: View {
         // Maintenant la racine pose la home et le lecteur, et la fiche se
         // dépile 0,3 s plus tard dans un onglet qu'on ne voit plus. Rien ne
         // peut plus passer entre les deux, sous le feu comme sous le noir.
+        // ⚠️ LA FICHE DE SÉANCE N'EST PAS EMPILÉE (30-09) : elle EST l'onglet,
+        // et la racine la retire en rendant le lecteur. Seule une fiche
+        // poussée sur la page (ouverte avant la séance) a encore une pile
+        // à défaire.
+        let empilee = PlayerEtat.shared.ficheSeance?.id != exercise.id
         let bascule = {
             // ET LE LECTEUR REVIENT (22-09) : la racine rend l'onglet à la
             // home et pose le player, le suivant déjà en tête.
             PlayerEtat.shared.ouvrirLecteur = true
+            guard empilee else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { dismiss() }
         }
         if feu {

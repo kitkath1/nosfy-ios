@@ -495,7 +495,38 @@ struct ExercisesView: View {
     /// player n'est pas un tiroir qu'on range, c'est l'état de la page.
     private var enSeance: Bool { ExosBanc.seance || !seancesOuvertes.isEmpty }
 
+    /// ⚠️⚠️ EN SÉANCE, L'ONGLET EST LA FICHE — LA PAGE N'EST PAS DESSOUS
+    /// (30-09, TestFlight 85 : « on ne doit pas voir la page exercices, on
+    /// l'a dit 10 fois »). La fiche lancée par le lecteur ne se pousse plus
+    /// par-dessus la page : elle PREND sa place. Une page qui n'est pas
+    /// construite ne peut réapparaître par aucun chemin — ni une poussée
+    /// ratée, ni un glissement du bord, ni deux fiches qui se remplacent.
+    /// `.id` : B choisi par-dessus A naît neuve, sans l'état de A.
+    /// Hors séance, rien ne change : la page et sa pile, comme avant.
     var body: some View {
+        Group {
+            if let exo = PlayerEtat.shared.ficheSeance {
+                NavigationStack {
+                    ExerciseDetailView(exercise: exo)
+                }
+                .id(exo.id)
+            } else {
+                bibliotheque
+            }
+        }
+        // ⚠️ LA FICHE D'AVANT LA SÉANCE NE REVIENT PAS (relevé par la session
+        // du chevron, 30-09). Une fiche A ouverte hors séance reste dans la
+        // pile de la page, et sa première série ouvre la séance ; si le
+        // lecteur lance B, la page part — mais `deepLinked` survit au if, et
+        // la fin de séance l'aurait rendue sur la vieille fiche A. La pile
+        // se vide dès qu'une fiche de séance prend l'onglet.
+        .onChange(of: PlayerEtat.shared.ficheSeance?.id) { _, id in
+            if id != nil { deepLinked = nil }
+        }
+    }
+
+    /// La page Exercices et sa pile — HORS séance seulement.
+    private var bibliotheque: some View {
         NavigationStack {
             // LA ROBE DU MOTEUR (§3.4ter, S2') : la page vit dans PageCard —
             // même card, même bande, même dalle que la fiche, home et
@@ -585,23 +616,8 @@ struct ExercisesView: View {
             .onChange(of: deepLinked) { _, exercice in
                 if exercice != nil { eteindreTuto() }
             }
-            // LE LECTEUR DE SÉANCE A CHOISI (22-09) : il a posé son
-            // intention dans `PlayerEtat`, on ouvre la fiche. Le canal
-            // est vidé tout de suite — une intention ne se rejoue pas.
-            // ⚠️ `initial: true`, ET C'EST TOUT LE SUJET (mesuré au film le
-            // 22-09). Depuis que la home reste derrière le lecteur, cette
-            // page N'EST PLUS MONTÉE quand le lecteur pose son intention :
-            // l'intention est déjà écrite à l'instant où la vue naît, donc
-            // il n'y a plus AUCUN changement à observer, et la fiche ne
-            // s'ouvrait jamais — on atterrissait sur la liste des zones.
-            // Avec `initial`, la vue lit le canal en naissant.
-            .onChange(of: PlayerEtat.shared.exerciceDemande,
-                      initial: true) { _, exo in
-                guard let exo else { return }
-                PlayerEtat.shared.exerciceDemande = nil
-                eteindreTuto()
-                deepLinked = exo
-            }
+            // (Le canal `exerciceDemande` du lecteur est mort le 30-09 : en
+            // séance la fiche n'est plus poussée ici, voir `body`.)
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(item: $deepLinked) { ExerciseDetailView(exercise: $0) }
             // ⚠️ SANS `initial: true` : au lancement il n'y a rien à rejoindre,

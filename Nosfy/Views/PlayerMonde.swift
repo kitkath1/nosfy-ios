@@ -13,11 +13,15 @@ final class PlayerEtat {
     static let shared = PlayerEtat()
     private init() {}
 
-    /// L'EXERCICE DEMANDÉ DEPUIS LE PLAYER (22-09) — le lecteur de séance
-    /// ne navigue pas lui-même : il POSE son intention ici, la page
-    /// Exercices la lit et ouvre la fiche. Un canal, jamais un chemin de
-    /// navigation dupliqué.
-    var exerciceDemande: Exercise?
+    /// LA FICHE DE SÉANCE (30-09) — l'exercice que le lecteur a lancé.
+    /// Tant qu'elle est posée, l'onglet Exercices EST cette fiche : la page
+    /// n'est plus construite dessous (`ExercisesView.body`). Avant, le
+    /// lecteur posait une intention que la page lisait pour POUSSER la
+    /// fiche par-dessus elle ; dès que la poussée ratait (TestFlight 85 :
+    /// la pilule ouverte depuis une fiche A, puis B choisi), il restait la
+    /// page. La racine la pose (`ouvrirFicheDeSeance`) et la retire (le
+    /// lecteur qui revient, la séance qui se ferme).
+    var ficheSeance: Exercise?
 
     /// ROUVRIR LE LECTEUR (22-09) — posé par la fiche quand on choisit un
     /// autre exercice. La racine le lit et ouvre le player : la fiche ne
