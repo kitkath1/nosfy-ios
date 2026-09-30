@@ -293,10 +293,13 @@ struct ProfilLuneView: View {
                         selection = .home
                     }
                 }) {
-                    ChipVerre(symbole: "gearshape", label: "Réglages") {
-                        withAnimation(.spring(response: 0.42,
-                                              dampingFraction: 0.86)) {
-                            showReglages = true
+                    // UNE SEULE PAGE RÉGLAGES (30-09) : le compte a rejoint
+                    // l'onglet Réglages, sous la langue et le départ. La
+                    // puce y mène — plus de panneau à part (il ne vit plus
+                    // qu'au banc `-profilReglages`).
+                    ChipVerre(symbole: "gearshape", label: L("Réglages", "Settings")) {
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            selection = .settings
                         }
                     }
                 }

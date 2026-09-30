@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 // MARK: - L'ONGLET RÉGLAGES (30-09)
@@ -26,9 +27,9 @@ import SwiftUI
 struct ReglagesPage: View {
     @Binding var selection: WoopTab
 
-    /// Le cache de la langue : quand il change, la racine fait renaître
-    /// toute l'app (`.id(langueApp)`) — cette page comprise.
-    @AppStorage(Langue.cle) private var langueCache: String = Langue.courante
+    /// (La langue n'a pas besoin d'être observée ici : quand son cache change,
+    /// la racine fait renaître toute l'app — `.id(langueApp)` — cette page
+    /// comprise, qui relit `Langue.courante` à sa naissance.)
     /// Le cache du départ : le serveur le rafraîchit, le commutateur le suit.
     @AppStorage(DepartSerie.cle) private var departCache: String = DepartSerie.defaut.rawValue
 
@@ -37,6 +38,7 @@ struct ReglagesPage: View {
     @State private var langueEnAttente = false
     @State private var refusLangue = 0
     @State private var arrivee = false
+    @State private var showCGU = false
 
     static let sansVitrine = CommandLine.arguments.contains("-sansVitrine")
 
@@ -49,16 +51,21 @@ struct ReglagesPage: View {
     var body: some View {
         ZStack(alignment: .top) {
             FondReglages()
-            VStack(alignment: .leading, spacing: 0) {
-                RangeeChips(retour: retour) { EmptyView() }
-                titre
-                sectionLangue
-                    .padding(.top, 40)
-                    .modifier(Arrivee(la: arrivee, rang: 0))
-                sectionDepart
-                    .padding(.top, 34)
-                    .modifier(Arrivee(la: arrivee, rang: 1))
-                Spacer(minLength: 0)
+            // Tout tient sur un iPhone 15 : pas de défilement, donc aucun
+            // conflit entre le pouce des commutateurs et le pan d'une
+            // ScrollView. Sur un écran plus court, la page défile.
+            ViewThatFits(in: .vertical) {
+                contenu
+                ScrollView(showsIndicators: false) { contenu }
+            }
+            // Les conditions générales, en plein écran par-dessus (la même
+            // page que le panneau du Profil ouvrait).
+            if showCGU {
+                CGUPage {
+                    withAnimation(.easeOut(duration: 0.25)) { showCGU = false }
+                }
+                .transition(.move(edge: .trailing).combined(with: .opacity))
+                .zIndex(20)
             }
         }
         .sensoryFeedback(.error, trigger: refusLangue)
@@ -73,6 +80,29 @@ struct ReglagesPage: View {
     }
 
     // MARK: Les pièces
+
+    private var contenu: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            RangeeChips(retour: retour) { EmptyView() }
+            titre
+            sectionLangue
+                .padding(.top, 32)
+                .modifier(Arrivee(la: arrivee, rang: 0))
+            sectionDepart
+                .padding(.top, 28)
+                .modifier(Arrivee(la: arrivee, rang: 1))
+            // LE COMPTE (30-09, « rajoute en dessous la partie settings du
+            // Profil, design type Apple, en lignes ») : ce que le panneau du
+            // Profil portait — la personne, la déconnexion, les conditions,
+            // la suppression. Les deux commutateurs au-dessus ne bougent pas.
+            SectionCompte(montrerCGU: {
+                withAnimation(.easeOut(duration: 0.25)) { showCGU = true }
+            })
+            .padding(.top, 28)
+            .modifier(Arrivee(la: arrivee, rang: 2))
+            Spacer(minLength: 24)
+        }
+    }
 
     private var titre: some View {
         Text(L("Réglages", "Settings"))
@@ -268,7 +298,7 @@ private struct VitrineDepart: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 132)
+        .frame(height: 116)
         .clipShape(Self.forme)
         .background { Color.clear.glassEffect(.clear, in: Self.forme) }
         .overlay {
@@ -321,5 +351,160 @@ private struct ApercuSlider: View {
             .frame(width: W, height: Self.h)
             .position(x: g.size.width / 2, y: g.size.height / 2)
         }
+    }
+}
+
+// MARK: - Le compte, en lignes (30-09)
+
+/// Ce que portait le panneau « Réglages » du Profil (`ReglagesOverlay`), posé
+/// ici en LIGNES, à la manière des Réglages d'iOS : un groupe arrondi, des
+/// rangées de 50 pt, un filet décalé sous chaque icône, le chevron gris.
+/// Monochrome — seule la suppression garde sa teinte d'alerte, comme avant.
+///
+/// Les actes sont ceux du panneau, à la lettre : `Compte.deconnecter` (pousser
+/// ce qui attend, révoquer, tout effacer, la porte), `Compte.supprimer`
+/// (`supprimer-compte`, après confirmation), et les conditions générales. Un
+/// refus (hors ligne, serveur) se lit sous le groupe ; rien n'est effacé.
+private struct SectionCompte: View {
+    var montrerCGU: () -> Void
+
+    @Environment(\.modelContext) private var modelContext
+    private let compte = CompteEtat.shared
+    private let economie = EconomieWoop.shared
+    @State private var confirmeSuppression = false
+
+    private static let forme = RoundedRectangle(cornerRadius: 22, style: .continuous)
+    private static let alerte = Color(red: 1.0, green: 0.36, blue: 0.26)
+
+    private var prenom: String { ProfilServeur.prenomLocal ?? "—" }
+    private var initiale: String {
+        let p = (ProfilServeur.prenomLocal ?? "").trimmingCharacters(in: .whitespaces)
+        guard let l = p.first else { return "·" }
+        return String(l).uppercased()
+    }
+    private var pieces: Int { economie.or }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Etiquette(texte: L("Compte", "Account"))
+            VStack(spacing: 0) {
+                entete
+                filet
+                ligne("rectangle.portrait.and.arrow.right",
+                      compte.travail == "Déconnexion…"
+                          ? L("Déconnexion…", "Signing out…")
+                          : L("Se déconnecter", "Sign out")) {
+                    guard compte.travail == nil else { return }
+                    Task { @MainActor in
+                        _ = await Compte.deconnecter(contexte: modelContext)
+                    }
+                }
+                filet
+                ligne("doc.text", L("Conditions générales d'utilisation", "Terms of Use"),
+                      action: montrerCGU)
+                filet
+                ligne("trash",
+                      compte.travail == "Suppression…"
+                          ? L("Suppression…", "Deleting…")
+                          : L("Supprimer mon compte", "Delete my account"),
+                      teinte: Self.alerte) {
+                    guard compte.travail == nil else { return }
+                    confirmeSuppression = true
+                }
+            }
+            .background(Self.forme.fill(Color.white.opacity(0.045)))
+            .overlay {
+                Self.forme.strokeBorder(LinearGradient(
+                    colors: [Color.white.opacity(0.14), Color.white.opacity(0.04)],
+                    startPoint: .top, endPoint: .bottom), lineWidth: 1)
+            }
+            .clipShape(Self.forme)
+            if let panne = compte.panne {
+                Text(panne)
+                    .font(.inter(12, .regular))
+                    .foregroundStyle(Color.inkMuted)
+                    .padding(.horizontal, 6)
+            }
+        }
+        .padding(.horizontal, 20)
+        .alert(L("Supprimer ton compte ?", "Delete your account?"),
+               isPresented: $confirmeSuppression) {
+            Button(L("Supprimer", "Delete"), role: .destructive) {
+                Task { @MainActor in
+                    _ = await Compte.supprimer(contexte: modelContext)
+                }
+            }
+            Button(L("Annuler", "Cancel"), role: .cancel) {}
+        } message: {
+            Text(L("Tes séances, tes cartes et tes pièces seront perdues pour toujours.",
+                   "Your sessions, cards and coins will be lost forever."))
+        }
+    }
+
+    /// La personne : l'initiale du médaillon, le prénom, les pièces.
+    private var entete: some View {
+        HStack(spacing: 12) {
+            Text(initiale)
+                .font(.inter(16, .semibold))
+                .foregroundStyle(Color.inkPrimary)
+                .frame(width: 38, height: 38)
+                .background(Circle().fill(Color.black.opacity(0.55)))
+                .overlay(Circle().strokeBorder(Color.white.opacity(0.16), lineWidth: 0.7))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(prenom)
+                    .font(.inter(16, .semibold))
+                    .foregroundStyle(Color.inkPrimary)
+                Text(pieces == 1 ? L("1 pièce lune", "1 moon coin")
+                                 : L("\(pieces) pièces lune", "\(pieces) moon coins"))
+                    .font(.inter(12, .regular))
+                    .foregroundStyle(Color.inkMuted)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+
+    /// Le filet d'iOS : décalé pour commencer sous le texte, jamais sous l'icône.
+    private var filet: some View {
+        Rectangle()
+            .fill(Color.white.opacity(0.07))
+            .frame(height: 0.5)
+            .padding(.leading, 56)
+    }
+
+    private func ligne(_ symbole: String, _ titre: String,
+                       teinte: Color = .inkPrimary,
+                       action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                Image(systemName: symbole)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(teinte)
+                    .frame(width: 26)
+                Text(titre)
+                    .font(.inter(15, .semibold))
+                    .foregroundStyle(teinte)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.inkMuted)
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 50)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(LigneAppuyee())
+    }
+}
+
+/// L'appui d'une ligne d'iOS : la rangée s'éclaire d'un voile, rien d'autre.
+private struct LigneAppuyee: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(Color.white.opacity(configuration.isPressed ? 0.07 : 0))
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
 }
