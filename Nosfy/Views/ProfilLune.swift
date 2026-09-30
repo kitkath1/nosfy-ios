@@ -438,7 +438,10 @@ struct ProfilLuneView: View {
         .task {
             if CommandLine.arguments.contains("-profilSacre") {
                 try? await Task.sleep(nanoseconds: 700_000_000)
-                SacreEtat.shared.ouvrirManege()
+                // `-profilSacreNoir` : un sachet NOIR (légendaire garantie)
+                // — la preuve de la matière publiée au vrai manège (30-09).
+                SacreEtat.shared.ouvrirManege(
+                    robe: CommandLine.arguments.contains("-profilSacreNoir") ? .noire : nil)
             }
             if let r = UserDefaults.standard.string(forKey: "profilAccueil") {
                 try? await Task.sleep(nanoseconds: 1_400_000_000)
@@ -488,6 +491,7 @@ struct ProfilLuneView: View {
                 // de l'écran, la loi du cadre fantôme violée).
                 CarteVivante(art: o.artPlein.map(Image.init(uiImage:)),
                              depth: o.depth.map(Image.init(uiImage:)),
+                             cardId: o.id.uuidString.lowercased(),
                              rarete: carteOuverteRarete,
                              onDive: { v in
                                  withAnimation(.easeInOut(duration: 0.28)) {

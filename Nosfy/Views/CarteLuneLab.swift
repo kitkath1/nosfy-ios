@@ -319,6 +319,10 @@ struct CarteVivante: View {
     var matiere: LuneMatiere? = nil
     /// La lampe du pouce figée (banc `-luneLampe`) — nil : le doigt.
     var lampeFigee: SIMD2<Float>? = nil
+    /// L'identifiant SERVEUR de la carte (manège, collection) : une
+    /// légendaire va chercher elle-même sa matière publiée
+    /// (`LuneMatiere.publiee`) — l'hôte n'a rien d'autre à savoir.
+    var cardId: String? = nil
     /// La TYPOLOGIE de la carte (common/rare/epic/legendary — les 4
     /// lunes de la forge) : elle choisit la musique du sacre à la
     /// plongée. nil : les cordes de sacre-lune.
@@ -387,6 +391,14 @@ struct CarteVivante: View {
     @State private var lampePoseeA: Date = .distantPast
     @State private var lampeLacheeA: Date = .distantPast
     @State private var lampeAuLacher: Float = 0
+    /// La matière publiée, chargée pour une légendaire du produit.
+    @State private var matierePubliee: LuneMatiere?
+
+    /// La matière rendue : celle du banc, sinon celle du serveur (si
+    /// l'interrupteur `legendaire_matiere` est allumé et sans -sansMatiere).
+    private var matiereRendue: LuneMatiere? {
+        matiere ?? (LuneMatiere.actif ? matierePubliee : nil)
+    }
 
     /// La partition de la plongée : 1,4 s de traversée, un LONG voyage, et
     /// le retour amorcé à 8,4 s — dix secondes en tout (« trop timide » à
@@ -499,7 +511,7 @@ struct CarteVivante: View {
 
     /// La lampe du pouce rendue : (u, v, intensité), zéro sans matière.
     private func lampe(at date: Date) -> SIMD3<Float> {
-        guard matiere != nil else { return .zero }
+        guard matiereRendue != nil else { return .zero }
         if let f = lampeFigee { return SIMD3(f.x, f.y, 1) }
         let i = lampeIntensite(at: date)
         guard i > 0.002 else { return .zero }
@@ -630,7 +642,7 @@ struct CarteVivante: View {
                                       0.15, 1.8,
                                       Float(tl.date.timeIntervalSince(mountAt)))
                                       + 0.7 * caresse(at: tl.date), 1.45),
-                                  art: art, depth: depth, matiere: matiere,
+                                  art: art, depth: depth, matiere: matiereRendue,
                                   lampe: lampe(at: tl.date))
                     // La pose 3D : la carte se penche VERS l'œil qui se
                     // déplace. Dans le monde elle s'amortit : la parallaxe
@@ -735,7 +747,7 @@ struct CarteVivante: View {
                     tiltAtGrab = tilt(at: .now)
                 }
                 // La lampe du pouce suit le doigt (légendaire seulement).
-                if matiere != nil, sceneSize != .zero {
+                if matiereRendue != nil, sceneSize != .zero {
                     let p = versCarte(v.location)
                     lampeDe = lampeTouche ? lampePosition(at: .now) : p
                     lampeVers = p
@@ -843,6 +855,13 @@ struct CarteVivante: View {
                 let y = (v.startLocation.y - (sceneSize.height - cs.height) / 2) / cs.height
                 pinceAncre = UnitPoint(x: min(max(x, 0), 1), y: min(max(y, 0), 1))
             })
+        // LA MATIÈRE PUBLIÉE d'une légendaire du produit (le manège l'a déjà
+        // mise en cache pendant l'ouverture du sachet ; la collection la
+        // précharge) : sans elle, la carte reste en V5, rien ne casse.
+        .task(id: cardId) {
+            guard matiere == nil, rarete == "legendary", let id = cardId else { return }
+            matierePubliee = await LuneMatiere.publiee(cardId: id)
+        }
         .onAppear {
             mountAt = Date()
             // Le neutre gyro = la pose de tenue de CET écran.

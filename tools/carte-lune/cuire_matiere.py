@@ -157,8 +157,8 @@ def cuire(entree):
     source = os.path.join(DEPOT, entree["fichier"])
     meta = dict(reference=entree["reference"], nom=nom, rarete=rarete,
                 monde=monde, monde_code=MONDES.get(monde, 0),
-                illustration=entree["fichier"],
-                noms=noms(nom), monde_noms=noms(monde))
+                illustration=entree.get("illustration", entree["fichier"]),
+                noms=entree.get("noms") or noms(nom), monde_noms=noms(monde))
     if rarete != "legendary":
         json.dump(meta, open(os.path.join(dossier, f"{nom}-matiere.json"), "w"), indent=1)
         print(f"OK {nom} ({rarete}) : json seul (témoin sans matière)")
@@ -181,6 +181,18 @@ def cuire(entree):
     theta = 0.5 * np.arctan2(2 * jxy, jxx - jyy)
     detail = ndi.gaussian_filter(np.hypot(gx, gy), 5.0)
     chemin_sujet = os.path.join(ICI, "profondeur", nom, f"{nom}-sujet.png")
+    if not os.path.exists(chemin_sujet):
+        # UNE NOUVELLE CARTE (les légendaires à venir, dont personne ne
+        # connaît le dessin) : le détourage se fait ici, par rembg, comme le
+        # kit du 20-09 (cuire_profondeur.detourer) — sinon il est deviné.
+        try:
+            from rembg import remove
+            alpha = remove(Image.open(source).convert("RGBA")).getchannel("A")
+            os.makedirs(os.path.dirname(chemin_sujet), exist_ok=True)
+            alpha.save(chemin_sujet)
+            print(f"   {nom} : détourage fait par rembg")
+        except Exception as e:
+            print(f"   {nom} : pas de détourage ({e}) — sujet deviné")
     if os.path.exists(chemin_sujet):
         sujet, _ = composer(Image.open(chemin_sujet), mode="L")
         sujet = (sujet > 0.5).astype(np.float32)
