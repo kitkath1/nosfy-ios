@@ -1156,7 +1156,12 @@ struct RootView: View {
     /// passage en particules ne joue plus qu'à l'ouverture de la séance.
     /// Ici on ne fait que RENTRER quelque part où l'on était déjà.
     private func allerAuxExercices(anime: Bool) {
-        if active != nil, filmDepart == nil, morphPlayer < 0.98 {
+        // ⚠️ EN SÉANCE, JAMAIS LA PAGE — SANS EXCEPTION (29-09). La garde
+        // laissait passer deux cas : le lecteur déjà ouvert (la page se
+        // posait DERRIÈRE lui et attendait qu'on le ferme) et le film du
+        // Go. Dans les deux, la séance est déjà à l'écran : on ne fait rien.
+        if active != nil {
+            guard filmDepart == nil, morphPlayer < 0.98 else { return }
             CoupeEtat.shared.couper { poserGrandPlayer() }
             return
         }
@@ -1219,9 +1224,10 @@ struct RootView: View {
                                    sheetWorkout = nil
                                    DispatchQueue.main.asyncAfter(
                                        deadline: .now() + 0.35) {
-                                       withAnimation(.easeOut(duration: 0.3)) {
-                                           selection = .exercises
-                                       }
+                                       // La porte unique (29-09) : cette
+                                       // feuille n'existe qu'en séance, donc
+                                       // c'est le lecteur, jamais la page.
+                                       allerAuxExercices(anime: true)
                                    }
                                },
                                onStopViaPause: {
@@ -1255,7 +1261,11 @@ struct RootView: View {
         modelContext.insert(workout)
         try? modelContext.save()
         WorkoutActivityController.ensure(workout)
-        selection = .exercises
+        // ⚠️ PLUS LA PAGE (29-09) : la séance vient de s'ouvrir, c'est le
+        // lecteur qui l'accueille, comme après le Go. Pas `allerAuxExercices` :
+        // `active` ne voit la séance neuve qu'au rendu suivant ; la coupe
+        // laisse ce rendu passer avant de poser le lecteur.
+        CoupeEtat.shared.couper { poserGrandPlayer() }
     }
 
     var body: some View {
@@ -2097,7 +2107,8 @@ struct RootView: View {
             PlayerMondeHote(
                 seance: active,
                 onPageExercices: {
-                    withAnimation { selection = .exercises }
+                    // La porte unique (29-09) : en séance, le lecteur.
+                    allerAuxExercices(anime: true)
                 })
                 .zIndex(8.5)
 

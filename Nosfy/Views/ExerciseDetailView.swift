@@ -1110,9 +1110,9 @@ struct ExerciseDetailView: View {
             guard ProcessInfo.processInfo.arguments.contains("-boucleAuto")
             else { return }
             try? await Task.sleep(for: .seconds(3.4))
-            // La porte du chevron (25-09) : le banc filme donc aussi SON
-            // retour, pas un chemin à côté.
-            quitterLaFiche()
+            // La porte du chevron (25-09), avec son feu (29-09) : le banc
+            // filme donc aussi SON retour, pas un chemin à côté.
+            quitterLaFiche(feu: true)
             #endif
         }
         .task { await runAubeBench() }
@@ -2296,7 +2296,7 @@ struct ExerciseDetailView: View {
         CommandLine.arguments.contains("-rewardAtelier")
 
     private var headerChips: some View {
-        RangeeChips(retour: { quitterLaFiche() },
+        RangeeChips(retour: { quitterLaFiche(feu: true) },
                     guide: guideRetour) {
             if Self.chipAtelier {
                 ChipVerre(symbole: "ellipsis", label: "Options") {
@@ -3279,13 +3279,17 @@ struct ExerciseDetailView: View {
     /// racine) : la règle vit à la PORTE, plus chez les appelants.
     /// En séance → le lecteur, sous la coupe sourde ; hors séance → la
     /// page Exercices, sur la zone qu'on avait quittée.
-    private func quitterLaFiche() {
+    /// `feu` (29-09, Kathryn : « je dois revenir sur l'overlay + animation
+    /// de transition paillette, pour comprendre ») : le CHEVRON rend le
+    /// lecteur dans les paillettes, pour qu'on voie qu'on rentre dans la
+    /// séance. « Choisir un autre exercice » garde la coupe sourde.
+    private func quitterLaFiche(feu: Bool = false) {
         guard active != nil else {
             guideRetour = false
             dismiss()
             return
         }
-        rendreLaBibliotheque()
+        rendreLaBibliotheque(feu: feu)
     }
 
     /// Tous les choix de la pop-up passent ici, après son fondu de sortie.
@@ -3300,8 +3304,25 @@ struct ExerciseDetailView: View {
     /// exactement ce qu'elle voyait. La coupe tient l'écran, et tout
     /// bascule derrière elle : la fiche, l'onglet rendu à la home, le
     /// lecteur posé. La racine ne relance PAS de coupe : elle est ici.
-    private func rendreLaBibliotheque() {
+    private func rendreLaBibliotheque(feu: Bool = false) {
         guideRetour = false
+        // ⚠️ L'ONGLET D'ABORD, LA FICHE ENSUITE (29-09). La fiche se dépilait
+        // PUIS la racine rendait la home au rendu suivant : le dépilement
+        // garde l'animation de navigation, et pendant ces quelques images
+        // la page Exercices glissait à découvert (66 ms filmées le 25-09).
+        // Maintenant la racine pose la home et le lecteur, et la fiche se
+        // dépile 0,3 s plus tard dans un onglet qu'on ne voit plus. Rien ne
+        // peut plus passer entre les deux, sous le feu comme sous le noir.
+        let bascule = {
+            // ET LE LECTEUR REVIENT (22-09) : la racine rend l'onglet à la
+            // home et pose le player, le suivant déjà en tête.
+            PlayerEtat.shared.ouvrirLecteur = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { dismiss() }
+        }
+        if feu {
+            CoupeEtat.shared.jouer(bascule)
+            return
+        }
         // ⚠️ COUPE SOURDE, PAS LE FEU (24-09) : « il y a trop de fois
         // l'effet paillette dans les transitions ». Mais la coupe RESTE —
         // c'est elle qui tient l'écran pendant que trois choses se
@@ -3311,13 +3332,7 @@ struct ExerciseDetailView: View {
         // ⚠️ ET LE NOIR TIENT 0,25 s APRÈS LA BASCULE (25-09) : sans tenue,
         // il se levait avant que l'onglet et le lecteur ne se posent — la
         // page Exercices passait 66 ms, la home 170 ms (film au simulateur).
-        CoupeEtat.shared.couper(tenue: 0.25) {
-            dismiss()
-            // ET LE LECTEUR REVIENT (22-09) : la fiche se dépile, la racine
-            // rend l'onglet à la home et pose le player, le suivant déjà en
-            // tête. La bibliothèque reste accessible par ses cinq zones.
-            PlayerEtat.shared.ouvrirLecteur = true
-        }
+        CoupeEtat.shared.couper(tenue: 0.25, bascule)
     }
 
     private func exitRestart(_ f: FinishedSeries, thenLaunch: Bool) {
