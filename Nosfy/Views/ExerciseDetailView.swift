@@ -257,6 +257,21 @@ struct ExerciseDetailView: View {
     /// 140 pt du bas de son cadre (160 − 20), son bloom monte ~24 pt
     /// au-dessus — et 8 pt d'air pour que la ligne de coach ne le frôle pas.
     private static let reserveGalet: CGFloat = 172
+    /// La même réserve quand le départ est le SLIDER (30-09, Réglages) : la
+    /// piste (68) posée à 28 pt du bas, et 16 pt d'air au-dessus. Le graphe
+    /// reprend la place que le dôme prenait.
+    private static let reserveSlider: CGFloat = 112
+    /// Le départ de série du COMPTE (`user_prefs.depart_serie`, son cache
+    /// `woop.departSerie`) : galet ou slider. Observé — un choix fait dans
+    /// Réglages se voit à la fiche suivante sans relancer l'app.
+    @AppStorage(DepartSerie.cle) private var departBrut: String = DepartSerie.defaut.rawValue
+    /// Tout ce qui n'est pas explicitement « galet » est le slider (le défaut).
+    private var departSlider: Bool { DepartSerie(rawValue: departBrut) != .galet }
+    /// La réserve du bas de page, selon le départ.
+    private var reserveDepart: CGFloat { departSlider ? Self.reserveSlider : Self.reserveGalet }
+    /// `-departSerieAuto` : le banc tire le slider tout seul, UNE fois par lancement
+    /// (le simulateur ne glisse pas) — le film doit montrer fiche → chrono.
+    private static var departAutoJoue = false
     /// `-ficheGeo` : imprime la géométrie de la pile (page, insets, dispo).
     private static let ficheGeo = CommandLine.arguments.contains("-ficheGeo")
     /// La course du geste, en points de scroll. 140 au temps de la
@@ -392,8 +407,19 @@ struct ExerciseDetailView: View {
     /// `8^(u²)` : part lentement, accélère fort — la grammaire des deux
     /// plongées déjà validées (8^(u^1,8) connexion, 8^(u^2,05) sommet).
     private var dive: Double {
-        lensShown ? 8.0 : pow(8.0, dawn * dawn)
+        // LE DÉPART POSÉ NE PLONGE PAS (30-09, le slider de Réglages) : sans
+        // geste, il n'y a pas de caméra à suivre — la page passait à ×8 d'un
+        // coup et restait visible, figée (« juil 10. » en géant), tant que
+        // la lentille n'était pas montée. Filmé : jusqu'à 0,9 s sur une app
+        // fraîchement installée, quand le shader de la lentille se compile.
+        guard !(lensShown && posedLaunch) else { return 1 }
+        return lensShown ? 8.0 : pow(8.0, dawn * dawn)
     }
+    /// Au départ posé, la page s'efface sous la lentille : la coupe se lève
+    /// sur du NOIR et le cadran entre en fondu, quel que soit le temps qu'il
+    /// met à se monter. La lentille vit au-dessus du sous-arbre de la page
+    /// (`mondeFlottant`), elle n'est pas touchée.
+    private var pageSousLaLentille: Bool { lensShown && posedLaunch }
     /// Le battement de blanc qui cache la coupe : une cloche brève autour
     /// de la fin de plongée, au-dessus de tout — le marron y est
     /// impossible, et la couture aussi. Il n'existe que tant que le geste
@@ -1061,6 +1087,12 @@ struct ExerciseDetailView: View {
                         // crème inonderait les modes OUTSIDE et ×16.
                         if Self.verreLab {
                             Color.clear.frame(height: 10)
+                        } else if departSlider {
+                            // LE DÉPART AU SLIDER (30-09, Réglages) : le
+                            // choix du compte remplace le galet — une vue
+                            // NOMMÉE, ce corps tombe sur le mur au moindre
+                            // ajout (voir `departParSlider`).
+                            departParSlider
                         } else {
                             LaunchPebble(
                                 label: "Start exercise",
@@ -1103,6 +1135,7 @@ struct ExerciseDetailView: View {
         // voile, le flash et la lentille vivent AU-DESSUS du sous-arbre
         // zoomé, nets pendant que la page plonge.
         .scaleEffect(dive, anchor: UnitPoint(x: 0.5, y: 0.84))
+        .opacity(pageSousLaLentille ? 0 : 1)
         // `-boucleAuto` (22-09) — LE BANC DE L'ALLER-RETOUR : il rend la
         // main au lecteur à notre place, comme le ferait « Choisir un autre
         // exercice » dans la pop-up flamme. Sans lui, le simulateur ne peut
@@ -1785,7 +1818,7 @@ struct ExerciseDetailView: View {
             // c'est le GRAPHE qui cède (108 → jusqu'à 60 pt), jamais le
             // texte ni l'air entre les lignes.
             let blocHaut = 12 + Self.heroCap + 8
-            let dispo = max(g.size.height - blocHaut - Self.reserveGalet, 200)
+            let dispo = max(g.size.height - blocHaut - reserveDepart, 200)
             ZStack(alignment: .topLeading) {
                 // Le titre meurt le premier : la carte passe sur sa zone
                 // dès le début de la course.
@@ -1865,7 +1898,7 @@ struct ExerciseDetailView: View {
                     .onAppear {
                         if Self.ficheGeo {
                             print("[fiche] géométrie : page=\(g.size.height) insets=\(g.safeAreaInsets.top)/\(g.safeAreaInsets.bottom) "
-                                  + "bloc=\(blocHaut) dispo=\(dispo) réserve=\(Self.reserveGalet)")
+                                  + "bloc=\(blocHaut) dispo=\(dispo) réserve=\(reserveDepart)")
                         }
                     }
                 // La photo s'éteint en dérivant à peine vers le haut —
@@ -1918,7 +1951,7 @@ struct ExerciseDetailView: View {
             // ouverte ne bouge pas d'un pixel.
             let h = Self.lp(carteFermeeH,
                             g.size.height - 15 + cime
-                                - LaunchPebble.height, u)
+                                - (departSlider ? Self.reserveSlider : LaunchPebble.height), u)
             // LE BANDEAU — le seul élément qui change vraiment de nature
             // pendant la course : un bandeau de lumière fermé, TOUT le
             // haut de l'écran ouvert (le chevron et le « … » s'y posent).
@@ -3589,6 +3622,53 @@ struct ExerciseDetailView: View {
             running = RunningSeries(id: index, appended: appended)
         }
         launchBeat += 1
+    }
+
+    // MARK: Le départ au slider (30-09, Réglages)
+
+    /// LE SLIDER À LA PLACE DU GALET, quand le compte l'a choisi (Kathryn,
+    /// 30-09 : « qui lance un exercice arrive direct sur le chrono »). Le
+    /// slider de la maison, tel quel — muet au repos, armé à 72 %.
+    ///
+    /// ⚠️ DÉMONTÉ pendant la série, le panneau « Recommencer ? » et le tapis :
+    /// il tient une horloge à 60 Hz tant qu'il est à l'écran, et la lentille
+    /// opaque par-dessus ne l'éteindrait pas (une vue cachée rend quand même).
+    @ViewBuilder
+    private var departParSlider: some View {
+        if running == nil, restartAsk == nil, seanceTapis == nil {
+            SliderObsidienne(label: L("Lancer la série", "Start set"),
+                             onConfirm: lancerAuSlider)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 28)
+                .transition(.opacity)
+                .task { await bancDepart() }
+        }
+    }
+
+    /// Le slider lance DIRECTEMENT l'écran du chrono — sans monde blanc ni
+    /// sommet. Muscu : la porte posée (`launchPosed`), dont le cadran compte
+    /// 3, 2, 1, GO lui-même. Cardio : le tapis, qui fait son 3-2-1 au premier
+    /// set (étape 3 du TF85). Ce sont les portes existantes, rien de neuf.
+    private func lancerAuSlider() {
+        if let mode = modeCardio { lancerTapis(mode); return }
+        // ⚠️ SOUS LA COUPE (filmé le 30-09) : la porte posée met la page à
+        // ×8 d'UN COUP (`dive` suit `lensShown`), et le cadran n'entre qu'en
+        // fondu, une fois monté — pendant 0,5 s on voyait la fiche zoomée,
+        // figée (« juil 10. » en géant). Le galet cachait ça sous sa propre
+        // plongée ; le slider n'en a pas. La coupe sourde de la maison le
+        // fait : noir, bascule dessous, le noir tient le temps que le cadran
+        // se monte, puis se lève sur le 3-2-1.
+        CoupeEtat.shared.couper(tenue: 0.35) { launchPosed() }
+    }
+
+    @MainActor private func bancDepart() async {
+        #if DEBUG
+        guard CommandLine.arguments.contains("-departSerieAuto"), !Self.departAutoJoue else { return }
+        Self.departAutoJoue = true
+        try? await Task.sleep(for: .seconds(3))
+        print("[depart-serie] banc : le slider lance la série")
+        lancerAuSlider()
+        #endif
     }
 
     // MARK: Historique
