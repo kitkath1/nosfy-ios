@@ -52,6 +52,10 @@ struct SliderObsidienne: View {
     /// Kathryn, 29-08, la card STOP). À n'activer que pour un mot COURT, qui
     /// tient dans la course libre sans toucher le pouce.
     var labelCentre: Bool = false
+    /// LA SÉRIE ÉCRITE DANS LE SLIDER (01-10, séance v15 : « j'aime bien ce composant [la série et sa
+    /// charge] mais avec le design de notre slider ») : un titre et sa ligne, visibles AU REPOS, qui
+    /// s'effacent dès que le pouce part. `nil`, le défaut : le slider reste muet au repos (13-09).
+    var legende: (titre: String, sous: String)? = nil
     /// Le veto. `false` ⇒ la course est REFUSÉE : grenat, deux coups secs.
     var validate: () -> Bool = { true }
     var onConfirm: () -> Void = {}
@@ -205,6 +209,24 @@ struct SliderObsidienne: View {
                     .overlay {
                         texte(W: W, ax: ax, p: p, now: now)
                             .allowsHitTesting(false)
+                    }
+                    .overlay(alignment: .leading) {
+                        if let legende {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(legende.titre)
+                                    .font(.inter(16, .semibold))
+                                    .foregroundStyle(Color(white: 0.96))
+                                Text(legende.sous)
+                                    .font(.inter(13, .medium))
+                                    .foregroundStyle(Color.white.opacity(0.52))
+                            }
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                            .padding(.leading, medalW + encart + 16)
+                            .padding(.trailing, encart + 12)
+                            .opacity(Double(1 - min(1, p / 0.10)))
+                            .allowsHitTesting(false)
+                        }
                     }
                     .overlay {
                         poudre(now: now)
