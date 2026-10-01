@@ -908,6 +908,10 @@ struct RootView: View {
     /// comme la Route les compte (`PlafondJour.comptees`, la règle du serveur).
     /// Vrai = plus de séance comptée aujourd'hui : on refuse, on ne crée rien.
     private func plafondDuJourAtteint() -> Bool {
+        #if DEBUG
+        // `-sansPlafond` (01-10) : les bancs rejouent des séances à la chaîne ; jamais dans un build publié.
+        if CommandLine.arguments.contains("-sansPlafond") { return false }
+        #endif
         let finies = ((try? modelContext.fetch(FetchDescriptor<Workout>())) ?? [])
             .filter { $0.endedAt != nil && $0.faitPourRoute }
             .compactMap(\.endedAt)
@@ -1219,6 +1223,54 @@ struct RootView: View {
         print("[banc-ajout] lecteur → \(b.id)")
         CoupeEtat.shared.couper(tenue: 0.25) {
             ouvrirFicheDeSeance(b)
+            CouvertureFoyer.shared.retirer()
+            var tr = Transaction()
+            tr.disablesAnimations = true
+            withTransaction(tr) { morphPlayer = 0 }
+        }
+    }
+
+    /// `-bancCardioMuscu` (01-10, retour TestFlight : « j'ai fait cardio, je choisis un exo de
+    /// muscu, bim, la page Exercices, et je ne peux plus rien faire ») — SON GESTE EXACT, sans
+    /// doigt, par les fonctions du doigt : le lecteur lance le tapis lent (la coupe de
+    /// `GrandPlayer.lancer`), la fiche le part au slider (`-departSerieAuto`), le tapis finit seul
+    /// et rend le lecteur (`-cardioAuto -cardioConstant -cardioLecteur`), puis le lecteur lance une
+    /// muscu. Le film doit finir sur la FICHE de muscu, jamais sur la page Exercices.
+    private func bancCardioPuisMuscu() async {
+        #if DEBUG
+        guard CommandLine.arguments.contains("-bancCardioMuscu") else { return }
+        for _ in 0..<200 {
+            if active != nil, morphPlayer >= 0.98 { break }
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+        guard active != nil, let tapis = ExerciseCatalog.exercise(id: "tapis-lent"),
+              let muscu = ExerciseCatalog.exercise(id: "woop-haute") else {
+            print("[banc-cardio-muscu] pas de séance ouverte")
+            return
+        }
+        try? await Task.sleep(for: .seconds(1.5))
+        print("[banc-cardio-muscu] lecteur → tapis")
+        lancerDepuisLeLecteur(tapis)
+        for _ in 0..<40 {
+            if PlayerEtat.shared.ficheSeance?.id == tapis.id { break }
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+        for _ in 0..<320 {
+            if PlayerEtat.shared.ficheSeance == nil, morphPlayer >= 0.98 { break }
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+        try? await Task.sleep(for: .seconds(2))
+        print("[banc-cardio-muscu] lecteur → muscu · onglet=\(selection) fiche=\(PlayerEtat.shared.ficheSeance?.id ?? "aucune")")
+        lancerDepuisLeLecteur(muscu)
+        try? await Task.sleep(for: .seconds(2.5))
+        print("[banc-cardio-muscu] après · onglet=\(selection) fiche=\(PlayerEtat.shared.ficheSeance?.id ?? "aucune") morph=\(morphPlayer)")
+        #endif
+    }
+
+    /// Le geste du lecteur qui lance un exercice — la même coupe que `GrandPlayer.lancer`.
+    private func lancerDepuisLeLecteur(_ exo: Exercise) {
+        CoupeEtat.shared.couper(tenue: 0.25) {
+            ouvrirFicheDeSeance(exo)
             CouvertureFoyer.shared.retirer()
             var tr = Transaction()
             tr.disablesAnimations = true
@@ -2728,6 +2780,7 @@ struct RootView: View {
         // Les bancs du plafond (20-09) : `-cheminAuto` ouvre la Route tout seul
         // 7 s après l'arrivée (avec `-duoAutoTap`, le galet actif se tape) ;
         // `-departAuto` presse la porte de départ de la Home à 7 s (le refus).
+        .task { await bancCardioPuisMuscu() }
         .task {
             let a = CommandLine.arguments
             // ⚠️ TOUT NOUVEAU DRAPEAU S'AJOUTE ICI AUSSI (piège payé DEUX
