@@ -22,13 +22,15 @@ import SwiftData
 //     `CeremonieFlamme`, `CoupeEtat`.
 //   - la séance vide et la feuille Ajouter : celles de la v7.
 //
-// ⚠️ DERRIÈRE UN INTERRUPTEUR (`-seanceV7`, clé `nosfy.seanceV7`). Sans lui,
-// l'app est identique au pixel.
+// ⚠️ ALLUMÉE POUR TOUS DEPUIS LE TESTFLIGHT 86 (01-10, choix de Kathryn).
+// L'ancienne séance reste joignable : `-ancienneSeance`, ou la clé
+// `nosfy.seanceV7` posée à `false`.
 
 enum SeanceV7 {
     static var actif: Bool {
-        CommandLine.arguments.contains("-seanceV7")
-            || UserDefaults.standard.bool(forKey: "nosfy.seanceV7")
+        if CommandLine.arguments.contains("-ancienneSeance") { return false }
+        if CommandLine.arguments.contains("-seanceV7") { return true }
+        return UserDefaults.standard.object(forKey: "nosfy.seanceV7") as? Bool ?? true
     }
     /// Barreau : la page sans ses braises.
     static let sansBraises = CommandLine.arguments.contains("-sansBraisesV7")
