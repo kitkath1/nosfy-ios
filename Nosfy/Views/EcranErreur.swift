@@ -157,11 +157,36 @@ struct EcranErreur: View {
 /// demande courante d'`ErreurNosfy` et la ferme quand le rejeu réussit.
 struct EcranErreurHote: View {
     private let erreurs = ErreurNosfy.shared
+    private let reseau = Reseau.shared
 
     var body: some View {
         if let d = erreurs.courante {
             EcranErreur(cas: d.cas, reessayer: { await rejouer(d) }, fermer: renoncer(d))
                 .id(d.id)
+                .transition(.opacity)
+                .zIndex(60)
+        } else if reseau.mesure, !reseau.enLigne, !SupabaseSession.sessionGardee() {
+            // LE MODE AVION — SEULEMENT QUAND IL N'Y A PAS DE COMPTE.
+            //
+            // ⚠️⚠️ 30-09, TestFlight 85 : « le mode avion ne fonctionne pas,
+            // l'app bugue, je ne peux pas rentrer mes exos dans la salle de
+            // sport hors connexion ». C'était CET écran : depuis le 19-09, dès
+            // que le réseau tombait, il recouvrait TOUTE l'app et la bloquait
+            // jusqu'au retour du réseau — sans « Plus tard ». Or une séance
+            // n'a pas besoin du réseau : elle s'écrit dans le téléphone, les
+            // gains attendent dans l'outbox, et tout repart au retour du réseau
+            // (`onChange(of: enLigne)` à la racine).
+            //
+            // Il ne bloque donc plus que ce qui ne peut VRAIMENT pas marcher
+            // sans réseau : entrer dans l'app sans compte gardé (la porte
+            // Apple). Connecté, rien ne se pose par avance — ce qui a besoin du
+            // serveur (un sachet, le coffre) le dit quand ça échoue, par
+            // `ErreurNosfy.signaler`, avec « Plus tard » quand il y a un après.
+            // Il tombe tout seul quand le réseau revient (la condition se
+            // défait) — « Réessayer » ne fait que relire le réseau, d'où le
+            // deuxième message qui nomme le mode avion.
+            EcranErreur(cas: .horsLigne, reessayer: { reseau.enLigne })
+                .id("hors-ligne")
                 .transition(.opacity)
                 .zIndex(60)
         }

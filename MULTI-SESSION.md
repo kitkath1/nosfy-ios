@@ -613,3 +613,53 @@ Sur son « fix tout ça go ». **Rien commité.** Build simulateur vert.
   `-robeNotif`, `-sansVideoNotif`). Commits `bea9372c` et `6045a0d5`.
   ⚠️ `main` est en avance de 30 sur `origin/main` — beaucoup ne sont pas de
   cette session ; personne n'a poussé.
+
+## 30-09 · session RETOURS TESTFLIGHT 85 — l'onglet Exercices est la fiche, en séance
+
+- Plan : `tools/production/PLAN-RETOURS-TESTFLIGHT-85-2026-09-30.md` (6 retours, étape par étape).
+- **Étape 1 codée dans l'arbre, NON commitée.** En séance, `PlayerEtat.ficheSeance`
+  (ex-`exerciceDemande`, supprimé) fait de l'onglet Exercices LA fiche : la page
+  n'est plus construite dessous. Fichiers touchés : `NosfyApp.swift`
+  (`ouvrirFicheDeSeance`, `ouvrirLecteur`, `activeWorkouts.isEmpty`, banc
+  `-boucleAjout`), `ExercisesView.swift` (`body` → `bibliotheque`),
+  `ExerciseDetailView.swift` (`rendreLaBibliotheque` : pas de `dismiss` pour la
+  fiche de séance), `PiluleVagabonde.swift` (`lancer` : `couper(tenue: 0.25)`),
+  `PlayerMonde.swift`. Accord de la session du chevron (86), qui ne touche plus ces fichiers.
+- Site : `briques.ts` (5 briques TF85 + chevron + mode avion), `serveur.ts`
+  (`b-tb-strength-sets` : aucune colonne de temps). `index.html` régénéré, **pas
+  encore republié au lien fixe**.
+- Ordre convenu avec la session Réglages (39) : mon étape 3 (saisie selon
+  l'exercice, 3-2-1 GO) avant son J2 dans `ExerciseDetailView`, `LiquidLensLab`, `TapisScene`.
+
+## 30-09 (suite) · session RETOURS TESTFLIGHT 85 — étape 3 dans l'arbre, NON commitée
+
+- Étapes 0-2 commitées et poussées : `54558b3b`. Index partagé remis à HEAD sur ces chemins.
+- **Étape 3 (saisie selon l'exercice + 3-2-1 GO) codée, NON commitée** : `Models.swift`
+  (`Exercise.Saisie`), `LiquidLensLab`, `SetEntrySheet`, `ExerciseDetailView`,
+  `ChargeFiche` (⚠️ porte aussi une ligne `L("fr_FR","en_US")` d'une autre session),
+  `SetHistoryRow`, `SessionSlate`, `RestartSheet`, `TapisScene`, `SupabaseSync`,
+  `NosfyShared/WorkoutLiveFocus.swift`, `StorySuite` (le pluriel ; ⚠️ fichier MIXTE, ~300
+  lignes d'une autre session), `tools/widgets/catalogue_sql.py`, bancs Swift `tools/serveur/tests/`.
+- **Serveur POSÉ** (sur son « ok ») : `20260930150000_series_au_temps.sql`
+  (`strength_sets.duree_s`, `synchroniser_seance` et `seances_depuis` recopiées + duree_s) et
+  `20260930150100_catalogue_saisie.sql` (`exercices.saisie`). Vérifié : `tools/serveur/verif_series_au_temps.py`.
+- ⚠️ `main` ne compile pas seul, et ce n'est pas nous : `CoupeBlanche.swift` (suppression
+  jamais commitée) et `SondeVol.swift` qui appelle `BacMotion.actif` absent de `CalLab.swift` dans HEAD.
+- ⚠️ Index partagé périmé sur `Models.swift`, `SupabaseSync.swift`, `LiquidLensLab.swift`,
+  `RestartSheet.swift`, `SetHistoryRow.swift`, `SessionSlate.swift` (anciennes versions indexées) :
+  un `git commit` nu les ferait REVENIR en arrière.
+
+## 30-09 (soir) · session RETOURS TESTFLIGHT 85 — mode avion, course au tapis
+
+- Étape 3 commitée et poussée : `b7218edb`.
+- Dans l'arbre, NON commité : le mode avion (`EcranErreur.swift` : `EcranErreurHote` ne bloque plus
+  l'app hors ligne quand un compte est gardé ; `ErreurNosfy.swift` : `-erreurHorsLigne` coupe
+  vraiment les requêtes via `ReseauCoupe`), la course au long en UNE ligne (`SessionSlate`
+  `.course`, `SetHistoryRow`, `StoryEnded`), le pluriel « 1 SET » (`PiluleVagabonde`,
+  `PageCard`), le banc `-cardioLecteur` (`ExerciseDetailView`), et le site.
+- ⚠️ INDEX PARTAGÉ : `Nosfy/Services/ErreurNosfy.swift` et `Nosfy/Views/EcranErreur.swift` y sont
+  en « D » (supprimés), alors qu'ils vivent dans HEAD et dans l'arbre. Mêmes « D » sur sept
+  migrations (20260919… à 20260930120000). Un `git commit` nu les EFFACERAIT de `main`.
+- 30-09 soir · session retours TF85 : vérif au sim. Gainage bout en bout MESURÉ (compte de test, séance bd87a411, duree_s 3). SA course lente rejouée (3 tranches) → overlay « 1 SET », et l'accueil aussi : `Workout.setsAffiches` (SessionSlate.swift) lu par Foyer.swift (`sets:`), HomeNuit.swift (1 ligne, foyerEnSeance) et PlayerMonde.swift. Bancs : `-tranchePointage <s>` (TapisScene, DEBUG), `-cardioConstant` (ExerciseDetailView), `-envolFire` attend le GO au temps seul (LiquidLensLab). Rien commité ; site régénéré (1,94 Mo, près du plafond 2 Mo), verif vert.
+- 30-09 soir · session retours TF85 · ⚠️ INCIDENT RÉPARÉ : mon commit a061c179 (course au tapis) a été bâti sur c5711cb5 pendant qu'une compilation de vérif tournait, puis posé APRÈS f0345da7, 6f7e6442, 34385d1f (légendaire / carte en grand) — il les annulait, et il est parti sur origin. Corrigé tout de suite par f41f4d3a (arbre = 34385d1f + mes 20 chemins, vérifié chemin par chemin ; briques.ts/serveur.ts fusionnés sans conflit). Rien de votre arbre de travail n'a bougé. Si vous avez relu HEAD entre les deux, relisez-le. Restent dans l'arbre, à moi : EcranErreur.swift (le correctif du mode avion vit dans l'écran hors ligne du 19-09, jamais commité — ⚠️ l'index partagé le marque encore « D ») et docs/site/index.html (régénéré, mixte).
+- 01-10 · session retours TF85 : le mode avion COMMITÉ sur son ordre, avec l'écran hors ligne du 19-09 qu'il corrige (EcranErreur.swift entier, ErreurNosfy.swift entier : le fondu de Reseau). Leurs « D » de l'index partagé remis à HEAD. index.html commité, régénéré dans un worktree depuis les seules sources commitées.
