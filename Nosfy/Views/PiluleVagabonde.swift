@@ -2915,7 +2915,7 @@ struct GrandPlayer: View {
 /// UN CARRÉ DE ZONE, EN PETIT — le même asset anatomique que l'accueil
 /// des exercices (`typo-<zone>`), cuit par script. Choisi, il porte son
 /// liseré blanc et sa zone s'éclaire.
-private struct CarreZoneMini: View {
+struct CarreZoneMini: View {
     let zone: ExerciseCategory
     let choisie: Bool
 
@@ -3222,7 +3222,7 @@ private struct BancBoucleLecteur: ViewModifier {
 ///
 /// ⚠️ DEUX VALEURS ANIMÉES (opacité, échelle), aucun redessin.
 /// Son barreau : `-sansChaleurTete`, le même que la chaleur de la tête.
-private struct HaloCarte: View {
+struct HaloCarte: View {
     let cote: CGFloat
     @State private var v: CGFloat = 0.22
 
@@ -3254,7 +3254,7 @@ private struct HaloCarte: View {
     }
 }
 
-private struct ChaleurTete: View {
+struct ChaleurTete: View {
     @State private var v: CGFloat = 0.30
 
     static let sans = EffetsSeanceBanc.sans

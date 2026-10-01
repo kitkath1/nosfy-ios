@@ -2299,7 +2299,20 @@ struct RootView: View {
             // s'assombrit, on le ferme au drag. `PlayerMonde` (l'ancien)
             // n'est plus ouvert par la pastille — ZÉRO ligne touchée
             // chez lui, il reste pour ses autres chemins.
-            if let a = active, morphPlayer > 0.001 {
+            // LA SÉANCE V7 (30-09, derrière `-seanceV7`) : la page prend la
+            // place du lecteur, au même endroit, avec le même `morph`, la
+            // même pastille et le même « Terminer ». Sans l'interrupteur,
+            // rien ne change (plan tools/seance-v7).
+            if let a = active, morphPlayer > 0.001, SeanceV7.actif {
+                SeanceV7Page(morph: $morphPlayer, seance: a,
+                             onStop: { DepartEtat.shared.pauseOuverte = true },
+                             // La page tient sa coupe et se range dessous,
+                             // comme `GrandPlayer.lancer`.
+                             onChoisirExo: { exo in ouvrirFicheDeSeance(exo) })
+                    .ignoresSafeArea()
+                    .allowsHitTesting(morphPlayer > 0.98)
+                    .zIndex(8.4)
+            } else if let a = active, morphPlayer > 0.001 {
                 GrandPlayer(
                     morph: $morphPlayer,
                     ecranTaille: UIScreen.main.bounds.size,

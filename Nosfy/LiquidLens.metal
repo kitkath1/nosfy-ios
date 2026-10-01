@@ -709,6 +709,77 @@ static float3 glowShade(float2 d, float r, float R, float t, float ig,
     return half4(half3(c), half(a)) * color.a;
 }
 
+// LE CADRAN PLUS ORANGÉ ROUGE, SES HALOS QU'ON VOIT (30-09, Kathryn : « le
+// cadran flamme, plus orangé rouge, on ne voit pas assez les halos »).
+//
+// ⚠️ UNE PORTE NEUVE, PAS UNE RETOUCHE DE `glowShade` : le lit de feu est
+// partagé (le travelling `successGlow`, le labo SuccessLab). Seul le cadran
+// de série l'appelle ; `-cadranAvant` rend l'ancienne pour l'avant/après.
+// ⚠️ MÊME ARITÉ qu'`eclipseGlow` — l'appel Swift ne change que de nom.
+//
+// Deux gestes, des couleurs seulement (aucun échantillon, aucune boucle) :
+//  1. LA LOI ANTI-BRUN : le rouge reste, on désature le VERT (et le peu de
+//     bleu) — et seulement là où le feu est déjà chaud (bleu ≪ rouge) : les
+//     pointes blanches et la voix blanche restent blanches.
+//  2. LA COURONNE AU-DELÀ DU VERRE monte : l'intérieur, que la lentille
+//     réfracte, ne bouge pas ; ce qui rayonne autour se voit enfin.
+[[ stitchable ]] half4 eclipseGlowBraise(float2 position, half4 color,
+                                         float2 size, float2 center, float R,
+                                         float t, float ig, float pulse,
+                                         float flare, float flareAng) {
+    if (ig < 0.004) { return half4(0.0); }
+    float2 d = position - center;
+    float r = length(d);
+    if (r > size.y * 0.9) { return half4(0.0); }
+    float3 c = glowShade(d, r, R, t, ig, pulse, flare, flareAng);
+    float chaud = smoothstep(0.30, 0.80, 1.0 - c.b / max(c.r, 1e-4));
+    c.g *= mix(1.0, 0.78, chaud);
+    c.b *= mix(1.0, 0.50, chaud);
+    // ⚠️ LE RENFORT ÉPARGNE CE QUI EST DÉJÀ CLAIR (mesuré au sim le 30-09) :
+    // poussé en entier, le rouge saturait à 1 pendant que vert et bleu
+    // montaient encore — le halo tirait au SAUMON. On ne relève que le
+    // halo faible, celui qu'on ne voyait pas.
+    float lum = max(max(c.r, c.g), c.b);
+    c *= 1.0 + 0.55 * smoothstep(0.92 * R, 1.35 * R, r)
+                    * (1.0 - smoothstep(0.50, 0.92, lum));
+    float a = clamp(max(max(c.r, c.g), c.b) * 0.9, 0.0, 1.0);
+    return half4(half3(c), half(a)) * color.a;
+}
+
+// LE CADRAN DU REPOS EN FUMÉE BLANCHE (01-10, Kathryn : « même composant que
+// le cadran de fumée orange rouge, mais en fumée blanche »). Le MÊME champ
+// que `eclipseGlowBraise` — mêmes voix, même couronne, même souffle — dont
+// seule la couleur bascule : `blanc` 0 = la braise intacte, 1 = la fumée
+// blanche. Aucune couleur hors blanc et argent ; la brillance vient de la
+// blancheur, pas d'une couche de plus. `eclipseGlowBraise` n'est pas touché.
+[[ stitchable ]] half4 eclipseGlowFumee(float2 position, half4 color,
+                                        float2 size, float2 center, float R,
+                                        float t, float ig, float pulse,
+                                        float flare, float flareAng,
+                                        float blanc) {
+    if (ig < 0.004) { return half4(0.0); }
+    float2 d = position - center;
+    float r = length(d);
+    if (r > size.y * 0.9) { return half4(0.0); }
+    float3 c = glowShade(d, r, R, t, ig, pulse, flare, flareAng);
+    float chaud = smoothstep(0.30, 0.80, 1.0 - c.b / max(c.r, 1e-4));
+    c.g *= mix(1.0, 0.78, chaud);
+    c.b *= mix(1.0, 0.50, chaud);
+    float lum = max(max(c.r, c.g), c.b);
+    c *= 1.0 + 0.55 * smoothstep(0.92 * R, 1.35 * R, r)
+                    * (1.0 - smoothstep(0.50, 0.92, lum));
+    // La fumée : l'intensité du feu, sans sa couleur. Entre la clarté perçue
+    // et le canal le plus fort, à 0,62 — pleine, le blanc brûlerait (un
+    // rouge à 1 deviendrait un blanc à 1, trois fois plus lumineux).
+    float m = max(max(c.r, c.g), c.b);
+    float y = dot(c, float3(0.2126, 0.7152, 0.0722));
+    float w = mix(y, m, 0.55) * 0.62;
+    float3 fumee = float3(w) * float3(0.95, 0.97, 1.0);
+    c = mix(c, fumee, clamp(blanc, 0.0, 1.0));
+    float a = clamp(max(max(c.r, c.g), c.b) * 0.9, 0.0, 1.0);
+    return half4(half3(c), half(a)) * color.a;
+}
+
 // LA CAMÉRA DU TRAVELLING — le MÊME lit de feu, regardé de tout près.
 // Le zoom vit ICI, dans le shader : le champ est recalculé à pleine
 // résolution à tout grossissement (l'école ConnexionCine — une image

@@ -107,11 +107,19 @@ struct LiquidLensLab: View {
     /// Le suivi système reçoit uniquement les changements de phase, jamais les frames.
     var onLivePhase: ((WorkoutLivePhase?) -> Void)? = nil
 
+    /// LA SÉANCE V15 (01-10, `CadranV15.swift`). Présente : le cadran reste le
+    /// sien, mais ses commandes changent — son Stop, la note sur place, le
+    /// repos au noir avec son trait, puis la série suivante prête dans le
+    /// MÊME cadran. `nil`, le défaut, ne change rien au parcours d'hier.
+    var v15: CommandesV15? = nil
+
     private var livePhase: WorkoutLivePhase? {
         guard let summitAt else { return nil }
         // Ce que la série n'a pas demandé, l'île ne le dit pas (30-09).
         let reps: Int? = saisie.avecReps ? draftReps : nil
         let kilos: Double? = saisie.avecCharge ? draftKilos : nil
+        if pretV15 { return .init(kind: .ready, elapsed: 0, reps: reps, kilos: kilos) }
+        if notantDepuis != nil { return .init(kind: .logging, elapsed: Double(effortSeconds)) }
         if envolAt != nil {
             return .init(kind: .ready, elapsed: Double(effortSeconds),
                          reps: reps, kilos: kilos)
@@ -175,6 +183,30 @@ struct LiquidLensLab: View {
     /// 3-2-1 d'avant-série commence — le chrono ne part qu'après son GO.
     @State private var effortIgnite: Date?
 
+    // La v15 : la note ouverte, la série suivante prête, le retour du repos.
+    @State private var notantDepuis: Date?
+    @State private var pretV15 = false
+    /// Ce qui est prêt est l'exercice SUIVANT (pas une série de celui-ci).
+    /// Lu à la fin du repos, AVANT que la fiche n'avance : après, `aSuivante`
+    /// parle de la série d'après celle qui est prête (le saut de la série 3,
+    /// film du 01-10).
+    @State private var pretAutre = false
+    /// La fin du repos : la bulle reprend sa taille d'effort en douceur
+    /// (le repos la tenait 14 % plus grosse) et le feu se rallume.
+    @State private var retourAt: Date?
+    /// `-v15Auto` (banc) : Stop, Valider et le slider se jouent seuls. Le
+    /// simulateur ne tape pas — c'est la seule façon de filmer l'enchaînement.
+    private static let v15Auto = CommandLine.arguments.contains("-v15Auto")
+    /// L'onglet Séries de la v15 : l'album couvre le cadran.
+    @State private var vueSeries = false
+    /// Glisser vers le bas pour réduire, comme Spotify : la descente du doigt.
+    @State private var tireV15: CGFloat = 0
+    /// Barreau : le premier lancement naît posé, sans l'arrivée dans la fumée.
+    private static let sansArriveeV15 = CommandLine.arguments.contains("-sansArriveeV15")
+    #if DEBUG
+    nonisolated(unsafe) private static var bancAlbumJoue = false
+    #endif
+
     private var resting: Bool { restStart != nil }
 
     private static let frozen: Double? = {
@@ -197,6 +229,10 @@ struct LiquidLensLab: View {
     /// cadran VIVANT et ses halos (on ne juge un verre que sur ce qui vit
     /// dessous, jamais sur du noir).
     private static let sheetFire = CommandLine.arguments.contains("-sheetFire")
+    /// Barreau (30-09) : l'ancien feu du cadran, pour l'avant/après.
+    private static let cadranAvant = CommandLine.arguments.contains("-cadranAvant")
+    /// Barreau (30-09) : le repos sans son trait blanc.
+    private static let sansTraitRepos = CommandLine.arguments.contains("-sansTraitRepos")
     /// `-restPick <s>` : la feuille du banc s'ouvre avec un repos DÉJÀ
     /// choisi. Le simulateur ne tape pas : c'est la seule façon de voir la
     /// pastille à l'état sélectionné (son liseré de médaillon) en capture.
@@ -266,6 +302,11 @@ struct LiquidLensLab: View {
         .contains("-sansLentille")
 
     private var pasLentille: Double {
+        // L'album de la v15 flotte sur le cadran FLOUTÉ : un flou de 36 pt
+        // n'a pas besoin de 60 images — 6 suffisent à sa lumière (2 sous le
+        // noir opaque du barreau `-sansFlouAlbum`). La fin du repos reste un
+        // événement à l'heure.
+        if v15 != nil, vueSeries { return ChromeV15.sansFlou ? 0.5 : 1.0 / 6.0 }
         if Self.horloge60 { return 1.0 / 60.0 }
         // ⚠️ UN CRAN DE PLUS À L'ÉTAT CRITIQUE (24-09). `appelAuRepos` couvre
         // thermique 2 ET 3 d'un seul palier à 20 Hz — or à 3 le téléphone
@@ -291,11 +332,24 @@ struct LiquidLensLab: View {
                     .truncatingRemainder(dividingBy: 900)
                 let se = summitElapsed(now: now, t: t)
                 ZStack {
+                    // La v15 remonte la nuit entière (un décalage, jamais une
+                    // échelle : aucun pixel du cadran n'est rééchantillonné) —
+                    // le noir dessous comble la bande découverte.
+                    if v15 != nil { Color.black }
                     if let e = se, e >= SummitCine.cutAt {
                         // L'UNIVERS NOIR : renaissance et descente.
                         nightWorld(w: w, h: h, t: t,
                                    ne: e - SummitCine.cutAt,
                                    ax: summitX(w: w), now: now)
+                            // L'animation ne porte QUE le décalage : posée sur la
+                            // vue, elle fondait aussi les chiffres (« 3 » sur
+                            // « 0:04 », film du 01-10).
+                            .animation(.spring(response: 0.5, dampingFraction: 0.9)) {
+                                $0.offset(y: decalageV15(h: h))
+                            }
+                            // L'album : la nuit floutée dessous, comme la
+                            // pochette d'Apple Music sous ses paroles.
+                            .blur(radius: v15 != nil && vueSeries && !ChromeV15.sansFlou ? 36 : 0)
                     } else {
                         let d = drive(now: now, t: t, w: w, h: h)
                         let lens = flared(lensState(w: w, h: h, t: t,
@@ -343,7 +397,7 @@ struct LiquidLensLab: View {
                           e - SummitCine.cutAt - SummitCine.enter
                             - SummitCine.descend > 0.8 else { return }
                     flareAt = nowD
-                    flareAng = Double(atan2(v.location.y - h * 0.5,
+                    flareAng = Double(atan2(v.location.y - h * 0.5 - decalageV15(h: h),
                                             v.location.x - w * 0.5))
                     RocketHaptics.shared.tapFlare()
                     LensChime.shared.flare()
@@ -392,6 +446,40 @@ struct LiquidLensLab: View {
         .ignoresSafeArea()
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
+        // LA V15 : la tête, le bloc en lecture et la commande, AU-DESSUS du
+        // cadran et hors de son horloge (elle bat deux fois par seconde).
+        .overlay(alignment: .top) {
+            if let v15 {
+                ChromeV15(v: v15, saisie: saisie,
+                          nuitDepuis: summitAt.map {
+                              $0 + SummitCine.cutAt + SummitCine.enter
+                                  + SummitCine.descend * 0.6 },
+                          chronoDepuis: chronoDepuis,
+                          enNote: notantDepuis != nil,
+                          effortFige: effortSeconds,
+                          reposDepuis: restStart.map { $0 + Self.igniteSpan },
+                          reposDuree: restDuration,
+                          prete: pretV15,
+                          pretAutre: pretAutre,
+                          fin: envolAt != nil,
+                          vueSeries: $vueSeries,
+                          passer: effortIgnite == nil && restStart == nil
+                              ? { skipCine(.now) } : nil,
+                          reps: $draftReps, kilos: $draftKilos,
+                          repos: Binding(get: { draftRest ?? v15.repos },
+                                         set: { draftRest = $0 }),
+                          secondes: $effortSeconds,
+                          stop: { stopperV15(.now) },
+                          valider: { validerNoteV15(.now) },
+                          lancer: { lancerSuivanteV15(.now) })
+            }
+        }
+        // GLISSER VERS LE BAS POUR RÉDUIRE (01-10, « comme Spotify ») : tout le
+        // lecteur descend sous le doigt et, passé le seuil, rend la page de
+        // séance. Pendant l'effort et la note il résiste — on ne quitte pas
+        // une série en cours sans son Stop. Jamais sur l'album, qui défile.
+        .offset(y: tireV15)
+        .simultaneousGesture(reduireGeste, isEnabled: v15 != nil && !vueSeries)
         // LA SAISIE DE LA SÉRIE — au-dessus de CE cadran, jamais ailleurs.
         // NOTRE panneau, PAS un sheet système : la présentation d'iOS 26
         // recule toute la fenêtre et révèle un fond gris (le cadre mesuré
@@ -444,8 +532,16 @@ struct LiquidLensLab: View {
             // la SummitCine est déjà jouée, le cadran naît à demeure. Le
             // 3-2-1 d'effort part un souffle après l'entrée en fondu.
             if posedStart, summitAt == nil {
-                summitAt = .now - 20
-                effortIgnite = .now + 0.45
+                if v15?.arrivee == true, !Self.sansArriveeV15 {
+                    // LA V15, PREMIER LANCEMENT : la pastille ARRIVE — la
+                    // nuit commence, elle descend dans sa fumée et se pose
+                    // (la partition du galet, sans le geste). Le chrono part
+                    // à la pose ; « Passer l'animation » l'avance.
+                    summitAt = .now - SummitCine.cutAt
+                } else {
+                    summitAt = .now - 20
+                    effortIgnite = .now + 0.45
+                }
             }
         }
         // Le banc vivait seul et pour toujours ; dans le parcours la vue
@@ -929,6 +1025,9 @@ struct LiquidLensLab: View {
                + SummitCine.descend + 4.5 {
             effortIgnite = d
         }
+        // La v15 a son propre enchaînement : pas de feuille, pas d'envol en
+        // fin de repos — la série suivante devient prête dans ce cadran.
+        if v15 != nil { heartbeatV15(d); return }
         // Le banc de l'envol : le repos s'arme tout seul, chip levé.
         // (30-09 : au temps seul, il attend le GO et 4 s de chrono, et
         // garde le temps compté — la série part avec son duree_s.)
@@ -974,6 +1073,23 @@ struct LiquidLensLab: View {
 
     /// Le départ — par le décompte ou par le lien « Passer le repos » :
     /// même envol, même partition, même main.
+    /// Le trait blanc du repos : un fil d'un point et demi, un bloom de 3,
+    /// sur une trace à peine visible. Blanc seul — la brillance vient de la
+    /// blancheur, jamais de l'épaisseur.
+    private func traitRepos(reste: Double, diametre: CGFloat) -> some View {
+        ZStack {
+            Circle().stroke(Color.white.opacity(0.07), lineWidth: 1)
+            Circle()
+                .trim(from: 0, to: reste)
+                .stroke(Color.white.opacity(0.92),
+                        style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+                .shadow(color: .white.opacity(0.55), radius: 3)
+        }
+        .rotationEffect(.degrees(-90))
+        .frame(width: diametre, height: diametre)
+        .allowsHitTesting(false)
+    }
+
     private func startEnvol(_ d: Date = .now) {
         guard envolAt == nil else { return }
         envolAt = d
@@ -1014,6 +1130,159 @@ struct LiquidLensLab: View {
         // d'arriver. Son jeton annule celle qui patientait.
         if e < posed + 4.5 { Paillettes.shared.announce(after: 0) }
         summitAt = now.addingTimeInterval(-target)
+    }
+
+    // MARK: La séance v15 — Stop, note, repos, la suivante
+
+    /// On peut réduire hors de l'effort et de la note.
+    private var reductionPermise: Bool {
+        guard notantDepuis == nil, envolAt == nil else { return false }
+        if restStart != nil || pretV15 { return true }
+        return (chronoDepuis.map { Date.now < $0 }) ?? true
+    }
+
+    private var reduireGeste: some Gesture {
+        DragGesture(minimumDistance: 12, coordinateSpace: .global)
+            .onChanged { g in
+                let dy = g.translation.height
+                guard dy > 0, dy > abs(g.translation.width) else { return }
+                tireV15 = reductionPermise ? dy : min(44, dy * 0.22)
+            }
+            .onEnded { g in
+                if reductionPermise,
+                   g.translation.height > 110 || g.predictedEndTranslation.height > 260 {
+                    Haptique.leger()
+                    v15?.onReduire()
+                }
+                withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) { tireV15 = 0 }
+            }
+    }
+
+    /// La nuit remonte pour laisser la place au bloc en lecture, et un peu
+    /// plus pendant la note. Des points entiers : un décalage fractionnaire
+    /// rééchantillonnerait les cheveux de lumière du cadran.
+    private func decalageV15(h: CGFloat) -> CGFloat {
+        guard v15 != nil else { return 0 }
+        return -(h * (notantDepuis != nil ? 0.165 : 0.095)).rounded()
+    }
+
+    /// L'instant où le chrono d'effort part : après le GO de la porte posée,
+    /// ou à la pose du geste du galet (même origine que la partition).
+    private var chronoDepuis: Date? {
+        if let ei = effortIgnite { return ei + Self.igniteSpan }
+        return summitAt.map {
+            $0 + SummitCine.cutAt + SummitCine.enter + SummitCine.descend + 5.6
+        }
+    }
+
+    /// Le noir du repos, 0 → 1 : le feu se retire pendant le repos et se
+    /// rallume quand la série suivante est prête. Fonction pure du temps.
+    private func nuitV15(_ now: Date) -> Double {
+        guard v15 != nil else { return 0 }
+        if let rs = restStart { return sstep(0, 0.9, now.timeIntervalSince(rs)) }
+        if let ra = retourAt { return 1 - sstep(0, 0.9, now.timeIntervalSince(ra)) }
+        return 0
+    }
+
+    /// SON Stop : le temps sous tension se fige, la note s'ouvre sous le
+    /// cadran, avec les valeurs proposées (grises tant qu'on n'y touche pas).
+    private func stopperV15(_ d: Date) {
+        guard let v = v15, notantDepuis == nil, restStart == nil, !pretV15,
+              envolAt == nil, let c = chronoDepuis, d >= c else { return }
+        effortSeconds = max(0, Int(d.timeIntervalSince(c)))
+        draftReps = v.reps
+        draftKilos = v.kilos
+        draftRest = NoteRepos.proche(v.repos)
+        RocketHaptics.shared.dragEnd()
+        Haptique.moyen()
+        notantDepuis = d
+    }
+
+    /// Valider : la série part à la fiche (elle l'écrit et joue ses toasters,
+    /// ses pop-ups). S'il en reste une, le repos part dans le même cadran ;
+    /// sinon la pastille s'envole, et la fiche rend la page de séance.
+    private func validerNoteV15(_ d: Date) {
+        guard let v = v15, notantDepuis != nil else { return }
+        let repos = draftRest ?? v.repos
+        v.onNotee(SeriesOutcome(reps: saisie.avecReps ? draftReps : 0,
+                                kilos: saisie.avecCharge ? draftKilos : 0,
+                                restSeconds: repos,
+                                effortSeconds: effortSeconds))
+        Haptique.moyen()
+        notantDepuis = nil
+        // LE REPOS VIENT APRÈS CHAQUE SÉRIE (01-10, « grosse erreur, il manque
+        // le repos ») — la dernière de l'exercice comprise, avant l'exercice
+        // suivant. Seule la toute dernière de la séance part en envol.
+        if v.aSuivante || v.ensuite != nil {
+            #if DEBUG
+            restDuration = Self.v15Auto ? 5 : repos
+            #else
+            restDuration = repos
+            #endif
+            restStart = d
+        } else {
+            startEnvol(d)
+        }
+    }
+
+    /// Le slider : au repos, il lance la suivante TOUT DE SUITE ; prête, il
+    /// la lance. Même cadran, même pastille — le 3, 2, 1, GO de la porte
+    /// posée, puis le chrono.
+    private func lancerSuivanteV15(_ d: Date) {
+        guard let v = v15, envolAt == nil, notantDepuis == nil,
+              restStart != nil || pretV15 else { return }
+        // L'exercice suivant : sa fiche le lance, ce cadran se retire.
+        if pretV15 ? pretAutre : !v.aSuivante { v.onExerciceSuivant(); return }
+        if !pretV15 {
+            v.onPrete()
+            retourAt = d
+        }
+        restStart = nil
+        pretV15 = false
+        effortSeconds = 0
+        draftRest = nil
+        effortIgnite = d
+    }
+
+    private func finirReposV15(_ d: Date) {
+        restStart = nil
+        retourAt = d
+        pretV15 = true
+        // La suite est une série de CET exercice : la fiche avance. Sinon le
+        // cadran attend, prêt, que le slider lance l'exercice suivant.
+        pretAutre = v15?.aSuivante != true
+        if !pretAutre { v15?.onPrete() }
+        Haptique.moyen()
+    }
+
+    private func heartbeatV15(_ d: Date) {
+        if let rs = restStart, !pretV15,
+           d.timeIntervalSince(rs) >= Self.igniteSpan + Double(restDuration) {
+            finirReposV15(d)
+        }
+        #if DEBUG
+        // Le banc : 4 s d'effort, 2,5 s de note, la suivante 2 s après sa
+        // pose. Jamais deux gestes dans le même battement.
+        guard Self.v15Auto else { return }
+        // L'album, une fois : ouvert pendant le premier repos, refermé 2,5 s
+        // après le départ de la série suivante.
+        if !Self.bancAlbumJoue, let rs = restStart, d.timeIntervalSince(rs) > 1.2 {
+            Self.bancAlbumJoue = true
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) { vueSeries = true }
+        }
+        if vueSeries, notantDepuis == nil, restStart == nil, !pretV15,
+           let c = chronoDepuis, d.timeIntervalSince(c) > 2.5 {
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) { vueSeries = false }
+        }
+        if notantDepuis == nil, restStart == nil, !pretV15, envolAt == nil,
+           let c = chronoDepuis, d.timeIntervalSince(c) > 4 {
+            stopperV15(d)
+        } else if let n = notantDepuis, d.timeIntervalSince(n) > 2.5 {
+            validerNoteV15(d)
+        } else if pretV15, let ra = retourAt, d.timeIntervalSince(ra) > 2 {
+            lancerSuivanteV15(d)
+        }
+        #endif
     }
 
     // MARK: L'univers noir — la renaissance et la descente
@@ -1092,6 +1361,14 @@ struct LiquidLensLab: View {
             let k = CGFloat(sstep(0, 0.34, a))
             cxV += (w / 2 - cxV) * k
             cy += (h * 0.50 - cy) * k
+        }
+        // LA V15, À LA FIN DU REPOS : la bulle quitte ses 14 % de repos en
+        // douceur au lieu de claquer à sa taille d'effort (même fonction
+        // pure du temps ; le chemin d'encre, sans date, n'y entre pas).
+        if v15 != nil, restStart == nil, let ra = retourAt,
+           dateNow > .distantPast {
+            let a = max(0, dateNow.timeIntervalSince(ra))
+            radiusV *= 1 + CGFloat(0.14 * (1 - sstep(0, 0.5, a)))
         }
         // L'ENVOL. Deux temps, écrits ici comme tout le reste — fonction pure
         // de l'instant du départ, jamais un `withAnimation`.
@@ -1240,10 +1517,23 @@ struct LiquidLensLab: View {
         let fe = flareAt.map { now.timeIntervalSince($0) } ?? 99.0
         let flareV = Float(sstep(0, 0.06, fe)
                            * exp(-max(fe - 0.06, 0) / 0.45))
-        let glowShader = ShaderLibrary.eclipseGlow(
-            .float2(sizeW, sizeH), .float2(cX, cY), .float(rad),
-            .float(tS), .float(igV), .float(Float(lens.pulse)),
-            .float(flareV), .float(Float(flareAng)))
+        // LE FEU DU CADRAN, plus orangé rouge et ses halos plus visibles
+        // (30-09) — `-cadranAvant` rend l'ancien, pour l'avant/après.
+        // La v15 : au repos, le MÊME cadran passe en fumée blanche — noir au
+        // centre, son fin liseré autour (01-10, « même composant que le cadran
+        // de fumée orange rouge, mais en fumée blanche »). Hors v15, la braise
+        // d'hier, intacte.
+        let glowShader: Shader = v15 != nil && !Self.cadranAvant
+            ? ShaderLibrary.eclipseGlowFumee(
+                .float2(sizeW, sizeH), .float2(cX, cY), .float(rad),
+                .float(tS), .float(igV), .float(Float(lens.pulse)),
+                .float(flareV), .float(Float(flareAng)),
+                .float(Float(nuitV15(now))))
+            : (Self.cadranAvant ? ShaderLibrary.eclipseGlow
+                                : ShaderLibrary.eclipseGlowBraise)(
+                .float2(sizeW, sizeH), .float2(cX, cY), .float(rad),
+                .float(tS), .float(igV), .float(Float(lens.pulse)),
+                .float(flareV), .float(Float(flareAng)))
         let landed = ne - (SummitCine.enter + SummitCine.descend)
         // LES CHIFFRES : ils affleurent du condensat, au battement.
         let faceIn = sstep(4.5, 5.6, max(landed, 0))
@@ -1255,6 +1545,12 @@ struct LiquidLensLab: View {
         // La porte posée a sa propre origine : le chrono ne part qu'au GO
         // de l'allumage d'effort — jamais de l'atterrissage antidaté.
         let elapsed: Int = {
+            // La v15 : prête, le cadran attend à 0:00 ; pendant la note et
+            // l'envol, il garde le temps tenu, figé au Stop.
+            if v15 != nil {
+                if pretV15 { return 0 }
+                if notantDepuis != nil || envolAt != nil { return effortSeconds }
+            }
             if let ei = effortIgnite {
                 return max(0, Int(now.timeIntervalSince(ei)
                                   - Self.igniteSpan))
@@ -1295,7 +1591,8 @@ struct LiquidLensLab: View {
         let shown = left ?? elapsed
         let timeStr = countWord ?? String(format: "%d:%02d",
                                           shown / 60, shown % 60)
-        let faceTitle = restCounting ? "REST IN"
+        let faceTitle = v15 != nil && pretV15 && pretAutre ? "NEXT"
+            : restCounting ? "REST IN"
             : (effortCounting ? "\(faceLabel) IN"
             : (resting ? "REST" : faceLabel))
         // Chaque chiffre TOMBE : il arrive gros, se pose, et s'efface avant le
@@ -1335,6 +1632,20 @@ struct LiquidLensLab: View {
             .compositingGroup()
             .layerEffect(lensShader,
                          maxSampleOffset: CGSize(width: 110, height: 110))
+            // LE TRAIT BLANC DU REPOS (30-09, Kathryn : « bien le trait blanc,
+            // mais sur notre composant cadran, même design, avec le galet
+            // blanc »). Un cheveu de lumière fait le tour de SON verre et se
+            // retire à mesure que le repos s'écoule — plein pendant « REST IN ».
+            // Aucune horloge de plus : ce cadran est déjà redessiné à chaque
+            // image. Barreau : `-sansTraitRepos`.
+            if resting, !Self.sansTraitRepos, let rs = restStart, restDuration > 0 {
+                traitRepos(reste: 1 - min(1, max(0, now.timeIntervalSince(rs)
+                                                 - Self.igniteSpan) / Double(restDuration)),
+                           diametre: lens.radius * 2 + 22)
+                    .opacity(sstep(0, 0.6, max(ignite, 0)) * faceIn
+                             * (1 - sstep(0.05, 0.32, max(ev, 0))))
+                    .position(lens.center)
+            }
             // LES CHIFFRES DU CADRAN — la continuité directe du condensat,
             // affleurant du fond de la laque, sous les reflets du verre.
             // Pendant la vibrance ils TREMBLENT AVEC la pastille (leur
@@ -1348,7 +1659,7 @@ struct LiquidLensLab: View {
                         // L'encre du repos suit le feu du cadran : elle
                         // était orange-doré (0,62/0,22), elle rejoint la
                         // famille rouge/orange de l'harmonisation 22-08.
-                        .foregroundStyle(resting
+                        .foregroundStyle(resting && v15 == nil
                                          ? Color(red: 1.0, green: 0.48, blue: 0.18)
                                             .opacity(0.90)
                                          : Color.white.opacity(0.50))
@@ -1369,7 +1680,8 @@ struct LiquidLensLab: View {
             // LA SORTIE. Dans le parcours, le cadran n'est plus un cul-de-sac :
             // le primaire de la maison affleure une fois les chiffres posés,
             // et rend le temps sous tension à la fiche.
-            if isJourney {
+            // (La v15 a ses commandes à elle, dans `ChromeV15`.)
+            if isJourney && v15 == nil {
                 // DEUX MOMENTS, DEUX POIDS. Sous tension, « Terminer la
                 // série » est LE geste de la page : un CTA plein. Pendant le
                 // repos, la série est déjà prise et la sortie viendra toute
@@ -1484,7 +1796,7 @@ struct LiquidLensLab: View {
                     .allowsHitTesting(skipIn > 0.6)
                     .position(x: w / 2, y: h - 72)
                 }
-            } else if !Self.cycling {
+            } else if !Self.cycling && !isJourney {
                 Button {
                     summitAt = nil
                     summitFx = nil

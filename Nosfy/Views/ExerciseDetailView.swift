@@ -72,6 +72,12 @@ struct ExerciseDetailView: View {
     /// différée de 0,55 s : une relecture changerait de valeur sous la card).
     /// `nil` quand la pop-up est ouverte par l'ATELIER et non par le jeu.
     @State private var rangIssue: Int?
+    /// La v15 (01-10) : une issue de série joue sans « Encore une série ? ».
+    /// `true` : c'était la dernière de l'exercice — la fiche rend la page de
+    /// séance quand le toaster ou la pop-up a fini de parler.
+    @State private var issueV15Fin: Bool?
+    /// Le premier lancement depuis la page v7 : la pastille arrive dans sa fumée.
+    @State private var arriveeV15 = false
     @State private var serieAPoser: FinishedSeries?
     /// Le variant montré — TOURNE à chaque ouverture (« des fois fais un
     /// autre variant ») : galet (le vrai verre saisissable sur le
@@ -1122,6 +1128,8 @@ struct ExerciseDetailView: View {
                             )
                         }
                     }
+                    // LA SÉANCE V7 (30-09) : « Allez, go » sur la page.
+                    .task { lancerDepuisLaSeanceV7() }
                 }
             }
             // (Le bouton « Enregistrer l'exercice » du cardio — `primaryAction`
@@ -1275,8 +1283,11 @@ struct ExerciseDetailView: View {
                     // matérialise, déjà à hauteur, déjà sous le doigt.
                     LiquidLensLab(
                         headline: exercise.name,
-                        faceLabel: "SET \(series.id + 1)",
-                        seriesNumber: series.id + 1,
+                        // La v15 compte les séries de la SÉANCE (la fiche
+                        // repart à 1 à chaque passage : « SET 1 » sous
+                        // « Série 2 », 01-10).
+                        faceLabel: "SET \(commandesV15(series)?.rang ?? series.id + 1)",
+                        seriesNumber: commandesV15(series)?.rang ?? series.id + 1,
                         // ⚠️ **C'EST LE SEUL POINT OÙ L'ISSUE D'UNE SÉRIE
                         // PART, ET IL PART UNE FOIS.** Le décideur de la
                         // chaîne reward (pill / Moment / popup / vidéo) se
@@ -1298,7 +1309,10 @@ struct ExerciseDetailView: View {
                         onSummit: { summited = true },
                         posedStart: posedLaunch,
                         saisie: exercise.saisie,
-                        onLivePhase: { phase in suivreMuscu(phase, serie: series.id + 1) }
+                        onLivePhase: { phase in
+                            suivreMuscu(phase, serie: commandesV15(series)?.rang ?? series.id + 1)
+                        },
+                        v15: commandesV15(series)
                     )
                     .opacity(lensShown
                              ? 1
@@ -1489,6 +1503,13 @@ struct ExerciseDetailView: View {
                                 DispatchQueue.main.asyncAfter(
                                     deadline: .now() + 0.26) {
                                     poserLaQuestion()
+                                }
+                                return
+                            }
+                            if issueV15Fin != nil {
+                                DispatchQueue.main.asyncAfter(
+                                    deadline: .now() + 0.26) {
+                                    apresIssueV15()
                                 }
                                 return
                             }
@@ -3330,6 +3351,15 @@ struct ExerciseDetailView: View {
             }
         case .moment, .reward:
             rewardShow = true
+            #if DEBUG
+            // Le banc v15 ne tape pas : il referme la pop-up comme Close.
+            if CommandLine.arguments.contains("-v15Auto"), issueV15Fin != nil {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
+                    rewardShow = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.26) { apresIssueV15() }
+                }
+            }
+            #endif
         }
     }
 
@@ -3358,7 +3388,7 @@ struct ExerciseDetailView: View {
 
     /// La question de la fin de série — la pop-up à la flamme.
     private func poserLaQuestion() {
-        guard let f = serieAPoser else { return }
+        guard let f = serieAPoser else { apresIssueV15(); return }
         serieAPoser = nil
         issueEnCours = nil
         // Le rang s'efface AVEC son issue : sans ça, la prochaine ouverture
@@ -3427,6 +3457,7 @@ struct ExerciseDetailView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { dismiss() }
         }
         if feu {
+            SeanceV7Etat.shared.dernierFeu = .now
             CoupeEtat.shared.jouer(bascule)
             return
         }
@@ -3659,6 +3690,190 @@ struct ExerciseDetailView: View {
         // fait : noir, bascule dessous, le noir tient le temps que le cadran
         // se monte, puis se lève sur le 3-2-1.
         CoupeEtat.shared.couper(tenue: 0.35) { launchPosed() }
+    }
+
+    /// LA SÉANCE V7 (30-09, derrière `-seanceV7`) : la page a demandé CETTE
+    /// série (son slider, ou « Allez, go »). La fiche naît sous la coupe et
+    /// part aussitôt par ses portes à elle : la porte posée (le cadran compte
+    /// 3, 2, 1, GO), ou le tapis au cardio. La demande est oubliée dès lue.
+    private func lancerDepuisLaSeanceV7() {
+        guard SeanceV7Etat.shared.lancerDirect == exercise.id,
+              running == nil, restartAsk == nil else { return }
+        SeanceV7Etat.shared.lancerDirect = nil
+        if let mode = modeCardio { lancerTapis(mode); return }
+        arriveeV15 = true
+        launchPosed()
+    }
+
+    // MARK: La séance v15 (01-10, derrière `-seanceV7`)
+
+    /// Ce que la fiche confie au cadran : seulement en séance, et jamais au
+    /// cardio (il garde son tapis). Recalculé à chaque rendu : le rang suit
+    /// `running`, qui avance d'une série à la fin de chaque repos.
+    private func commandesV15(_ s: RunningSeries) -> CommandesV15? {
+        guard SeanceV7.actif, modeCardio == nil, let a = active else { return nil }
+        let prevu = SeanceV7Etat.shared.plan.first { $0.id == exercise.id }
+        // Le rang dans la SÉANCE : ce qui était fait avant ce passage, puis
+        // la place de la série dans la fiche.
+        let avant = max(0, faitesEnSeanceV15(exercise.id, a) - sets.filter(\.isDone).count)
+        let rang = avant + s.id + 1
+        let total = max(prevu?.nombre ?? 3, rang)
+        let aSuivante = rang < total
+        let nom = exercise.nomLocalise
+        let suivant = aSuivante ? nil : prochainExerciceV15(a)
+        // Moins de mots (01-10) : la suite dans CET exercice n'est que
+        // « Série 3 » ; un autre exercice, son seul nom.
+        let ensuite: String? = aSuivante
+            ? L("Série \(rang + 1)", "Set \(rang + 1)")
+            : suivant.map { $0.exo.nomLocalise }
+        let fait = sets.last(where: \.isDone)
+        let brouillon = sets.indices.contains(s.id) ? sets[s.id] : nil
+        let avantFait = lastLogged?.orderedSets.filter(\.isDone).last
+        let derniere = avantFait.map {
+            L("Dernière fois ", "Last time ")
+                + exercise.saisie.serie(reps: $0.reps, kilos: $0.weight,
+                                        secondes: $0.durationSeconds)
+        }
+        let reference = prevu?.secondes ?? avantFait?.durationSeconds ?? 45
+        return CommandesV15(
+            exercice: exercise, rang: rang, total: total, aSuivante: aSuivante,
+            ensuite: ensuite,
+            ensuiteNom: suivant?.exo.nomLocalise,
+            ensuiteCharge: suivant.map { chargeV15($0.exo, $0.prevu) },
+            reps: fait?.reps ?? prevu?.reps ?? brouillon?.reps ?? 12,
+            kilos: fait?.weight ?? prevu?.kilos ?? brouillon?.weight ?? 20,
+            repos: restSeconds,
+            reference: reference > 0 ? reference : 45,
+            derniere: derniere,
+            album: albumV15(a),
+            arrivee: arriveeV15,
+            onReduire: { quitterLaFiche() },
+            // La fiche ne rend la page qu'après la TOUTE dernière série de
+            // la séance ; sinon le repos vient, puis la suite.
+            onNotee: { o in noterSerieV15(s.id, o, derniere: !aSuivante && suivant == nil) },
+            onPrete: { avancerV15() },
+            onExerciceSuivant: { if let x = suivant { lancerExerciceV15(x.exo) } })
+    }
+
+    /// L'album de la séance : chaque exercice du plan, ce qui est fait (en
+    /// mots) et ce qui reste à faire, l'exercice de la fiche marqué « ici ».
+    private func albumV15(_ a: Workout) -> [AlbumExoV15] {
+        let etat = SeanceV7Etat.shared
+        return etat.plan.compactMap { p in
+            guard let e = ExerciseCatalog.exercise(id: p.id) else { return nil }
+            let blocs = a.orderedExercises.filter { $0.exerciseID == p.id }
+            let faites: [String]
+            if e.tracking == .setsRepsWeight {
+                faites = blocs.flatMap(\.orderedSets).filter(\.isDone).map {
+                    e.saisie.serie(reps: $0.reps, kilos: $0.weight, secondes: $0.durationSeconds)
+                }
+            } else {
+                faites = blocs.flatMap { SlateGroupe.lignes(de: $0, restSeconds: $0.restSeconds) }
+                    .filter(\.done).map { AlbumExoV15.texte($0, exo: e) }
+            }
+            let propose: String = {
+                guard e.tracking == .setsRepsWeight else { return L("cardio", "cardio") }
+                return e.saisie.serie(reps: p.reps, kilos: p.kilos, secondes: 0)
+            }()
+            return AlbumExoV15(id: p.id, exercice: e, faites: faites,
+                               total: max(p.nombre, faites.count), propose: propose,
+                               ici: p.id == exercise.id)
+        }
+    }
+
+    private func faitesEnSeanceV15(_ id: String, _ a: Workout) -> Int {
+        a.orderedExercises.filter { $0.exerciseID == id }
+            .reduce(0) { $0 + $1.orderedSets.filter(\.isDone).count }
+    }
+
+    /// Le prochain exercice du plan à qui il reste quelque chose à faire.
+    private func prochainExerciceV15(_ a: Workout)
+        -> (exo: Exercise, faites: Int, prevu: SeanceV7Etat.Prevu)? {
+        let etat = SeanceV7Etat.shared
+        guard let i = etat.plan.firstIndex(where: { $0.id == exercise.id }) else { return nil }
+        for p in etat.plan[(i + 1)...] {
+            guard let e = ExerciseCatalog.exercise(id: p.id) else { continue }
+            let faites = e.tracking == .setsRepsWeight
+                ? faitesEnSeanceV15(p.id, a)
+                : (etat.cardioFait(p.id, dans: a) ? p.nombre : 0)
+            if faites < p.nombre { return (e, faites, p) }
+        }
+        return nil
+    }
+
+    /// « 10 × 30 kg », « 15 reps », « Au chrono », « Cardio » : la charge
+    /// proposée d'un exercice du plan, pour le slider.
+    private func chargeV15(_ e: Exercise, _ p: SeanceV7Etat.Prevu) -> String {
+        guard e.tracking == .setsRepsWeight else { return L("Cardio", "Cardio") }
+        return e.saisie.serie(reps: p.reps, kilos: p.kilos, secondes: 0)
+    }
+
+    /// LE SLIDER APRÈS LE REPOS DE FIN D'EXERCICE : la fiche de l'exercice
+    /// suivant prend la place de celle-ci, sous la coupe, et le lance
+    /// aussitôt (le chemin de la page : `lancerDirect`). L'onglet reste la
+    /// fiche de séance — la page Exercices ne peut pas apparaître.
+    private func lancerExerciceV15(_ e: Exercise) {
+        Haptique.moyen()
+        SeanceV7Etat.shared.lancerDirect = e.id
+        CoupeEtat.shared.couper(tenue: 0.45) {
+            PlayerEtat.shared.ficheSeance = e
+        }
+    }
+
+    /// Valider, dans le cadran : la série s'écrit (le chemin de toujours,
+    /// `settleSeries` → `ancrerSerie`), ses pièces volent, et le décideur
+    /// joue son toaster ou sa pop-up — sans « Encore une série ? ».
+    private func noterSerieV15(_ index: Int, _ o: LiquidLensLab.SeriesOutcome,
+                               derniere: Bool) {
+        let f = FinishedSeries(index: index, reps: o.reps, kilos: o.kilos,
+                               rest: o.restSeconds, seconds: o.effortSeconds)
+        restSeconds = f.rest
+        settleSeries(f, coins: true)
+        // Le rang se lit comme dans `finirSerie` : l'écriture est différée.
+        let ecrites = sets.filter(\.isDone).count
+        let dejaEcrite = sets.indices.contains(f.index) && sets[f.index].isDone
+        let rang = max(dejaEcrite ? ecrites : ecrites + 1, 1)
+        rangIssue = rang
+        issueV15Fin = derniere
+        let issue = DecideurSerie.pour(serie: rang,
+                                       gain: gainParSerie,
+                                       total: rang * gainParSerie,
+                                       reps: f.reps, kilos: f.kilos,
+                                       seance: active?.remoteID,
+                                       saisie: exercise.saisie,
+                                       secondes: f.seconds)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
+            jouerIssue(issue, f)
+        }
+    }
+
+    /// Le toaster s'est effacé (ou la pop-up refermée). Après la dernière
+    /// série de l'exercice, la fiche rend la page de séance par sa seule
+    /// porte — sa flamme y prend feu.
+    private func apresIssueV15() {
+        guard let fin = issueV15Fin else { return }
+        issueV15Fin = nil
+        issueEnCours = nil
+        rangIssue = nil
+        if fin { quitterLaFiche() }
+    }
+
+    /// La fin du repos : le cadran porte la série SUIVANTE. Jamais celle
+    /// qu'on vient de noter, même si son écriture différée n'est pas tombée.
+    private func avancerV15() {
+        guard let r = running else { return }
+        let index: Int
+        let appended: Bool
+        if let p = sets.indices.first(where: { $0 > r.id && !sets[$0].isDone }) {
+            index = p
+            appended = false
+        } else {
+            let d = sets.indices.contains(r.id) ? sets[r.id] : nil
+            sets.append(DraftSet(reps: d?.reps ?? 12, weight: d?.weight ?? 20))
+            index = sets.count - 1
+            appended = true
+        }
+        running = RunningSeries(id: index, appended: appended)
     }
 
     @MainActor private func bancDepart() async {
