@@ -902,6 +902,14 @@ struct ExerciseDetailView: View {
             // verra jamais. Elle se ferme sans quittance ; ce qui était
             // pointé (tranches de 5 min, sets, segments scellés) est écrit.
             .onDisappear {
+                // ⚠️ PLUS DE COURSE QUI CONTINUE SEULE (02-10) : une fiche qui
+                // s'en va pendant que le double galet court (un onglet, une
+                // coupe) laissait le pointage écrire ses tranches sans
+                // personne. L'effort s'arrête (HIIT) ou la course se met en
+                // pause (au long) : ce qui courait est écrit, rien d'autre.
+                if let st = seanceTapis, !st.terminee, st.etat == .court {
+                    st.basculer()
+                }
                 WorkoutActivityController.clearFocus(source: liveSource, for: liveWorkout ?? active)
                 // ⚠️ **L'ÉCRAN NE RESTE PLUS ALLUMÉ POUR TOUJOURS** (21-09,
                 // « ça chauffe après plein d'allers-retours ») : le départ
@@ -2561,6 +2569,12 @@ struct ExerciseDetailView: View {
         // numérotation continue (un rang par phase, le graphe reste dans
         // l'ordre) et la quittance juge l'exercice entier — ce que le barème
         // verra — pas la scène seule.
+        // Le bloc de la séance s'il existe déjà (un seul bloc par cardio) :
+        // la numérotation et le temps couru continuent.
+        if bloc == nil, let a = active,
+           let existant = a.orderedExercises.last(where: { $0.exerciseID == exercise.id }) {
+            bloc = existant
+        }
         let deja = bloc.map(\.phasesFaites) ?? []
         let dejaSets = deja.filter { $0.order == 0 }.count
         let dejaSecondes = deja.filter { $0.speed > 0 }.reduce(0) { $0 + $1.seconds }
@@ -2572,6 +2586,14 @@ struct ExerciseDetailView: View {
         st.onLiveChange = { [weak st] in
             guard let st else { return }
             suivreCardio(st)
+        }
+        // LE HIIT MINUTÉ (02-10, v17) : tes durées de la dernière fois (20 s
+        // d'effort, 40 s de récup sinon) ; aucun nombre d'efforts, au fil de
+        // l'eau. Barreau : `-sansMinuteHiit` (au toucher seul, comme avant).
+        if !mode.auLong, !CommandLine.arguments.contains("-sansMinuteHiit") {
+            let d = UserDefaults.standard
+            let e = d.integer(forKey: "nosfy.hiit.effort"), r = d.integer(forKey: "nosfy.hiit.recup")
+            st.minute = (effort: e > 0 ? e : 20, recup: r > 0 ? r : 40)
         }
         st.onSetFini = { bilan in
             ecrirePhase(kind: mode.kindEffort(bilan.vitesse),
@@ -2717,6 +2739,14 @@ struct ExerciseDetailView: View {
             context.insert(seance)
         }
         if let deja = bloc, deja.workout === seance { return (seance, deja) }
+        // AU CARDIO, UN SEUL BLOC PAR SÉANCE (02-10) : revenir sur le tapis
+        // ouvrait un exercice neuf — deux courses, deux lignes « Course ».
+        // La course reprend dans le bloc qui existe déjà.
+        if modeCardio != nil,
+           let existant = seance.orderedExercises.last(where: { $0.exerciseID == exercise.id }) {
+            bloc = existant
+            return (seance, existant)
+        }
         let logged = LoggedExercise(exerciseID: exercise.id,
                                     order: seance.exerciseCount)
         logged.workout = seance
@@ -2761,7 +2791,7 @@ struct ExerciseDetailView: View {
             segmentsCardio = []; segmentsTitre = ""; return
         }
         let seuil = SemaineStats.seuilEffort
-        let segs = l.phasesFaites.map { ph in
+        var segs = l.phasesFaites.map { ph in
             // AU LONG (escalier, tapis lent — G9) : tout ce qui avance est un
             // effort ; le graphite n'est que l'arrêt. HIIT : la définition de
             // la maison, au-dessus du seuil. ⚠️ Payé le 16-09 : le tapis lent
@@ -2773,6 +2803,23 @@ struct ExerciseDetailView: View {
             SegmentHiit(secondes: ph.seconds, vitesse: ph.speed,
                         effort: mode.auLong ? ph.isEffort && ph.speed > 0 : ph.speed >= seuil)
         }
+        // ⚠️ UNE COURSE N'A PAS DE SEGMENTS (02-10, « il y a encore ce bug,
+        // trois sets au tapis allure lente ») : au long, la scène ÉCRIT par
+        // tranches de 5 min (le pointage) — 12 min à 7 km/h donnaient trois
+        // barres égales et « 3 segments ». Les tranches d'une même allure
+        // redeviennent une seule bande ; seul un changement d'allure découpe.
+        if mode.auLong {
+            var fusion: [SegmentHiit] = []
+            for s in segs {
+                if let d = fusion.last, d.vitesse == s.vitesse, d.effort == s.effort {
+                    fusion[fusion.count - 1] = SegmentHiit(secondes: d.secondes + s.secondes,
+                                                           vitesse: d.vitesse, effort: d.effort)
+                } else {
+                    fusion.append(s)
+                }
+            }
+            segs = fusion
+        }
         let duree = segs.reduce(0) { $0 + $1.secondes }
         let fmt = DateFormatter(); fmt.locale = Locale(identifier: L("fr_FR", "en_US"))
         fmt.dateFormat = "EEEE dd.MM"
@@ -2780,7 +2827,15 @@ struct ExerciseDetailView: View {
         // langue du profil.
         let jour = w.isActive ? L("Aujourd'hui", "Today") : fmt.string(from: w.startedAt).capitalized
         segmentsCardio = segs
-        segmentsTitre = "\(jour) · \(ChambreFmt.mmss(duree)) · \(segs.count) segment\(segs.count > 1 ? "s" : "")"
+        if mode.auLong {
+            // Une course se dit par son temps et son allure moyenne, jamais
+            // par un compte de morceaux.
+            let allure = segs.reduce(0.0) { $0 + $1.vitesse * Double($1.secondes) } / Double(max(duree, 1))
+            let unite = mode.estNiveau ? L("niveau", "level") : "km/h"
+            segmentsTitre = "\(jour) · \(ChambreFmt.mmss(duree)) · \(Exercise.Saisie.kg(allure)) \(unite)"
+        } else {
+            segmentsTitre = "\(jour) · \(ChambreFmt.mmss(duree)) · \(segs.count) segment\(segs.count > 1 ? "s" : "")"
+        }
     }
 
     /// La dernière séance où cet exercice a des segments FAITS (l'ancien
@@ -3415,6 +3470,9 @@ struct ExerciseDetailView: View {
     /// lecteur dans les paillettes, pour qu'on voie qu'on rentre dans la
     /// séance. « Choisir un autre exercice » garde la coupe sourde.
     private func quitterLaFiche(feu: Bool = false) {
+        // Quitter la fiche en pleine course la TERMINE et l'écrit, comme
+        // Finish (02-10) — jamais une course orpheline.
+        if let st = seanceTapis, !st.terminee { finirTapis() }
         guard active != nil else {
             guideRetour = false
             dismiss()
@@ -3667,13 +3725,19 @@ struct ExerciseDetailView: View {
     @ViewBuilder
     private var departParSlider: some View {
         if running == nil, restartAsk == nil, seanceTapis == nil {
-            SliderObsidienne(label: L("Lancer la série", "Start set"),
-                             onConfirm: lancerAuSlider)
+            SliderObsidienne(label: libelleDepart, onConfirm: lancerAuSlider)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 28)
                 .transition(.opacity)
                 .task { await bancDepart() }
         }
+    }
+
+    /// Le mot du slider : une course, un HIIT, ou une série (02-10 : au
+    /// cardio, il disait « Lancer la série »).
+    private var libelleDepart: String {
+        guard let mode = modeCardio else { return L("Lancer la série", "Start set") }
+        return mode.auLong ? L("Lancer la course", "Start run") : L("Lancer le HIIT", "Start HIIT")
     }
 
     /// Le slider lance DIRECTEMENT l'écran du chrono — sans monde blanc ni

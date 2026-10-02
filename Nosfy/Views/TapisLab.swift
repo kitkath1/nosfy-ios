@@ -18,6 +18,8 @@ enum TapisBanc {
     static let fige = CommandLine.arguments.contains("-tapisFige")
     static let nu = CommandLine.arguments.contains("-tapisNu")
     static let auto = CommandLine.arguments.contains("-tapisAuto")
+    /// `-tapisMinute` (02-10) : le HIIT minuté, court (6 s d'effort, 4 s de récup) — pour le filmer.
+    static let minute = CommandLine.arguments.contains("-tapisMinute")
     static let fps = CommandLine.arguments.contains("-fps")
     /// ⚠️ `-tapisTourne` EST MORT, et c'est une leçon, pas un nettoyage.
     /// Il appelait la fonction du geste DIRECTEMENT : il court-circuitait le
@@ -94,6 +96,11 @@ struct TapisLab: View {
             }
         }
         .task {
+            if TapisBanc.minute, seance.mode != .tapisModere, seance.mode != .escalier {
+                seance.minute = (effort: 6, recup: 4)
+            }
+        }
+        .task {
             guard TapisBanc.auto else { return }
             // Le cycle qu'on filme : 4 s de set, stop, 2,2 s de repos, start
             // — par `basculer`, l'acte du tap (au long : pause / reprise).
@@ -128,6 +135,7 @@ struct TapisLab: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             seance = SeanceTapis(mode: TapisBanc.mode, figee: false,
                                  setsFaits: TapisBanc.setsFaits)
+            if TapisBanc.minute, !TapisBanc.mode.auLong { seance.minute = (effort: 6, recup: 4) }
             tour += 1
         }
     }

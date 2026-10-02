@@ -616,6 +616,14 @@ final class LoggedExercise {
             return line
         }
         let minutes = totalSeconds / 60
+        // Une course au long est UNE course (02-10) : ses tranches de 5 min
+        // ne sont pas des cycles (« 12 min · 3 cycles »).
+        if let exo = exercise, ModeCardio.pour(exo)?.auLong == true {
+            let efforts = orderedPhases.filter { $0.isDone && $0.isEffort }
+            let s = efforts.reduce(0) { $0 + $1.seconds }
+            let allure = efforts.reduce(0.0) { $0 + $1.speed * Double($1.seconds) } / Double(max(s, 1))
+            return "\(max(1, s / 60)) min · \(allure.formatted(.number.precision(.fractionLength(0...1)))) km/h"
+        }
         let cycleCount = cycles.count
         let peak = orderedPhases.map(\.speed).max() ?? 0
         if cycleCount > 1 {

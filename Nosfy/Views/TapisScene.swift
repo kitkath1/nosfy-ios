@@ -1,4 +1,5 @@
 import SwiftUI
+import AudioToolbox
 
 // MARK: - Le player TAPIS — deux pastilles, le chrono qui se tape
 //
@@ -215,6 +216,16 @@ final class SeanceTapis {
     /// La pop-up flammes est à l'écran (elle attend un tap).
     var popupVisible = false
 
+    /// LE HIIT MINUTÉ (02-10, Kathryn : « je cours en même temps, et surtout à
+    /// de grandes vitesses ») : la durée d'un effort et d'une récup. L'effort
+    /// s'arrête seul à sa durée, la récup relance seule l'effort suivant ;
+    /// 3, 2, 1 en vibration et en son, puis le geste — par les MÊMES
+    /// fonctions que le doigt (`stopper`, `relancer`). Le nombre d'efforts
+    /// n'est jamais prévu : « c'est au fil de l'eau ». `nil` : au toucher
+    /// seul, comme avant. Le toucher passe toujours plus tôt.
+    var minute: (effort: Int, recup: Int)? { didSet { armerLeMinuteur() } }
+    private var minuteJeton = 0
+
     /// CE QUE LA SCÈNE RAPPORTE (15-09) : l'intervalle fini au stop, la récup
     /// finie à la relance — et, au long (16-09), le segment d'allure fini au
     /// sceau, à la pause, à Finish. La scène ne connaît pas SwiftData — c'est
@@ -343,6 +354,54 @@ final class SeanceTapis {
         return 0
     }
 
+    /// Les secondes qui restent à l'étape minutée en cours (effort ou récup),
+    /// ou `nil` hors minuteur — ce que le chrono annonce à 3, 2, 1.
+    func resteMinute(_ now: Date) -> Int? {
+        guard let m = minute, !terminee, !mode.auLong else { return nil }
+        switch etat {
+        case .court:
+            guard let d0 = setDebut, now >= d0 else { return nil }
+            return m.effort - Int(now.timeIntervalSince(d0))
+        case .repos:
+            guard let r0 = reposDebut else { return nil }
+            return m.recup - Int(now.timeIntervalSince(r0))
+        case .pause: return nil
+        }
+    }
+
+    /// Arme la fin de l'étape en cours. Un jeton par étape : un toucher, une
+    /// durée changée, Finish l'invalident — jamais deux bascules pour une.
+    private func armerLeMinuteur() {
+        minuteJeton += 1
+        let jeton = minuteJeton
+        guard let m = minute, !mode.auLong, !terminee else { return }
+        let ancre: Date?, duree: Int
+        switch etat {
+        case .court: ancre = setDebut; duree = m.effort
+        case .repos: ancre = reposDebut; duree = m.recup
+        case .pause: return
+        }
+        guard let a = ancre, duree > 0 else { return }
+        let echeance = a.addingTimeInterval(Double(duree))
+        Task { @MainActor [weak self] in
+            for k in [3, 2, 1] {
+                let t = echeance.addingTimeInterval(Double(-k)).timeIntervalSinceNow
+                if t > 0 { try? await Task.sleep(for: .seconds(t)) }
+                guard let self, self.minuteJeton == jeton, !self.terminee else { return }
+                if echeance.timeIntervalSinceNow > 0.3 { TapisTic.compte() }
+            }
+            let reste = echeance.timeIntervalSinceNow
+            if reste > 0 { try? await Task.sleep(for: .seconds(reste)) }
+            guard let self, self.minuteJeton == jeton, !self.terminee else { return }
+            TapisTic.bascule()
+            switch self.etat {
+            case .court: self.stopper(.now)
+            case .repos: self.relancer(.now)
+            case .pause: break
+            }
+        }
+    }
+
     /// LE TAP SUR LA PASTILLE CHRONO — un seul geste, l'acte que la pastille
     /// écrit : stop / start set (HIIT), pause / reprise (au long). Le banc et
     /// le lab passent par ici, jamais à côté (deux chemins = un banc qui ment).
@@ -381,6 +440,7 @@ final class SeanceTapis {
         compter(secondes, vitesse: bilan.vitesse)
         onSetFini?(bilan)
         lancerLaFete()
+        armerLeMinuteur()
     }
 
     /// LE POINTAGE (au long) : cinq minutes à la même allure, et le segment
@@ -574,10 +634,9 @@ final class SeanceTapis {
         }
         // Un jeton : Finish dans les 3,2 s d'un stop ne doit ni voir la
         // pop-up remonter, ni sa quittance retirée par le minuteur du set.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.40) { [weak self] in
-            guard let self, self.feteJeton == jeton else { return }
-            withAnimation(.easeOut(duration: 0.30)) { self.popupVisible = true }
-        }
+        // ⚠️ PLUS DE POP-UP « SETS » ENTRE DEUX EFFORTS (02-10, v17) : elle
+        // attendait un tap avant l'effort suivant — en pleine course, et le
+        // minuteur relance seul. La dalle dit encore ce qui est écrit.
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.20) { [weak self] in
             guard let self, self.feteJeton == jeton else { return }
             withAnimation(.easeIn(duration: 0.28)) { self.dalleVisible = false }
@@ -607,6 +666,7 @@ final class SeanceTapis {
             if vRecup > 0 { secondesAvancees += secondes }
             onRecupFinie?(secondes, vRecup)
         }
+        armerLeMinuteur()
     }
 
     /// LA BRAISE (effort, repos) à cet instant. HIIT : le palier des sets
@@ -957,7 +1017,9 @@ struct TapisScene: View {
         let secondes = fini && !seance.mode.auLong ? seance.secondesEcrites : seance.secondes(now)
         return VStack(spacing: court ? 4 : 8) {
             if !seance.mode.auLong, !fini {
-                Text("SET \(seance.rangAffiche)")
+                let reste = seance.resteMinute(now).flatMap { (1...3).contains($0) ? $0 : nil }
+                Text(reste.map { court ? "RÉCUP · \($0)" : "SET \(seance.rangAffiche) · \($0)" }
+                     ?? "SET \(seance.rangAffiche)")
                     .font(.inter(11, .semibold))
                     .tracking(2.8)
                     .monospacedDigit()
@@ -1176,14 +1238,20 @@ struct TapisScene: View {
     /// bas »). Il reste AU-DESSUS de la bande du player (110 pt), et la
     /// molette ouverte le COUVRE — on ne finit pas une session pendant qu'on
     /// règle sa vitesse : le conflit se résout tout seul.
+    /// LE PIED (02-10, v17 : « pas de slider, un truc plus intuitif, start,
+    /// stop, repos — je cours en même temps ») : plus rien à glisser. SON
+    /// médaillon, en grand : un toucher fait l'acte du moment (Stop, Go,
+    /// Pause, Reprendre) ; le MAINTENIR une seconde termine l'exercice, son
+    /// anneau se remplit — un toucher qui glisse en pleine course ne coupe
+    /// rien. En haut, les deux durées du HIIT minuté.
+    @ViewBuilder
     private func pied(w: CGFloat, h: CGFloat) -> some View {
-        SliderObsidienne(label: "Finish", height: 62,
-                         labelCentre: true,
-                         validate: { true },
-                         onConfirm: onFinish)
-            .padding(.horizontal, 20)
-            .frame(width: w)
-            .position(x: w / 2, y: h - 34 - 31)
+        CommandeTapis(seance: seance, onAction: { tapChrono() }, onFinish: onFinish)
+            .position(x: w / 2, y: h - 34 - 54)
+        if !seance.mode.auLong, seance.minute != nil {
+            ProgrammeHiit(seance: seance)
+                .position(x: w / 2, y: 74)
+        }
     }
 
     // MARK: constantes et outils
@@ -1723,5 +1791,161 @@ private struct AnneauCrans: View, Animatable {
                               .white.opacity((0.55 + 0.45 * prise) * 0.55)]),
             startPoint: CGPoint(x: c.x, y: c.y - 2.6),
             endPoint: CGPoint(x: c.x, y: c.y + 2.6)))
+    }
+}
+
+
+// MARK: - La commande du tapis : son médaillon (02-10, v17)
+
+/// Ce que dit le médaillon selon l'état : Stop pendant l'effort, Go en récup,
+/// Pause en course, Reprendre en pause.
+private struct CommandeTapis: View {
+    let seance: SeanceTapis
+    let onAction: () -> Void
+    let onFinish: () -> Void
+    /// L'anneau de « maintiens pour terminer », 0 → 1 en une seconde.
+    @State private var tenue: CGFloat = 0
+    @State private var prise: Date?
+    @State private var jeton = 0
+    private static let duree: Double = 1.0
+
+    private var libelle: (symbole: String, mot: String) {
+        switch seance.etat {
+        case .court: return seance.mode.auLong ? ("pause.fill", L("Pause", "Pause")) : ("stop.fill", "Stop")
+        case .repos: return ("play.fill", "Go")
+        case .pause: return ("play.fill", L("Reprendre", "Resume"))
+        }
+    }
+
+    var body: some View {
+        let l = libelle
+        VStack(spacing: 6) {
+            ZStack {
+                MedaillonStop(symbol: l.symbole, taille: 80)
+                    .allowsHitTesting(false)
+                Circle()
+                    .trim(from: 0, to: tenue)
+                    .stroke(Color.white.opacity(0.92), style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .frame(width: 96, height: 96)
+                    .shadow(color: .white.opacity(0.55), radius: 3)
+                    .allowsHitTesting(false)
+            }
+            .frame(width: 108, height: 108)
+            .contentShape(Circle())
+            .gesture(DragGesture(minimumDistance: 0)
+                .onChanged { _ in commencer() }
+                .onEnded { _ in relacher() })
+            .accessibilityElement()
+            .accessibilityLabel(l.mot)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { onAction() }
+            .accessibilityAction(named: L("Terminer", "Finish")) { onFinish() }
+            Text(l.mot)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.white.opacity(0.66))
+            Text(L("maintiens pour terminer", "hold to finish"))
+                .font(.system(size: 11))
+                .foregroundStyle(.white.opacity(0.36))
+        }
+        .opacity(seance.terminee ? 0 : 1)
+        .allowsHitTesting(!seance.terminee)
+        .animation(.easeOut(duration: 0.25), value: l.symbole)
+    }
+
+    private func commencer() {
+        guard prise == nil else { return }
+        prise = .now
+        jeton += 1
+        let j = jeton
+        withAnimation(.linear(duration: Self.duree)) { tenue = 1 }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(Self.duree))
+            guard jeton == j, prise != nil else { return }
+            prise = nil
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            var tr = Transaction(); tr.disablesAnimations = true
+            withTransaction(tr) { tenue = 0 }
+            onFinish()
+        }
+    }
+
+    private func relacher() {
+        guard let p = prise else { return }
+        prise = nil
+        jeton += 1
+        withAnimation(.easeOut(duration: 0.2)) { tenue = 0 }
+        // Un toucher, pas une tenue : l'acte du moment.
+        if Date.now.timeIntervalSince(p) < 0.45 { onAction() }
+    }
+}
+
+// MARK: - Les durées du HIIT minuté, en médaillons de verre
+
+/// Deux médaillons de Liquid Glass sous l'île : l'effort et la récup. Un
+/// toucher passe à la durée suivante (et la retient pour la prochaine fois).
+/// Aucun nombre d'efforts : le HIIT se fait au fil de l'eau.
+private struct ProgrammeHiit: View {
+    let seance: SeanceTapis
+    static let efforts = [15, 20, 30, 40, 45, 60, 90]
+    static let recups = [15, 20, 30, 40, 60, 90, 120]
+
+    var body: some View {
+        let m: (effort: Int, recup: Int) = seance.minute ?? (effort: 20, recup: 40)
+        HStack(spacing: 10) {
+            medaillon(L("EFFORT", "EFFORT"), m.effort) { suivant(effort: true) }
+            medaillon(L("RÉCUP", "RECOVERY"), m.recup) { suivant(effort: false) }
+        }
+    }
+
+    private func medaillon(_ titre: String, _ s: Int, _ action: @escaping () -> Void) -> some View {
+        HStack(spacing: 7) {
+            Text(titre)
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(1.4)
+                .foregroundStyle(.white.opacity(0.5))
+            Text(String(format: "%d:%02d", s / 60, s % 60))
+                .font(.system(size: 15, weight: .semibold))
+                .monospacedDigit()
+                .foregroundStyle(.white)
+                .contentTransition(.numericText())
+        }
+        .padding(.horizontal, 14)
+        .frame(height: 36)
+        .glassEffect(.clear.tint(.white.opacity(0.06)), in: Capsule())
+        .overlay(Capsule().strokeBorder(
+            LinearGradient(colors: [.white.opacity(0.42), .white.opacity(0.08), .white.opacity(0.18)],
+                           startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1))
+        .contentShape(Capsule())
+        .highPriorityGesture(TapGesture().onEnded {
+            Haptique.leger()
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { action() }
+        })
+    }
+
+    private func suivant(effort: Bool) {
+        var m: (effort: Int, recup: Int) = seance.minute ?? (effort: 20, recup: 40)
+        let liste = effort ? Self.efforts : Self.recups
+        let actuel = effort ? m.effort : m.recup
+        let i = (liste.firstIndex(where: { $0 > actuel }) ?? 0)
+        if effort { m.effort = liste[i] } else { m.recup = liste[i] }
+        seance.minute = m
+        UserDefaults.standard.set(m.effort, forKey: "nosfy.hiit.effort")
+        UserDefaults.standard.set(m.recup, forKey: "nosfy.hiit.recup")
+    }
+}
+
+/// La voix du minuteur : 3, 2, 1 dans la main et un son court, puis le geste
+/// plus franc à la bascule. Le son suit le silencieux du téléphone (un son
+/// système). Barreau : `-sansBipTapis`.
+enum TapisTic {
+    private static let sansBip = CommandLine.arguments.contains("-sansBipTapis")
+    @MainActor static func compte() {
+        UIImpactFeedbackGenerator(style: .rigid).impactOccurred(intensity: 0.75)
+        if !sansBip { AudioServicesPlaySystemSound(1104) }
+    }
+    @MainActor static func bascule() {
+        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        if !sansBip { AudioServicesPlaySystemSound(1057) }
     }
 }
