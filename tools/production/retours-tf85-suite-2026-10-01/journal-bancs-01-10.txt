@@ -1,0 +1,88 @@
+BANC capture t1-route ; sonde=stories=0;couv=0;onglet=home;homeDort=1;chemin=1;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC capture t1-popup ; sonde=stories=0;couv=0;onglet=home;homeDort=1;chemin=1;popup=1;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC t1 sachet tapé à y=0.42
+BANC attente ratée pose ; sonde=stories=0;couv=1;onglet=home;homeDort=0;chemin=0;popup=0;manege=1;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC capture t1-manege ; sonde=stories=0;couv=1;onglet=home;homeDort=0;chemin=0;popup=0;manege=1;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC t1-sacre chevron trouvé : Retour (20.0, 63.0, 44.0, 44.0)
+BANC capture t1-home-1s ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC capture t1-home-4s ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC t1-home phrase existe=true touchable=true
+BANC capture t2-popup ; sonde=stories=0;couv=0;onglet=home;homeDort=1;chemin=1;popup=1;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC t2 sachet tapé à y=0.42
+BANC capture t2-apres-envol ; sonde=stories=0;couv=1;onglet=profile;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC capture t2-profil ; sonde=stories=0;couv=0;onglet=profile;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée onglet-home ; sonde=stories=0;couv=0;onglet=profile;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC capture t2-home-1s ; sonde=stories=0;couv=0;onglet=profile;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC capture t2-home-4s ; sonde=stories=0;couv=0;onglet=profile;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC t2-home phrase existe=false touchable=false
+BANC capture t3-route-sans-popup ; sonde=stories=0;couv=0;onglet=home;homeDort=1;chemin=1;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC t3-route chevron trouvé : Retour (38.0, 67.0, 30.0, 58.0)
+BANC capture t3-home-1s ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC capture t3-home-4s ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC t3-home phrase existe=true touchable=true
+BANC capture t4-video-pose-avant ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC CLAIM t4-video-pose robe=video quand=2.0 glisse=0.0 taps=1 ferme=true bouton=(196,547) existe=false
+BANC CLAIM t4-video-tot robe=video quand=0.6 glisse=0.0 taps=1 ferme=true bouton=(196,547) existe=false
+BANC capture t4-video-glisse8-avant ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC CLAIM t4-video-glisse8 robe=video quand=2.0 glisse=8.0 taps=1 ferme=true bouton=(196,547) existe=false
+BANC capture t4-video-glisse16-avant ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC CLAIM t4-video-glisse16 robe=video quand=2.0 glisse=16.0 taps=1 ferme=true bouton=(196,547) existe=false
+BANC capture t4-texte-pose-avant ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC CLAIM t4-texte-pose robe=texte quand=2.0 glisse=0.0 taps=12 ferme=false bouton=(196,426) existe=true
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC CLAIM t4-texte-tot robe=texte quand=0.6 glisse=0.0 taps=12 ferme=false bouton=(196,426) existe=true
+BANC capture t4-texte-glisse8-avant ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC CLAIM t4-texte-glisse8 robe=texte quand=2.0 glisse=8.0 taps=1 ferme=true bouton=(196,547) existe=false
+BANC capture t4-texte-glisse16-avant ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC attente ratée  ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=1;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC CLAIM t4-texte-glisse16 robe=texte quand=2.0 glisse=16.0 taps=12 ferme=false bouton=(196,426) existe=true
+BANC CLAIM BILAN video-pose=1 video-tot=1 video-glisse8=1 video-glisse16=1 texte-pose=99 texte-tot=99 texte-glisse8=1 texte-glisse16=99
+BANC capture t2-popup ; sonde=stories=0;couv=0;onglet=home;homeDort=1;chemin=1;popup=1;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC t2 sachet tapé à y=0.42
+BANC capture t2-apres-envol ; sonde=stories=0;couv=1;onglet=profile;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC capture t2-profil ; sonde=stories=0;couv=0;onglet=profile;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC t2-profil chevron trouvé : Retour (20.0, 63.0, 44.0, 44.0)
+BANC capture t2-home-1s ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC capture t2-home-4s ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC t2-home phrase existe=true touchable=true
+BANC capture t6-0-home---s0-c0-p0 ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=0
+BANC capture t6-7-depart---s0-c0-p0 ; sonde=stories=0;couv=0;onglet=depart;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=1
+BANC capture t6-18-home---s0-c0-p0 ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=-;seance=1
+BANC capture t6-21-exercises-tapis-lent-s0-c0-p0 ; sonde=stories=0;couv=0;onglet=exercises;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=tapis-lent;seance=1
+BANC capture t6-48-home---s0-c0-p0 ; sonde=stories=0;couv=0;onglet=exercises;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=woop-haute;seance=1
+BANC capture t6-49-exercises-woop-haute-s0-c0-p0 ; sonde=stories=0;couv=0;onglet=exercises;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=0;recouvert=0;fiche=woop-haute;seance=1
+BANC capture t6-125-home---s0-c0-p0 ; sonde=stories=0;couv=0;onglet=home;homeDort=0;chemin=0;popup=0;manege=0;pose=0;welcome=0;pause=0;couvreP=1;recouvert=1;fiche=-;seance=1

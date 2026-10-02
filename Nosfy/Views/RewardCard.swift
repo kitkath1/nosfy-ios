@@ -154,6 +154,7 @@ struct RewardPopup: View {
                     videoNom: videoEffective,
                     naissance: naissance, enSortie: enSortie,
                     posee: posee, fermer: fermer, onClaim: onClaim,
+                    claimEtFermer: claimEtFermer,
                     lignesGeantes: lignesGeantes, bouton: bouton, scrim: scrim,
                     tete: tete)
             .sensoryFeedback(.impact(weight: .heavy, intensity: 1.0),
@@ -243,6 +244,9 @@ private struct RewardScene: View, Animatable {
     var fermer: () -> Void
     /// Le Claim du Welcome Back (30-08) : encaisse AVANT de fermer.
     var onClaim: (() -> Void)? = nil
+    /// Le Claim qui ferme au premier tap (20-09) : `RewardPopup.claimEtFermer`,
+    /// qui encaisse puis ferme même pendant l'entrée. À défaut, l'ancien geste.
+    var claimEtFermer: (() -> Void)? = nil
     /// La sortie de Nosfy (13-09) — voir `RewardPopup`.
     var lignesGeantes: [String]? = nil
     var bouton: BoutonBas? = nil
@@ -999,7 +1003,7 @@ private struct RewardScene: View, Animatable {
             // Le Claim — sauf quand la card porte SON bouton (la robe « première
             // fois » de Nosfy : « Démarrer », rien à encaisser).
             if style == .welcome, bouton == nil {
-                BoutonClaim(montant: count, action: claimEtFermer)
+                BoutonClaim(montant: count, action: claimEtFermer ?? { onClaim?(); fermer() })
                     .opacity(sstep(0.58, 0.86, p))
                     .padding(.bottom, 6)
             }
@@ -1938,7 +1942,13 @@ private struct BoutonClaim: View {
     let montant: Int
     var action: () -> Void
 
-    @State private var appuye = false
+    /// L'appui — un `@GestureState` : SwiftUI le remet à faux à la fin ET à
+    /// l'annulation du geste (un `@State` restait coincé à 0,96 si le système
+    /// volait le doigt).
+    @GestureState private var appuye = false
+
+    /// Ce que le pouce peut glisser pendant un tap sans le perdre (01-10).
+    private static let glisseMax: CGFloat = 44
 
     var body: some View {
         Button(action: action) {
@@ -1973,9 +1983,12 @@ private struct BoutonClaim: View {
                 // PILULE NOIRE peinte juste dessous (voir `souffleVideo`
                 // dans la scène) — sans matière derrière lui, un verre
                 // sur du noir est un TROU.
+                // ⚠️ PLUS `.interactive()` (01-10) : un verre interactif prend
+                // le toucher pour se déformer, il disputait le doigt au Claim.
+                // L'appui se dit par l'échelle 0,96 et l'haptique.
                 GlassEffectContainer(spacing: 0) {
                     Color.clear
-                        .glassEffect(.clear.interactive(), in: Capsule())
+                        .glassEffect(.clear, in: Capsule())
                 }
                 .environment(\.colorScheme, .dark)
             }
@@ -1990,24 +2003,33 @@ private struct BoutonClaim: View {
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing),
                     lineWidth: 1))
-            .contentShape(Capsule())
+            // 6 pt de prise autour de la capsule (01-10) : un pouce qui tombe
+            // au bord encaisse, au lieu de tomber sur le scrim qui ferme la
+            // card SANS le +10 (« Later »).
+            .contentShape(Capsule().inset(by: -6))
             .scaleEffect(appuye ? 0.96 : 1)
         }
         .buttonStyle(.plain)
         .sensoryFeedback(.impact(weight: .medium, intensity: 0.9),
                          trigger: appuye)
-        .simultaneousGesture(
+        // ⚠️ LE +10 DU WELCOME BACK NE PARTAIT PAS AU TAP (bug Kathryn 16-09,
+        // puis TestFlight 85 le 01-10 : « taper 10 fois »). Le remède du 16-09
+        // était un `TapGesture` prioritaire à côté d'un drag d'appui : un
+        // `TapGesture` ÉCHOUE dès que le pouce glisse un peu — or un pouce
+        // glisse toujours un peu sur un verre. UN SEUL geste maintenant : il
+        // prend le doigt dès qu'il se pose (prioritaire sur le `Button` et le
+        // verre), dit l'appui, et encaisse au LÂCHER tant que le pouce n'a pas
+        // fui de plus de `glisseMax`. Le `Button` reste pour VoiceOver.
+        // Idempotent : `claimEtFermer` ne ferme qu'une fois, `reclamerRetour`
+        // se garde (`retourDisponible`).
+        .highPriorityGesture(
             DragGesture(minimumDistance: 0)
-                .onChanged { _ in appuye = true }
-                .onEnded { _ in appuye = false })
-        // ⚠️ LE +10 DU WELCOME BACK NE PARTAIT PAS AU TAP (bug Kathryn 16-09).
-        // Cause : le fond du bouton est un VERRE `.interactive()` (`glassEffect(
-        // .clear.interactive())`) — et un verre interactif VOLE le geste de son
-        // hôte (le `Button`), donc `action` (reclamerRetour) ne se déclenchait
-        // jamais. Remède du dépôt : un `highPriorityGesture(TapGesture)` qui
-        // gagne le tap sur le verre. Idempotent : reclamerRetour se garde
-        // (retourDisponible) si jamais le Button passait aussi.
-        .highPriorityGesture(TapGesture().onEnded { action() })
+                .updating($appuye) { _, appui, _ in appui = true }
+                .onEnded { v in
+                    guard hypot(v.translation.width, v.translation.height)
+                            < Self.glisseMax else { return }
+                    action()
+                })
     }
 }
 
@@ -2850,57 +2872,102 @@ private struct CarteGyro<Contenu: View>: View {
         RoundedRectangle(cornerRadius: 36, style: .continuous)
     }
 
+    /// ⚠️⚠️ **LE CORPS NE LIT PLUS LE GYROSCOPE** (01-10, retour TestFlight 85 :
+    /// « je suis obligée de taper 10 fois pour recevoir mon gain »). Il lisait
+    /// `SkyMotion.shared.tilt` ICI, au-dessus de `contenu()` : sur le téléphone
+    /// (le simulateur n'a pas de gyroscope, il ne l'a jamais vu), chaque
+    /// battement du capteur — 30 par seconde, même posé sur une table —
+    /// reconstruisait TOUTE la card, bouton Claim compris : son verre, sa pièce
+    /// 3D et son geste, sous le doigt, pendant le tap. Les deux lumières et
+    /// l'inclinaison relisent désormais le capteur chacune chez elle
+    /// (`NappeGyro`, `LumiereTilt`, `PencheGyro`) : le contenu reste construit.
+    var body: some View {
+        contenu()
+            .overlay { NappeGyro(forme: Self.forme) }
+            .overlay { LumiereTilt(pente: pente, forme: Self.forme) }
+            .modifier(PencheGyro(pente: pente, sansTilt: sansTilt))
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 3)
+                    .onChanged { v in pente = v.translation }
+                    .onEnded { _ in
+                        withAnimation(.spring(response: 0.42,
+                                              dampingFraction: 0.62)) {
+                            pente = .zero
+                        }
+                    })
+    }
+}
+
+/// La nappe gyro de `CarteGyro` — seule à relire le capteur pour elle.
+private struct NappeGyro: View {
+    let forme: RoundedRectangle
+
     var body: some View {
         let tilt = SkyMotion.shared.tilt
-        contenu()
-            .overlay {
-                // La nappe gyro — DU BAS, comme toute lumière de la card
-                // (verdict « halos du bas uniquement ») : elle glisse le
-                // long du bord bas avec la main. Le simulateur, sans
-                // gyroscope, la garde posée au centre bas.
-                EllipticalGradient(
-                    stops: [
-                        .init(color: .white.opacity(0.10), location: 0),
-                        .init(color: .white.opacity(0.03), location: 0.5),
-                        .init(color: .clear, location: 1)
-                    ],
-                    center: UnitPoint(x: 0.5 + 0.30 * tilt.dx,
-                                      y: 1.04 + 0.10 * tilt.dy),
-                    startRadiusFraction: 0,
-                    endRadiusFraction: 0.85)
-                    .blendMode(.plusLighter)
-                    .clipShape(Self.forme)
-                    .allowsHitTesting(false)
-            }
-            // LA LUMIÈRE DU TILT (verdict « un peu de lumière discrète
-            // quand il y a l'effet gyroscopique ») : une bande douce qui
-            // traverse la face quand la card se couche — éteinte au
-            // repos, un souffle au maximum, elle suit le côté levé.
-            .overlay {
-                let force = min(1.0,
-                    (abs(Double(pente.width))
-                     + abs(Double(pente.height))) / 130.0
-                    + (abs(tilt.dx) + abs(tilt.dy)) * 0.55)
-                let cx = 0.5 + max(-0.42, min(0.42,
-                    Double(pente.width) * 0.0035 + tilt.dx * 0.30))
-                LinearGradient(
-                    stops: [
-                        .init(color: .clear, location: max(0, cx - 0.30)),
-                        .init(color: .white.opacity(0.10 * force),
-                              location: cx),
-                        .init(color: .clear, location: min(1, cx + 0.30))
-                    ],
-                    startPoint: .leading, endPoint: .trailing)
-                    .blendMode(.plusLighter)
-                    .clipShape(Self.forme)
-                    .allowsHitTesting(false)
-            }
-            // ⚠️ LE TILT EST COUPÉ quand la card porte un VERRE NATIF
-            // (le bouton claim) : sous un `rotation3DEffect`, le verre
-            // GROSSIT et se détache (bug vu et revu). Le correctif
-            // `compositingGroup` répare le verre mais tue sa
-            // réfraction : les deux sont incompatibles. Sur ces
-            // cards-là, le verre gagne — le gyro doux suffit.
+        // La nappe gyro — DU BAS, comme toute lumière de la card
+        // (verdict « halos du bas uniquement ») : elle glisse le
+        // long du bord bas avec la main. Le simulateur, sans
+        // gyroscope, la garde posée au centre bas.
+        EllipticalGradient(
+            stops: [
+                .init(color: .white.opacity(0.10), location: 0),
+                .init(color: .white.opacity(0.03), location: 0.5),
+                .init(color: .clear, location: 1)
+            ],
+            center: UnitPoint(x: 0.5 + 0.30 * tilt.dx,
+                              y: 1.04 + 0.10 * tilt.dy),
+            startRadiusFraction: 0,
+            endRadiusFraction: 0.85)
+            .blendMode(.plusLighter)
+            .clipShape(forme)
+            .allowsHitTesting(false)
+    }
+}
+
+/// LA LUMIÈRE DU TILT (verdict « un peu de lumière discrète quand il y a
+/// l'effet gyroscopique ») : une bande douce qui traverse la face quand la
+/// card se couche — éteinte au repos, un souffle au maximum, elle suit le
+/// côté levé.
+private struct LumiereTilt: View {
+    let pente: CGSize
+    let forme: RoundedRectangle
+
+    var body: some View {
+        let tilt = SkyMotion.shared.tilt
+        let force = min(1.0,
+            (abs(Double(pente.width))
+             + abs(Double(pente.height))) / 130.0
+            + (abs(tilt.dx) + abs(tilt.dy)) * 0.55)
+        let cx = 0.5 + max(-0.42, min(0.42,
+            Double(pente.width) * 0.0035 + tilt.dx * 0.30))
+        LinearGradient(
+            stops: [
+                .init(color: .clear, location: max(0, cx - 0.30)),
+                .init(color: .white.opacity(0.10 * force),
+                      location: cx),
+                .init(color: .clear, location: min(1, cx + 0.30))
+            ],
+            startPoint: .leading, endPoint: .trailing)
+            .blendMode(.plusLighter)
+            .clipShape(forme)
+            .allowsHitTesting(false)
+    }
+}
+
+/// L'INCLINAISON 3D, en `ViewModifier` : son corps reçoit la card DÉJÀ
+/// construite — le relire à chaque battement du capteur ne la reconstruit pas.
+/// ⚠️ LE TILT EST COUPÉ quand la card porte un VERRE NATIF (le bouton
+/// claim) : sous un `rotation3DEffect`, le verre GROSSIT et se détache (bug
+/// vu et revu). Le correctif `compositingGroup` répare le verre mais tue sa
+/// réfraction : les deux sont incompatibles. Sur ces cards-là, le verre
+/// gagne — le gyro doux suffit, et le capteur n'est même pas lu.
+private struct PencheGyro: ViewModifier {
+    let pente: CGSize
+    let sansTilt: Bool
+
+    func body(content: Content) -> some View {
+        let tilt = sansTilt ? .zero : SkyMotion.shared.tilt
+        content
             .rotation3DEffect(
                 .degrees(sansTilt ? 0
                          : 2.6 * tilt.dx
@@ -2911,14 +2978,5 @@ private struct CarteGyro<Contenu: View>: View {
                          : -2.2 * tilt.dy
                          - max(-7, min(7, pente.height * 0.055))),
                 axis: (x: 1, y: 0, z: 0))
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 3)
-                    .onChanged { v in pente = v.translation }
-                    .onEnded { _ in
-                        withAnimation(.spring(response: 0.42,
-                                              dampingFraction: 0.62)) {
-                            pente = .zero
-                        }
-                    })
     }
 }
