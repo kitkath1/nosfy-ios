@@ -53,11 +53,13 @@ struct CommandesV15 {
     /// série prête est celle que le cadran porte déjà (sinon, la suivante).
     func legende(_ saisie: Exercise.Saisie, prete: Bool, versAutre: Bool)
         -> (titre: String, sous: String) {
+        // Jamais de reps ni de poids prévus (02-10, « on ne sait pas à
+        // l'avance ») : le titre et le nom, c'est tout.
         if versAutre, let e = ensuite {
             return (e, ensuiteCharge ?? "")
         }
         let n = prete ? rang : rang + 1
-        return (L("Série \(n)", "Set \(n)"), charge(saisie))
+        return (L("Série \(n)", "Set \(n)"), nom)
     }
 
     var nom: String { exercice.nomLocalise }
@@ -508,7 +510,9 @@ private struct AlbumV15: View {
 
     private func ligne(_ x: AlbumExoV15, _ k: Int) -> some View {
         let e = etat(x, k)
-        let valeur = e == .fait && k <= x.faites.count ? x.faites[k - 1] : x.propose
+        // Faite : sa valeur. À venir : son numéro, rien d'inventé (02-10).
+        let valeur = e == .fait && k <= x.faites.count ? x.faites[k - 1]
+            : L("Série \(k)", "Set \(k)")
         let lumiere = e == .joue || e == .prete
         return HStack(spacing: 16) {
             ZStack {

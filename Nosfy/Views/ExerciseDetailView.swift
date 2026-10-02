@@ -3835,9 +3835,12 @@ struct ExerciseDetailView: View {
                 faites = blocs.flatMap { SlateGroupe.lignes(de: $0, restSeconds: $0.restSeconds) }
                     .filter(\.done).map { AlbumExoV15.texte($0, exo: e) }
             }
+            // Ce qui reste à faire, sans valeurs inventées (02-10).
             let propose: String = {
-                guard e.tracking == .setsRepsWeight else { return L("cardio", "cardio") }
-                return e.saisie.serie(reps: p.reps, kilos: p.kilos, secondes: 0)
+                guard e.tracking == .setsRepsWeight else {
+                    return ModeCardio.pour(e)?.auLong == true ? L("Course", "Run") : L("HIIT", "HIIT")
+                }
+                return L("\(p.nombre) séries", "\(p.nombre) sets")
             }()
             return AlbumExoV15(id: p.id, exercice: e, faites: faites,
                                total: max(p.nombre, faites.count), propose: propose,
@@ -3865,11 +3868,14 @@ struct ExerciseDetailView: View {
         return nil
     }
 
-    /// « 10 × 30 kg », « 15 reps », « Au chrono », « Cardio » : la charge
-    /// proposée d'un exercice du plan, pour le slider.
+    /// Ce que le slider dit sous le nom de l'exercice suivant : sa série,
+    /// ou sa nature au cardio — jamais des reps ni un poids prévus (02-10).
     private func chargeV15(_ e: Exercise, _ p: SeanceV7Etat.Prevu) -> String {
-        guard e.tracking == .setsRepsWeight else { return L("Cardio", "Cardio") }
-        return e.saisie.serie(reps: p.reps, kilos: p.kilos, secondes: 0)
+        guard e.tracking == .setsRepsWeight else {
+            return ModeCardio.pour(e)?.auLong == true ? L("Course", "Run") : L("HIIT", "HIIT")
+        }
+        let faites = active.map { faitesEnSeanceV15(e.id, $0) } ?? 0
+        return L("Série \(faites + 1)", "Set \(faites + 1)")
     }
 
     /// LE SLIDER APRÈS LE REPOS DE FIN D'EXERCICE : la fiche de l'exercice

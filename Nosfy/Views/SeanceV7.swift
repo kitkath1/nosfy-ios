@@ -528,10 +528,9 @@ struct SeanceV7Page: View {
     private var legendeAction: (titre: String, sous: String)? {
         guard let n = prochain, let e = ExerciseCatalog.exercise(id: n.exo) else { return nil }
         guard e.tracking == .setsRepsWeight else { return (e.nomLocalise, L("Cardio", "Cardio")) }
-        let p = etat.plan.first { $0.id == n.exo }
-        let charge = e.saisie.serie(reps: p?.reps ?? 10, kilos: p?.kilos ?? 20, secondes: 0)
-        // Le nom en titre (il ne se tronque plus), la série et sa charge dessous.
-        return (e.nomLocalise, L("Série \(n.rang + 1)", "Set \(n.rang + 1)") + " · " + charge)
+        // Le nom en titre, la série dessous — jamais de reps ni de poids
+        // prévus : on ne les connaît pas à l'avance (02-10).
+        return (e.nomLocalise, L("Série \(n.rang + 1)", "Set \(n.rang + 1)"))
     }
 
     private func action() {
@@ -1101,7 +1100,7 @@ private struct CarteExoV7: View {
                                igniteAt: nil, corps: 13, ceremonie: false)
                 }
                 // Moins de mots : les flammes disent le nombre.
-                Text((faits.isEmpty ? L("\(rangs.count) séries", "\(rangs.count) sets") + valeur
+                Text((faits.isEmpty ? L("\(rangs.count) séries", "\(rangs.count) sets")
                                     : String(valeur.dropFirst(3)))
                      + (reste > 0 && !faits.isEmpty ? L(" · \(reste) à faire", " · \(reste) to go") : ""))
                     .font(.system(size: 15, weight: .medium))
@@ -1240,8 +1239,9 @@ private struct RangeeV7: View {
                 .foregroundStyle(.white.opacity(r.fait || prochaine ? 1 : 0.36))
                 .lineLimit(1)
             Spacer(minLength: 8)
-            // Moins de mots (01-10) : « série N » ne reste que sur la suivante.
-            Text(prochaine || exo.tracking != .setsRepsWeight ? etiquette : "")
+            // Moins de mots : la série à venir dit déjà son numéro ; « série N »
+            // ne reste qu'au cardio (« tour N »).
+            Text(exo.tracking != .setsRepsWeight ? etiquette : "")
                 .font(.system(size: 13.5))
                 .monospacedDigit()
                 .foregroundStyle(.white.opacity(prochaine ? 0.72 : 0.42))
@@ -1265,6 +1265,12 @@ private struct RangeeV7: View {
     /// cardio, l'intervalle couru. Jamais un « 0 s » : le temps ne se dit
     /// que là où il EST la mesure.
     private var valeur: String {
+        // ON NE CONNAÎT PAS À L'AVANCE LES REPS NI LE POIDS (02-10, Kathryn) :
+        // une série à venir dit son numéro, rien d'autre. Ses valeurs
+        // naîtront dans la note, après le Stop.
+        if !r.fait, exo.tracking == .setsRepsWeight {
+            return L("Série \(r.rang + 1)", "Set \(r.rang + 1)")
+        }
         guard let l = r.ligne else {
             return exo.tracking == .intervals ? L("Intervalles", "Intervals")
                                               : L("Allure continue", "Steady pace")
