@@ -1669,42 +1669,14 @@ struct RootView: View {
     ///   quoi qu'il arrive à l'écran.
     @ViewBuilder private var couvercles: some View {
         ZStack {
-            // ⚠️ LE POINT DE SÉANCE EST ICI, SOUS L'OUVERTURE (24-09).
-            // Ici, et pas sur la barre d'onglets : posé sur la barre, il
-            // n'existait que là où la barre existe — c'est-à-dire sur
-            // l'Accueil seul (« il n'apparaît que dans le menu et sur
-            // aucune page »). Sous l'ouverture, parce que pendant un
-            // passage c'est le feu qui tient l'écran, pas lui.
-            PointSeance(visible: pointDeSeanceVisible,
-                        surBarre: selection == .home,
-                        // Le tap fait exactement ce que faisait l'onglet.
-                        ouvrir: { CoupeEtat.shared.couper { poserGrandPlayer() } })
+            // (LE POINT DE SÉANCE EST RETIRÉ le 02-10 — Kathryn, sur la nav
+            // en séance : « enlève ce bouton, ça n'a plus d'intérêt ». Le
+            // coureur de la nav rend déjà le lecteur pendant une séance, et
+            // la home porte « Ajouter un exercice ». `PointSeance` reste
+            // dans `PointRec.swift`, site d'appel mort.)
             Ouverture()
             EcranErreurHote()
         }
-    }
-
-    /// Une séance tourne, et rien de plus important ne tient l'écran.
-    ///
-    /// ⚠️⚠️ **DANS LE MENU, ET NULLE PART AILLEURS** (24-09, après son essai
-    /// sur son téléphone : « pas de bouton REC juste dans le menu, pas dans
-    /// les pages chrono quand je lance un exercice »).
-    ///
-    /// Le matin même il avait été sorti de la barre pour vivre sur tous les
-    /// écrans — et vu sur le vrai téléphone, un témoin posé par-dessus le
-    /// compteur d'une série est un intrus : ces pages-là sont immersives,
-    /// elles n'ont pas de barre justement pour qu'on ne regarde qu'elles.
-    /// Il redevient ce qu'il est : **l'onglet Exercices pendant une
-    /// séance**. Donc là où la barre existe — l'Accueil seul, les deux
-    /// autres onglets la masquant.
-    ///
-    /// ⚠️ Le lecteur reste exclu par `morphPlayer` : devant la séance
-    /// elle-même, un témoin « ta séance t'attend » ne dit rien.
-    private var pointDeSeanceVisible: Bool {
-        selection == .home
-            && active != nil && morphPlayer < 0.98 && filmDepart == nil
-            && !showSplash && !showAuth && !homeEclipsee
-            && !compte.enPorte && !depart.cheminOuvert
     }
 
     /// L'ONGLET QU'ON TAPE — et la seule chose qu'il fait de différent

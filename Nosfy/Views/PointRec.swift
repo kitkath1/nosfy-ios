@@ -2,6 +2,10 @@ import SwiftUI
 
 // MARK: - LE POINT DE SÉANCE (24-09) — un point blanc, un pulsar, des paillettes
 //
+// ⚠️ ARCHIVÉ le 02-10 (Kathryn : « enlève ce bouton, ça n'a plus d'intérêt ») :
+// son site d'appel dans `NosfyApp.couvercles` est mort. Le composant reste ;
+// `EffetsSeanceBanc` (le barreau maître, plus bas) sert toujours.
+//
 // « Je revois le design de la pastille, c'est horrible. Je pensais à un point
 //   blanc minimal avec un effet pulsar et des petites paillettes autour,
 //   basta ! » (Kathryn, 24-09.)
