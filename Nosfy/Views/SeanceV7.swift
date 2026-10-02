@@ -274,8 +274,6 @@ struct SeanceV7Page: View {
 
     @Environment(\.modelContext) private var context
     @Query(sort: \Workout.startedAt, order: .reverse) private var seances: [Workout]
-    /// Le départ de série du COMPTE (Réglages) : galet ou slider.
-    @AppStorage(DepartSerie.cle) private var departBrut: String = DepartSerie.defaut.rawValue
     @State private var ajout = false
     @State private var tire: CGFloat = 0
     @State private var tirePris = false
@@ -287,7 +285,11 @@ struct SeanceV7Page: View {
 
     /// La page est posée, immobile : ses horloges ont le droit de battre.
     private var pose: Bool { morph > 0.98 && tire < 0.5 && !ajout }
-    private var departSlider: Bool { DepartSerie(rawValue: departBrut) != .galet }
+    /// ⚠️ EN SÉANCE, TOUJOURS LE SLIDER (Kathryn, 02-10 : le choix galet ou
+    /// slider du profil vaut sur la fiche d'un exercice HORS séance, « jamais
+    /// pendant la session en cours »). La page ne lit plus le réglage : son
+    /// slider lance la série directement, pour tous les comptes.
+    private var departSlider: Bool { true }
 
     var body: some View {
         GeometryReader { geo in

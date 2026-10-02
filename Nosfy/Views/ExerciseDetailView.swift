@@ -272,7 +272,20 @@ struct ExerciseDetailView: View {
     /// Réglages se voit à la fiche suivante sans relancer l'app.
     @AppStorage(DepartSerie.cle) private var departBrut: String = DepartSerie.defaut.rawValue
     /// Tout ce qui n'est pas explicitement « galet » est le slider (le défaut).
-    private var departSlider: Bool { DepartSerie(rawValue: departBrut) != .galet }
+    ///
+    /// ⚠️ LE CHOIX NE VAUT QU'ICI, HORS SÉANCE (Kathryn, 02-10 : « dans la
+    /// page détail exercice on a soit le galet soit le slider, choix du
+    /// profil — mais qu'ici, jamais pendant la session en cours »). La fiche
+    /// de SÉANCE (celle qui a pris l'onglet, `PlayerEtat.ficheSeance`) part
+    /// toujours au slider, quel que soit le réglage : la séance a son seul
+    /// départ. Une fiche ouverte hors séance garde le sien jusqu'au bout —
+    /// le galet n'est pas démonté sous sa propre plongée.
+    private var departSlider: Bool {
+        ficheDeSeance || DepartSerie(rawValue: departBrut) != .galet
+    }
+    private var ficheDeSeance: Bool {
+        PlayerEtat.shared.ficheSeance?.id == exercise.id
+    }
     /// La réserve du bas de page, selon le départ.
     private var reserveDepart: CGFloat { departSlider ? Self.reserveSlider : Self.reserveGalet }
     /// `-departSerieAuto` : le banc tire le slider tout seul, UNE fois par lancement
