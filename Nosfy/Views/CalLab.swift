@@ -4069,13 +4069,23 @@ final class BacMotion: ObservableObject {
     private var rollRef: Double?
     private var lisse = CGSize.zero
     @Published private(set) var pench = CGSize.zero
+    private var lecteurs: Set<UUID> = []
+    private static let calendrier = UUID()
+    @Published private(set) var actif = false
 
     func start() {
+        start(pour: Self.calendrier)
+    }
+
+    func start(pour lecteur: UUID) {
+        lecteurs.insert(lecteur)
         guard mgr.isDeviceMotionAvailable, !mgr.isDeviceMotionActive
         else { return }
         pitchRef = nil
         rollRef = nil
         mgr.deviceMotionUpdateInterval = 1.0 / 30.0
+        actif = true
+        NavDiagnostic.noter("mouvement-demarre")
         mgr.startDeviceMotionUpdates(using: .xArbitraryZVertical,
                                      to: .main) { [weak self] m, _ in
             guard let self, let m else { return }
@@ -4096,8 +4106,16 @@ final class BacMotion: ObservableObject {
     }
 
     func stop() {
+        stop(pour: Self.calendrier)
+    }
+
+    func stop(pour lecteur: UUID) {
+        lecteurs.remove(lecteur)
+        guard lecteurs.isEmpty else { return }
         guard mgr.isDeviceMotionActive else { return }
         mgr.stopDeviceMotionUpdates()
+        actif = false
+        NavDiagnostic.noter("mouvement-arrete")
         pench = .zero
         lisse = .zero
     }
