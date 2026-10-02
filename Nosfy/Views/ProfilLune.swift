@@ -1531,15 +1531,18 @@ struct TirageBooster: View {
                 // ±2,5° et souffle d'échelle, périodes premières.
                 TimelineView(.animation(minimumInterval: RythmeEcran.pas,
                                         paused: dort || ReposDecorProfil.actif)) { tl in
-                    let t = tl.date.timeIntervalSinceReferenceDate
+                    // Trois valeurs NOMMÉES et typées (02-10) : en une seule
+                    // expression, `.pi` ambigu et les littéraux mêlés faisaient
+                    // tomber le build propre sur le mur du type-checker.
+                    let t: Double = tl.date.timeIntervalSinceReferenceDate
+                    let angle: Double = 2.5 * sin(t * 2 * Double.pi / 7.3)
+                    let souffle: CGFloat = CGFloat(1 + 0.025 * sin(t * 2 * Double.pi / 11.0 + 1.4))
                     BoosterStage(still: false, frozenTear: nil,
                                  startOpen: false, paused: dort,
                                  preferredFramesPerSecond: cadenceBooster)
                         .frame(width: 240, height: 300)
-                        .rotationEffect(.degrees(
-                            2.5 * sin(t * 2 * .pi / 7.3)))
-                        .scaleEffect(
-                            1 + 0.025 * sin(t * 2 * .pi / 11.0 + 1.4))
+                        .rotationEffect(.degrees(angle))
+                        .scaleEffect(souffle)
                 }
                 .transition(.scale(scale: 0.6)
                     .combined(with: .opacity))
