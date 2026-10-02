@@ -2918,6 +2918,14 @@ struct GrandPlayer: View {
 struct CarreZoneMini: View {
     let zone: ExerciseCategory
     let choisie: Bool
+    /// Le nom écrit en pied, quand l'hôte en veut un plus court que
+    /// `nomLocalise` (02-10 : la barre de la page Exercices, six carrés de
+    /// 52 pt). Sans lui, rien ne change pour le lecteur.
+    var nom: String? = nil
+    /// L'hôte dort (onglet caché, fiche poussée par-dessus) : le carré se
+    /// pose au repos, plus rien ne bat. Le lecteur ne le passe pas — il
+    /// n'existe qu'ouvert.
+    var dort: Bool = false
 
     private static let forme = RoundedRectangle(cornerRadius: 13, style: .continuous)
 
@@ -2973,7 +2981,7 @@ struct CarreZoneMini: View {
     private static let flots: [Double] = [3.3, 4.1, 3.6, 4.9, 4.4]
 
     private var pulseActif: Bool {
-        !reduceMotion && !EffetsSeanceBanc.sans
+        !reduceMotion && !dort && !EffetsSeanceBanc.sans
             && !ProcessInfo.processInfo.arguments.contains("-sansPulseZone")
     }
     /// ⚠️ PLUS D'ÉCART QU'HIER (0,58 → 1,00 : trop timide, ça se voyait à
@@ -3065,7 +3073,7 @@ struct CarreZoneMini: View {
                 }
             }
             .overlay(alignment: .bottom) {
-                Text(zone.nomLocalise)
+                Text(nom ?? zone.nomLocalise)
                     .font(.inter(8.5, .semibold))
                     .foregroundStyle(.white.opacity(choisie ? 0.95 : 0.7))
                     .padding(.bottom, 4)

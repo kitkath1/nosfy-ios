@@ -85,10 +85,8 @@ enum ExosBanc {
     /// nuit opaque à la place du verre (la loi : tout moteur coûteux arrive
     /// avec de quoi l'accuser ou le disculper, au téléphone, en ABBA).
     static let sansVerreListe = CommandLine.arguments.contains("-sansVerreListe")
-    /// `-exosAccueil <0|1>` : l'accueil des zones (1) ou le mur des 29 (0) posé
-    /// au lancement — le mur n'existe plus dans le jeu (« Tout », c'est
-    /// l'accueil), le banc le garde pour les captures de non-régression.
-    static let accueil: Bool? = valeur("-exosAccueil").map { $0 > 0.5 }
+    /// (`-exosAccueil` est mort le 02-10 avec l'accueil des zones : la page
+    /// naît sur « Tout », `-exosSection <n>` pose une zone.)
     /// `-sansVerreAccueil` : LE BARREAU de l'accueil — ses cards en nuit opaque
     /// (la loi : tout moteur coûteux arrive avec de quoi l'accuser).
     static let sansVerreAccueil = CommandLine.arguments.contains("-sansVerreAccueil")
@@ -425,18 +423,13 @@ struct ExercisesView: View {
     /// pas dans l'`@Observable` du par-image.
     @AppStorage("exosModeListe") private var modeListe = false
 
-    /// L'ACCUEIL DES ZONES (21-09, Kathryn : « une page d'accueil d'exercices,
-    /// des designs minimal blancs, en mode cards, des typologies ») — voir
-    /// `AccueilExos` et `tools/exos-accueil/PLAN-ACCUEIL-EXERCICES-2026-09-21.md`.
-    /// `true` : la page montre les cinq cards de zone à la place de la grille.
-    /// Il ne change qu'au TAP (une card, la molette ramenée sur Tout) : même
-    /// famille que `cherche` et `modeListe`, jamais dans l'`@Observable` du
-    /// par-image.
-    @State private var accueil = true
-
-    /// L'accueil se montre quand rien ne le contredit : aucune section au
-    /// tambour, aucun mot tapé (la recherche est globale et reprend la grille).
-    private var montreAccueil: Bool { accueil && filter == nil && q.isEmpty }
+    /// (L'ACCUEIL DES ZONES du 21-09 est RETIRÉ le 02-10 — Kathryn : « enlève
+    /// la page de base où on choisit les catégories, mais tu remets dans la
+    /// page exercices les petites cards animées de catégories, comme la
+    /// session en cours, et dessous la vue cards ou liste ; il faut rajouter
+    /// un petit carré Tout, et on garde la molette ». La page naît sur
+    /// « Tout » ; les carrés (`BarreZonesExos`) et la molette écrivent le
+    /// MÊME état, `filter`.)
 
     /// LE CATALOGUE CACHÉ. Il était recalculé — `flatMap` sur les catégories —
     /// TROIS fois par évaluation de corps, donc trois fois par image de
@@ -478,6 +471,11 @@ struct ExercisesView: View {
     /// chevron ne bouge JAMAIS d'une page à l'autre — plus 18 d'air avant les
     /// cartes.
     static let hBandeau: CGFloat = 74
+    /// LA BARRE DES ZONES (02-10) se pose sous la rangée du titre : 4 pt
+    /// d'air sous les chips (ses carrés flottent de 2,5 pt et le choisi
+    /// grossit de 7 %), puis 12 pt avant les cartes.
+    static let hautBarre: CGFloat = 60
+    static let airBarre: CGFloat = 12
     /// L'encart du contenu DANS la card — il porte à lui seul les 20 pt du
     /// bord physique depuis que la card touche les flancs. ⚠️ C'est LUI qui
     /// tient la place du chevron : elle ne bouge JAMAIS d'une page à l'autre,
@@ -632,13 +630,6 @@ struct ExercisesView: View {
                 withAnimation(.easeOut(duration: 0.28)) {
                     items = ExosCatalogue.liste(filter, q: q)
                 }
-                // L'ACCUEIL DES ZONES (21-09) : « Tout » n'est plus le mur,
-                // c'est l'accueil — le tambour ramené sur Tout le rend. Dans
-                // sa propre transaction : le geste de la molette a écrit
-                // `filter` dans la sienne, celle-ci est déjà close.
-                if filter == nil, !accueil {
-                    withAnimation(.easeOut(duration: 0.28)) { accueil = true }
-                }
                 ordre = OrdreScroll(y: 0, jeton: ordre.jeton + 1)
             }
             // LE MOT CHANGE LA GRILLE — même cascade qu'un changement de
@@ -676,7 +667,6 @@ struct ExercisesView: View {
         deja = true
         withAnimation(.easeOut(duration: 0.45)) { naissance = 1 }
         if let l = ExosBanc.liste { modeListe = l }
-        if let a = ExosBanc.accueil { accueil = a }
         if let t = ExosBanc.tirage { etat.tirage = t }
         if let y = ExosBanc.scroll {
             // Le scroll n'existe pas encore à la première image : on le laisse
@@ -713,32 +703,39 @@ struct ExercisesView: View {
         }
     }
 
-    /// UNE CARD DE ZONE ÉCRIT LE MÊME ÉTAT QUE LA MOLETTE (21-09). Le tambour
-    /// se cale sur le cran de la zone (le ressort de VoiceOver), et la section
-    /// est posée dans la MÊME transaction que la fermeture de l'accueil : le
-    /// fondu de l'accueil et la cascade des cards sont un seul mouvement.
-    private func choisirZone(_ zone: ExerciseCategory) {
-        guard let idx = ArcDial.items.firstIndex(where: { $0.1 == zone })
+    /// UN CARRÉ DE ZONE ÉCRIT LE MÊME ÉTAT QUE LA MOLETTE (21-09, repris le
+    /// 02-10 pour la barre). Le tambour se cale sur le cran de la zone (le
+    /// ressort de VoiceOver) et la section est posée : la cascade des cartes
+    /// est celle d'un changement de section au tambour. `nil` = « Tout ».
+    ///
+    /// Le carré déjà choisi rend « Tout » — le geste du lecteur de séance
+    /// (24-09 : « je dois pouvoir revenir en arrière si je reclique dessus »).
+    private func choisirZone(_ zone: ExerciseCategory?) {
+        // (Sous une recherche aucun carré n'est allumé : on y CHOISIT la zone.)
+        let cible: ExerciseCategory? =
+            (zone != nil && zone == filter && q.isEmpty) ? nil : zone
+        guard let idx = ArcDial.items.firstIndex(where: { $0.1 == cible })
         else { return }
+        // Une roue encore en roue libre poserait SON cran par-dessus le carré.
+        etat.inertie?.cancel()
+        etat.inertie = nil
+        etat.omega = 0
+        // Une recherche est globale : un mot tapé cacherait la zone choisie.
+        if cherche || !q.isEmpty { fermerLaRecherche() }
         withAnimation(.spring(response: 0.34, dampingFraction: 0.76)) {
             etat.pos = Double(idx)
         }
         etat.detent = idx
-        withAnimation(.easeOut(duration: 0.28)) {
-            accueil = false
-            filter = zone
-        }
+        withAnimation(.easeOut(duration: 0.28)) { filter = cible }
     }
 
-    /// Retour aux catégories : la section s'efface, le tambour revient sur
-    /// « Tout », l'accueil se rallume — le chemin inverse de `choisirZone`,
-    /// et la recherche est vidée (un mot tapé cacherait l'accueil).
-    private func revenirAuxCategories() {
-        etat.pos = 0
-        etat.detent = 0
-        filter = nil
+    /// Le champ rend le titre et le mot est vidé — ce que fait la croix.
+    private func fermerLaRecherche() {
         q = ""
-        accueil = true
+        withAnimation(.spring(response: 0.40, dampingFraction: 0.86)) {
+            cherche = false
+            etat.clavier = false
+        }
     }
 
     // MARK: - Le contenu de la card
@@ -800,25 +797,23 @@ struct ExercisesView: View {
     private func contenuCard(safeT: CGFloat, w: CGFloat, safeB: CGFloat,
                              reserve: CGFloat) -> some View {
         let cardW = w - 2 * GrandeCardExos.margeCote
+        // LA RÉSERVE DE LA GRILLE (02-10) : le bandeau du titre, puis la
+        // barre des zones — six carrés, leur côté vient de la largeur — et
+        // son air. Les cartes commencent dessous et passent DERRIÈRE.
+        let cote = BarreZonesExos.cote(cardW - 2 * Self.encart)
+        let reserveGrille = max(reserve, Self.hautBarre + cote + Self.airBarre)
         ZStack(alignment: .top) {
-            // L'ACCUEIL DES ZONES OU LA GRILLE (21-09) : « Tout », c'est
-            // l'accueil ; une section, c'est la grille inchangée. Le fondu
-            // entre les deux est porté par la transaction de `choisirZone`
-            // (ou du tambour) — sans elle, l'un remplacerait l'autre à sec.
-            if montreAccueil {
-                AccueilExos(reserve: reserve, tuto: tutoActif,
-                            onZone: choisirZone)
-                    .transition(.opacity)
-            } else {
-                GrilleExos(items: items, reserve: reserve, etat: etat,
-                           ordre: ordre, tuto: tutoActif, liste: modeListe,
-                           deepLinked: $deepLinked)
-                    .transition(.opacity)
-            }
+            // « TOUT », C'EST LE MUR (02-10) : l'accueil des zones est
+            // retiré, la grille est toujours là — la barre et la molette la
+            // filtrent.
+            GrilleExos(items: items, reserve: reserveGrille, etat: etat,
+                       ordre: ordre, tuto: tutoActif, liste: modeListe,
+                       deepLinked: $deepLinked)
             // LE BANDEAU DE NUIT, par-dessus la grille : les cartes passent
             // DESSOUS, elles ne s'arrêtent pas à son bord. Et c'est LA POIGNÉE
             // de la card.
             BandeauExos(safeT: safeT, etat: etat,
+                        sousBandeau: reserveGrille - reserve,
                         // LE TITRE EST LE NOM DE CE QU'ON REGARDE : la page
                         // s'appelle « Exercices », mais dès qu'une section est
                         // choisie au tambour c'est ELLE qu'on lit. Le titre
@@ -845,27 +840,33 @@ struct ExercisesView: View {
                                 }
                                 return
                             }
-                            // LE CHEVRON D'UNE SECTION REND LES CATÉGORIES
-                            // (verdict 21-09 : « le chevron me remet sur la
-                            // home, pas sur catégories »). Depuis l'accueil
-                            // lui-même, il rend la home, comme avant.
+                            // LE CHEVRON REND LA HOME (02-10) : les
+                            // catégories sont SUR la page (la barre), il
+                            // n'y a plus d'accueil où revenir.
                             withAnimation(.easeOut(duration: 0.3)) {
-                                if montreAccueil {
-                                    selection = .home
-                                } else {
-                                    revenirAuxCategories()
-                                }
+                                selection = .home
                             }
                         },
                         // §3.4ter : la page ne bouge JAMAIS — la poignée
                         // de tirage est morte avec la levée locale.
                         tirer: { _ in },
                         reposer: { })
+            // LA BARRE DES ZONES (02-10) — les petits carrés animés du
+            // lecteur de séance, « Tout » en tête. APRÈS le bandeau : ses
+            // carrés sont au-dessus de sa poignée, ils gardent leur tap.
+            // Elle dort sous une fiche poussée (la molette aussi) et quand
+            // l'onglet est caché.
+            BarreZonesExos(filtre: filter, recherche: !q.isEmpty,
+                           dort: ongletCache || deepLinked != nil,
+                           onChoisir: choisirZone)
+                .padding(.horizontal, Self.encart)
+                .padding(.top, max(safeT - GrandeCardExos.margeHaut, 0)
+                              + Self.hautBarre)
             // RIEN TROUVÉ — une grille vide se lit comme une page cassée. La
             // ligne se pose sous le bandeau, jamais au centre de l'écran : le
             // bas appartient au lit de la molette.
             if items.isEmpty, !q.isEmpty {
-                VideRecherche(q: q, reserve: reserve)
+                VideRecherche(q: q, reserve: reserveGrille)
             }
         }
         // LE THÉÂTRE DU TOUCHER. ⚠️ Le noir est descendu de 0,55 à 0,30 et le
@@ -882,26 +883,20 @@ struct ExercisesView: View {
         // s'aiguille : horizontale → le tambour, verticale → la card. On y perd
         // le droit de LANCER un scroll depuis les 156 derniers points — c'est le
         // lit de la molette, les cartes y sont déjà éteintes.
+        // (02-10 : la molette est de retour partout — « on garde la molette » ;
+        // l'accueil qui la démontait est retiré.)
         .overlay(alignment: .bottom) {
-            // PAS DE MOLETTE SOUS L'ACCUEIL (verdict Kathryn 21-09 : « pas de
-            // molette ici ») : les cinq carrés SONT le filtre. La prise du
-            // pouce et le tambour ne vivent que sur la grille d'une section.
-            if !montreAccueil {
-                Color.clear
-                    .frame(height: Self.prise)
-                    .contentShape(Rectangle())
-                    .gesture(priseBasse)
-            }
+            Color.clear
+                .frame(height: Self.prise)
+                .contentShape(Rectangle())
+                .gesture(priseBasse)
         }
         // LA MOLETTE, couchée au bas de la card. Son cadre est GÉNÉREUX
         // (300 pt) pour que la fumée ait de l'air au-dessus du disque : le
         // shader éteint tout à 16 pt du bord de son hôte.
         .overlay(alignment: .bottom) {
-            if !montreAccueil {
-                ArcDial(etat: etat, sousFiche: deepLinked != nil)
-                    .frame(width: cardW, height: 300)
-                    .transition(.opacity)
-            }
+            ArcDial(etat: etat, sousFiche: deepLinked != nil)
+                .frame(width: cardW, height: 300)
         }
         // (LE CLAVIER DE BRAISE EST ARCHIVÉ — verdict Kathryn 15-09 : « mets
         // le clavier natif Apple, enlève le custom à la recherche ». Le
@@ -1341,6 +1336,10 @@ private struct BandeExos: View {
 private struct BandeauExos: View {
     let safeT: CGFloat
     let etat: EtatExos
+    /// Ce que la barre des zones occupe SOUS la rangée du titre (02-10) : la
+    /// nuit du bandeau descend d'autant — les cartes passent derrière les
+    /// carrés comme elles passent derrière le titre.
+    var sousBandeau: CGFloat = 0
     /// « Exercices » au repos, le nom de la SECTION dès qu'on en choisit une.
     let titre: String
     /// LE MOT CHERCHÉ, et si le champ a pris la place du titre.
@@ -1357,7 +1356,8 @@ private struct BandeauExos: View {
         // a déjà prise en tête.
         let haut = max(safeT - GrandeCardExos.margeHaut, 0)
         ZStack(alignment: .topLeading) {
-            VoileTitre(etat: etat, hauteur: haut + ExercisesView.hBandeau + 34)
+            VoileTitre(etat: etat,
+                       hauteur: haut + ExercisesView.hBandeau + sousBandeau + 34)
 
             VStack(spacing: 0) {
                 Color.clear.frame(height: haut)
@@ -2910,8 +2910,165 @@ struct RangeeExo: View {
     }
 }
 
-// MARK: - L'accueil des zones (21-09)
+// MARK: - La barre des zones (02-10)
 
+/// LES PETITS CARRÉS DE ZONE, SUR LA PAGE — Kathryn, 02-10 : « tu remets dans
+/// la page exercices les petites cards animées de catégories, comme la
+/// session en cours, et dessous la vue cards ou liste ; il faut rajouter un
+/// petit carré Tout, et on garde la molette — comme ça on a une UI cohérente
+/// partout ».
+///
+/// Ce sont les carrés du lecteur de séance, le MÊME composant
+/// (`CarreZoneMini` : la gravure, la zone blanche qui respire, le flottement),
+/// précédés de « Tout ». Un tap écrit le même état que la molette (`filter`,
+/// par `choisirZone`) ; la molette ramenée sur un cran allume son carré.
+///
+/// Son barreau est celui des carrés : `-sansPulseZone`. Elle dort avec la
+/// page (onglet caché, fiche poussée par-dessus) et sous la protection
+/// thermique — un `repeatForever` qui bat sous une page opaque est payé pour
+/// rien (la leçon de la molette, 21-09).
+private struct BarreZonesExos: View {
+    /// La section posée — `nil` : « Tout ».
+    let filtre: ExerciseCategory?
+    /// Un mot est tapé : la recherche est globale, aucun carré n'est choisi.
+    let recherche: Bool
+    let dort: Bool
+    var onChoisir: (ExerciseCategory?) -> Void
+
+    static let gouttiere: CGFloat = 8
+    /// Le côté d'un carré : six dans la largeur, cinq gouttières.
+    static func cote(_ largeur: CGFloat) -> CGFloat {
+        max(0, (largeur - 5 * gouttiere) / 6)
+    }
+    private static let prise = RoundedRectangle(cornerRadius: 13, style: .continuous)
+
+    var body: some View {
+        let repos = dort || ProtectionThermique.shared.ambianceAuRepos
+        HStack(spacing: Self.gouttiere) {
+            // ⚠️ PAS DES `Button` : la page porte des gestes d'ancêtre (le
+            // filet des taps) — la loi du bouton sous un drag.
+            CarreToutMini(choisie: filtre == nil && !recherche,
+                          compte: ExerciseCatalog.all.count, dort: repos)
+                .contentShape(Self.prise)
+                .highPriorityGesture(TapGesture().onEnded { onChoisir(nil) })
+                .accessibilityIdentifier("zone-tout")
+            ForEach(ExerciseCategory.allCases) { z in
+                CarreZoneMini(zone: z, choisie: filtre == z && !recherche,
+                              nom: z.nomCourt, dort: repos)
+                    .contentShape(Self.prise)
+                    .highPriorityGesture(TapGesture().onEnded { onChoisir(z) })
+                    .accessibilityIdentifier("zone-\(z.id)")
+            }
+        }
+    }
+}
+
+/// LE CARRÉ « TOUT » — le sixième, en tête de barre. La même tuile que ses
+/// voisins (forme, nuit, liseré, ressort du choix, flottement), mais il ne
+/// désigne aucune zone du corps : à la place de la gravure, le NOMBRE
+/// d'exercices du catalogue — un fait, pas une icône — en blanc fin, et
+/// c'est lui qui respire. Seules deux opacités sont animées (la loi du
+/// 05-09) ; le bloom est une copie floutée de 4 px, sous la barre des 5.
+private struct CarreToutMini: View {
+    let choisie: Bool
+    let compte: Int
+    var dort: Bool = false
+
+    private static let forme = RoundedRectangle(cornerRadius: 13, style: .continuous)
+
+    /// L'état du souffle vit dans la feuille (le piège de `PageCard`).
+    @State private var respire = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var pulseActif: Bool {
+        !reduceMotion && !dort
+            && !ProcessInfo.processInfo.arguments.contains("-sansPulseZone")
+    }
+    private var lueur: Double {
+        guard pulseActif else { return choisie ? 0.9 : 0.5 }
+        return respire ? 1.0 : 0.32
+    }
+    private var neon: Double {
+        guard pulseActif else { return choisie ? 0.42 : 0.06 }
+        return respire ? 0.9 : 0.0
+    }
+    /// Ses périodes ne sont multiples d'aucune de celles des cinq zones :
+    /// six carrés sur une horloge, c'est une guirlande.
+    private var souffle: Animation? {
+        guard pulseActif else { return nil }
+        return .easeInOut(duration: 3.4).repeatForever(autoreverses: true)
+            .delay(1.0)
+    }
+    private var flottement: Animation? {
+        guard pulseActif else { return nil }
+        return .easeInOut(duration: 3.9).repeatForever(autoreverses: true)
+            .delay(0.5)
+    }
+
+    private var chiffre: some View {
+        Text("\(compte)")
+            .font(.inter(19, .light))
+            .monospacedDigit()
+            .foregroundStyle(.white)
+            .fixedSize()
+            // Le nom tient le pied : le nombre se centre dans ce qui reste.
+            .offset(y: -6)
+    }
+
+    var body: some View {
+        Color.clear
+            .aspectRatio(1, contentMode: .fit)
+            .background {
+                ZStack {
+                    Self.forme.fill(
+                        LinearGradient(colors: [Color(white: 0.16), .black],
+                                       startPoint: .top, endPoint: .bottom))
+                    chiffre
+                        .blur(radius: 4)
+                        .opacity(neon)
+                        .animation(souffle, value: respire)
+                    chiffre
+                        .opacity(lueur)
+                        .animation(souffle, value: respire)
+                }
+            }
+            .overlay(alignment: .bottom) {
+                Text(L("Tout", "All"))
+                    .font(.inter(8.5, .semibold))
+                    .foregroundStyle(.white.opacity(choisie ? 0.95 : 0.7))
+                    .padding(.bottom, 4)
+            }
+            .clipShape(Self.forme)
+            .overlay {
+                Self.forme.strokeBorder(
+                    LinearGradient(
+                        colors: choisie
+                            ? [.white.opacity(0.98), .white.opacity(0.55),
+                               .white.opacity(0.18)]
+                            : [.white.opacity(0.14), .white.opacity(0.08)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing),
+                    lineWidth: choisie ? 1.4 : 0.5)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(L("Tout, \(compte) exercices",
+                                  "All, \(compte) exercises"))
+            .accessibilityAddTraits(choisie ? [.isButton, .isSelected] : .isButton)
+            .scaleEffect(choisie ? 1.07 : 1.0)
+            .animation(.spring(response: 0.32, dampingFraction: 0.62),
+                       value: choisie)
+            .offset(y: respire ? 2.5 : -2.5)
+            .rotationEffect(.degrees(respire ? -0.55 : 0.55))
+            .animation(flottement, value: respire)
+            .task(id: pulseActif) { respire = pulseActif }
+    }
+}
+
+// MARK: - L'accueil des zones (21-09) — ARCHIVÉ le 02-10
+
+/// ⚠️ ARCHIVÉ le 02-10 (Kathryn : « enlève la page de base où on choisit les
+/// catégories ») : son site d'appel est mort, la barre `BarreZonesExos` a pris
+/// le rôle sur la page elle-même. Le composant reste, comme `ClavierBraise`.
+///
 /// L'ACCUEIL DES EXERCICES — verdicts Kathryn 21-09 : « une page d'accueil
 /// d'exercices, des typologies, en mode cards » puis « en mode GROS CARRÉ, pas
 /// de ligne, deux carrés par ligne, pas de molette ici ». Plan et décisions :
@@ -3163,4 +3320,16 @@ private extension ExerciseCategory {
     }
 
     var compteAccueil: Int { ExerciseCatalog.exercises(in: self).count }
+
+    /// Le nom d'un petit carré de la barre : le mot de la molette, court —
+    /// il tient dans un carré de 52 pt.
+    var nomCourt: String {
+        switch self {
+        case .haut: return L("Haut", "Upper")
+        case .abdos: return L("Abdos", "Core")
+        case .bas: return L("Bas", "Legs")
+        case .fessiers: return L("Fessiers", "Glutes")
+        case .cardio: return "Cardio"
+        }
+    }
 }
