@@ -104,10 +104,18 @@ struct ModeCardio: Equatable {
     static var hiitEffortMinS: Double = 20
     var minMinutes: Double { estNiveau ? Self.minMinutesEscalier : Self.minMinutesTapis }
 
-    static let hiit = ModeCardio(plage: 0...20, depart: 10, departRecup: 7,
+    /// ⚠️ LE TAPIS PART À 0, ET LE 0 S'ALLUME (02-10 et 03-10, TestFlight 86 :
+    /// « il faut un état 0 km/h qui clignote pour montrer que l'user doit
+    /// sélectionner sa vitesse, au repos ou au HIIT », puis « 0 c'est plus
+    /// clair, avec un effet de lumière à l'intérieur ») : 10, 7 et 5 étaient
+    /// des vitesses inventées, écrites si on ne touchait à rien. Le 0 n'est
+    /// plus une vitesse de course (31-08) : c'est « à choisir », et une
+    /// lumière respire dans le galet tant qu'il vaut 0 (`LumiereAChoisir`).
+    /// Au HIIT, chaque Stop et chaque reprise repartent de 0.
+    static let hiit = ModeCardio(plage: 0...20, depart: 0, departRecup: 0,
                                  unite: "km/h", libelle: "km/h", pasGlisse: 40,
                                  estNiveau: false, auLong: false)
-    static let tapisModere = ModeCardio(plage: 0...20, depart: 7, departRecup: 5,
+    static let tapisModere = ModeCardio(plage: 0...20, depart: 0, departRecup: 0,
                                         unite: "km/h", libelle: "km/h", pasGlisse: 40,
                                         estNiveau: false, auLong: true)
     static let escalier = ModeCardio(plage: 1...15, depart: 6, departRecup: 1,
@@ -127,6 +135,32 @@ struct ModeCardio: Equatable {
 }
 
 // MARK: - L'état de la séance tapis
+
+/// LA NAV NE VIT JAMAIS SOUS LE DOUBLE GALET (02-10, TestFlight 86 : « j'ai
+/// lancé un exo et je vois le menu »). La fiche demande déjà à la cacher par
+/// le registre de `NavEtat` ; non reproduit au simulateur (9 chemins), le
+/// châssis lit en plus CE drapeau, posé par la scène elle-même : montée, la
+/// nav se retire, quelle que soit la page qui l'héberge. Démontée (Finish, un
+/// onglet, la séance fermée), elle rend sa voix — jamais une nav perdue.
+@MainActor @Observable
+final class TapisEnCours {
+    static let shared = TapisEnCours()
+    private init() {}
+    private(set) var actif = false
+    @ObservationIgnored private var hote: ObjectIdentifier?
+
+    func poser(_ s: SeanceTapis) {
+        hote = ObjectIdentifier(s)
+        if !actif { actif = true }
+    }
+
+    /// Seule la scène qui a posé le drapeau le retire.
+    func retirer(_ s: SeanceTapis) {
+        guard hote == ObjectIdentifier(s) else { return }
+        hote = nil
+        actif = false
+    }
+}
 
 /// L'état vivant du mode tapis — UN observable, jamais des @State éparpillés
 /// sur la page (la fiche porte déjà vidéos et shaders : l'Observation ne
@@ -223,6 +257,8 @@ final class SeanceTapis {
     /// fonctions que le doigt (`stopper`, `relancer`). Le nombre d'efforts
     /// n'est jamais prévu : « c'est au fil de l'eau ». `nil` : au toucher
     /// seul, comme avant. Le toucher passe toujours plus tôt.
+    /// ⚠️ REFUSÉ au TestFlight 86 (02-10 : « c'est moi qui choisis de passer
+    /// au repos ») : la fiche ne l'arme plus. Seul le banc `-tapisMinute`.
     var minute: (effort: Int, recup: Int)? { didSet { armerLeMinuteur() } }
     private var minuteJeton = 0
 
@@ -432,10 +468,10 @@ final class SeanceTapis {
         setsFaits += 1
         setDebut = nil
         reposDebut = now
-        // La bascule effort → récup : on garde ce qu'on courait, on propose
-        // ce qu'on récupérait la dernière fois.
+        // La bascule effort → récup : la récup repart de 0 (03-10, « 0 c'est
+        // plus clair ») — c'est elle qui règle la machine, l'app ne devine pas.
         vitesseEffort = vitesse
-        vitesse = vitesseRecup
+        vitesse = 0
         vitesseChoisie = Int(vitesse.rounded())
         compter(secondes, vitesse: bilan.vitesse)
         onSetFini?(bilan)
@@ -634,9 +670,15 @@ final class SeanceTapis {
         }
         // Un jeton : Finish dans les 3,2 s d'un stop ne doit ni voir la
         // pop-up remonter, ni sa quittance retirée par le minuteur du set.
-        // ⚠️ PLUS DE POP-UP « SETS » ENTRE DEUX EFFORTS (02-10, v17) : elle
-        // attendait un tap avant l'effort suivant — en pleine course, et le
-        // minuteur relance seul. La dalle dit encore ce qui est écrit.
+        // ⚠️ LA POP-UP FLAMMES REVIENT À CHAQUE SET (02-10, TestFlight 86 :
+        // « il manque les pop, l'annonce flamme, quand je termine un set »).
+        // Retirée le matin même avec le minuteur (v17) ; le HIIT est de
+        // nouveau au toucher, elle peut attendre le sien pendant la récup.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.40) { [weak self] in
+            guard let self, self.feteJeton == jeton, !self.terminee,
+                  self.etat == .repos else { return }
+            withAnimation(.easeOut(duration: 0.30)) { self.popupVisible = true }
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.20) { [weak self] in
             guard let self, self.feteJeton == jeton else { return }
             withAnimation(.easeIn(duration: 0.28)) { self.dalleVisible = false }
@@ -658,7 +700,8 @@ final class SeanceTapis {
         setDebut = now
         reposDebut = nil
         vitesseRecup = vRecup
-        vitesse = vitesseEffort
+        // L'effort suivant repart de 0, lui aussi (03-10).
+        vitesse = 0
         vitesseChoisie = Int(vitesse.rounded())
         if secondes > 0 {
             // La récup compte pour le barème de repli (minutes à vitesse > 0),
@@ -798,6 +841,8 @@ struct TapisScene: View {
                 fete
             }
         }
+        .onAppear { TapisEnCours.shared.poser(seance) }
+        .onDisappear { TapisEnCours.shared.retirer(seance) }
     }
 
     // MARK: LA FÊTE DU STOP — la dalle, puis la pop-up flammes
@@ -959,6 +1004,15 @@ struct TapisScene: View {
             // porte la sienne, en grand. Deux fois le même chiffre — l'un net,
             // l'autre flouté sous le verre — c'était le fantôme mesuré à la
             // capture.
+            // 0 = « à choisir » (03-10) : la lumière respire dans le galet
+            // jusqu'au premier cran. Endormie avec la scène.
+            if seance.vitesse == 0, !seance.mode.estNiveau, !seance.terminee, !dort {
+                LumiereAChoisir()
+                    .position(x: w / 2, y: yVitesse)
+                    .offset(y: offVitesse)
+                    .transition(.opacity)
+                    .zIndex(9)
+            }
             encreVitesse
                 .position(x: w / 2, y: yVitesse)
                 .offset(y: offVitesse)
@@ -1794,6 +1848,40 @@ private struct AnneauCrans: View, Animatable {
     }
 }
 
+
+// MARK: - Le 0 qui s'allume (02-10 → 03-10, TestFlight 86)
+
+/// « 0 c'est plus clair, avec un effet de lumière à l'intérieur » (03-10) :
+/// tant que la vitesse vaut 0, une lumière respire DANS le galet — un cœur
+/// blanc très doux et un cheveu de lumière de 1 pt sur le bord intérieur.
+/// Aucune couleur, aucun balayage : elle monte et descend sur place.
+/// Une opacité ANIMABLE en `repeatForever`, jamais une horloge, et aucun flou
+/// (skill perf : un flou par objet coûte, un redessin 3 à 8 fois plus qu'une
+/// valeur animée). Montée seulement à 0 : au premier cran, elle n'existe plus.
+private struct LumiereAChoisir: View {
+    @State private var bas = false
+
+    var body: some View {
+        let r = TapisCotes.rayonDisque
+        ZStack {
+            Circle()
+                .fill(RadialGradient(colors: [.white.opacity(0.20), .white.opacity(0.05), .clear],
+                                     center: .center, startRadius: 0, endRadius: r))
+            Circle()
+                .strokeBorder(Color.white.opacity(0.10), lineWidth: 5)
+                .padding(2)
+            Circle()
+                .strokeBorder(Color.white.opacity(0.78), lineWidth: 1)
+                .padding(4)
+        }
+        .frame(width: r * 2, height: r * 2)
+        .opacity(bas ? 0.12 : 1)
+        .allowsHitTesting(false)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) { bas = true }
+        }
+    }
+}
 
 // MARK: - La commande du tapis : son médaillon (02-10, v17)
 

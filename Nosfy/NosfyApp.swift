@@ -1238,6 +1238,7 @@ struct RootView: View {
     /// muscu. Le film doit finir sur la FICHE de muscu, jamais sur la page Exercices.
     private func bancCardioPuisMuscu() async {
         #if DEBUG
+        if CommandLine.arguments.contains("-bancHiit") { await bancHiit(); return }
         guard CommandLine.arguments.contains("-bancCardioMuscu") else { return }
         for _ in 0..<200 {
             if active != nil, morphPlayer >= 0.98 { break }
@@ -1264,6 +1265,59 @@ struct RootView: View {
         lancerDepuisLeLecteur(muscu)
         try? await Task.sleep(for: .seconds(2.5))
         print("[banc-cardio-muscu] après · onglet=\(selection) fiche=\(PlayerEtat.shared.ficheSeance?.id ?? "aucune") morph=\(morphPlayer)")
+        #endif
+    }
+
+    /// `-bancHiit direct|fiche|lecteur|relance|veille` (02-10, retour TestFlight 86 : « j'ai lancé un exo et je vois le
+    /// menu ») — DEBUG, captures automatisées uniquement. Le lecteur lance le HIIT tapis comme son
+    /// slider (`direct` : la demande `lancerDirect` de `SeanceV7Page.partir`, la fiche part seule)
+    /// ou comme la tête d'une carte (`fiche` : la fiche attend son slider, `-departSerieAuto` le
+    /// tire). Il relève chaque seconde ce qui décide la nav du bas.
+    private func bancHiit() async {
+        #if DEBUG
+        // `veille` : rien n'est lancé, le banc relève seulement (la fiche ouverte hors séance
+        // par `-openTab exercises -openExercise hiit-tapis -departSerieAuto`).
+        let mode = UserDefaults.standard.string(forKey: "bancHiit") ?? "direct"
+        let hiit = ExerciseCatalog.exercise(id: "hiit-tapis")
+        if mode != "veille" {
+            for _ in 0..<200 {
+                if active != nil, morphPlayer >= 0.98 { break }
+                try? await Task.sleep(for: .milliseconds(250))
+            }
+            guard active != nil, let hiit else {
+                print("[banc-hiit] pas de séance ouverte")
+                return
+            }
+            try? await Task.sleep(for: .seconds(1.5))
+            let direct = mode != "fiche"
+            print("[banc-hiit] lecteur → hiit-tapis direct=\(direct)")
+            if direct { SeanceV7Etat.shared.lancerDirect = hiit.id }
+            lancerDepuisLeLecteur(hiit)
+        }
+        for i in 0..<70 {
+            try? await Task.sleep(for: .seconds(1))
+            // `lecteur` : la pilule rouvre le lecteur pendant la course, puis il se referme
+            // (le geste vers le bas). `relance` : le lecteur relance le HIIT par son slider.
+            if i == 12, mode == "lecteur" || mode == "relance" {
+                print("[banc-hiit] pilule → lecteur")
+                ouvrirGrandPlayer()
+            }
+            if i == 17, mode == "lecteur" {
+                print("[banc-hiit] lecteur refermé")
+                CouvertureFoyer.shared.retirer()
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.92)) { morphPlayer = 0 }
+            }
+            if i == 17, mode == "relance", let hiit {
+                print("[banc-hiit] lecteur → hiit-tapis (relance)")
+                SeanceV7Etat.shared.lancerDirect = hiit.id
+                lancerDepuisLeLecteur(hiit)
+            }
+            print("[banc-hiit] t=\(i + 1) onglet=\(selection) seance=\(active != nil) "
+                  + "fiche=\(PlayerEtat.shared.ficheSeance?.id ?? "aucune") "
+                  + "nav=\(NavEtat.shared.bandeVisiblePubliee) morph=\(morphPlayer) film=\(filmDepart != nil) "
+                  + "chambre=\(ChambreEtat.shared.ouverte != nil) chemin=\(depart.cheminOuvert) "
+                  + "recomp=\(recompenses.ouverte != nil)")
+        }
         #endif
     }
 
@@ -2339,8 +2393,11 @@ struct RootView: View {
             // encore montée dessous ne doit pas y faire apparaître la nav.
             // 20-09 : ni sous une card de récompense (sa capture TestFlight :
             // la nav restait allumée sous la pop-up « BOOSTERS »).
+            // 02-10 (TestFlight 86) : ni sous le double galet du tapis — la
+            // scène se déclare elle-même (`TapisEnCours`, TapisScene.swift).
             if NavEtat.shared.bandeVisiblePubliee, ChambreEtat.shared.ouverte == nil,
-               !depart.cheminOuvert, recompenses.ouverte == nil {
+               !depart.cheminOuvert, recompenses.ouverte == nil,
+               !TapisEnCours.shared.actif {
                 // ⚠️ CENTRÉE DANS LE NOIR (04-09 : « centre la nav au
                 // milieu de l'espace noir » — collée au bas elle mordait
                 // l'indicateur, posée sur la zone sûre elle était trop

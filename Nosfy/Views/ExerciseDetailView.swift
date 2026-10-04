@@ -2600,14 +2600,11 @@ struct ExerciseDetailView: View {
             guard let st else { return }
             suivreCardio(st)
         }
-        // LE HIIT MINUTÉ (02-10, v17) : tes durées de la dernière fois (20 s
-        // d'effort, 40 s de récup sinon) ; aucun nombre d'efforts, au fil de
-        // l'eau. Barreau : `-sansMinuteHiit` (au toucher seul, comme avant).
-        if !mode.auLong, !CommandLine.arguments.contains("-sansMinuteHiit") {
-            let d = UserDefaults.standard
-            let e = d.integer(forKey: "nosfy.hiit.effort"), r = d.integer(forKey: "nosfy.hiit.recup")
-            st.minute = (effort: e > 0 ? e : 20, recup: r > 0 ? r : 40)
-        }
+        // ⚠️ LE HIIT N'EST PLUS MINUTÉ (02-10, TestFlight 86 : « au bout de
+        // X secondes il passe en repos : non, c'est moi qui gère le repos et
+        // la vitesse, et qui choisis de passer au repos »). Le minuteur du
+        // matin (v17, 20 s / 40 s armés ici) basculait seul : le HIIT revient
+        // au toucher. Le modèle garde `minute` pour le banc `-tapisMinute`.
         st.onSetFini = { bilan in
             ecrirePhase(kind: mode.kindEffort(bilan.vitesse),
                         secondes: bilan.secondes, vitesse: bilan.vitesse,
@@ -2670,7 +2667,9 @@ struct ExerciseDetailView: View {
                     let pas = dureeSet > 0 ? dureeSet : 6.0
                     try? await Task.sleep(for: .seconds(pas))
                     guard let st, seanceTapis === st else { return }
-                    st.vitesse = mode.depart + 2; st.sceller(st.vitesse)     // 7 → 9
+                    // Le tapis part à 0 depuis le 03-10 : le banc garde 7 de base.
+                    let base = mode.depart > 0 ? mode.depart : 7
+                    st.vitesse = base + 2; st.sceller(st.vitesse)            // 7 → 9
                     try? await Task.sleep(for: .seconds(pas))
                     guard seanceTapis === st else { return }
                     st.basculer()                                             // pause
@@ -2679,7 +2678,7 @@ struct ExerciseDetailView: View {
                     st.basculer()                                             // reprise
                     try? await Task.sleep(for: .seconds(pas))
                     guard seanceTapis === st else { return }
-                    st.vitesse = mode.depart - 1; st.sceller(st.vitesse)     // 9 → 6
+                    st.vitesse = base - 1; st.sceller(st.vitesse)            // 9 → 6
                     try? await Task.sleep(for: .seconds(pas))
                     guard seanceTapis === st else { return }
                     finirTapis()
@@ -2690,7 +2689,7 @@ struct ExerciseDetailView: View {
                     let attente = dureeSet > 0 ? dureeSet : (tour == 0 ? 5.0 : 4.0)
                     try? await Task.sleep(for: .seconds(attente))
                     guard let st, seanceTapis === st else { return }
-                    st.vitesse = mode.depart + Double(tour) * 3   // 10 · 13 · 16
+                    st.vitesse = 10 + Double(tour) * 3            // 10 · 13 · 16 (le HIIT part à 0 depuis le 02-10)
                     st.basculer()                                 // stop
                     try? await Task.sleep(for: .seconds(2.5))
                     guard seanceTapis === st else { return }
