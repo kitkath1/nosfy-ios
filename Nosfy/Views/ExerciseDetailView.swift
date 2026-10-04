@@ -1354,6 +1354,26 @@ struct ExerciseDetailView: View {
                     // réversible. Simultané : la lentille garde ses
                     // gestes (un drag bas, chez elle, ne fait rien).
                     .simultaneousGesture(returnDrag)
+                    // LE TIRAGE SPOTIFY (04-10, « sur la page cadran, je dois
+                    // pouvoir la tirer vers le bas, ça me remet sur le résumé
+                    // de la séance, très fluide ») : une fois le cadran posé,
+                    // tout le lecteur suit le doigt vers le bas — un offset,
+                    // jamais une taille (loi §2) —, le fond de la séance se
+                    // découvre dessous, et au-delà du seuil la fiche se range
+                    // par `quitterLaFiche` (la coupe sourde). Sinon il revient
+                    // en ressort.
+                    .offset(y: tirageCadran)
+                    .scaleEffect(1 - min(tirageCadran, 300) / 3000, anchor: .top)
+                    .clipShape(RoundedRectangle(cornerRadius: tirageCadran > 1 ? 44 : 0, style: .continuous))
+                    .background {
+                        if tirageCadran > 1 {
+                            FondSeanceSousCadran()
+                                .opacity(Double(min(tirageCadran, 160) / 160))
+                                .ignoresSafeArea()
+                                .allowsHitTesting(false)
+                        }
+                    }
+                    .simultaneousGesture(tirageSpotify)
                 }
                 // ⚠️ **LA PAGE BRAVO EST SORTIE DU FLOW (26-08).** Verdict de
                 // Kathryn : « elle doit être considérée comme archivée et
@@ -3190,7 +3210,7 @@ struct ExerciseDetailView: View {
             lensHandoff = .init(point: p, velocityY: vy, live: true)
             // L'hystérésis de la révélation : montrée à 0,22, cachée si
             // le doigt redescend sous 0,17 — on oscille librement.
-            if c >= Self.dawnEnd { lensShown = true }
+            if c >= Self.dawnEnd { lensShown = true; remettreLeTirage() }
             else if c < 0.17 { lensShown = false }
         } else {
             // Le grondement vit dès le premier point — le MÊME moteur que
@@ -3236,6 +3256,71 @@ struct ExerciseDetailView: View {
             driveClimb = 0
         }
         withAnimation(.easeOut(duration: 0.22)) { flood = 0 }
+    }
+
+    /// LE TIRAGE SPOTIFY (04-10) : la course du doigt vers le bas une fois
+    /// le cadran posé. `tirageSaisi` : le doigt a pris la page (filtre d'axe
+    /// passé) ; le chien de garde rejoint l'état stable si `onEnded` manque.
+    @State private var tirageCadran: CGFloat = 0
+    @State private var tirageSaisi = false
+    @State private var tirageJeton = 0
+
+    /// La même remise à plat quand la lentille se montre par le geste.
+    private func remettreLeTirage() {
+        guard tirageCadran != 0 || tirageSaisi else { return }
+        var tr = Transaction(); tr.disablesAnimations = true
+        withTransaction(tr) { tirageCadran = 0 }
+        tirageSaisi = false
+    }
+
+    private var tirageSpotify: some Gesture {
+        DragGesture(minimumDistance: 12, coordinateSpace: .global)
+            .onChanged { v in
+                // Seulement le cadran POSÉ, et jamais pendant la note (la
+                // molette glisse) ni sous le tirage de montée.
+                guard summited, lensShown, lensHandoff?.live != true, returnFrom == nil else { return }
+                if !tirageSaisi {
+                    guard v.translation.height > 0,
+                          abs(v.translation.height) > abs(v.translation.width) * 1.4 else { return }
+                    tirageSaisi = true
+                    tirageJeton += 1
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 0.7)
+                }
+                // Prise directe, butée douce au-delà de 320 pt.
+                let h = max(0, v.translation.height)
+                tirageCadran = h <= 320 ? h : 320 + (h - 320) * 0.25
+                let jeton = tirageJeton
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { chienDeGardeTirage(jeton) }
+            }
+            .onEnded { v in
+                guard tirageSaisi else { return }
+                tirageSaisi = false
+                tirageJeton += 1
+                let franchi = v.translation.height > 120 || v.predictedEndTranslation.height > 260
+                if franchi { rangerParTirage() } else { relacherTirage() }
+            }
+    }
+
+    private func rangerParTirage() {
+        UIImpactFeedbackGenerator(style: .rigid).impactOccurred(intensity: 0.9)
+        // La page glisse jusqu'en bas sous le doigt levé, puis la fiche se
+        // range SOUS la coupe sourde : la séance est déjà là quand le noir
+        // se lève.
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.9)) { tirageCadran = 900 }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { quitterLaFiche() }
+    }
+
+    private func relacherTirage() {
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) { tirageCadran = 0 }
+    }
+
+    /// Loi §4 : un `DragGesture` n'appelle pas toujours `onEnded`. Réarmé à
+    /// chaque mouvement ; s'il tombe sans nouveau mouvement, on commet.
+    private func chienDeGardeTirage(_ jeton: Int) {
+        guard tirageSaisi, jeton == tirageJeton else { return }
+        tirageSaisi = false
+        tirageJeton += 1
+        if tirageCadran > 120 { rangerParTirage() } else { relacherTirage() }
     }
 
     /// LE DRAG DE RETOUR : l'inverse exact de la plongée, piloté par le
@@ -3705,6 +3790,11 @@ struct ExerciseDetailView: View {
     /// le temps (l'allumage du repos, rebranché sur l'effort).
     private func launchPosed() {
         rangeCarte()
+        // Le lecteur renaît À SA PLACE : un tirage Spotify précédent l'avait
+        // laissé en bas (vu au banc du 04-10, « SET 2 » à y = 1111).
+        var tr = Transaction(); tr.disablesAnimations = true
+        withTransaction(tr) { tirageCadran = 0 }
+        tirageSaisi = false
         let index: Int
         let appended: Bool
         if let pending = sets.firstIndex(where: { !$0.isDone }) {
@@ -3828,7 +3918,14 @@ struct ExerciseDetailView: View {
             // la séance ; sinon le repos vient, puis la suite.
             onNotee: { o in noterSerieV15(s.id, o, derniere: !aSuivante && suivant == nil) },
             onPrete: { avancerV15() },
-            onExerciceSuivant: { if let x = suivant { lancerExerciceV15(x.exo) } })
+            onExerciceSuivant: { if let x = suivant { lancerExerciceV15(x.exo) } },
+            // LA PLAYLIST (04-10) : une série de plus à CET exercice, depuis
+            // l'onglet Séries — le plan la porte, l'album la relit au rendu.
+            onAjouterSerie: {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.84)) {
+                    SeanceV7Etat.shared.ajouterSerie(exercise.id)
+                }
+            })
     }
 
     /// L'album de la séance : chaque exercice du plan, ce qui est fait (en

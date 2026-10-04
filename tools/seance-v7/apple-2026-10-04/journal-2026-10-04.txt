@@ -1,0 +1,57 @@
+BEB vide : trouvé (89.16666666666667, 496.5600000000001, 214.66666666666663, 28.666666666666572)
+BEB capture 01-vide
+BEB vide : Refaire = false
+BEB feuille : trouvé (64.33333333333333, 158.66666666666666, 292.66666666666663, 22.0)
+BEB capture 02-feuille-zones
+BEB arbre 02-feuille-zones
+BEB capture 03-feuille-exos
+BEB ligne-Crunch au sol : trouvé (22.0, 771.6666666666666, 349.0, 70.0)
+BEB ligne-Gainage : trouvé (28.635, 698.7599999999999, 335.73, 74.40000000000032)
+BEB capture 04-arrivee-a
+BEB capture 04-arrivee-b
+BEB capture 05-prete
+BEB arbre 05-prete
+BEB page : Prête = true, Terminer = false
+BEB ligne-crunch : trouvé (24.0, 350.0, 345.0, 64.0)
+BEB capture 06-playlist
+BEB arbre 06-playlist
+BEB playlist : Ajouter une série = true, À suivre = false
+BEB capture 07-playlist-plus-une
+BEB slider-go : trouvé (16.0, 776.0, 266.66666666666663, 58.0)
+BEB glisse go (16.0, 776.0, 266.66666666666663, 58.0)
+BEB en-cours-1 : trouvé (40.630365648021396, 584.763499943923, 109.40593537062385, 16.806333445487326)
+BEB capture s1-a-effort
+BEB valider-1 : trouvé (24.0, 760.0, 345.0, 58.0)
+BEB capture s1-b-note
+BEB arbre s1-note
+BEB note 1 : kg à l'écran = false, reps = true
+BEB capture s1-c-apres-valider
+BEB onglet-series : ABSENT après 10 s
+BEB arbre absent-onglet-series
+BEB repos-slider : trouvé (22.0, 756.0, 349.0, 62.0)
+BEB capture 08b-repos
+BEB capture 09-tirage-a
+BEB capture 10-apres-tirage
+BEB arbre 10-apres-tirage
+BEB après tirage : En cours = true, Prête = false, cadran = false
+BEB slider-go-2 : trouvé (16.0, 776.0, 266.66666666666663, 58.0)
+BEB glisse go-2 (16.0, 776.0, 266.66666666666663, 58.0)
+BEB en-cours-2 : trouvé (40.0, 584.6666666666666, 112.66666666666666, 17.0)
+BEB capture s2-a-effort
+BEB valider-2 : trouvé (24.0, 760.0, 345.0, 58.0)
+BEB capture s2-b-note
+BEB arbre s2-note
+BEB note 2 : kg à l'écran = false, reps = true
+BEB capture s2-c-apres-valider
+BEB lancer-3 : trouvé (22.0, 756.0, 349.0, 62.0)
+BEB glisse lancer-3 (22.0, 756.0, 349.0, 62.0)
+BEB en-cours-3 : trouvé (40.0, 584.6666666666666, 113.0, 17.0)
+BEB capture s3-a-effort
+BEB valider-3 : trouvé (24.0, 760.0, 345.0, 58.0)
+BEB capture s3-b-note
+BEB arbre s3-note
+BEB note 3 : kg à l'écran = false, reps = true
+BEB capture s3-c-apres-valider
+BEB capture 11-fin-serie-crunch
+BEB capture 12-page-apres-crunch
+BEB arbre 12-page-apres-crunch

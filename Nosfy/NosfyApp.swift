@@ -2400,7 +2400,10 @@ struct RootView: View {
                              onStop: { DepartEtat.shared.pauseOuverte = true },
                              // La page tient sa coupe et se range dessous,
                              // comme `GrandPlayer.lancer`.
-                             onChoisirExo: { exo in ouvrirFicheDeSeance(exo) })
+                             onChoisirExo: { exo in ouvrirFicheDeSeance(exo) },
+                             // 03-10 (TestFlight 86, « deux sliders ») : le
+                             // slider de la page termine sans la carte STOP.
+                             onTerminer: { terminerSeance() })
                     .ignoresSafeArea()
                     .allowsHitTesting(morphPlayer > 0.98)
                     .zIndex(8.4)

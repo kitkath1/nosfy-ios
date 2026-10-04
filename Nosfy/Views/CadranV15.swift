@@ -47,6 +47,9 @@ struct CommandesV15 {
     var onPrete: () -> Void
     /// Le slider, quand la suite est un autre exercice : sa fiche le lance.
     var onExerciceSuivant: () -> Void = {}
+    /// LA PLAYLIST (04-10) : « Ajouter une série » depuis l'onglet Séries,
+    /// sans repasser par la page.
+    var onAjouterSerie: () -> Void = {}
 
     /// Ce que le slider porte écrit : la PROCHAINE étape, quelle qu'elle soit.
     /// `versAutre` : la prochaine étape est l'exercice suivant. `prete` : la
@@ -165,20 +168,30 @@ struct ChromeV15: View {
             // ceux de la note qu'on vient de valider.
             let p = fin ? .note : phase(now)
             let visible = (nuitDepuis.map { now >= $0 } ?? false) && !fin
+            // LA NOTE À LA APPLE (03-10, TestFlight 86 : « trop de texte, aère,
+            // à la Apple ») : le lecteur se retire le temps de noter — le nom
+            // seul en capitales, ni l'onglet, ni le bloc « Série 1 · à
+            // noter » ; le cadran dit déjà la série. Il revient au repos.
+            let enNote = p == .note
             VStack(spacing: 0) {
-                TeteV15(v: v, reduire: p != .effort && p != .note)
+                TeteV15(v: v, reduire: p != .effort && !enNote, enNote: enNote)
                 OngletV15(series: $vueSeries)
                     .padding(.top, 14)
-                if vueSeries {
-                    AlbumV15(v: v, phase: p, rangCourant: rangCourant(p))
+                    .opacity(enNote ? 0 : 1)
+                    .allowsHitTesting(!enNote)
+                if vueSeries && !enNote {
+                    AlbumV15(v: v, phase: p, rangCourant: rangCourant(p), onAjouterSerie: v.onAjouterSerie)
                         .padding(.top, 10)
                         .transition(.opacity)
                 } else {
                     Spacer(minLength: 0)
                 }
-                BlocV15(titre: titre(p), ligne: ligne(p), enCours: p == .effort,
-                        barre: p == .note ? nil : barre(p, now))
-                    .padding(.horizontal, 26)
+                if !enNote {
+                    BlocV15(titre: titre(p), ligne: ligne(p), enCours: p == .effort,
+                            barre: barre(p, now))
+                        .padding(.horizontal, 26)
+                        .transition(.opacity)
+                }
                 commande(p)
                     .padding(.top, p == .note ? 18 : 26)
             }
@@ -259,7 +272,8 @@ struct ChromeV15: View {
         switch p {
         case .compte, .effort:
             VStack(spacing: 8) {
-                MedaillonStop(taille: 74, action: stop)
+                // (04-10, « le médaillon Stop plus gros ») : 88 pt.
+                MedaillonStop(taille: 88, action: stop)
                     .opacity(p == .effort ? 1 : 0.35)
                     .allowsHitTesting(p == .effort)
                 Text("Stop")
@@ -313,8 +327,28 @@ struct ChromeV15: View {
 private struct TeteV15: View {
     let v: CommandesV15
     let reduire: Bool
+    /// Pendant la note : le nom seul, en capitales espacées (la grammaire de
+    /// l'écran « Let's go », qu'elle aime), centré.
+    var enNote = false
 
     var body: some View {
+        if enNote { nomSeul } else { tete }
+    }
+
+    private var nomSeul: some View {
+        Text(v.nom.uppercased())
+            .font(.inter(12.5, .medium))
+            .tracking(3.6)
+            .foregroundStyle(.white.opacity(0.46))
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .padding(.horizontal, 62)
+            .padding(.top, 14)
+            .transition(.opacity)
+    }
+
+    private var tete: some View {
         HStack(spacing: 12) {
             // ⚠️ PAS UN `Button` (01-10, « quand je clique sur le chevron pour
             // réduire ça marche pas ») : le toucher se perdait. Un toucher
@@ -430,72 +464,46 @@ private struct AlbumV15: View {
     let v: CommandesV15
     let phase: PhaseV15
     let rangCourant: Int
+    var onAjouterSerie: () -> Void
     @State private var montre = false
 
-    private var ici: Int? { v.album.firstIndex(where: \.ici) }
+    private var ici: AlbumExoV15? { v.album.first(where: \.ici) }
 
+    /// LA PLAYLIST (04-10, « mets pas À suivre, rends-la encore plus jolie,
+    /// limite d'ici on peut rajouter une série ») : SEUL l'exercice en cours,
+    /// ses séries comme les morceaux d'un album — la faite avec sa flamme et
+    /// sa valeur, celle qui se joue avec l'égaliseur, les prochaines par leur
+    /// numéro — et « Ajouter une série » au bout. Rien d'autre.
     var body: some View {
-        ScrollViewReader { lecteur in
-            ScrollView(showsIndicators: false) {
+        ScrollView(showsIndicators: false) {
+            if let x = ici {
                 VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(v.album.enumerated()), id: \.element.id) { i, x in
-                        Group {
-                            if x.ici {
-                                enCours(x)
-                            } else {
-                                if let k = ici, i == k + 1 {
-                                    Text(L("À SUIVRE", "UP NEXT"))
-                                        .font(.system(size: 12, weight: .semibold))
-                                        .tracking(1.1)
-                                        .foregroundStyle(.white.opacity(0.38))
-                                        .padding(.top, 26)
-                                        .padding(.bottom, 4)
-                                }
-                                autre(x, passe: ici.map { i < $0 } ?? false)
-                            }
-                        }
-                        .id(x.id)
-                        .opacity(montre ? 1 : 0)
-                        .offset(y: montre ? 0 : 10)
-                        .blur(radius: montre ? 0 : 5)
-                        .animation(.spring(response: 0.6, dampingFraction: 0.88)
-                            .delay(0.05 * Double(i)), value: montre)
+                    ForEach(1...max(1, x.total), id: \.self) { k in
+                        ligne(x, k)
+                            .opacity(montre ? 1 : 0)
+                            .offset(y: montre ? 0 : 10)
+                            .animation(.spring(response: 0.55, dampingFraction: 0.88)
+                                .delay(0.045 * Double(k)), value: montre)
+                    }
+                    if x.exercice.tracking == .setsRepsWeight {
+                        ajouter
+                            .opacity(montre ? 1 : 0)
+                            .animation(.spring(response: 0.55, dampingFraction: 0.88)
+                                .delay(0.045 * Double(x.total + 1)), value: montre)
                     }
                 }
                 .padding(.horizontal, 28)
                 .padding(.vertical, 18)
             }
-            .mask(
-                LinearGradient(stops: [
-                    .init(color: .clear, location: 0),
-                    .init(color: .black, location: 0.07),
-                    .init(color: .black, location: 0.88),
-                    .init(color: .clear, location: 1),
-                ], startPoint: .top, endPoint: .bottom))
-            .onAppear {
-                if let k = ici { lecteur.scrollTo(v.album[k].id, anchor: .top) }
-                montre = true
-            }
         }
-    }
-
-    // MARK: L'exercice en cours : sa vignette, son nom, ses séries
-
-    private func enCours(_ x: AlbumExoV15) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 14) {
-                vignette(x, cote: 48)
-                Text(x.exercice.nomLocalise)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-            }
-            .padding(.top, 8)
-            .padding(.bottom, 10)
-            ForEach(1...max(1, x.total), id: \.self) { k in
-                ligne(x, k)
-            }
-        }
+        .mask(
+            LinearGradient(stops: [
+                .init(color: .clear, location: 0),
+                .init(color: .black, location: 0.07),
+                .init(color: .black, location: 0.88),
+                .init(color: .clear, location: 1),
+            ], startPoint: .top, endPoint: .bottom))
+        .onAppear { montre = true }
     }
 
     private enum Etat { case fait, joue, prete, avenir }
@@ -508,16 +516,22 @@ private struct AlbumV15: View {
         return phase == .effort ? .joue : .prete
     }
 
+    /// Une piste : le numéro (ou la flamme, ou l'égaliseur), la valeur, un
+    /// filet. La piste qui se joue est un ton plus clair, comme Spotify.
     private func ligne(_ x: AlbumExoV15, _ k: Int) -> some View {
         let e = etat(x, k)
-        // Faite : sa valeur. À venir : son numéro, rien d'inventé (02-10).
         let valeur = e == .fait && k <= x.faites.count ? x.faites[k - 1]
             : L("Série \(k)", "Set \(k)")
         let lumiere = e == .joue || e == .prete
         return HStack(spacing: 16) {
             ZStack {
                 switch e {
-                case .fait: FlammeQuiPrend(p: 1).scaleEffect(0.5)
+                case .fait:
+                    Image("sticker-flamme-serree")
+                        .renderingMode(.template).resizable().scaledToFit()
+                        .frame(width: 13, height: 16)
+                        .foregroundStyle(.white)
+                        .shadow(color: .white.opacity(0.4), radius: 3)
                 case .joue: EgaliseurV15()
                 case .prete, .avenir:
                     Text("\(k)")
@@ -526,50 +540,47 @@ private struct AlbumV15: View {
                         .foregroundStyle(.white.opacity(lumiere ? 0.95 : 0.3))
                 }
             }
-            .frame(width: 20, height: 20)
+            .frame(width: 22, height: 22)
             Text(valeur)
-                .font(.system(size: 16, weight: lumiere ? .semibold : .regular))
+                .font(.system(size: 17, weight: lumiere ? .semibold : .regular))
                 .monospacedDigit()
-                .foregroundStyle(.white.opacity(lumiere ? 1 : (e == .fait ? 0.55 : 0.4)))
+                .foregroundStyle(.white.opacity(lumiere ? 1 : (e == .fait ? 0.6 : 0.4)))
                 .lineLimit(1)
             Spacer(minLength: 0)
-        }
-        .frame(height: 44)
-    }
-
-    // MARK: Les autres exercices : une ligne chacun
-
-    private func autre(_ x: AlbumExoV15, passe: Bool) -> some View {
-        HStack(spacing: 14) {
-            vignette(x, cote: 38)
-            Text(x.exercice.nomLocalise)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(.white.opacity(passe ? 0.5 : 0.85))
-                .lineLimit(1)
-            Spacer(minLength: 8)
-            if passe, !x.faites.isEmpty {
-                HStack(spacing: 5) {
-                    FlammeQuiPrend(p: 1).scaleEffect(0.42).frame(width: 12, height: 14)
-                    Text("\(x.faites.count)")
-                        .font(.system(size: 13, weight: .medium))
-                        .monospacedDigit()
-                        .foregroundStyle(.white.opacity(0.45))
-                }
-            } else {
-                Text(x.propose)
+            if e == .fait {
+                Text(L("Série \(k)", "Set \(k)"))
                     .font(.system(size: 13))
-                    .monospacedDigit()
-                    .foregroundStyle(.white.opacity(0.38))
-                    .lineLimit(1)
+                    .foregroundStyle(.white.opacity(0.3))
             }
         }
-        .frame(height: 52)
+        .frame(height: 54)
+        .padding(.horizontal, 12)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .fill(.white.opacity(e == .joue ? 0.09 : 0)))
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(.white.opacity(0.08)).frame(height: 0.5).padding(.leading, 50)
+        }
     }
 
-    private func vignette(_ x: AlbumExoV15, cote: CGFloat) -> some View {
-        ExercisePhoto(exercise: x.exercice)
-            .frame(width: cote, height: cote)
-            .clipShape(RoundedRectangle(cornerRadius: cote * 0.2, style: .continuous))
+    private var ajouter: some View {
+        Button {
+            Haptique.leger()
+            onAjouterSerie()
+        } label: {
+            HStack(spacing: 16) {
+                Image(systemName: "plus")
+                    .font(.system(size: 14, weight: .semibold))
+                    .frame(width: 22, height: 22)
+                Text(L("Ajouter une série", "Add a set"))
+                    .font(.system(size: 16, weight: .medium))
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(.white.opacity(0.5))
+            .frame(height: 54)
+            .padding(.horizontal, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -689,8 +700,6 @@ private struct NoteV15: View {
 
     enum Champ: Hashable { case reps, kilos, temps }
     @State private var actif: Champ?
-    @State private var touches: Set<Champ> = []
-    @Namespace private var segNS
 
     private var champs: [Champ] {
         switch saisie {
@@ -701,97 +710,93 @@ private struct NoteV15: View {
     }
     private var champActif: Champ { actif ?? champs[0] }
 
+    // LA NOTE À LA APPLE (03-10, TestFlight 86 : « trop de texte, pas assez
+    // aéré, à la Apple » — maquette `SaisieApple`, artefact CQEp5req). La
+    // grammaire de l'écran « Let's go » : plus de « Série 1 · Dernière
+    // fois… » au-dessus (le cadran dit la série) ; les valeurs entre deux
+    // traits d'un point, en chiffres légers au blanc dégradé — celle que la
+    // molette règle allumée, l'autre en retrait ; le repos en UNE ligne qui
+    // ouvre le menu d'iOS ; le bouton noir de la maison, « Valider », seul.
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(derniere ?? L("Série \(rang)", "Set \(rang)"))
-                .font(.system(size: 13))
-                .foregroundStyle(.white.opacity(0.5))
-                .lineLimit(1)
-            HStack(alignment: .firstTextBaseline, spacing: 14) {
-                ForEach(Array(champs.enumerated()), id: \.element) { i, c in
-                    if i > 0 {
-                        Text("·").font(.system(size: 28, weight: .bold))
-                            .foregroundStyle(.white.opacity(0.3))
-                    }
-                    valeur(c)
-                }
-            }
-            .padding(.top, 4)
+        VStack(spacing: 0) {
+            valeurs
             MoletteV15(valeur: liaison(champActif), pas: pas(champActif),
-                       bornes: bornes(champActif)) {
-                touches.insert(champActif)
-            }
-            .frame(height: 46)
-            .padding(.top, 10)
-            .id(champActif)
-            if avecRepos { segments.padding(.top, 14) }
-            Button(action: valider) {
-                Text(avecRepos ? L("Valider · repos ", "Log · rest ") + Self.lib(repos)
-                               : L("Valider", "Log"))
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, minHeight: 54)
-                    .background(Capsule().fill(.white.opacity(0.10)))
-                    .overlay(Capsule().strokeBorder(.white.opacity(0.16), lineWidth: 1))
-                    .contentShape(Capsule())
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 14)
+                       bornes: bornes(champActif)) {}
+                .frame(height: 46)
+                .padding(.top, 12)
+                .id(champActif)
+            if avecRepos { reposMenu.padding(.top, 6) }
+            BoutonPrimaire(title: L("Valider", "Log"), respecteLaCasse: true) { valider() }
+                .padding(.top, avecRepos ? 8 : 20)
         }
         .padding(.horizontal, 24)
     }
 
+    private var valeurs: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 34) {
+            ForEach(champs, id: \.self) { c in valeur(c) }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 13)
+        .overlay(alignment: .top) { Self.trait }
+        .overlay(alignment: .bottom) { Self.trait }
+        .padding(.horizontal, 6)
+    }
+
+    private static var trait: some View {
+        Rectangle().fill(.white.opacity(0.22)).frame(height: 1)
+    }
+
     private func valeur(_ c: Champ) -> some View {
-        let choisi = c == champActif && champs.count > 1
+        let allume = c == champActif || champs.count == 1
         return Button {
             Haptique.leger()
             withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) { actif = c }
         } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(texte(c))
-                    .font(.system(size: 44, weight: .bold))
+                    .font(.inter(50, .light))
+                    .tracking(-1)
                     .monospacedDigit()
+                    .foregroundStyle(MotsFlou.blancDegrade)
                     .contentTransition(.numericText())
                 if let u = unite(c) {
-                    Text(u).font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.5))
+                    Text(u).font(.inter(17))
+                        .foregroundStyle(.white.opacity(0.55))
                 }
             }
-            .foregroundStyle(.white.opacity(touches.contains(c) ? 1 : 0.42))
-            .overlay(alignment: .bottom) {
-                Capsule().fill(.white)
-                    .frame(height: 2)
-                    .offset(y: 6)
-                    .opacity(choisi ? 1 : 0)
-            }
+            .opacity(allume ? 1 : 0.42)
         }
         .buttonStyle(.plain)
     }
 
-    private var segments: some View {
-        HStack(spacing: 0) {
-            ForEach(NoteRepos.choix, id: \.self) { r in
-                Button {
-                    Haptique.leger()
-                    withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) { repos = r }
-                } label: {
-                    Text(Self.lib(r))
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(repos == r ? Color.black : .white.opacity(0.72))
-                        .frame(maxWidth: .infinity, minHeight: 34)
-                        .background {
-                            if repos == r {
-                                Capsule().fill(.white)
-                                    .matchedGeometryEffect(id: "seg", in: segNS)
-                            }
-                        }
-                        .contentShape(Capsule())
+    /// Le repos en une ligne : « Repos 1:30 ⌃⌄ », le menu d'iOS avec sa coche.
+    private var reposMenu: some View {
+        Menu {
+            Picker(selection: $repos) {
+                ForEach(NoteRepos.choix, id: \.self) { r in
+                    Text(Self.lib(r)).tag(r)
                 }
-                .buttonStyle(.plain)
+            } label: { EmptyView() }
+            .pickerStyle(.inline)
+        } label: {
+            HStack(spacing: 8) {
+                Text(L("Repos", "Rest"))
+                    .foregroundStyle(.white.opacity(0.55))
+                Text(Self.lib(repos))
+                    .foregroundStyle(.white.opacity(0.88))
+                    .contentTransition(.numericText())
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.55))
             }
+            .font(.inter(16))
+            .padding(.horizontal, 14)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
-        .padding(3)
-        .background(Capsule().fill(.white.opacity(0.08)))
+        .tint(.white)
+        .onChange(of: repos) { Haptique.leger() }
     }
 
     static func lib(_ r: Int) -> String {

@@ -29,6 +29,14 @@ struct MedaillonStop: View {
     var taille: CGFloat = 34
     var action: () -> Void = {}
 
+    /// L'ANIMATION AU TAP (04-10, « le médaillon Stop plus gros, et animation
+    /// à son tap ») : le disque s'enfonce sous le doigt (0,92), revient en
+    /// ressort au relâcher, et une bouffée blanche (bloom ≤ 5 px, blancheur
+    /// jamais épaisseur) traverse la bague une fois. Des valeurs animées,
+    /// aucune horloge.
+    @State private var presse = false
+    @State private var bouffee: Double = 0
+
     var body: some View {
         ZStack {
             // Le disque laqué — la lumière prend en haut-gauche.
@@ -81,12 +89,34 @@ struct MedaillonStop: View {
                 .blendMode(.plusLighter)
                 .opacity(0.85)
         }
+        // La bouffée du tap : un anneau blanc fin qui s'élargit et meurt.
+        .overlay {
+            Circle()
+                .stroke(Color.white.opacity(0.9), lineWidth: 1)
+                .frame(width: taille + 4, height: taille + 4)
+                .scaleEffect(1 + 0.32 * bouffee)
+                .opacity(bouffee > 0 ? 0.7 * (1 - bouffee) : 0)
+                .blur(radius: 1.2)
+                .allowsHitTesting(false)
+        }
+        .scaleEffect(presse ? 0.92 : 1)
+        .animation(.spring(response: 0.22, dampingFraction: 0.6), value: presse)
         .contentShape(Circle())
         // LA ZONE DE TAP passe le disque : 34 pt de médaillon, 44 pt de
         // doigt (le minimum d'Apple), posée AVANT le geste.
         .padding(max(8, taille * 0.235))
         .contentShape(Circle())
-        .highPriorityGesture(TapGesture().onEnded { action() })
+        .highPriorityGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in if !presse { presse = true } }
+                .onEnded { v in
+                    presse = false
+                    // Un toucher, pas un glissé : au-delà de 14 pt, rien.
+                    guard hypot(v.translation.width, v.translation.height) < 14 else { return }
+                    bouffee = 0
+                    withAnimation(.easeOut(duration: 0.55)) { bouffee = 1 }
+                    action()
+                })
     }
 }
 

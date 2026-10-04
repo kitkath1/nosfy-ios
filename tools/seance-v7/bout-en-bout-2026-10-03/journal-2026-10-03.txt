@@ -1,0 +1,99 @@
+CAS test01_videAjoutTroisSeriesTerminer EXIT=0
+BEB vide-compose : trouvé (30.0, 264.0, 239.66666666666663, 65.66666666666663)
+BEB vide : Ajouter (22.0, 746.0, 349.0, 58.0)
+BEB capture 01-vide-neuve
+BEB vide : Refaire = false, Terminer = false
+BEB feuille-champ : trouvé (64.33333333333333, 158.66666666666666, 292.66666666666663, 22.0)
+BEB capture 02-feuille
+BEB ligne-woodchopper : trouvé (22.0, 203.66666666666666, 349.0, 69.99999999999997)
+BEB ajouter-1 : trouvé (265.6666564941406, 101.66666412353516, 105.33334350585938, 34.00000762939453)
+BEB slider-go : trouvé (16.0, 776.0, 266.66666666666663, 58.0)
+BEB capture 03-page-un-exercice
+BEB page : « Terminer » en haut = false
+BEB glisse go-serie-1 (16.0, 776.0, 266.66666666666663, 58.0)
+BEB passe l'animation 1
+BEB en-cours-1 : trouvé (42.7697855781282, 585.0934312119372, 104.79376217707693, 16.146470909458913)
+BEB capture s1-a-effort
+BEB stop-1.1 : trouvé (182.0, 784.7800000000001, 29.0, 15.666666666666515)
+BEB tape Stop 1.1
+BEB valider-1 : trouvé (24.0, 760.0, 345.0, 58.0)
+BEB capture s1-b-note
+BEB arbre s1-note
+BEB note : « Série 1 » à l'écran = false, onglet Cadran = true/false
+BEB capture s1-c-menu-repos
+BEB arbre s1-menu-repos
+BEB capture s1-d-apres-valider
+BEB slider-lancer-2 : trouvé (22.0, 756.0, 349.0, 62.0)
+BEB capture s1-e-repos
+BEB glisse lancer-2 (22.0, 756.0, 349.0, 62.0)
+BEB en-cours-2 : trouvé (40.0, 584.6666666666666, 112.33333333333331, 17.0)
+BEB capture s2-a-effort
+BEB stop-2.1 : trouvé (182.0, 784.7800000000001, 29.0, 15.666666666666515)
+BEB tape Stop 2.1
+BEB valider-2 : trouvé (24.0, 760.0, 345.0, 58.0)
+BEB capture s2-b-note
+BEB capture s2-d-apres-valider
+BEB slider-lancer-3 : trouvé (22.0, 756.0, 349.0, 62.0)
+BEB glisse lancer-3 (22.0, 756.0, 349.0, 62.0)
+BEB en-cours-3 : trouvé (40.0, 584.6666666666666, 112.66666666666666, 17.0)
+BEB capture s3-a-effort
+BEB stop-3.1 : trouvé (182.0, 784.7800000000001, 29.0, 15.666666666666515)
+BEB tape Stop 3.1
+BEB valider-3 : trouvé (24.0, 760.0, 345.0, 58.0)
+BEB capture s3-b-note
+BEB capture s3-d-apres-valider
+BEB capture 04-apres-trois-series
+BEB arbre 04-apres-trois-series
+BEB pas de slider Terminer : je referme le cadran par son chevron
+BEB capture 05-cadran-referme
+BEB arbre 05-cadran-referme
+BEB slider-terminer : trouvé (16.0, 776.0, 266.66666666666663, 58.0)
+BEB capture 06-page-tout-fait
+BEB glisse terminer (16.0, 776.0, 266.66666666666663, 58.0)
+BEB capture 07-terminer-1s
+BEB après Terminer : carte STOP (« Arrêter la séance ») = false
+BEB capture 08-terminer-4s
+BEB arbre 08-terminer-4s
+BEB capture 09-terminer-9s
+Test Case '-[NosfyUITests.BoutEnBoutUITests test01_videAjoutTroisSeriesTerminer]' passed (125.472 seconds).
+CAS test02_refaire EXIT=0
+BEB refaire : trouvé (22.0, 712.0, 349.0, 58.0)
+BEB capture r1-vide-avec-passe
+BEB refaire : Refaire ta séance de vendredi
+BEB refaite-slider : trouvé (16.0, 776.0, 266.66666666666663, 58.0)
+BEB capture r2-refaite
+BEB arbre r2-refaite
+Test Case '-[NosfyUITests.BoutEnBoutUITests test02_refaire]' passed (22.536 seconds).
+CAS test03_hiit EXIT=0
+BEB h-compose : trouvé (30.0, 264.0, 239.66666666666663, 65.66666666666663)
+BEB h-champ : trouvé (64.33333333333333, 158.66666666666666, 292.66666666666663, 22.0)
+BEB h-ligne : trouvé (22.0, 203.66666666666666, 349.0, 69.99999999999997)
+BEB h-slider : trouvé (16.0, 776.0, 266.66666666666663, 58.0)
+BEB glisse h-go (16.0, 776.0, 266.66666666666663, 58.0)
+BEB capture h1-depart-4s
+BEB arbre h1-depart
+BEB HIIT : boutons de nav touchables = []
+BEB capture h2-depart-5s
+BEB capture h3-apres-27s-sans-toucher
+BEB arbre h3-apres-27s
+BEB HIIT à 27 s sans toucher : Stop = true, Go = false
+BEB capture h4-vitesse-reglee
+BEB vitesse après glissé : 4
+BEB capture h5-stop-1s
+BEB arbre h5-stop-1s
+BEB capture h6-stop-2-5s
+BEB après Stop : Go = true, vitesse = 0
+BEB pop flamme : Close = true
+BEB capture h6b-pop-fermee
+BEB capture h7-recup-17s-sans-toucher
+BEB récup à 17 s sans toucher : Go = true, Stop = false
+BEB capture h8-reprise
+BEB après Go : Stop = true, vitesse = 0
+BEB capture h8b-reprise-3s
+BEB capture h9-fini-2s
+BEB arbre h9-fini-2s
+BEB capture h10-fini-6s
+BEB après Finish : boutons de nav touchables = ["house.fill", "person", "gearshape"]
+Test Case '-[NosfyUITests.BoutEnBoutUITests test03_hiit]' passed (90.508 seconds).
+fini
+TERMINE 0

@@ -271,12 +271,21 @@ struct SeanceV7Page: View {
     /// SA fiche : la courbe, le coach, son départ, son cadran. Appelée SOUS
     /// la coupe, et la page se range aussitôt (`poserFerme`).
     var onChoisirExo: (Exercise) -> Void
+    /// LA CLÔTURE DIRECTE (03-10, TestFlight 86 : « pourquoi deux sliders ») :
+    /// glissé jusqu'au bout, le slider de la page EST la confirmation — la
+    /// séance se termine, sans la carte STOP et son second slider (comme
+    /// « glisser pour éteindre »). La carte reste au ■ de la pastille.
+    var onTerminer: () -> Void
 
     @Environment(\.modelContext) private var context
     @Query(sort: \Workout.startedAt, order: .reverse) private var seances: [Workout]
     @State private var ajout = false
     @State private var tire: CGFloat = 0
     @State private var tirePris = false
+    /// LA PLAYLIST D'UN EXERCICE (04-10, « quand je clique sur la ligne, ça
+    /// ouvre la card avec le détail des séries faites ») : ouverte par la
+    /// ligne ; la vignette ou le nom, dedans, ouvrent la fiche.
+    @State private var playlist: String?
     private var etat: SeanceV7Etat { .shared }
 
     private static let haut: CGFloat = 58
@@ -294,13 +303,36 @@ struct SeanceV7Page: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                FondV7(fige: !pose)
+                FondV7(fige: !pose, video: etat.plan.isEmpty)
                 page
-                    .scaleEffect(ajout ? 0.93 : 1, anchor: .top)
-                    .offset(y: ajout ? 18 : 0)
-                    .brightness(ajout ? -0.32 : 0)
-                    .clipShape(RoundedRectangle(cornerRadius: ajout ? 40 : 0, style: .continuous))
-                    .allowsHitTesting(!ajout)
+                    .scaleEffect(ajout || playlist != nil ? 0.93 : 1, anchor: .top)
+                    .offset(y: ajout || playlist != nil ? 18 : 0)
+                    .brightness(ajout || playlist != nil ? -0.32 : 0)
+                    .clipShape(RoundedRectangle(cornerRadius: ajout || playlist != nil ? 40 : 0, style: .continuous))
+                    .allowsHitTesting(!ajout && playlist == nil)
+                if let id = playlist, let exo = ExerciseCatalog.exercise(id: id),
+                   let p = etat.plan.first(where: { $0.id == id }) {
+                    Color.black.opacity(0.25)
+                        .ignoresSafeArea()
+                        .onTapGesture { fermerPlaylist() }
+                        .transition(.opacity)
+                    PlaylistV7(exo: exo, rangs: etat.rangs(p, exo: exo, dans: seance),
+                               prochaine: prochain?.exo == id ? prochain?.rang : nil,
+                               hauteur: geo.size.height,
+                               onFermer: { fermerPlaylist() },
+                               onFiche: { fermerPlaylist(); partir(exo, lancer: false) },
+                               onLancer: { fermerPlaylist(); partir(exo, lancer: true) },
+                               onAjouterSerie: {
+                                   withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { etat.ajouterSerie(id) }
+                               },
+                               onSupprimer: { r in
+                                   withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
+                                       etat.supprimer(r, dans: seance, context: context)
+                                   }
+                               })
+                    .transition(.move(edge: .bottom))
+                    .zIndex(3)
+                }
                 if ajout {
                     Color.black.opacity(0.25)
                         .ignoresSafeArea()
@@ -340,85 +372,153 @@ struct SeanceV7Page: View {
         return h
     }
 
+    /// LA DERNIÈRE SÉANCE D'UN AUTRE JOUR (03-10, TestFlight 86 : « des fois
+    /// je vois un composant qui me redemande de rejouer la série faite ») :
+    /// jamais celle qu'on vient de finir aujourd'hui.
     private var derniere: Workout? {
-        seances.first { $0.endedAt != nil && !$0.orderedExercises.isEmpty
-                        && $0.persistentModelID != seance.persistentModelID }
+        seances.first { w in
+            guard let fin = w.endedAt, !w.orderedExercises.isEmpty,
+                  w.persistentModelID != seance.persistentModelID else { return false }
+            return !Calendar.current.isDateInToday(fin)
+        }
     }
 
     private var prochain: (exo: String, rang: Int)? { etat.prochain(dans: seance) }
     /// Tout le plan est fait.
     private var complete: Bool { !etat.plan.isEmpty && prochain == nil }
 
-    /// CE QUE DIT LA TÊTE — l'état, jamais le sujet (sa règle du 24-09).
-    private var titre: String {
-        if complete { return L("Tout est fait", "All done") }
-        return seance.seriesPayantes == 0 ? L("Séance", "Session") : L("En cours", "In progress")
-    }
-
     // MARK: la page
+
+    /// L'ARRIVÉE (04-10, « anime en mode magnifique, poli, de la partie
+    /// empty à la partie séance ») : 0 = la page vide, 1 = la séance posée.
+    /// Le « + » central glisse se ranger dans la barre du bas, la page vide
+    /// s'efface, puis la séance monte en trois temps (le titre, le chiffre,
+    /// les lignes). Des valeurs animées, jamais une horloge.
+    @State private var arrivee: CGFloat = 0
+    @State private var montee: Int = 0
+    @Namespace private var plusNS
 
     private var page: some View {
         ZStack(alignment: .top) {
-            ScrollView {
-                VStack(spacing: 0) {
-                    EnteteV7(seance: seance, titre: titre,
-                             chaud: seance.seriesPayantes > 0, pose: pose)
-                        .padding(.top, Self.haut + 58)
-                    if etat.plan.isEmpty {
-                        vide
-                    } else {
-                        LazyVStack(spacing: 12) {
-                            ForEach(Array(etat.plan.enumerated()), id: \.element.id) { i, p in
-                                carte(p, numero: i + 1)
-                            }
+            if etat.plan.isEmpty {
+                VideV7(derniere: derniere, plusNS: plusNS,
+                       onRefaire: { w in arriver { etat.reprendre(w) } },
+                       onAjouter: { ouvrirAjout() })
+                    .transition(.opacity.animation(.easeOut(duration: 0.35)))
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        TeteFineV7(titre: titreFin, nombre: chiffre.n, legende: chiffre.legende,
+                                   t1: montee >= 1, t2: montee >= 2)
+                            .padding(.top, Self.haut + 74)
+                        VStack(spacing: 0) {
+                            ForEach(etat.plan) { p in ligne(p) }
                         }
-                        .padding(.top, 22)
+                        .padding(.top, 26)
+                        .overlay(alignment: .top) { Rectangle().fill(.white.opacity(0.1)).frame(height: 1).padding(.top, 26) }
+                        .monte(montee >= 3)
+                        Color.clear.frame(height: 150)
                     }
-                    Color.clear.frame(height: 150)
+                    .padding(.horizontal, 24)
                 }
-                .padding(.horizontal, 16)
+                .scrollIndicators(.hidden)
             }
-            .scrollIndicators(.hidden)
             barreHaut
             if !etat.plan.isEmpty {
-                VStack { Spacer(); barreBas }
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                VStack { Spacer(); barreBas.monte(montee >= 3) }
+                    .transition(.opacity)
             }
         }
+        .background { HaloDoigtV7().allowsHitTesting(false) }
+        .simultaneousGesture(HaloDoigtEtat.geste)
         .animation(.spring(response: 0.55, dampingFraction: 0.84), value: etat.plan.isEmpty)
+        .onChange(of: etat.plan.isEmpty, initial: true) { _, vide in
+            if vide { montee = 0 } else if montee == 0 { Task { await monter() } }
+        }
     }
 
-    /// ‹ à gauche, « Terminer » en verre à droite — la barre de la v7.
+    /// Le plan se remplit SOUS le geste de sortie de la page vide : le « + »
+    /// part d'abord (le `matchedGeometryEffect` fait le trajet), la séance
+    /// monte ensuite.
+    private func arriver(_ remplir: @escaping () -> Void) {
+        Haptique.moyen()
+        withAnimation(.spring(response: 0.8, dampingFraction: 0.86)) { remplir() }
+    }
+
+    private func monter() async {
+        try? await Task.sleep(for: .seconds(0.22))
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.88)) { montee = 1 }
+        try? await Task.sleep(for: .seconds(0.14))
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.88)) { montee = 2 }
+        try? await Task.sleep(for: .seconds(0.12))
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.88)) { montee = 3 }
+    }
+
+    /// LE TITRE DYNAMIQUE (04-10) : « Prête. » avant la première série,
+    /// « En cours. » ensuite, « Tout est fait. » à la fin.
+    private var titreFin: String {
+        if complete { return L("Tout est fait.", "All done.") }
+        return seance.seriesPayantes == 0 ? L("Prête.", "Ready.") : L("En cours.", "In progress.")
+    }
+
+    /// LE CHIFFRE ENTRE DEUX TRAITS — des faits, jamais une prévision de
+    /// charge : « 3 exercices, 10 séries » → « 3 séries, 12 min » → « 10
+    /// séries, 32 min ».
+    private var chiffre: (n: Int, legende: String) {
+        let faites = seance.seriesPayantes
+        let minutes = max(1, Int(Date.now.timeIntervalSince(seance.startedAt ?? .now) / 60))
+        if faites == 0 {
+            let prevues = etat.plan.reduce(0) { $0 + $1.nombre }
+            let exos = etat.plan.count
+            return (exos, (exos > 1 ? L("exercices", "exercises") : L("exercice", "exercise")) + ", " + nombreDeSeries(prevues))
+        }
+        let mot = faites > 1 ? L("séries", "sets") : L("série", "set")
+        return (faites, "\(mot), \(minutes) min")
+    }
+
+    /// Une ligne fine par exercice : la vignette, le nom, ce qui est fait
+    /// (ou prévu), ses flammes, le chevron. Toucher : la fiche (lancer si
+    /// c'est le prochain).
+    private func ligne(_ p: SeanceV7Etat.Prevu) -> some View {
+        let exo = ExerciseCatalog.exercise(id: p.id) ?? ExerciseCatalog.all[0]
+        let n = prochain
+        let rangs = etat.rangs(p, exo: exo, dans: seance)
+        return LigneExoV7(exo: exo, rangs: rangs,
+                          vient: n?.exo == p.id,
+                          neuves: rangs.filter { etat.neuve($0) }.map(\.id),
+                          onMontree: { r in etat.montree(r) },
+                          onToucher: { ouvrirPlaylist(p.id) },
+                          onFiche: { partir(exo, lancer: false) })
+            .draggable(p.id)
+            .dropDestination(for: String.self) { ids, _ in
+                guard let id = ids.first else { return false }
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.84)) { etat.deplacer(id, avant: p.id) }
+                return true
+            }
+    }
+
+    /// ‹ à gauche, rien d'autre. ⚠️ PLUS DE « TERMINER » EN HAUT (03-10,
+    /// TestFlight 86 : « des fois le bouton terminé en haut, des fois en bas
+    /// avec le slider, ça va pas ») : on termine à UN endroit, le slider du
+    /// bas quand tout est fait ; avant, par le ■ de la pastille (la carte STOP).
     private var barreHaut: some View {
         HStack {
             MedaillonStop(symbol: "chevron.left", taille: 40) { fermer() }
             Spacer()
-            Button(action: onStop) {
-                Text(L("Terminer", "Finish"))
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white.opacity(peutTerminer ? 1 : 0.34))
-                    .padding(.horizontal, 17)
-                    .frame(height: 40)
-                    .background(VerreV7(rayon: 20))
-            }
-            .buttonStyle(.plain)
-            .disabled(!peutTerminer)
-            .opacity(complete ? 0 : 1)
-            .allowsHitTesting(!complete)
-            .animation(.easeOut(duration: 0.3), value: complete)
         }
         .padding(.horizontal, 18)
         .padding(.top, Self.haut)
         .frame(maxWidth: .infinity)
         .frame(height: Self.haut + 64, alignment: .top)
+        // Le voile ne sert qu'à la liste qui défile dessous : sur la séance
+        // vide, il éteignait la lampe de l'île (vu au simulateur le 03-10).
         .background(
-            LinearGradient(colors: [.black.opacity(0.9), .black.opacity(0)],
+            LinearGradient(colors: [.black.opacity(etat.plan.isEmpty ? 0 : 0.86), .black.opacity(0)],
                            startPoint: .top, endPoint: .bottom)
                 .allowsHitTesting(false))
         .contentShape(Rectangle())
         .gesture(glisserPourFermer)
     }
-    private var peutTerminer: Bool { !etat.plan.isEmpty || seance.seriesPayantes > 0 }
 
     /// Un effleurement vers le bas, comme Spotify : la page descend avec
     /// le doigt et se range dans la pastille.
@@ -482,6 +582,7 @@ struct SeanceV7Page: View {
         HStack(spacing: 12) {
             depart
             MedaillonStop(symbol: "plus", taille: 56) { ouvrirAjout() }
+                .matchedGeometryEffect(id: "plus", in: plusNS)
         }
         .padding(.horizontal, 16)
         .padding(.bottom, Self.bas)
@@ -500,8 +601,8 @@ struct SeanceV7Page: View {
             // « Terminer » du haut se retire pour ne pas le dire deux fois.
             SliderObsidienne(label: L("Terminer", "Finish"), height: 58,
                              legende: (L("Terminer la séance", "Finish the session"),
-                                       L("\(seance.setsAffiches) séries", "\(seance.setsAffiches) sets")),
-                             onConfirm: onStop)
+                                       nombreDeSeries(seance.setsAffiches)),
+                             onConfirm: onTerminer)
                 .environment(\.ongletCache, !pose)
         } else if departSlider {
             // ⚠️ SON HORLOGE DORT dès que la page n'est plus posée (geste,
@@ -536,7 +637,7 @@ struct SeanceV7Page: View {
     }
 
     private func action() {
-        guard let n = prochain, let e = ExerciseCatalog.exercise(id: n.exo) else { onStop(); return }
+        guard let n = prochain, let e = ExerciseCatalog.exercise(id: n.exo) else { onTerminer(); return }
         partir(e, lancer: true)
     }
 
@@ -582,6 +683,14 @@ struct SeanceV7Page: View {
         CoupeEtat.shared.jouer {}
     }
 
+    private func ouvrirPlaylist(_ id: String) {
+        Haptique.leger()
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.86)) { playlist = id }
+    }
+    private func fermerPlaylist() {
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.9)) { playlist = nil }
+    }
+
     private func ouvrirAjout() {
         Haptique.leger()
         withAnimation(.spring(response: 0.55, dampingFraction: 0.86)) { ajout = true }
@@ -590,98 +699,15 @@ struct SeanceV7Page: View {
         withAnimation(.spring(response: 0.5, dampingFraction: 0.9)) { ajout = false }
     }
 
-    // MARK: la grosse carte
-
-    private func carte(_ p: SeanceV7Etat.Prevu, numero: Int) -> some View {
-        let exo = ExerciseCatalog.exercise(id: p.id) ?? ExerciseCatalog.all[0]
-        let n = prochain
-        let rangs = etat.rangs(p, exo: exo, dans: seance)
-        return CarteExoV7(
-            exo: exo, rangs: rangs, numero: numero,
-            prochaine: n?.exo == p.id ? n?.rang : nil,
-            neuves: rangs.filter { etat.neuve($0) }.map(\.id),
-            onFiche: { Haptique.leger(); partir(exo, lancer: false) },
-            // Une ligne À FAIRE lance la série dans le lecteur ; une ligne
-            // faite ne mène nulle part (elle ouvrait l'ancienne fiche — « quand
-            // je reclique sur une ligne, ça va pas », 01-10).
-            onToucher: { r in
-                guard !r.fait else { Haptique.leger(); return }
-                partir(exo, lancer: true)
-            },
-            onMontree: { r in etat.montree(r) },
-            onSupprimer: { r in
-                withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
-                    etat.supprimer(r, dans: seance, context: context)
-                }
-            },
-            onAjouterSerie: {
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { etat.ajouterSerie(p.id) }
-            },
-            onRetirer: {
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.86)) {
-                    etat.retirer(p.id, dans: seance, context: context)
-                }
-            })
-            .draggable(p.id)
-            .dropDestination(for: String.self) { ids, _ in
-                guard let id = ids.first else { return false }
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.84)) {
-                    etat.deplacer(id, avant: p.id)
-                }
-                return true
-            }
-    }
+    // MARK: la grosse carte — ARCHIVÉE le 04-10 (« pas assez Apple ») : la
+    // page est en lignes fines (`LigneExoV7`). `CarteExoV7` et `RangeeV7`
+    // restent ci-dessous, sans site d'appel.
 
     // MARK: la séance vide — celle de la v7
 
-    /// L'ÉTAT VIDE, SIMPLE (01-10, Kathryn : « l'empty plus simple », « j'aime bien suggérer celle
-    /// de la semaine ») : une phrase, ta séance de la semaine à reprendre en un geste, puis
-    /// « Ajouter un exercice ». Rien d'autre.
-    private var vide: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(L("Compose ta séance.", "Build your session."))
-                .font(.system(size: 25, weight: .bold))
-                .padding(.top, 34)
-            if let w = derniere {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(L("TA SÉANCE DE LA SEMAINE", "YOUR SESSION THIS WEEK"))
-                        .font(.system(size: 12, weight: .semibold))
-                        .tracking(1.2)
-                        .foregroundStyle(.white.opacity(0.5))
-                    Spacer()
-                    Text(Self.resumeDate(w))
-                        .font(.system(size: 13))
-                        .foregroundStyle(.white.opacity(0.4))
-                }
-                .padding(.top, 26)
-                SeanceDeLaSemaine(seance: w) {
-                    withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) { etat.reprendre(w) }
-                }
-                .padding(.top, 9)
-            }
-            Button { ouvrirAjout() } label: {
-                Text(L("Ajouter un exercice", "Add an exercise"))
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .padding(.top, derniere == nil ? 22 : 12)
-        }
-        .foregroundStyle(.white)
-        .padding(.horizontal, 8)
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    /// « mardi · 52 min » — le jour de la dernière séance finie, et sa durée.
-    private static func resumeDate(_ w: Workout) -> String {
-        let f = DateFormatter(); f.locale = Locale(identifier: Langue.en ? "en_US" : "fr_FR"); f.dateFormat = "EEEE"
-        let jour = f.string(from: w.startedAt)
-        guard let e = w.endedAt else { return jour }
-        return "\(jour) · \(max(1, Int(e.timeIntervalSince(w.startedAt) / 60))) min"
-    }
+    // (L'état vide du 01-10 — « Compose ta séance. », la carte « TA SÉANCE DE
+    //  LA SEMAINE », « Ajouter un exercice » — est remplacé le 03-10 par
+    //  `VideV7`. `SeanceDeLaSemaine` reste ci-dessous, sans site d'appel.)
 
     // MARK: le banc
 
@@ -693,7 +719,10 @@ struct SeanceV7Page: View {
         if banc == "vide" { return }
         if banc == "ajout" { ouvrirAjout(); return }
         let exos = ["woop-haute", "crunch-sol", "gainage"].compactMap { ExerciseCatalog.exercise(id: $0) }
-        withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) { etat.ajouter(exos, historique: historique) }
+        // `arrivee` (04-10) : la page vide tient 2 s, puis l'arrivée se joue
+        // comme au doigt (le « + » qui part, la montée en trois temps).
+        if banc == "arrivee" { try? await Task.sleep(for: .seconds(2)) }
+        arriver { etat.ajouter(exos, historique: historique) }
         print("[v7banc] cartes posées : \(etat.plan.count)")
         // Un geste par lancement : la page se remonte à chaque retour, et le
         // banc relancerait sans fin.
@@ -733,6 +762,606 @@ struct SeanceV7Page: View {
             }
         }
 
+    }
+}
+
+/// « 1 série », « 3 séries » — jamais « 1 séries » (03-10). Une fonction, pas
+/// un ternaire dans une concaténation : le type-checker y cale (loi §1).
+func nombreDeSeries(_ n: Int) -> String {
+    n > 1 ? L("\(n) séries", "\(n) sets") : L("\(n) série", "\(n) set")
+}
+
+// MARK: - La séance vide (04-10 : « bien lui, avec la pilule noire discrète en fond »)
+
+/// La v1 de l'artefact, validée le 04-10 : l'en-tête de la page, le « + » au
+/// centre, « Compose ta séance », et en bas « Ta dernière séance » en verre,
+/// avec « Refaire ». Compte neuf : pas de carte (aucun fait inventé). Le
+/// galet noir de la maison en filigrane, dans le fond (`FondV7`).
+/// (La version « Let's go » du 03-10 — grand titre, chiffre entre traits,
+/// flamme — a été refusée : « hors sujet, je voulais un état empty ».)
+private struct VideV7: View {
+    let derniere: Workout?
+    let plusNS: Namespace.ID
+    var onRefaire: (Workout) -> Void
+    var onAjouter: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            EnteteV7Vide()
+                .padding(.horizontal, 20)
+                .padding(.top, 110)
+            Spacer(minLength: 0)
+            VStack(spacing: 30) {
+                MedaillonStop(symbol: "plus", taille: 96) { onAjouter() }
+                    .matchedGeometryEffect(id: "plus", in: plusNS)
+                Text(L("Compose ta séance", "Build your session"))
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+            .padding(.bottom, 40)
+            Spacer(minLength: 0)
+            if let w = derniere { pied(w) }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
+    }
+
+    private func pied(_ w: Workout) -> some View {
+        let exos = w.orderedExercises.compactMap(\.exercise)
+        let minutes = Int(((w.endedAt ?? .now).timeIntervalSince(w.startedAt ?? .now)) / 60)
+        return VStack(alignment: .leading, spacing: 10) {
+            Text(L("TA DERNIÈRE SÉANCE", "YOUR LAST SESSION"))
+                .font(.inter(12.5, .medium))
+                .tracking(1)
+                .foregroundStyle(.white.opacity(0.5))
+                .padding(.horizontal, 8)
+            Button(action: { Haptique.leger(); onRefaire(w) }) {
+                HStack(spacing: 14) {
+                    ZStack(alignment: .topLeading) {
+                        ForEach(Array(exos.prefix(3).enumerated().reversed()), id: \.offset) { i, e in
+                            ExercisePhoto(exercise: e)
+                                .frame(width: 46 - CGFloat(i) * 3, height: 56 - CGFloat(i) * 6)
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .strokeBorder(.white.opacity(0.2), lineWidth: 0.5))
+                                .shadow(color: .black.opacity(0.7), radius: 6, x: 4)
+                                .offset(x: CGFloat(i) * 14, y: CGFloat(i) * 3)
+                        }
+                    }
+                    .frame(width: 74, height: 56, alignment: .topLeading)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(Self.quand(w))
+                            .font(.system(size: 17, weight: .semibold))
+                        Text(nombreDExercices(exos.count) + (minutes > 0 ? " · \(minutes) min" : ""))
+                            .font(.system(size: 14))
+                            .foregroundStyle(.white.opacity(0.58))
+                    }
+                    Spacer(minLength: 6)
+                    Text(L("Refaire", "Redo"))
+                        .font(.system(size: 15, weight: .semibold))
+                        .padding(.horizontal, 16).frame(height: 36)
+                        .background(Capsule().fill(.white.opacity(0.16)))
+                }
+                .foregroundStyle(.white)
+                .padding(12)
+                .background(VerreV7(rayon: 26))
+                .contentShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 40)
+    }
+
+    /// « Vendredi » cette semaine ; « 12 sept. » au-delà de six jours.
+    private static func quand(_ w: Workout) -> String {
+        let d = w.endedAt ?? .now
+        let f = DateFormatter()
+        f.locale = Locale(identifier: Langue.en ? "en_US" : "fr_FR")
+        let jours = Calendar.current.dateComponents([.day], from: d, to: .now).day ?? 99
+        f.dateFormat = jours < 6 ? "EEEE" : "d MMM"
+        let j = f.string(from: d)
+        return j.prefix(1).uppercased() + j.dropFirst()
+    }
+}
+
+func nombreDExercices(_ n: Int) -> String {
+    n > 1 ? L("\(n) exercices", "\(n) exercises") : L("\(n) exercice", "\(n) exercise")
+}
+
+/// L'en-tête de la page vide : « Séance », le jour et le chrono, la pièce,
+/// la tuile du jour — celui de la v1.
+private struct EnteteV7Vide: View {
+    private static let jourFR: DateFormatter = {
+        let f = DateFormatter(); f.locale = Locale(identifier: "fr_FR"); f.dateFormat = "EEEE d"; return f
+    }()
+    private static let jourEN: DateFormatter = {
+        let f = DateFormatter(); f.locale = Locale(identifier: "en_US"); f.dateFormat = "EEEE d"; return f
+    }()
+    var body: some View {
+        let s = (Langue.en ? Self.jourEN : Self.jourFR).string(from: .now)
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(L("Séance", "Session"))
+                    .font(.system(size: 34, weight: .bold))
+                HStack(spacing: 10) {
+                    Text(s.prefix(1).uppercased() + s.dropFirst())
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.6))
+                    Bourse(pieces: 0)
+                }
+            }
+            Spacer(minLength: 0)
+            MiniCardJour(date: .now, sticker: "", faite: false, largeur: 58, hauteur: 66)
+        }
+        .foregroundStyle(.white)
+    }
+}
+
+// MARK: - La tête de la séance en cours : TA SÉANCE, le titre, le chiffre (04-10)
+
+/// La grammaire de « Terminer v1 » (« j'aimais bien les traits et le résumé »)
+/// pour TOUTE la séance : les petites capitales, le titre au blanc dégradé,
+/// le chiffre léger entre deux traits de 1 pt. `t1`, `t2` : les deux temps
+/// de la montée.
+private struct TeteFineV7: View {
+    let titre: String
+    let nombre: Int
+    let legende: String
+    let t1: Bool
+    let t2: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(L("TA SÉANCE", "YOUR SESSION"))
+                .font(.inter(12.5, .medium))
+                .tracking(3.6)
+                .foregroundStyle(.white.opacity(0.46))
+                .monte(t1)
+            Text(titre)
+                .font(.inter(44, .semibold))
+                .tracking(-44 * 0.026)
+                .foregroundStyle(MotsFlou.blancDegrade)
+                .padding(.top, 16)
+                .contentTransition(.opacity)
+                .animation(.easeInOut(duration: 0.35), value: titre)
+                .monte(t1)
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text("\(nombre)")
+                    .font(.inter(50, .light))
+                    .tracking(-1)
+                    .foregroundStyle(MotsFlou.blancDegrade)
+                    .contentTransition(t2 ? .numericText(value: Double(nombre)) : .identity)
+                Text(legende)
+                    .font(.inter(17))
+                    .foregroundStyle(.white.opacity(0.55))
+                    .contentTransition(.opacity)
+            }
+            .padding(.vertical, 13)
+            .padding(.leading, 6)
+            .padding(.trailing, 28)
+            .overlay(alignment: .top) { Rectangle().fill(.white.opacity(0.22)).frame(height: 1) }
+            .overlay(alignment: .bottom) { Rectangle().fill(.white.opacity(0.22)).frame(height: 1) }
+            .fixedSize()
+            .padding(.top, 20)
+            .animation(.spring(response: 0.5, dampingFraction: 0.8), value: nombre)
+            .monte(t2)
+        }
+    }
+}
+
+/// La montée d'un bloc : opacité + 26 pt (jamais une taille).
+private struct MonteV7: ViewModifier {
+    let la: Bool
+    func body(content: Content) -> some View {
+        content
+            .opacity(la ? 1 : 0)
+            .offset(y: la ? 0 : 26)
+    }
+}
+private extension View {
+    func monte(_ la: Bool) -> some View { modifier(MonteV7(la: la)) }
+}
+
+// MARK: - Une ligne fine par exercice (04-10)
+
+/// La vignette 40 × 44, le nom, le sous-titre (« 3 séries » / « 13 reps ·
+/// 25 kg » une fois fait), les flammes blanches à droite — grises tant que
+/// la série n'est pas faite —, le chevron. Celui qui vient en semibold, les
+/// faits en retrait. Un filet d'un point à 0,1 sous chaque ligne.
+private struct LigneExoV7: View {
+    let exo: Exercise
+    let rangs: [RangV7]
+    let vient: Bool
+    let neuves: [String]
+    var onMontree: (RangV7) -> Void
+    var onToucher: () -> Void
+    var onFiche: () -> Void
+
+    private var faits: [RangV7] { rangs.filter(\.fait) }
+    private var fini: Bool { !rangs.isEmpty && faits.count == rangs.count }
+
+    var body: some View {
+        Button(action: { Haptique.leger(); onToucher() }) {
+            HStack(spacing: 14) {
+                // La vignette ouvre la FICHE (04-10) ; le reste de la ligne,
+                // la playlist des séries.
+                ExercisePhoto(exercise: exo)
+                    .frame(width: 40, height: 44)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(.white.opacity(0.14), lineWidth: 0.5))
+                    .opacity(fini ? 0.72 : 1)
+                    .contentShape(Rectangle())
+                    .highPriorityGesture(TapGesture().onEnded { Haptique.leger(); onFiche() })
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(exo.nomLocalise)
+                        .font(.system(size: 16, weight: vient ? .semibold : .regular))
+                        .foregroundStyle(.white.opacity(fini ? 0.72 : 1))
+                        .lineLimit(1)
+                    Text(sous)
+                        .font(.system(size: 13))
+                        .foregroundStyle(.white.opacity(0.5))
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                // PAS DE FLAMME PAR DÉFAUT (04-10) : une flamme par série
+                // FAITE, rien pour celles à venir.
+                HStack(spacing: -5) {
+                    ForEach(faits) { r in
+                        FlammeBlancheV7(r: r, allumage: neuves.firstIndex(of: r.id), onMontree: { onMontree(r) })
+                    }
+                }
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.35))
+            }
+            .frame(height: 64)
+            .contentShape(Rectangle())
+            .overlay(alignment: .bottom) { Rectangle().fill(.white.opacity(0.1)).frame(height: 1) }
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Ce qui est fait, sinon ce qui est prévu. Jamais une prévision de charge.
+    private var sous: String {
+        if exo.tracking != .setsRepsWeight {
+            guard let l = faits.last?.ligne else { return L("Effort et récup", "Effort and recovery") }
+            let t = String(format: "%d:%02d", l.seconds / 60, l.seconds % 60)
+            switch l.genre {
+            case .intervalle(let v, let niv), .course(let v, let niv):
+                return "\(t) · " + (niv ? L("niveau \(Int(v))", "level \(Int(v))") : "\(Exercise.Saisie.kg(v)) km/h")
+            case .longueurs(let n, let m): return L("\(n) longueurs · \(m) m", "\(n) lengths · \(m) m")
+            case .serie: return t
+            }
+        }
+        guard let l = faits.last?.ligne, case .serie(let reps, let kilos) = l.genre else {
+            return nombreDeSeries(rangs.count)
+        }
+        let v = exo.saisie.serie(reps: reps, kilos: kilos, secondes: l.done ? l.seconds : 0)
+        let reste = rangs.count - faits.count
+        return reste > 0 ? v + L(" · \(reste) à faire", " · \(reste) to go") : v
+    }
+}
+
+/// La flamme blanche d'une série : grise à 0,2 tant qu'elle n'est pas faite ;
+/// une série qui vient de tomber PREND FEU (`FlammeQuiPrend`, puis se pose
+/// en blanc). Jamais de couleur hors le feu de l'allumage.
+private struct FlammeBlancheV7: View {
+    let r: RangV7
+    let allumage: Int?
+    var onMontree: () -> Void
+    @State private var prise: Double
+
+    init(r: RangV7, allumage: Int?, onMontree: @escaping () -> Void) {
+        self.r = r; self.allumage = allumage; self.onMontree = onMontree
+        _prise = State(initialValue: r.fait && allumage == nil ? 1 : 0)
+    }
+
+    var body: some View {
+        ZStack {
+            Image("sticker-flamme-serree")
+                .renderingMode(.template)
+                .resizable().scaledToFit()
+                .frame(width: 15, height: 19)
+                .foregroundStyle(.white)
+                .shadow(color: .white.opacity(r.fait && prise >= 1 ? 0.45 : 0), radius: 3)
+                .opacity(prise >= 1 ? 0.95 : 0)
+            if r.fait, prise < 1 { FlammeQuiPrend(p: prise) }
+        }
+        .frame(width: 20, height: 24)
+        .task(id: r.id) {
+            guard r.fait, let i = allumage, prise < 1 else { return }
+            onMontree()
+            try? await Task.sleep(for: .seconds(0.75 + 0.34 * Double(i)))
+            guard !Task.isCancelled else { prise = 1; return }
+            withAnimation(.linear(duration: FlammeQuiPrend.duree)) { prise = 1 }
+            try? await Task.sleep(for: .seconds(FlammeQuiPrend.duree * FlammeQuiPrend.naissance))
+            Haptique.moyen()
+        }
+    }
+}
+
+// MARK: - La playlist d'un exercice (04-10)
+
+/// « Quand je clique sur la ligne, ça ouvre la card avec le détail des séries
+/// faites comme avant » : une feuille en verre, l'exercice en tête (sa
+/// vignette et son nom ouvrent la FICHE), puis ses séries comme les pistes
+/// d'un album — la faite avec sa flamme blanche et sa valeur (glisser pour
+/// supprimer), la prochaine avec sa pastille ▶ en verre, les autres par leur
+/// numéro — et « Ajouter une série » au bout. Rien d'autre : pas d'« À
+/// suivre », les autres exercices sont sur la page.
+private struct PlaylistV7: View {
+    let exo: Exercise
+    let rangs: [RangV7]
+    let prochaine: Int?
+    let hauteur: CGFloat
+    var onFermer: () -> Void
+    var onFiche: () -> Void
+    var onLancer: () -> Void
+    var onAjouterSerie: () -> Void
+    var onSupprimer: (RangV7) -> Void
+
+    @State private var tire: CGFloat = 0
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Capsule().fill(.white.opacity(0.34)).frame(width: 40, height: 5)
+                .padding(.top, 8)
+            tete
+                .padding(.top, 14)
+                .contentShape(Rectangle())
+                .gesture(glisser)
+            ScrollView {
+                VStack(spacing: 0) {
+                    ForEach(rangs) { r in
+                        PisteV7(exo: exo, r: r, prochaine: prochaine == r.rang && !r.fait,
+                                onLancer: onLancer, onSupprimer: { onSupprimer(r) })
+                    }
+                    if exo.tracking == .setsRepsWeight {
+                        Button(action: { Haptique.leger(); onAjouterSerie() }) {
+                            HStack(spacing: 16) {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .frame(width: 22, height: 22)
+                                Text(L("Ajouter une série", "Add a set"))
+                                    .font(.system(size: 16, weight: .medium))
+                                Spacer(minLength: 0)
+                            }
+                            .foregroundStyle(.white.opacity(0.5))
+                            .frame(height: 54)
+                            .padding(.horizontal, 12)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 6)
+                .padding(.bottom, 24)
+            }
+            .scrollIndicators(.hidden)
+        }
+        .foregroundStyle(.white)
+        .frame(maxWidth: .infinity)
+        .frame(height: min(hauteur * 0.62, 120 + CGFloat(rangs.count + 2) * 54 + 60))
+        .background(fond)
+        .clipShape(RoundedRectangle(cornerRadius: 44, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 44, style: .continuous)
+            .strokeBorder(LinearGradient(colors: [.white.opacity(0.32), .white.opacity(0.06), .white.opacity(0.12)],
+                                         startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1))
+        .padding(.horizontal, 8)
+        .padding(.bottom, 8)
+        .frame(maxHeight: .infinity, alignment: .bottom)
+        .offset(y: tire)
+    }
+
+    private var tete: some View {
+        Button(action: { Haptique.leger(); onFiche() }) {
+            HStack(spacing: 14) {
+                ExercisePhoto(exercise: exo)
+                    .frame(width: 48, height: 52)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(.white.opacity(0.16), lineWidth: 0.5))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(exo.nomLocalise)
+                        .font(.system(size: 18, weight: .semibold))
+                        .lineLimit(1)
+                    Text(exo.muscle)
+                        .font(.system(size: 13))
+                        .foregroundStyle(.white.opacity(0.5))
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.35))
+            }
+            .padding(.horizontal, 22)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Le verre de la feuille : celui de la feuille d'ajout.
+    private var fond: some View {
+        ZStack {
+            Rectangle().fill(.ultraThinMaterial)
+            LinearGradient(colors: [Color(white: 0.24).opacity(0.6), Color(white: 0.08).opacity(0.86)],
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
+            RadialGradient(colors: [.white.opacity(0.12), .clear], center: .init(x: 0.15, y: 0),
+                           startRadius: 0, endRadius: 260)
+        }
+        .environment(\.colorScheme, .dark)
+    }
+
+    private var glisser: some Gesture {
+        DragGesture(minimumDistance: 8)
+            .onChanged { v in tire = max(0, v.translation.height) }
+            .onEnded { v in
+                if v.translation.height > 90 || v.predictedEndTranslation.height > 200 { onFermer() }
+                else { withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) { tire = 0 } }
+            }
+    }
+}
+
+/// Une piste de la playlist.
+private struct PisteV7: View {
+    let exo: Exercise
+    let r: RangV7
+    let prochaine: Bool
+    var onLancer: () -> Void
+    var onSupprimer: () -> Void
+    @State private var dx: CGFloat = 0
+    @State private var ouvert = false
+    private static let rouge: CGFloat = 92
+
+    private var supprimable: Bool { r.set != nil }
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            if supprimable {
+                Button(action: onSupprimer) {
+                    Text(L("Supprimer", "Delete"))
+                        .font(.system(size: 15, weight: .semibold))
+                        .frame(width: Self.rouge).frame(maxHeight: .infinity)
+                        .background(Color(red: 1, green: 0.27, blue: 0.23))
+                }
+                .buttonStyle(.plain)
+                .opacity(ouvert || dx < -4 ? 1 : 0)
+            }
+            piste.offset(x: (ouvert ? -Self.rouge : 0) + dx)
+        }
+        .frame(height: 54)
+        .clipped()
+    }
+
+    private var piste: some View {
+        HStack(spacing: 16) {
+            ZStack {
+                if r.fait {
+                    Image("sticker-flamme-serree")
+                        .renderingMode(.template).resizable().scaledToFit()
+                        .frame(width: 13, height: 16)
+                        .foregroundStyle(.white)
+                        .shadow(color: .white.opacity(0.4), radius: 3)
+                } else if prochaine {
+                    // LA PASTILLE ▶ EN VERRE (04-10) : la prochaine série.
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 26, height: 26)
+                        .background(Circle().fill(.white.opacity(0.14)))
+                        .overlay(Circle().strokeBorder(.white.opacity(0.4), lineWidth: 0.8))
+                        .glassEffect(.clear, in: Circle())
+                } else {
+                    Text("\(r.rang + 1)")
+                        .font(.system(size: 15))
+                        .monospacedDigit()
+                        .foregroundStyle(.white.opacity(0.3))
+                }
+            }
+            .frame(width: 26, height: 26)
+            Text(valeur)
+                .font(.system(size: 17, weight: prochaine ? .semibold : .regular))
+                .monospacedDigit()
+                .foregroundStyle(.white.opacity(prochaine ? 1 : (r.fait ? 0.6 : 0.4)))
+                .lineLimit(1)
+            Spacer(minLength: 0)
+            if r.fait {
+                Text(L("Série \(r.rang + 1)", "Set \(r.rang + 1)"))
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.3))
+            }
+        }
+        .padding(.horizontal, 12)
+        .frame(maxHeight: .infinity)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .fill(.white.opacity(prochaine ? 0.09 : 0)))
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(.white.opacity(0.08)).frame(height: 0.5).padding(.leading, 54)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if ouvert { withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { ouvert = false }; return }
+            if prochaine { onLancer() } else { Haptique.leger() }
+        }
+        .simultaneousGesture(glisser, isEnabled: supprimable)
+    }
+
+    private var valeur: String {
+        guard r.fait, let l = r.ligne else { return L("Série \(r.rang + 1)", "Set \(r.rang + 1)") }
+        let t = String(format: "%d:%02d", l.seconds / 60, l.seconds % 60)
+        switch l.genre {
+        case .serie(let reps, let kilos):
+            return exo.saisie.serie(reps: reps, kilos: kilos, secondes: l.done ? l.seconds : 0)
+        case .intervalle(let v, let niv), .course(let v, let niv):
+            return "\(t) · " + (niv ? L("niveau \(Int(v))", "level \(Int(v))") : "\(Exercise.Saisie.kg(v)) km/h")
+        case .longueurs(let n, let m): return L("\(n) longueurs · \(m) m", "\(n) lengths · \(m) m")
+        }
+    }
+
+    private var glisser: some Gesture {
+        DragGesture(minimumDistance: 14)
+            .onChanged { v in
+                guard abs(v.translation.width) > abs(v.translation.height) else { return }
+                dx = min(Self.rouge * 0.4, max(-Self.rouge * 1.3, v.translation.width))
+            }
+            .onEnded { v in
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                    if abs(v.translation.width) > abs(v.translation.height) {
+                        ouvert = (ouvert ? -Self.rouge : 0) + v.translation.width < -Self.rouge / 2
+                    }
+                    dx = 0
+                }
+            }
+    }
+}
+
+// MARK: - Le halo du doigt (04-10 : « quand je touche l'écran, le halo blanc dégradé »)
+
+/// La loi de la maison : le pouce est la lampe. Un disque de lumière blanche
+/// sans bord naît sous le doigt, le suit, et meurt au relâcher en s'élargissant.
+/// Rien ne bouge tant que le doigt ne bouge pas ; jamais un balayage. L'état
+/// vit dans un `@Observable` : seule la lampe se redessine, jamais la page.
+@MainActor @Observable
+final class HaloDoigtEtat {
+    static let shared = HaloDoigtEtat()
+    var point: CGPoint = .zero
+    var pose = false
+    static let sans = CommandLine.arguments.contains("-sansHaloDoigt")
+
+    static var geste: some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .global)
+            .onChanged { v in
+                let h = HaloDoigtEtat.shared
+                h.point = v.location
+                if !h.pose { withAnimation(.easeOut(duration: 0.28)) { h.pose = true } }
+            }
+            .onEnded { _ in withAnimation(.easeOut(duration: 0.9)) { HaloDoigtEtat.shared.pose = false } }
+    }
+}
+
+private struct HaloDoigtV7: View {
+    private var h: HaloDoigtEtat { .shared }
+    var body: some View {
+        GeometryReader { g in
+            if !HaloDoigtEtat.sans {
+                let o = g.frame(in: .global).origin
+                Circle()
+                    .fill(RadialGradient(stops: [.init(color: .white.opacity(0.22), location: 0),
+                                                 .init(color: .white.opacity(0.09), location: 0.28),
+                                                 .init(color: .white.opacity(0.025), location: 0.52),
+                                                 .init(color: .clear, location: 0.7)],
+                                         center: .center, startRadius: 0, endRadius: 180))
+                    .frame(width: 360, height: 360)
+                    .scaleEffect(h.pose ? 1 : 1.18)
+                    .opacity(h.pose ? 1 : 0)
+                    .position(x: h.point.x - o.x, y: h.point.y - o.y)
+            }
+        }
+        .ignoresSafeArea()
     }
 }
 
@@ -782,26 +1411,66 @@ private struct SeanceDeLaSemaine: View {
 
 // MARK: - Le fond : du noir, une braise, ses braises
 
-private struct FondV7: View {
+struct FondV7: View {
     var fige: Bool
+    /// LA VIDÉO DU GALET (04-10, « anime la vidéo glass, attention aux
+    /// animations et à la chauffe au global ») : seulement sur la page VIDE
+    /// — on y reste peu —, le fichier même de « Let's go » (mesuré sur son
+    /// téléphone le 13-09, en `screen`, sans masque). Les pages de séance
+    /// gardent le poster immobile. Barreau : `-sansGaletVideo`.
+    var video: Bool = false
+    /// Barreau : sans le galet en filigrane.
+    static let sansGalet = CommandLine.arguments.contains("-sansGaletFond")
+    static let sansVideo = CommandLine.arguments.contains("-sansGaletVideo")
     var body: some View {
-        ZStack {
-            Color.black
-            RadialGradient(colors: [Color(red: 0.75, green: 0.24, blue: 0.08).opacity(0.36), .clear],
-                           center: .init(x: 0.12, y: 1.02), startRadius: 0, endRadius: 380)
-            RadialGradient(colors: [Color(red: 0.47, green: 0.12, blue: 0.04).opacity(0.3), .clear],
-                           center: .init(x: 0.96, y: 0.7), startRadius: 0, endRadius: 320)
-            RadialGradient(colors: [.white.opacity(0.07), .clear],
-                           center: .init(x: 0.5, y: -0.05), startRadius: 0, endRadius: 320)
-            if !SeanceV7.sansBraises {
-                // ⚠️ GELÉES HORS POSE, comme celles du lecteur : plein écran,
-                // c'est la plus chère de la page.
-                BraisesVague(force: 0.62, fige: fige, hz: 15)
-                    .allowsHitTesting(false)
+        GeometryReader { g in
+            ZStack {
+                Color.black
+                // LE GALET NOIR DE LA MAISON, en filigrane (04-10, « la pilule
+                // noire discrète en fond ») : en `screen`, fondu vers le bas.
+                if !Self.sansGalet {
+                    let h = g.size.width * 1.42 * 1560 / 1206
+                    let l = h * 1206 / 1560
+                    Group {
+                        if video, !Self.sansVideo, !fige {
+                            NosfyReel(nom: "duo-galet-noir", boucle: true, muet: true)
+                        } else {
+                            Image("duo-galet-noir-poster").resizable().aspectRatio(contentMode: .fit)
+                        }
+                    }
+                        .frame(width: l, height: h)
+                        .position(x: g.size.width * 0.5 + l * 0.37, y: g.size.height * 0.62)
+                        .blendMode(.screen)
+                        .opacity(0.34)
+                        .mask(LinearGradient(stops: [.init(color: .black, location: 0.55), .init(color: .clear, location: 0.92)],
+                                             startPoint: .top, endPoint: .bottom))
+                }
+                // La braise, en bas à gauche (celle d'avant).
+                RadialGradient(colors: [Color(red: 0.75, green: 0.24, blue: 0.08).opacity(0.36), .clear],
+                               center: .init(x: 0.3, y: 1.08), startRadius: 0, endRadius: 380)
+                // La lampe de l'île, en haut (celle de « Let's go »).
+                EllipticalGradient(stops: [.init(color: .white.opacity(0.22), location: 0),
+                                           .init(color: .white.opacity(0.05), location: 0.42),
+                                           .init(color: .clear, location: 0.76)],
+                                   center: .top, startRadiusFraction: 0, endRadiusFraction: 0.5)
+                    .frame(width: g.size.width * 0.92, height: 516)
+                    .position(x: g.size.width / 2, y: 258)
+                if !SeanceV7.sansBraises {
+                    // ⚠️ GELÉES HORS POSE, comme celles du lecteur : plein écran,
+                    // c'est la plus chère de la page.
+                    BraisesVague(force: 0.62, fige: fige, hz: 15)
+                        .allowsHitTesting(false)
+                }
             }
         }
         .ignoresSafeArea()
     }
+}
+
+/// Ce qui se découvre sous le cadran tiré vers le bas (04-10) : le fond de la
+/// séance, figé (aucune braise ne bat sous un doigt).
+struct FondSeanceSousCadran: View {
+    var body: some View { FondV7(fige: true) }
 }
 
 /// Son galet de verre, qui flotte (la vidéo de la Route, sans masque).
@@ -1102,8 +1771,9 @@ private struct CarteExoV7: View {
                                igniteAt: nil, corps: 13, ceremonie: false)
                 }
                 // Moins de mots : les flammes disent le nombre.
-                Text((faits.isEmpty ? L("\(rangs.count) séries", "\(rangs.count) sets")
-                                    : String(valeur.dropFirst(3)))
+                // « 1 série », jamais « 1 séries » (vu au « Refaire » d'une
+                // séance d'une série par exercice, 03-10).
+                Text((faits.isEmpty ? nombreDeSeries(rangs.count) : String(valeur.dropFirst(3)))
                      + (reste > 0 && !faits.isEmpty ? L(" · \(reste) à faire", " · \(reste) to go") : ""))
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(.white.opacity(0.66))
@@ -1425,16 +2095,22 @@ private struct FeuilleAjoutV7: View {
     var onAnnuler: () -> Void
     var onAjouter: ([Exercise]) -> Void
 
-    @State private var zone: ExerciseCategory = .abdos
+    /// EN DEUX TEMPS (04-10, « dans Ajouter on a la page puis l'overlay, mais
+    /// on choisit une catégorie ») : d'abord SES zones en grands carrés,
+    /// puis les exercices de la zone touchée. `nil` = les zones. La recherche
+    /// saute l'étape : elle liste tout de suite.
+    @State private var zone: ExerciseCategory?
     @State private var choisis: [Exercise] = []
     @State private var recherche = ""
     @State private var tire: CGFloat = 0
 
     private var exos: [Exercise] {
         let q = recherche.trimmingCharacters(in: .whitespaces).lowercased()
-        guard !q.isEmpty else { return ExerciseCatalog.exercises(in: zone) }
-        return ExerciseCatalog.all.filter { $0.nomLocalise.lowercased().contains(q) }
+        if !q.isEmpty { return ExerciseCatalog.all.filter { $0.nomLocalise.lowercased().contains(q) } }
+        guard let zone else { return [] }
+        return ExerciseCatalog.exercises(in: zone)
     }
+    private var surLesZones: Bool { zone == nil && recherche.isEmpty }
 
     var body: some View {
         VStack(spacing: 14) {
@@ -1446,38 +2122,32 @@ private struct FeuilleAjoutV7: View {
             .contentShape(Rectangle())
             .gesture(glisser)
             champ
-            if recherche.isEmpty {
-                // SES carrés de zones, ceux du lecteur : ils respirent, chacun
-                // à sa période, pour inviter à choisir.
-                HStack(spacing: 10) {
-                    ForEach(ExerciseCategory.allCases) { z in
-                        CarreZoneMini(zone: z, choisie: z == zone)
-                            .contentShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-                            .onTapGesture {
-                                if zone == z { Haptique.leger() } else { Haptique.moyen() }
-                                withAnimation(.spring(response: 0.34, dampingFraction: 0.84)) { zone = z }
+            ZStack(alignment: .top) {
+                if surLesZones {
+                    zones
+                        .transition(.asymmetric(insertion: .move(edge: .leading).combined(with: .opacity),
+                                                removal: .offset(x: -110).combined(with: .opacity)))
+                } else {
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            ForEach(Array(exos.enumerated()), id: \.element.id) { i, e in
+                                ligne(e)
+                                if i < exos.count - 1 {
+                                    Rectangle().fill(.white.opacity(0.09)).frame(height: 1).padding(.leading, 72)
+                                }
                             }
-                    }
-                }
-                .padding(.horizontal, 2)
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-            ScrollView {
-                VStack(spacing: 0) {
-                    ForEach(Array(exos.enumerated()), id: \.element.id) { i, e in
-                        ligne(e)
-                        if i < exos.count - 1 {
-                            Rectangle().fill(.white.opacity(0.09)).frame(height: 1).padding(.leading, 72)
                         }
+                        .background(VerreV7(rayon: 26))
+                        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                        .id(zone)
+                        .padding(.bottom, 24)
                     }
+                    .scrollIndicators(.hidden)
+                    .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity),
+                                            removal: .move(edge: .trailing).combined(with: .opacity)))
                 }
-                .background(VerreV7(rayon: 26))
-                .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-                .id(zone)
-                .transition(.opacity.combined(with: .offset(y: 10)))
-                .padding(.bottom, 24)
             }
-            .scrollIndicators(.hidden)
+            .animation(.spring(response: 0.5, dampingFraction: 0.86), value: surLesZones)
         }
         .padding(.horizontal, 14)
         .foregroundStyle(.white)
@@ -1506,11 +2176,56 @@ private struct FeuilleAjoutV7: View {
         .environment(\.colorScheme, .dark)
     }
 
+    /// Le mot court de la zone, celui des petits carrés de la page Exercices
+    /// (le sien y est `fileprivate`).
+    private static func nom(_ z: ExerciseCategory) -> String {
+        switch z {
+        case .haut: return L("Haut", "Upper")
+        case .abdos: return L("Abdos", "Core")
+        case .bas: return L("Bas", "Legs")
+        case .fessiers: return L("Fessiers", "Glutes")
+        case .cardio: return "Cardio"
+        }
+    }
+
+    /// Les cinq zones, en grands carrés sur trois colonnes.
+    private var zones: some View {
+        let cols = [GridItem(.fixed(108), spacing: 12), GridItem(.fixed(108), spacing: 12), GridItem(.fixed(108), spacing: 12)]
+        return LazyVGrid(columns: cols, alignment: .leading, spacing: 12) {
+            ForEach(ExerciseCategory.allCases) { z in
+                CarreZoneMini(zone: z, choisie: false)
+                    .frame(width: 108, height: 122)
+                    .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    .onTapGesture {
+                        Haptique.moyen()
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.86)) { zone = z }
+                    }
+            }
+        }
+        .padding(.top, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private var barre: some View {
         HStack {
-            Button(L("Annuler", "Cancel")) { onAnnuler() }
-                .font(.system(size: 16))
-                .foregroundStyle(.white)
+            if let zone, recherche.isEmpty {
+                Button {
+                    Haptique.leger()
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.86)) { self.zone = nil }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left").font(.system(size: 14, weight: .semibold))
+                        Text(Self.nom(zone))
+                    }
+                    .font(.system(size: 16))
+                    .foregroundStyle(.white)
+                }
+                .buttonStyle(.plain)
+            } else {
+                Button(L("Annuler", "Cancel")) { onAnnuler() }
+                    .font(.system(size: 16))
+                    .foregroundStyle(.white)
+            }
             Spacer()
             Text(L("Ajouter", "Add")).font(.system(size: 17, weight: .semibold))
             Spacer()
