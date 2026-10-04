@@ -798,10 +798,10 @@ struct ExercisesView: View {
                              reserve: CGFloat) -> some View {
         let cardW = w - 2 * GrandeCardExos.margeCote
         // LA RÉSERVE DE LA GRILLE (02-10) : le bandeau du titre, puis la
-        // barre des zones — six carrés, leur côté vient de la largeur — et
-        // son air. Les cartes commencent dessous et passent DERRIÈRE.
-        let cote = BarreZonesExos.cote(cardW - 2 * Self.encart)
-        let reserveGrille = max(reserve, Self.hautBarre + cote + Self.airBarre)
+        // barre des zones et son air. Les cartes commencent dessous et
+        // passent DERRIÈRE.
+        let reserveGrille = max(reserve, Self.hautBarre + BarreZonesExos.cote
+                                         + Self.airBarre)
         ZStack(alignment: .top) {
             // « TOUT », C'EST LE MUR (02-10) : l'accueil des zones est
             // retiré, la grille est toujours là — la barre et la molette la
@@ -856,12 +856,17 @@ struct ExercisesView: View {
             // carrés sont au-dessus de sa poignée, ils gardent leur tap.
             // Elle dort sous une fiche poussée (la molette aussi) et quand
             // l'onglet est caché.
+            // Pleine largeur : elle se fait glisser, ses carrés passent sous
+            // les flancs — l'encart vit dans son contenu.
             BarreZonesExos(filtre: filter, recherche: !q.isEmpty,
                            dort: ongletCache || deepLinked != nil,
                            onChoisir: choisirZone)
-                .padding(.horizontal, Self.encart)
+                // ⚠️ HAUTEUR TENUE : un ScrollView prend toute la place qu'on
+                // lui laisse — sans ce cadre il couvrirait la grille et lui
+                // volerait le doigt.
+                .frame(width: cardW, height: BarreZonesExos.cote + 10)
                 .padding(.top, max(safeT - GrandeCardExos.margeHaut, 0)
-                              + Self.hautBarre)
+                              + Self.hautBarre - 5)
             // RIEN TROUVÉ — une grille vide se lit comme une page cassée. La
             // ligne se pose sous le bandeau, jamais au centre de l'écran : le
             // bas appartient au lit de la molette.
@@ -2935,29 +2940,54 @@ private struct BarreZonesExos: View {
     let dort: Bool
     var onChoisir: (ExerciseCategory?) -> Void
 
-    static let gouttiere: CGFloat = 8
-    /// Le côté d'un carré : six dans la largeur, cinq gouttières.
-    static func cote(_ largeur: CGFloat) -> CGFloat {
-        max(0, (largeur - 5 * gouttiere) / 6)
-    }
-    private static let prise = RoundedRectangle(cornerRadius: 13, style: .continuous)
+    /// LA BARRE SE FAIT GLISSER (04-10, Kathryn : « on peut slider sur le
+    /// côté j'imagine ») : les carrés ont le côté de ceux du lecteur, six
+    /// ne tiennent pas dans la largeur — le sixième dépasse, c'est lui qui
+    /// dit qu'on peut glisser. Le 02-10 ils étaient six serrés à 52 pt.
+    static let cote: CGFloat = 62
+    static let gouttiere: CGFloat = 10
+    private static let idTout = "tout"
 
     var body: some View {
         let repos = dort || ProtectionThermique.shared.ambianceAuRepos
-        HStack(spacing: Self.gouttiere) {
-            // ⚠️ PAS DES `Button` : la page porte des gestes d'ancêtre (le
-            // filet des taps) — la loi du bouton sous un drag.
-            CarreToutMini(choisie: filtre == nil && !recherche,
-                          compte: ExerciseCatalog.all.count, dort: repos)
-                .contentShape(Self.prise)
-                .highPriorityGesture(TapGesture().onEnded { onChoisir(nil) })
-                .accessibilityIdentifier("zone-tout")
-            ForEach(ExerciseCategory.allCases) { z in
-                CarreZoneMini(zone: z, choisie: filtre == z && !recherche,
-                              nom: z.nomCourt, dort: repos)
-                    .contentShape(Self.prise)
-                    .highPriorityGesture(TapGesture().onEnded { onChoisir(z) })
-                    .accessibilityIdentifier("zone-\(z.id)")
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal) {
+                HStack(spacing: Self.gouttiere) {
+                    // Des `Button`, comme les cartes de la grille : sous un
+                    // ScrollView c'est lui qui arbitre le glissement et le
+                    // tap, et le filet des taps de la page est SIMULTANÉ.
+                    Button { onChoisir(nil) } label: {
+                        CarreToutMini(choisie: filtre == nil && !recherche,
+                                      dort: repos)
+                            .frame(width: Self.cote, height: Self.cote)
+                    }
+                    .buttonStyle(CardPressStyle())
+                    .accessibilityIdentifier("zone-tout")
+                    .id(Self.idTout)
+                    ForEach(ExerciseCategory.allCases) { z in
+                        Button { onChoisir(z) } label: {
+                            CarreZoneMini(zone: z, choisie: filtre == z && !recherche,
+                                          nom: z.nomCourt, dort: repos)
+                                .frame(width: Self.cote, height: Self.cote)
+                        }
+                        .buttonStyle(CardPressStyle())
+                        .accessibilityIdentifier("zone-\(z.id)")
+                        .id(z.id)
+                    }
+                }
+                .padding(.horizontal, ExercisesView.encart)
+                // L'air du flottement et du ressort du choisi.
+                .padding(.vertical, 5)
+            }
+            .scrollIndicators(.hidden)
+            // Le carré choisi grossit de 7 % : il ne doit pas être rogné.
+            .scrollClipDisabled()
+            // La molette a choisi : son carré vient dans le champ (sans
+            // bouger s'il y est déjà).
+            .onChange(of: filtre) { _, f in
+                withAnimation(.spring(response: 0.40, dampingFraction: 0.86)) {
+                    proxy.scrollTo(f?.id ?? Self.idTout)
+                }
             }
         }
     }
@@ -2965,13 +2995,13 @@ private struct BarreZonesExos: View {
 
 /// LE CARRÉ « TOUT » — le sixième, en tête de barre. La même tuile que ses
 /// voisins (forme, nuit, liseré, ressort du choix, flottement), mais il ne
-/// désigne aucune zone du corps : à la place de la gravure, le NOMBRE
-/// d'exercices du catalogue — un fait, pas une icône — en blanc fin, et
-/// c'est lui qui respire. Seules deux opacités sont animées (la loi du
-/// 05-09) ; le bloom est une copie floutée de 4 px, sous la barre des 5.
+/// désigne aucune zone du corps : il porte son MOT, au centre, et c'est le
+/// mot qui respire (04-10, Kathryn : « c'est pas clair, 29 Tout » — le
+/// nombre d'exercices du 02-10 est retiré). Seules deux opacités sont
+/// animées (la loi du 05-09) ; le bloom est une copie floutée de 4 px, sous
+/// la barre des 5.
 private struct CarreToutMini: View {
     let choisie: Bool
-    let compte: Int
     var dort: Bool = false
 
     private static let forme = RoundedRectangle(cornerRadius: 13, style: .continuous)
@@ -3005,14 +3035,13 @@ private struct CarreToutMini: View {
             .delay(0.5)
     }
 
-    private var chiffre: some View {
-        Text("\(compte)")
-            .font(.inter(19, .light))
-            .monospacedDigit()
+    /// Le mot, au centre — c'est lui la partie blanche de ce carré.
+    private var mot: some View {
+        Text(L("Tout", "All"))
+            .font(.inter(13, .semibold))
+            .tracking(0.3)
             .foregroundStyle(.white)
             .fixedSize()
-            // Le nom tient le pied : le nombre se centre dans ce qui reste.
-            .offset(y: -6)
     }
 
     var body: some View {
@@ -3023,20 +3052,14 @@ private struct CarreToutMini: View {
                     Self.forme.fill(
                         LinearGradient(colors: [Color(white: 0.16), .black],
                                        startPoint: .top, endPoint: .bottom))
-                    chiffre
+                    mot
                         .blur(radius: 4)
                         .opacity(neon)
                         .animation(souffle, value: respire)
-                    chiffre
+                    mot
                         .opacity(lueur)
                         .animation(souffle, value: respire)
                 }
-            }
-            .overlay(alignment: .bottom) {
-                Text(L("Tout", "All"))
-                    .font(.inter(8.5, .semibold))
-                    .foregroundStyle(.white.opacity(choisie ? 0.95 : 0.7))
-                    .padding(.bottom, 4)
             }
             .clipShape(Self.forme)
             .overlay {
@@ -3050,8 +3073,7 @@ private struct CarreToutMini: View {
                     lineWidth: choisie ? 1.4 : 0.5)
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(L("Tout, \(compte) exercices",
-                                  "All, \(compte) exercises"))
+            .accessibilityLabel(L("Tout", "All"))
             .accessibilityAddTraits(choisie ? [.isButton, .isSelected] : .isButton)
             .scaleEffect(choisie ? 1.07 : 1.0)
             .animation(.spring(response: 0.32, dampingFraction: 0.62),
