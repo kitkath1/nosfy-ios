@@ -1,0 +1,12 @@
+== s1-seance-refus
+   1 [reseau] en ligne
+   1 [session] refresh refusé (400) → session suspendue, rien n'est effacé · {"code":400,"error_code":"validation_failed","msg":"Refresh token is not valid"}
+== s2-horsligne
+== s3-enligne-seance
+   1 [reseau] en ligne
+== s4-sans-seance-refus
+   1 [compte] la porte est rendue (?)
+   1 [compte] session suspendue, réseau là, rien ne tourne → la porte
+   1 [reseau] en ligne
+   1 [session] refresh refusé (400) → session suspendue, rien n'est effacé · {"code":400,"error_code":"validation_failed","msg":"Refresh token is not valid"}
+== s5-horsligne-home

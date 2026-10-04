@@ -28,6 +28,15 @@ struct NosfyApp: App {
         if CommandLine.arguments.contains("-demoForce") {
             DemoData.seedDemo(in: container)
         }
+        #if DEBUG
+        // LE BANC DE LA SESSION SUSPENDUE (03-10) : `-sessionFactice` pose une
+        // session « gardée » au refresh FAUX ; le vrai serveur le refuse (400),
+        // le chemin exact d'un refresh perdu sous un réseau faible.
+        if CommandLine.arguments.contains("-sessionFactice") {
+            UserDefaults.standard.set("banc-session-factice", forKey: "woop.apple.userID")
+            CoffreSession.ecrire("refresh-factice-banc")
+        }
+        #endif
         // ⚠️ LE SEMIS AUTOMATIQUE EN DEBUG EST MORT (13-09, Kathryn : « tout
         // doit être empty quand c'est empty — sur mon tel branché il y a
         // encore des données »). Il ressemait des séances de démo à CHAQUE
@@ -374,8 +383,12 @@ struct RootView: View {
     /// `CompteEtat.porteDemandee` → la porte revient. `-skipAuth` la
     /// court-circuite (captures et bancs), `-porteForcee` la rejoue malgré la
     /// session (pour la voir).
+    /// ⚠️ 03-10 : une session SUSPENDUE (refresh refusé, souvent un réseau
+    /// faible) n'est plus une porte au lancement — la personne est connue, elle
+    /// entre ; la porte reviendra avec le réseau (`reconnexionPrete`).
     @State private var showAuth = !CommandLine.arguments.contains("-skipAuth")
-        && (CommandLine.arguments.contains("-porteForcee") || !SupabaseSession.sessionGardee()
+        && (CommandLine.arguments.contains("-porteForcee")
+            || (!SupabaseSession.sessionGardee() && SupabaseSession.identiteSuspendue == nil)
             || InscriptionCompte.aReprendre || InscriptionCompte.aVerifier)
     /// La langue de l'app, observée : le TabView renaît quand elle change.
     @AppStorage(Langue.cle) private var langueApp: String = Langue.courante
@@ -577,6 +590,51 @@ struct RootView: View {
     /// qui est ouvert et on rend la porte — sans le film d'entrée (elle l'a vu),
     /// sur le carrousel. La cérémonie de connexion se rejouera à la prochaine
     /// entrée, comme la première fois.
+    /// LA RECONNEXION (03-10, TestFlight 86) — la session est suspendue
+    /// (`CompteEtat.reconnexionDue`) : la porte ne revient que quand le réseau
+    /// est là, que rien ne tourne (séance, story, fête) et que l'app est
+    /// ouverte. Jamais à la salle, jamais pendant une séance.
+    private var reconnexionPrete: Bool {
+        compte.reconnexionDue && Reseau.shared.mesure && Reseau.shared.enLigne
+            && active == nil && storyFin == nil && !compte.finSeancePresentee
+            && !showAuth && !showSplash
+    }
+
+    /// La porte de reconnexion ouverte et le réseau retombé : on la referme,
+    /// l'app reste à elle (jamais l'écran hors ligne sur une personne connue).
+    private var porteSansReseau: Bool {
+        compte.reconnexionDue && showAuth && Reseau.shared.mesure && !Reseau.shared.enLigne
+    }
+
+    private func ouvrirLaReconnexion(_ prete: Bool) {
+        guard prete else { return }
+        print("[compte] session suspendue, réseau là, rien ne tourne → la porte")
+        revenirALaPorte()
+    }
+
+    private func refermerLaReconnexion(_ oui: Bool) {
+        guard oui else { return }
+        print("[compte] réseau retombé pendant la reconnexion → l'app reste ouverte")
+        withAnimation(.easeOut(duration: 0.4)) { showAuth = false }
+    }
+
+    /// LA RECONNEXION ABOUTIE : la même personne retrouve tout ce que le
+    /// téléphone a gardé ; une AUTRE, jamais — on efface la précédente, en
+    /// gardant la session qu'elle vient d'ouvrir.
+    private func reprendreApresReconnexion(_ userID: String) {
+        guard let ancienne = SupabaseSession.identiteSuspendue else { return }
+        SupabaseSession.lacherIdentiteSuspendue()
+        compte.reconnexionDue = false
+        guard ancienne != userID else {
+            print("[compte] reconnexion : même compte, rien n'est effacé")
+            return
+        }
+        print("[compte] reconnexion : un autre compte → la précédente est effacée")
+        Task { @MainActor in
+            await Compte.effacerToutCeQuiEstAElle(contexte: modelContext, garderSession: true)
+        }
+    }
+
     private func revenirALaPorte() {
         verificationCompte = false
         sheetWorkout = nil
@@ -1730,6 +1788,14 @@ struct RootView: View {
             // dans `PointRec.swift`, site d'appel mort.)
             Ouverture()
             EcranErreurHote()
+            // La veille de la reconnexion (03-10) : hors de la chaîne du corps,
+            // qui ne se type-checke plus si on l'allonge (loi §1, mesuré).
+            Color.clear
+                .frame(width: 0, height: 0)
+                .allowsHitTesting(false)
+                .modifier(VeilleReconnexion(prete: reconnexionPrete, sansReseau: porteSansReseau,
+                                            ouvrir: { ouvrirLaReconnexion(true) },
+                                            refermer: { refermerLaReconnexion(true) }))
         }
     }
 
@@ -2613,6 +2679,7 @@ struct RootView: View {
                         // `woop.phone`, la session est celle d'Apple.
                         startConnexionCinematic()
                     }, onVerdict: { verdict in
+                        reprendreApresReconnexion(verdict.userID)
                         // L'AIGUILLAGE (06-09, branché le 13-09) : aucune ligne
                         // `user_prefs` → c'est une nouvelle, le film de Nosfy
                         // lui est dû, PAR-DESSUS la porte. Une connue, elle, est
@@ -3707,5 +3774,20 @@ enum Fourneau {
         // re-rastérisé — il se payait sur le fil principal au premier montage
         // de la page.
         Task.detached(priority: .utility) { await DosVide.chauffer() }
+    }
+}
+
+/// LA VEILLE DE LA RECONNEXION (03-10, TestFlight 86) : la porte revient quand
+/// la session suspendue peut se reprendre, et se referme si le réseau retombe.
+private struct VeilleReconnexion: ViewModifier {
+    let prete: Bool
+    let sansReseau: Bool
+    let ouvrir: () -> Void
+    let refermer: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: prete, initial: true) { _, p in if p { ouvrir() } }
+            .onChange(of: sansReseau) { _, r in if r { refermer() } }
     }
 }

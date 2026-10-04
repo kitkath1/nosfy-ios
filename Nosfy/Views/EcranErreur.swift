@@ -165,7 +165,12 @@ struct EcranErreurHote: View {
                 .id(d.id)
                 .transition(.opacity)
                 .zIndex(60)
-        } else if reseau.mesure, !reseau.enLigne, !SupabaseSession.sessionGardee() {
+        } else if reseau.mesure, !reseau.enLigne, CompteEtat.shared.enPorte,
+                  !SupabaseSession.sessionGardee(), SupabaseSession.identiteSuspendue == nil {
+            // ⚠️ 03-10 (TestFlight 86, « à la salle je capte pas… le message
+            // d'erreur de Nosfy ») : il ne couvre plus QUE la porte, et jamais
+            // une personne connue dont la session est seulement suspendue
+            // (`SupabaseSession.identiteSuspendue`) — elle, elle garde l'app.
             // LE MODE AVION — SEULEMENT QUAND IL N'Y A PAS DE COMPTE.
             //
             // ⚠️⚠️ 30-09, TestFlight 85 : « le mode avion ne fonctionne pas,

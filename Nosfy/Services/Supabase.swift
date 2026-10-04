@@ -97,6 +97,26 @@ actor SupabaseSession {
     /// son jeton). Sa présence + un refresh au coffre = une session gardée.
     private static let appleUserKey = "woop.apple.userID"
 
+    /// ⚠️⚠️ L'IDENTITÉ SUSPENDUE (03-10, TestFlight 86 : « à la salle, comme je
+    /// capte pas, je ne peux pas utiliser l'app, je reçois le message d'erreur
+    /// de Nosfy — inadmissible »). Un refresh REFUSÉ (400-403) ne prouve pas
+    /// qu'on a changé de personne : sous un réseau faible, un refresh parti au
+    /// serveur dont la réponse se perd fait tourner le jeton, et le suivant est
+    /// refusé (« already used »). Avant, ce refus EFFAÇAIT TOUT — séances non
+    /// envoyées comprises — et rendait la porte, que le hors-ligne recouvrait
+    /// de l'écran d'erreur, sans issue. Désormais la session tombe, la personne
+    /// reste : son `id` attend ici, ses séances restent au téléphone, l'app
+    /// reste ouverte, et la porte revient quand le réseau est là et qu'aucune
+    /// séance ne tourne (la racine). Même `id` à la reconnexion : rien ne
+    /// s'efface ; un autre : on efface comme avant.
+    static let cleIdentiteSuspendue = "woop.session.identiteSuspendue"
+    nonisolated static var identiteSuspendue: String? {
+        UserDefaults.standard.string(forKey: cleIdentiteSuspendue)
+    }
+    nonisolated static func lacherIdentiteSuspendue() {
+        UserDefaults.standard.removeObject(forKey: cleIdentiteSuspendue)
+    }
+
     /// UNE SESSION EST GARDÉE — lisible sans réseau, depuis n'importe quel fil,
     /// AVANT le premier rendu : c'est elle qui décide de la porte (C0 :
     /// `showAuth = !sessionGardee()`). Migre au passage le refresh qui dormait
@@ -166,12 +186,14 @@ actor SupabaseSession {
         } catch SupabaseError.server(let statut, let corps) where (400...403).contains(statut) {
             guard self.generation == generation else { throw CancellationError() }
             // LE REFRESH EST REFUSÉ (C0) : jeton révoqué, compte supprimé ailleurs,
-            // déconnexion faite sur un autre appareil. Ce n'est pas une panne, c'est
-            // la fin de la session : on l'oublie et la porte revient. Une panne
-            // RÉSEAU, elle, passe par le `catch` général et ne touche à rien.
-            print("[session] refresh refusé (\(statut)) → la session est oubliée · \(corps.prefix(140))")
-            oublier()
-            await CompteEtat.shared.demanderLaPorte(raison: "session_revoquee")
+            // déconnexion faite sur un autre appareil — OU un refresh dont la
+            // réponse s'est perdue sous un réseau faible (03-10). La session
+            // tombe ; la personne et ses séances restent (`suspendre`), et la
+            // porte attend le réseau et la fin de la séance (la racine). Une
+            // panne RÉSEAU, elle, passe par le `catch` général et ne touche à rien.
+            print("[session] refresh refusé (\(statut)) → session suspendue, rien n'est effacé · \(corps.prefix(140))")
+            suspendre()
+            await CompteEtat.shared.demanderReconnexion()
             throw SupabaseError.sessionRevoquee
         }
     }
@@ -235,9 +257,19 @@ actor SupabaseSession {
         CoffreSession.effacer()
         let d = UserDefaults.standard
         d.removeObject(forKey: Self.appleUserKey)
+        d.removeObject(forKey: Self.cleIdentiteSuspendue)
         d.removeObject(forKey: Self.ancienneCleRefresh)
         d.removeObject(forKey: Self.ancienneClePhone)
         d.removeObject(forKey: Self.cleNumero)
+    }
+
+    /// SUSPENDRE (03-10) : la session tombe comme à `oublier()`, mais l'`id` de
+    /// la personne est retenu (`cleIdentiteSuspendue`) — c'est lui qui dira, à
+    /// la reconnexion, si ce téléphone garde ses séances.
+    func suspendre() {
+        let id = userID ?? UserDefaults.standard.string(forKey: Self.appleUserKey)
+        oublier()
+        if let id { UserDefaults.standard.set(id, forKey: Self.cleIdentiteSuspendue) }
     }
 
     /// `POST /auth/v1/logout` (C2) : le serveur révoque le refresh — la session

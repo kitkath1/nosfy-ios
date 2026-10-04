@@ -47,10 +47,17 @@ final class CompteEtat {
     var travail: String?
     var panne: String?
 
+    /// LA SESSION SUSPENDUE (03-10) : le serveur a refusé le refresh. Rien n'est
+    /// effacé, l'app reste ouverte ; la racine rend la porte quand le réseau
+    /// est là et qu'aucune séance ne tourne. Lu au lancement : survit au kill.
+    var reconnexionDue = SupabaseSession.identiteSuspendue != nil
+
     func demanderLaPorte(raison: String) {
         raisonPorte = raison
         porteDemandee = true
     }
+
+    func demanderReconnexion() { reconnexionDue = true }
 }
 
 enum Compte {
@@ -151,19 +158,25 @@ enum Compte {
     /// mémoire. Ce qui est à l'APP reste : la porte vue, le tuto exos vu, l'onglet
     /// ouvert, les bancs. Un nouveau compte sur ce téléphone repart vierge —
     /// et revoit la pop-up et la visite, parce que `visite_home` vit au serveur.
+    /// `garderSession` (03-10) : une AUTRE personne vient de se reconnecter
+    /// après une session suspendue — on efface la précédente sans tuer la
+    /// session (ni l'inscription) qu'elle vient d'ouvrir.
     @MainActor
-    static func effacerToutCeQuiEstAElle(contexte: ModelContext) async {
+    static func effacerToutCeQuiEstAElle(contexte: ModelContext, garderSession: Bool = false) async {
         CompteEtat.shared.generationDonnees = UUID()
         CompteEtat.shared.seanceEnCours = false
         CompteEtat.shared.finSeancePresentee = false
+        CompteEtat.shared.reconnexionDue = false
         DepartEtat.shared.oublierCompte()
         RewardCheminEtat.shared.oublierCompte()
         await OutboxGains.shared.effacer()
-        await SupabaseSession.shared.oublier()
-        InscriptionCompte.oublier()
+        if !garderSession {
+            await SupabaseSession.shared.oublier()
+            InscriptionCompte.oublier()
+        }
 
         let d = UserDefaults.standard
-        let cles = [
+        var cles = [
             ProfilServeur.clePrenom, ProfilServeur.cleBut, Langue.cle, ProfilServeur.clePhrases,
             PremiereArrivee.clePremiereFois, PremiereArrivee.cleVue, PremiereArrivee.cleVisite,
             "woop.onboarding.du",
@@ -173,6 +186,7 @@ enum Compte {
             "chemin.tirages", "chemin.revele", "chemin.reclamees",
             "woop.outbox.gains",
         ]
+        if garderSession { cles.removeAll { $0 == "woop.onboarding.du" } }
         cles.forEach { d.removeObject(forKey: $0) }
 
         // Les séances : les quatre modèles, du plus profond au plus haut (la
