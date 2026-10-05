@@ -104,7 +104,11 @@ struct MedaillonStop: View {
         .contentShape(Circle())
         // LA ZONE DE TAP passe le disque : 34 pt de médaillon, 44 pt de
         // doigt (le minimum d'Apple), posée AVANT le geste.
-        .padding(max(8, taille * 0.235))
+        // ⚠️ (05-10, « au clic je peux plus passer l'animation du cadran ») :
+        // à 88 pt, les 21 pt de marge de chaque côté poussaient le bouton
+        // « Passer l'animation », sous le Stop, hors de l'écran. Un grand
+        // médaillon est déjà sa propre zone de doigt.
+        .padding(taille >= 80 ? 6 : max(8, taille * 0.235))
         .contentShape(Circle())
         .highPriorityGesture(
             DragGesture(minimumDistance: 0)

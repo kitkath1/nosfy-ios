@@ -1361,10 +1361,19 @@ struct ExerciseDetailView: View {
                     // jamais une taille (loi §2) —, le fond de la séance se
                     // découvre dessous, et au-delà du seuil la fiche se range
                     // par `quitterLaFiche` (la coupe sourde). Sinon il revient
-                    // en ressort.
+                    // en ressort. Le doigt est lu par le cadran (05-10,
+                    // `onTirer` / `onLacher`) : un seul geste, un seul décalage.
                     .offset(y: tirageCadran)
                     .scaleEffect(1 - min(tirageCadran, 300) / 3000, anchor: .top)
-                    .clipShape(RoundedRectangle(cornerRadius: tirageCadran > 1 ? 44 : 0, style: .continuous))
+                    // ⚠️ (05-10, « le design est coupé ») : un `clipShape` coupe au
+                    // CADRE DE MISE EN PAGE, pas à l'écran — le halo du cadran
+                    // perdait sa tête et « Passer l'animation » ses pieds, même
+                    // sans tirer. Au repos, la coupe est repoussée à 600 pt hors
+                    // du cadre (aucune coupe) ; elle se referme sur les 50
+                    // premiers points du tirage, et les coins arrondis
+                    // n'existent que là.
+                    .clipShape(RoundedRectangle(cornerRadius: 44, style: .continuous)
+                        .inset(by: -max(0, 600 - tirageCadran * 12)))
                     .background {
                         if tirageCadran > 1 {
                             FondSeanceSousCadran()
@@ -1373,7 +1382,6 @@ struct ExerciseDetailView: View {
                                 .allowsHitTesting(false)
                         }
                     }
-                    .simultaneousGesture(tirageSpotify)
                 }
                 // ⚠️ **LA PAGE BRAVO EST SORTIE DU FLOW (26-08).** Verdict de
                 // Kathryn : « elle doit être considérée comme archivée et
@@ -2705,6 +2713,8 @@ struct ExerciseDetailView: View {
                     await ouvrirLecteurAuBanc()
                     return
                 }
+                // (05-10) La scène naît prête : le premier geste est le ▶.
+                if let st, st.pret { st.basculer() }
                 for tour in 0..<3 {
                     let attente = dureeSet > 0 ? dureeSet : (tour == 0 ? 5.0 : 4.0)
                     try? await Task.sleep(for: .seconds(attente))
@@ -3273,32 +3283,33 @@ struct ExerciseDetailView: View {
         tirageSaisi = false
     }
 
-    private var tirageSpotify: some Gesture {
-        DragGesture(minimumDistance: 12, coordinateSpace: .global)
-            .onChanged { v in
-                // Seulement le cadran POSÉ, et jamais pendant la note (la
-                // molette glisse) ni sous le tirage de montée.
-                guard summited, lensShown, lensHandoff?.live != true, returnFrom == nil else { return }
-                if !tirageSaisi {
-                    guard v.translation.height > 0,
-                          abs(v.translation.height) > abs(v.translation.width) * 1.4 else { return }
-                    tirageSaisi = true
-                    tirageJeton += 1
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 0.7)
-                }
-                // Prise directe, butée douce au-delà de 320 pt.
-                let h = max(0, v.translation.height)
-                tirageCadran = h <= 320 ? h : 320 + (h - 320) * 0.25
-                let jeton = tirageJeton
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { chienDeGardeTirage(jeton) }
-            }
-            .onEnded { v in
-                guard tirageSaisi else { return }
-                tirageSaisi = false
-                tirageJeton += 1
-                let franchi = v.translation.height > 120 || v.predictedEndTranslation.height > 260
-                if franchi { rangerParTirage() } else { relacherTirage() }
-            }
+    /// (05-10, « ça saute un peu quand je baisse la page ») : le geste est
+    /// LU PAR LE CADRAN (`reduireGeste`, qui sait seul si l'effort ou la note
+    /// interdisent de réduire) et c'est la fiche qui bouge. Deux gestes
+    /// vivaient en même temps — le sien et celui-ci — et leurs deux décalages
+    /// s'additionnaient sous le doigt, puis se battaient au retour.
+    private func tirerLeCadran(_ dy: CGFloat) {
+        // Seulement le cadran POSÉ, jamais sous le tirage de montée.
+        guard summited, lensShown, lensHandoff?.live != true, returnFrom == nil else { return }
+        if !tirageSaisi {
+            tirageSaisi = true
+            tirageJeton += 1
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 0.7)
+        }
+        // Prise directe, butée douce au-delà de 320 pt.
+        tirageCadran = dy <= 320 ? dy : 320 + (dy - 320) * 0.25
+        let jeton = tirageJeton
+        // ⚠️ 1,2 s, pas 0,35 : un doigt qui s'arrête en route n'est pas un
+        // `onEnded` perdu — à 0,35 s le chien lâchait la page SOUS le doigt
+        // posé, et le mouvement suivant la reprenait d'un coup (le « saut »).
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { chienDeGardeTirage(jeton) }
+    }
+
+    private func lacherLeCadran(franchi: Bool) {
+        guard tirageSaisi else { return }
+        tirageSaisi = false
+        tirageJeton += 1
+        if franchi { rangerParTirage() } else { relacherTirage() }
     }
 
     private func rangerParTirage() {
@@ -3914,6 +3925,8 @@ struct ExerciseDetailView: View {
             album: albumV15(a),
             arrivee: arriveeV15,
             onReduire: { quitterLaFiche() },
+            onTirer: { tirerLeCadran($0) },
+            onLacher: { lacherLeCadran(franchi: $0) },
             // La fiche ne rend la page qu'après la TOUTE dernière série de
             // la séance ; sinon le repos vient, puis la suite.
             onNotee: { o in noterSerieV15(s.id, o, derniere: !aSuivante && suivant == nil) },
@@ -3925,7 +3938,19 @@ struct ExerciseDetailView: View {
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.84)) {
                     SeanceV7Etat.shared.ajouterSerie(exercise.id)
                 }
-            })
+            },
+            // (05-10) La piste k glissée : la même suppression que la page.
+            onSupprimerSerie: { k in supprimerSerieV15(k, dans: a) })
+    }
+
+    private func supprimerSerieV15(_ k: Int, dans a: Workout) {
+        let etat = SeanceV7Etat.shared
+        guard let p = etat.plan.first(where: { $0.id == exercise.id }) else { return }
+        let rangs = etat.rangs(p, exo: exercise, dans: a)
+        guard rangs.indices.contains(k - 1) else { return }
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
+            etat.supprimer(rangs[k - 1], dans: a, context: context)
+        }
     }
 
     /// L'album de la séance : chaque exercice du plan, ce qui est fait (en
@@ -3967,7 +3992,10 @@ struct ExerciseDetailView: View {
         -> (exo: Exercise, faites: Int, prevu: SeanceV7Etat.Prevu)? {
         let etat = SeanceV7Etat.shared
         guard let i = etat.plan.firstIndex(where: { $0.id == exercise.id }) else { return nil }
-        for p in etat.plan[(i + 1)...] {
+        // L'ORDRE EST LIBRE (05-10, « je peux faire dans le désordre ») :
+        // après cet exercice, puis on reprend en tête — un exercice laissé
+        // plus haut n'est pas fini parce qu'on est descendu plus bas.
+        for p in etat.plan[(i + 1)...] + etat.plan[..<i] {
             guard let e = ExerciseCatalog.exercise(id: p.id) else { continue }
             let faites = e.tracking == .setsRepsWeight
                 ? faitesEnSeanceV15(p.id, a)

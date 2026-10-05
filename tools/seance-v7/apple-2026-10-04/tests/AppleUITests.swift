@@ -199,4 +199,78 @@ final class AppleUITests: XCTestCase {
         pause(2.0)
         capture("s\(i)-c-apres-valider")
     }
+
+    // MARK: 2 — le désordre : le gainage avant les Woodchopper, et glisser pour supprimer (05-10)
+
+    func test02_desordre() {
+        lancer(["-skipAuth", "-sansPlafond", "-goAuto"])
+        let compose = texte("Compose ta séance")
+        guard attendre(compose, 45, "vide") else { return }
+        pause(1.5)
+        capture("d01-vide-tete")
+        // le + : 30 pt au-dessus du titre, 96 de haut
+        taper(196, compose.frame.minY - 30 - 48)
+        let champ = app.textFields.firstMatch
+        guard attendre(champ, 8, "feuille") else { return }
+        champ.tap(); champ.typeText("Woodchopper")
+        pause(0.8)
+        let w = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Woodchopper poulie haute")).firstMatch
+        if attendre(w, 5, "w") { w.tap() }
+        champ.tap(); champ.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 11) + "Gainage")
+        pause(0.8)
+        let g = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Gainage")).firstMatch
+        if attendre(g, 5, "g") { g.tap() }
+        bouton("Ajouter (").tap()
+        pause(2.5)
+        capture("d02-prete")
+        // la playlist du GAINAGE, pas du premier exercice
+        let lg = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Gainage")).firstMatch
+        let ligneG = lg.exists ? lg : app.staticTexts["Gainage"]
+        guard attendre(ligneG, 6, "ligne-gainage") else { arbre("d-absent-gainage"); return }
+        ligneG.tap()
+        pause(1.2)
+        capture("d03-playlist-gainage")
+        arbre("d03-playlist-gainage")
+        // la série 1 du gainage : sa ligne (« Série 1 »)
+        let s1 = app.staticTexts["Série 1"]
+        guard attendre(s1, 5, "serie1-gainage") else { return }
+        s1.tap()
+        let enCours = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "en cours")).firstMatch
+        let passer = bouton("Passer l'animation")
+        if passer.waitForExistence(timeout: 8) { passer.tap() }
+        attendre(enCours, 25, "gainage-en-cours")
+        pause(3.0)
+        capture("d04-gainage-effort")
+        let valider = bouton("Valider")
+        for _ in 1...3 where !valider.exists {
+            let t = texte("Stop"); if t.exists { let f = t.frame; taper(f.midX, f.minY - 52) }
+            _ = valider.waitForExistence(timeout: 4)
+        }
+        if attendre(valider, 2, "gainage-note") {
+            pause(0.8)
+            capture("d05-gainage-note")
+            arbre("d05-gainage-note")
+            log("note gainage : reps = \(app.staticTexts["reps"].exists), kg = \(app.staticTexts["kg"].exists)")
+            valider.tap()
+        }
+        pause(3.0)
+        capture("d06-apres-note")
+        // retour à la page (le chevron du cadran)
+        taper(37, 96); pause(2.2)
+        capture("d07-page")
+        arbre("d07-page")
+        // glisser la ligne Woodchopper vers la gauche, puis Supprimer
+        let lw = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Woodchopper")).firstMatch
+        if attendre(lw, 6, "ligne-w") {
+            let f = lw.frame
+            let o = app.coordinate(withNormalizedOffset: .zero)
+            o.withOffset(CGVector(dx: 300, dy: f.midY)).press(forDuration: 0.05, thenDragTo: o.withOffset(CGVector(dx: 140, dy: f.midY)), withVelocity: 600, thenHoldForDuration: 0.1)
+            pause(0.8)
+            capture("d08-glisse")
+            let sup = app.buttons["Supprimer"]
+            if attendre(sup, 3, "supprimer") { sup.tap(); pause(1.2) }
+            capture("d09-supprime")
+            log("après suppression : Woodchopper = \(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Woodchopper")).firstMatch.exists)")
+        }
+    }
 }

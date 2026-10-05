@@ -199,8 +199,6 @@ struct LiquidLensLab: View {
     private static let v15Auto = CommandLine.arguments.contains("-v15Auto")
     /// L'onglet Séries de la v15 : l'album couvre le cadran.
     @State private var vueSeries = false
-    /// Glisser vers le bas pour réduire, comme Spotify : la descente du doigt.
-    @State private var tireV15: CGFloat = 0
     /// Barreau : le premier lancement naît posé, sans l'arrivée dans la fumée.
     private static let sansArriveeV15 = CommandLine.arguments.contains("-sansArriveeV15")
     #if DEBUG
@@ -478,7 +476,8 @@ struct LiquidLensLab: View {
         // lecteur descend sous le doigt et, passé le seuil, rend la page de
         // séance. Pendant l'effort et la note il résiste — on ne quitte pas
         // une série en cours sans son Stop. Jamais sur l'album, qui défile.
-        .offset(y: tireV15)
+        // (05-10) Le déplacement vit chez la fiche (`tirageCadran`) : ici, le
+        // geste seul.
         .simultaneousGesture(reduireGeste, isEnabled: v15 != nil && !vueSeries)
         // LA SAISIE DE LA SÉRIE — au-dessus de CE cadran, jamais ailleurs.
         // NOTRE panneau, PAS un sheet système : la présentation d'iOS 26
@@ -1141,20 +1140,20 @@ struct LiquidLensLab: View {
         return (chronoDepuis.map { Date.now < $0 }) ?? true
     }
 
+    /// (05-10) Le cadran ne se déplace plus lui-même : il dit à la fiche de
+    /// combien le doigt tire (`onTirer`) et si le seuil est franchi au lâcher
+    /// (`onLacher`). Hors permission, le lecteur résiste (44 pt au plus).
     private var reduireGeste: some Gesture {
         DragGesture(minimumDistance: 12, coordinateSpace: .global)
             .onChanged { g in
                 let dy = g.translation.height
                 guard dy > 0, dy > abs(g.translation.width) else { return }
-                tireV15 = reductionPermise ? dy : min(44, dy * 0.22)
+                v15?.onTirer(reductionPermise ? dy : min(44, dy * 0.22))
             }
             .onEnded { g in
-                if reductionPermise,
-                   g.translation.height > 110 || g.predictedEndTranslation.height > 260 {
-                    Haptique.leger()
-                    v15?.onReduire()
-                }
-                withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) { tireV15 = 0 }
+                let franchi = reductionPermise
+                    && (g.translation.height > 110 || g.predictedEndTranslation.height > 260)
+                v15?.onLacher(franchi)
             }
     }
 

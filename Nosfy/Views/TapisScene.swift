@@ -208,6 +208,14 @@ final class SeanceTapis {
     private(set) var effortAuSeuil = false
     /// Finish a été glissé : plus aucun tap ne compte, la quittance est là.
     private(set) var terminee = false
+    /// (05-10, « le set ne commence pas tant que je clique pas sur play ») :
+    /// en HIIT la scène naît PRÊTE — « GO » scintille dans la pastille, rien
+    /// ne tourne — et c'est le ▶ qui lance le set 1. Plus de 3, 2, 1.
+    private(set) var pret = false
+    /// Le premier ▶ : l'ancre du TEMPS TOTAL, qui court ensuite à travers
+    /// les pauses, et se fige à Finish.
+    private(set) var premierDepart: Date?
+    private var totalFige: Int?
     /// Le jeton du POINTAGE au long : un segment qui dure plus de cinq
     /// minutes à la même allure est écrit par tranches — une app tuée, un
     /// STOP par la pilule, ne perdent que la tranche en cours, jamais la
@@ -273,6 +281,8 @@ final class SeanceTapis {
     var onLiveChange: (() -> Void)?
 
     var livePhase: WorkoutLivePhase {
+        // Prête, rien ne tourne : l'île dit « pause », pas une récup.
+        if pret { return .init(kind: .pause, elapsed: 0) }
         switch etat {
         case .court:
             return .init(kind: .effort, startedAt: setDebut,
@@ -359,13 +369,24 @@ final class SeanceTapis {
         self.setIndex = setsFaits + 1
         self.secondesAvancees = dejaSecondes
         self.effortAuSeuil = dejaAuSeuil
-        // Le set 1 part au GO : l'arrivée, puis le compte (30-09).
-        let compte = !figee && avance == 0
+        // Au long, la course part au GO : l'arrivée, puis le compte (30-09).
+        // En HIIT (05-10), rien ne part seul : la scène naît prête, « GO »
+        // scintille, le ▶ lance le set 1.
+        let neuve = !figee && avance == 0
+        let compte = neuve && mode.auLong
         let pose = self.naissance.addingTimeInterval(Self.arrivee)
         self.debutCompte = compte ? pose : nil
         let depart = pose.addingTimeInterval(compte ? LiquidLensLab.igniteSpan : 0)
-        self.setDebut = depart
-        self.segmentDebut = depart
+        if neuve, !mode.auLong {
+            self.etat = .repos
+            self.pret = true
+            self.setDebut = nil
+            self.segmentDebut = nil
+        } else {
+            self.setDebut = depart
+            self.segmentDebut = depart
+            self.premierDepart = depart
+        }
         self.vitesse = mode.depart
         self.segmentVitesse = mode.depart
         self.vitesseEffort = mode.depart
@@ -386,8 +407,18 @@ final class SeanceTapis {
             return Int(couruAvant + foulee)
         }
         if etat == .court, let d0 = setDebut { return max(0, Int(now.timeIntervalSince(d0))) }
-        if let r0 = reposDebut { return max(0, Int(now.timeIntervalSince(r0))) }
+        // (05-10) Au repos, le chrono du set reste à 0:00 : la récup n'est
+        // plus comptée sous ses yeux (elle l'est toujours pour le barème,
+        // `reposDebut` tient), c'est le temps TOTAL en haut qui court.
         return 0
+    }
+
+    /// LE TEMPS TOTAL (05-10, « je vois le temps au global en haut ») :
+    /// depuis le premier ▶, pauses comprises, figé à Finish.
+    func secondesTotales(_ now: Date) -> Int {
+        if let t = totalFige { return t }
+        guard let d = premierDepart else { return 0 }
+        return max(0, Int(now.timeIntervalSince(d)))
     }
 
     /// Les secondes qui restent à l'étape minutée en cours (effort ou récup),
@@ -596,6 +627,7 @@ final class SeanceTapis {
         defer { onLiveChange?() }
         terminee = true
         popupVisible = false
+        totalFige = secondesTotales(now)
         if mode.auLong {
             if etat == .court { fermerSegment(now) }
         } else if etat == .court,
@@ -695,6 +727,8 @@ final class SeanceTapis {
         popupVisible = false
         let secondes = reposDebut.map { max(0, Int(now.timeIntervalSince($0))) } ?? 0
         let vRecup = vitesse
+        pret = false
+        if premierDepart == nil { premierDepart = now }
         etat = .court
         setIndex = setsFaits + 1
         setDebut = now
@@ -950,6 +984,14 @@ struct TapisScene: View {
         let offVitesse = (1 - CGFloat(e2)) * (h - yVitesse + 200) - CGFloat(rebond)
 
         return ZStack {
+            // LE TEMPS TOTAL, en haut (05-10) — HIIT seulement, l'au long a
+            // son chrono de course dans la pastille.
+            if !seance.mode.auLong {
+                tempsTotal(now: now)
+                    .position(x: w / 2, y: 104)
+                    .opacity(sstep(SeanceTapis.arrivee * 0.7, SeanceTapis.arrivee + 0.4, age))
+                    .zIndex(10)
+            }
             PastilleBraise(cote: Self.coteChrono, t: age, ig: igEntree,
                            chaleur: chaleur, pulse: vie)
                 .position(x: w / 2, y: yChrono)
@@ -1024,6 +1066,22 @@ struct TapisScene: View {
         .allowsHitTesting(false)
     }
 
+    // MARK: le temps total (05-10)
+
+    private func tempsTotal(now: Date) -> some View {
+        VStack(spacing: 2) {
+            Text(L("TEMPS TOTAL", "TOTAL TIME"))
+                .font(.inter(11, .semibold))
+                .tracking(2.8)
+                .foregroundStyle(Color.white.opacity(0.42))
+            Text(chrono(seance.secondesTotales(now)))
+                .font(.inter(40, .regular))
+                .monospacedDigit()
+                .foregroundStyle(Self.encreApple)
+        }
+        .allowsHitTesting(false)
+    }
+
     // MARK: la phrase (« Tap to stop » / « Tap to start »)
 
     /// Le pulse est une fonction de l'horloge — jamais un `repeatForever`
@@ -1069,11 +1127,16 @@ struct TapisScene: View {
         // taper pendant la seconde où la dalle parle.
         let fini = seance.terminee
         let secondes = fini && !seance.mode.auLong ? seance.secondesEcrites : seance.secondes(now)
+        // (05-10) Au repos : « SET N TERMINÉ » et 0:00 ; prête : « SET 1 » et
+        // GO qui scintille jusqu'au ▶.
+        let termine = !court && !fini && !seance.pret && seance.setsFaits > 0
+        let go = seance.pret && !fini
+        let scintille = 0.45 + 0.55 * (0.5 - 0.5 * cos(now.timeIntervalSince(seance.naissance) * 2 * .pi / 1.1))
         return VStack(spacing: court ? 4 : 8) {
             if !seance.mode.auLong, !fini {
                 let reste = seance.resteMinute(now).flatMap { (1...3).contains($0) ? $0 : nil }
                 Text(reste.map { court ? "RÉCUP · \($0)" : "SET \(seance.rangAffiche) · \($0)" }
-                     ?? "SET \(seance.rangAffiche)")
+                     ?? (termine ? "SET \(seance.setsFaits) " + L("TERMINÉ", "DONE") : "SET \(seance.rangAffiche)"))
                     .font(.inter(11, .semibold))
                     .tracking(2.8)
                     .monospacedDigit()
@@ -1085,11 +1148,19 @@ struct TapisScene: View {
             // Pendant le compte du départ (30-09), la pastille dit le compte :
             // « 3 », « 2 », « 1 », « GO » — puis le chrono, à 0:00.
             let mot = seance.motDuCompte(now)
-            Text(mot ?? chrono(secondes))
-                .font(.inter(52, .medium))
-                .monospacedDigit()
-                .foregroundStyle(Color.white.opacity(court ? 0.94 : 0.66))
-            if fini {
+            if go {
+                Text("GO")
+                    .font(.inter(52, .semibold))
+                    .tracking(4)
+                    .foregroundStyle(Color.white.opacity(scintille))
+                    .shadow(color: .white.opacity(0.55 * scintille), radius: 4)
+            } else {
+                Text(mot ?? chrono(secondes))
+                    .font(.inter(52, .medium))
+                    .monospacedDigit()
+                    .foregroundStyle(Color.white.opacity(court ? 0.94 : 0.66))
+            }
+            if fini || go {
                 EmptyView()
             } else if mot != nil {
                 // Rien à taper tant que le compte tient la pastille.
@@ -1098,9 +1169,11 @@ struct TapisScene: View {
                 glyphe(seance.mode.auLong ? "pause.fill" : "stop.fill", corps: 19)
                     .opacity(0.78)
                     .padding(.top, 2)
-            } else {
-                acte(seance.mode.auLong ? "RESUME" : "START SET \(seance.rangAffiche)")
+            } else if seance.mode.auLong {
+                acte("RESUME")
             }
+            // (05-10) En HIIT, plus de « START SET n » dans la pastille : le
+            // ▶ du bas est le seul bouton, « comme les autres exercices ».
         }
         .allowsHitTesting(false)
     }
@@ -1900,7 +1973,7 @@ private struct CommandeTapis: View {
     private var libelle: (symbole: String, mot: String) {
         switch seance.etat {
         case .court: return seance.mode.auLong ? ("pause.fill", L("Pause", "Pause")) : ("stop.fill", "Stop")
-        case .repos: return ("play.fill", "Go")
+        case .repos: return ("play.fill", seance.pret ? L("Lancer", "Start") : L("Reprendre", "Resume"))
         case .pause: return ("play.fill", L("Reprendre", "Resume"))
         }
     }
@@ -1909,17 +1982,18 @@ private struct CommandeTapis: View {
         let l = libelle
         VStack(spacing: 6) {
             ZStack {
-                MedaillonStop(symbol: l.symbole, taille: 80)
+                // 88 pt (05-10, « play et stop plus gros, comme les autres exercices »).
+                MedaillonStop(symbol: l.symbole, taille: 88)
                     .allowsHitTesting(false)
                 Circle()
                     .trim(from: 0, to: tenue)
                     .stroke(Color.white.opacity(0.92), style: StrokeStyle(lineWidth: 2, lineCap: .round))
                     .rotationEffect(.degrees(-90))
-                    .frame(width: 96, height: 96)
+                    .frame(width: 104, height: 104)
                     .shadow(color: .white.opacity(0.55), radius: 3)
                     .allowsHitTesting(false)
             }
-            .frame(width: 108, height: 108)
+            .frame(width: 112, height: 112)
             .contentShape(Circle())
             .gesture(DragGesture(minimumDistance: 0)
                 .onChanged { _ in commencer() }
@@ -1932,9 +2006,8 @@ private struct CommandeTapis: View {
             Text(l.mot)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.white.opacity(0.66))
-            Text(L("maintiens pour terminer", "hold to finish"))
-                .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.36))
+            // (05-10) Plus de « maintiens pour terminer » écrit : le geste
+            // reste, l'anneau qui se remplit le raconte.
         }
         .opacity(seance.terminee ? 0 : 1)
         .allowsHitTesting(!seance.terminee)

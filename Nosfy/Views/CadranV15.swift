@@ -41,6 +41,14 @@ struct CommandesV15 {
     /// fumée (la descente de la nuit), au lieu de naître posée.
     var arrivee: Bool = false
     var onReduire: () -> Void
+    /// LE TIRAGE SPOTIFY (05-10, « ça saute un peu ») : UN SEUL doigt. Le
+    /// cadran lit le geste (il sait seul si on a le droit de réduire — pas
+    /// pendant l'effort ni la note) et la fiche déplace tout le lecteur.
+    /// Avant, chacun tirait de son côté : deux décalages additionnés, puis
+    /// deux retours qui se battaient.
+    var onTirer: (CGFloat) -> Void = { _ in }
+    /// Le doigt lâche : `true` si le seuil est franchi (la fiche se range).
+    var onLacher: (Bool) -> Void = { _ in }
     /// La série est notée : la fiche l'écrit et joue ses toasters et pop-ups.
     var onNotee: (LiquidLensLab.SeriesOutcome) -> Void
     /// Le repos est fini (ou passé) : la fiche avance d'une série.
@@ -50,6 +58,9 @@ struct CommandesV15 {
     /// LA PLAYLIST (04-10) : « Ajouter une série » depuis l'onglet Séries,
     /// sans repasser par la page.
     var onAjouterSerie: () -> Void = {}
+    /// (05-10, « supprimer une série, même dans la partie cadran ») : la
+    /// piste k (de 1) glissée vers la gauche — une prévue, ou une faite.
+    var onSupprimerSerie: (Int) -> Void = { _ in }
 
     /// Ce que le slider porte écrit : la PROCHAINE étape, quelle qu'elle soit.
     /// `versAutre` : la prochaine étape est l'exercice suivant. `prete` : la
@@ -271,7 +282,9 @@ struct ChromeV15: View {
     private func commande(_ p: PhaseV15) -> some View {
         switch p {
         case .compte, .effort:
-            VStack(spacing: 8) {
+            // (05-10, « Passer l'animation est coupé ») : 100 + 4 + 16 + 4 + 26
+            // = 150, le cadre — rien ne déborde plus sous la zone sûre.
+            VStack(spacing: 4) {
                 // (04-10, « le médaillon Stop plus gros ») : 88 pt.
                 MedaillonStop(taille: 88, action: stop)
                     .opacity(p == .effort ? 1 : 0.35)
@@ -284,7 +297,7 @@ struct ChromeV15: View {
                         Text(L("Passer l'animation", "Skip animation"))
                             .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(.white.opacity(0.55))
-                            .frame(minHeight: 32)
+                            .frame(minHeight: 26)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -479,7 +492,8 @@ private struct AlbumV15: View {
             if let x = ici {
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(1...max(1, x.total), id: \.self) { k in
-                        ligne(x, k)
+                        GlisserPourSupprimerV15(actif: supprimable(x, k),
+                                                onSupprimer: { v.onSupprimerSerie(k) }) { ligne(x, k) }
                             .opacity(montre ? 1 : 0)
                             .offset(y: montre ? 0 : 10)
                             .animation(.spring(response: 0.55, dampingFraction: 0.88)
@@ -508,6 +522,17 @@ private struct AlbumV15: View {
 
     private enum Etat { case fait, joue, prete, avenir }
 
+    /// Une prévue qui n'est pas celle qui vient, ou une faite déjà écrite ;
+    /// jamais celle qui se joue ni celle qui est prête.
+    private func supprimable(_ x: AlbumExoV15, _ k: Int) -> Bool {
+        guard x.exercice.tracking == .setsRepsWeight else { return false }
+        switch etat(x, k) {
+        case .avenir: return true
+        case .fait: return k <= x.faites.count
+        case .joue, .prete: return false
+        }
+    }
+
     private func etat(_ x: AlbumExoV15, _ k: Int) -> Etat {
         // La série qu'on vient de valider compte faite, même si son
         // écriture n'est pas encore tombée.
@@ -527,11 +552,10 @@ private struct AlbumV15: View {
             ZStack {
                 switch e {
                 case .fait:
+                    // Le vrai sticker (05-10, « c'est blanc là ? »).
                     Image("sticker-flamme-serree")
-                        .renderingMode(.template).resizable().scaledToFit()
-                        .frame(width: 13, height: 16)
-                        .foregroundStyle(.white)
-                        .shadow(color: .white.opacity(0.4), radius: 3)
+                        .resizable().scaledToFit()
+                        .frame(width: 15, height: 19)
                 case .joue: EgaliseurV15()
                 case .prete, .avenir:
                     Text("\(k)")
@@ -902,5 +926,66 @@ private struct MoletteV15: View {
             valeur = min(max(v, bornes.lowerBound), bornes.upperBound)
             onPas()
         }
+    }
+}
+
+
+// MARK: - Glisser pour supprimer (05-10)
+
+/// GLISSER POUR SUPPRIMER, à la iOS : le rouge se découvre sous la piste qui
+/// part vers la gauche, sa largeur suit le doigt ; un tap la referme. Le
+/// contenu garde ses propres gestes (simultané).
+struct GlisserPourSupprimerV15<Content: View>: View {
+    var actif: Bool
+    var onSupprimer: () -> Void
+    @ViewBuilder var content: () -> Content
+
+    @State private var dx: CGFloat = 0
+    @State private var ouvert = false
+    private static var rouge: CGFloat { 92 }
+    private var decalage: CGFloat { (ouvert ? -Self.rouge : 0) + dx }
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            if actif {
+                Button(action: { Haptique.moyen(); ouvert = false; onSupprimer() }) {
+                    Text(L("Supprimer", "Delete"))
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .fixedSize()
+                        .frame(width: max(0, -decalage))
+                        .frame(maxHeight: .infinity)
+                        .background(Color(red: 1, green: 0.27, blue: 0.23))
+                        .clipped()
+                }
+                .buttonStyle(.plain)
+                .opacity(decalage < -2 ? 1 : 0)
+            }
+            content()
+                .offset(x: decalage)
+                .contentShape(Rectangle())
+                .simultaneousGesture(TapGesture().onEnded {
+                    if ouvert { withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) { ouvert = false } }
+                })
+                .simultaneousGesture(glisser, isEnabled: actif)
+        }
+        .clipped()
+    }
+
+    private var glisser: some Gesture {
+        DragGesture(minimumDistance: 14)
+            .onChanged { v in
+                guard abs(v.translation.width) > abs(v.translation.height) else { return }
+                dx = min(Self.rouge * 0.4, max(-Self.rouge * 1.3, v.translation.width))
+            }
+            .onEnded { v in
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                    if abs(v.translation.width) > abs(v.translation.height) {
+                        ouvert = (ouvert ? -Self.rouge : 0) + v.translation.width < -Self.rouge / 2
+                    }
+                    dx = 0
+                }
+            }
     }
 }

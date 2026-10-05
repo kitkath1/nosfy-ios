@@ -225,6 +225,9 @@ final class SeanceV7Etat {
         }
         if let i = plan.firstIndex(where: { $0.id == r.exo }) {
             plan[i].nombre = max(faits(r.exo, dans: a).count, plan[i].nombre - 1)
+            // Plus aucune série, rien de fait : l'exercice part avec sa
+            // dernière série (05-10) — une ligne sans série n'existe pas.
+            if plan[i].nombre == 0 { plan.remove(at: i) }
         }
     }
 
@@ -293,7 +296,9 @@ struct SeanceV7Page: View {
     private static let bas: CGFloat = 6
 
     /// La page est posée, immobile : ses horloges ont le droit de battre.
-    private var pose: Bool { morph > 0.98 && tire < 0.5 && !ajout }
+    /// (05-10, « arrête les animations quand je suis pas sur la page ») : sous
+    /// la playlist aussi, les braises, le galet et le slider dorment.
+    private var pose: Bool { morph > 0.98 && tire < 0.5 && !ajout && playlist == nil }
     /// ⚠️ EN SÉANCE, TOUJOURS LE SLIDER (Kathryn, 02-10 : le choix galet ou
     /// slider du profil vaut sur la fiche d'un exercice HORS séance, « jamais
     /// pendant la session en cours »). La page ne lit plus le réglage : son
@@ -316,8 +321,11 @@ struct SeanceV7Page: View {
                         .ignoresSafeArea()
                         .onTapGesture { fermerPlaylist() }
                         .transition(.opacity)
+                    // (05-10, « j'ai rajouté gainage, malgré les Woodchopper
+                    // j'arrive pas à lancer sa série 1 ») : la première série
+                    // non faite de CET exercice se lance, hors de l'ordre du plan.
                     PlaylistV7(exo: exo, rangs: etat.rangs(p, exo: exo, dans: seance),
-                               prochaine: prochain?.exo == id ? prochain?.rang : nil,
+                               prochaine: etat.rangs(p, exo: exo, dans: seance).first(where: { !$0.fait })?.rang,
                                hauteur: geo.size.height,
                                onFermer: { fermerPlaylist() },
                                onFiche: { fermerPlaylist(); partir(exo, lancer: false) },
@@ -328,6 +336,7 @@ struct SeanceV7Page: View {
                                onSupprimer: { r in
                                    withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
                                        etat.supprimer(r, dans: seance, context: context)
+                                       if !etat.plan.contains(where: { $0.id == id }) { playlist = nil }
                                    }
                                })
                     .transition(.move(edge: .bottom))
@@ -488,7 +497,12 @@ struct SeanceV7Page: View {
                           neuves: rangs.filter { etat.neuve($0) }.map(\.id),
                           onMontree: { r in etat.montree(r) },
                           onToucher: { ouvrirPlaylist(p.id) },
-                          onFiche: { partir(exo, lancer: false) })
+                          onFiche: { partir(exo, lancer: false) },
+                          onRetirer: {
+                              withAnimation(.spring(response: 0.5, dampingFraction: 0.86)) {
+                                  etat.retirer(p.id, dans: seance, context: context)
+                              }
+                          })
             .draggable(p.id)
             .dropDestination(for: String.self) { ids, _ in
                 guard let id = ids.first else { return false }
@@ -787,9 +801,12 @@ private struct VideV7: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            EnteteV7Vide()
-                .padding(.horizontal, 20)
-                .padding(.top, 110)
+            // (05-10, « trop collé au chevron, fais comme TA SÉANCE / En
+            // cours., plus allégé ») : la tête de la séance, à sa place
+            // exacte — seul le titre changera à l'arrivée.
+            TeteVideV7()
+                .padding(.horizontal, 24)
+                .padding(.top, 132)
             Spacer(minLength: 0)
             VStack(spacing: 30) {
                 MedaillonStop(symbol: "plus", taille: 96) { onAjouter() }
@@ -869,8 +886,34 @@ func nombreDExercices(_ n: Int) -> String {
     n > 1 ? L("\(n) exercices", "\(n) exercises") : L("\(n) exercice", "\(n) exercise")
 }
 
-/// L'en-tête de la page vide : « Séance », le jour et le chrono, la pièce,
-/// la tuile du jour — celui de la v1.
+/// La tête de la page vide : « TA SÉANCE », puis le jour au blanc dégradé —
+/// la grammaire de `TeteFineV7`, sans chiffre, sans pièce, sans tuile.
+private struct TeteVideV7: View {
+    private static let jourFR: DateFormatter = {
+        let f = DateFormatter(); f.locale = Locale(identifier: "fr_FR"); f.dateFormat = "EEEE d"; return f
+    }()
+    private static let jourEN: DateFormatter = {
+        let f = DateFormatter(); f.locale = Locale(identifier: "en_US"); f.dateFormat = "EEEE d"; return f
+    }()
+    var body: some View {
+        let s = (Langue.en ? Self.jourEN : Self.jourFR).string(from: .now)
+        VStack(alignment: .leading, spacing: 0) {
+            Text(L("TA SÉANCE", "YOUR SESSION"))
+                .font(.inter(12.5, .medium))
+                .tracking(3.6)
+                .foregroundStyle(.white.opacity(0.46))
+            Text(s.prefix(1).uppercased() + s.dropFirst() + ".")
+                .font(.inter(44, .semibold))
+                .tracking(-44 * 0.026)
+                .foregroundStyle(MotsFlou.blancDegrade)
+                .padding(.top, 16)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// (L'en-tête v1 du 04-10 — « Séance », le jour, la pièce, la tuile — trop
+/// collé au chevron, remplacé le 05-10 par `TeteVideV7`. Sans site d'appel.)
 private struct EnteteV7Vide: View {
     private static let jourFR: DateFormatter = {
         let f = DateFormatter(); f.locale = Locale(identifier: "fr_FR"); f.dateFormat = "EEEE d"; return f
@@ -977,50 +1020,102 @@ private struct LigneExoV7: View {
     var onMontree: (RangV7) -> Void
     var onToucher: () -> Void
     var onFiche: () -> Void
+    /// GLISSER POUR SUPPRIMER (05-10, « quand je drag sur le côté la ligne,
+    /// je peux la supprimer ») : le rouge se découvre sous le doigt, sa
+    /// largeur suit la ligne qui part — jamais un aplat derrière le texte.
+    var onRetirer: () -> Void
+
+    @State private var dx: CGFloat = 0
+    @State private var ouvert = false
+    private static let rouge: CGFloat = 96
 
     private var faits: [RangV7] { rangs.filter(\.fait) }
     private var fini: Bool { !rangs.isEmpty && faits.count == rangs.count }
+    private var decalage: CGFloat { (ouvert ? -Self.rouge : 0) + dx }
 
     var body: some View {
-        Button(action: { Haptique.leger(); onToucher() }) {
-            HStack(spacing: 14) {
-                // La vignette ouvre la FICHE (04-10) ; le reste de la ligne,
-                // la playlist des séries.
-                ExercisePhoto(exercise: exo)
-                    .frame(width: 40, height: 44)
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(.white.opacity(0.14), lineWidth: 0.5))
-                    .opacity(fini ? 0.72 : 1)
-                    .contentShape(Rectangle())
-                    .highPriorityGesture(TapGesture().onEnded { Haptique.leger(); onFiche() })
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(exo.nomLocalise)
-                        .font(.system(size: 16, weight: vient ? .semibold : .regular))
-                        .foregroundStyle(.white.opacity(fini ? 0.72 : 1))
-                        .lineLimit(1)
-                    Text(sous)
-                        .font(.system(size: 13))
-                        .foregroundStyle(.white.opacity(0.5))
-                        .lineLimit(1)
-                }
-                Spacer(minLength: 8)
-                // PAS DE FLAMME PAR DÉFAUT (04-10) : une flamme par série
-                // FAITE, rien pour celles à venir.
-                HStack(spacing: -5) {
-                    ForEach(faits) { r in
-                        FlammeBlancheV7(r: r, allumage: neuves.firstIndex(of: r.id), onMontree: { onMontree(r) })
-                    }
-                }
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.35))
+        ZStack(alignment: .trailing) {
+            Button(action: { Haptique.moyen(); onRetirer() }) {
+                Text(L("Supprimer", "Delete"))
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .fixedSize()
+                    .frame(width: max(0, -decalage))
+                    .frame(maxHeight: .infinity)
+                    .background(Color(red: 1, green: 0.27, blue: 0.23))
+                    .clipped()
             }
-            .frame(height: 64)
-            .contentShape(Rectangle())
-            .overlay(alignment: .bottom) { Rectangle().fill(.white.opacity(0.1)).frame(height: 1) }
+            .buttonStyle(.plain)
+            .opacity(decalage < -2 ? 1 : 0)
+            contenu
+                .offset(x: decalage)
         }
-        .buttonStyle(.plain)
+        .frame(height: 64)
+        .clipped()
+        .overlay(alignment: .bottom) { Rectangle().fill(.white.opacity(0.1)).frame(height: 1) }
+    }
+
+    private var contenu: some View {
+        HStack(spacing: 14) {
+            // La vignette ouvre la FICHE (04-10) ; le reste de la ligne,
+            // la playlist des séries.
+            ExercisePhoto(exercise: exo)
+                .frame(width: 40, height: 44)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(.white.opacity(0.14), lineWidth: 0.5))
+                .opacity(fini ? 0.72 : 1)
+                .contentShape(Rectangle())
+                .highPriorityGesture(TapGesture().onEnded { Haptique.leger(); onFiche() })
+            VStack(alignment: .leading, spacing: 2) {
+                Text(exo.nomLocalise)
+                    .font(.system(size: 16, weight: vient ? .semibold : .regular))
+                    .foregroundStyle(.white.opacity(fini ? 0.72 : 1))
+                    .lineLimit(1)
+                Text(sous)
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.5))
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 8)
+            // PAS DE FLAMME PAR DÉFAUT (04-10) : seulement les séries
+            // FAITES. LE VRAI STICKER, DEUX AU PLUS, PUIS LE CHIFFRE
+            // (05-10, « pas de sticker flamme, c'est blanc là ? ») —
+            // `FlammesRow`, la règle de la maison.
+            if !faits.isEmpty {
+                FlammesRow(done: faits.count, total: faits.count, t: 0, date: .now,
+                           igniteAt: nil, corps: 17, ceremonie: false, plafond: 2)
+                    .onAppear { faits.forEach(onMontree) }
+            }
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.35))
+        }
+        .frame(maxHeight: .infinity)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if ouvert { withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) { ouvert = false }; return }
+            Haptique.leger()
+            onToucher()
+        }
+        .simultaneousGesture(glisser)
+    }
+
+    private var glisser: some Gesture {
+        DragGesture(minimumDistance: 14)
+            .onChanged { v in
+                guard abs(v.translation.width) > abs(v.translation.height) else { return }
+                dx = min(Self.rouge * 0.4, max(-Self.rouge * 1.4, v.translation.width))
+            }
+            .onEnded { v in
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                    if abs(v.translation.width) > abs(v.translation.height) {
+                        ouvert = (ouvert ? -Self.rouge : 0) + v.translation.width < -Self.rouge / 2
+                    }
+                    dx = 0
+                }
+            }
     }
 
     /// Ce qui est fait, sinon ce qui est prévu. Jamais une prévision de charge.
@@ -1217,7 +1312,11 @@ private struct PisteV7: View {
     @State private var ouvert = false
     private static let rouge: CGFloat = 92
 
-    private var supprimable: Bool { r.set != nil }
+    /// (05-10, « j'arrive pas à supprimer une série ») : une série FAITE
+    /// (son enregistrement part) ou une série PRÉVUE de muscu (le plan en
+    /// compte une de moins). Une ligne de cardio ne se supprime qu'avec
+    /// son exercice.
+    private var supprimable: Bool { r.set != nil || (!r.fait && exo.tracking == .setsRepsWeight) }
 
     var body: some View {
         ZStack(alignment: .trailing) {
@@ -1242,10 +1341,8 @@ private struct PisteV7: View {
             ZStack {
                 if r.fait {
                     Image("sticker-flamme-serree")
-                        .renderingMode(.template).resizable().scaledToFit()
-                        .frame(width: 13, height: 16)
-                        .foregroundStyle(.white)
-                        .shadow(color: .white.opacity(0.4), radius: 3)
+                        .resizable().scaledToFit()
+                        .frame(width: 15, height: 19)
                 } else if prochaine {
                     // LA PASTILLE ▶ EN VERRE (04-10) : la prochaine série.
                     Image(systemName: "play.fill")
@@ -1431,6 +1528,9 @@ struct FondV7: View {
                 if !Self.sansGalet {
                     let h = g.size.width * 1.42 * 1560 / 1206
                     let l = h * 1206 / 1560
+                    // (05-10, « la vidéo noire bouge pas, au moins mets-la plus
+                    // haut, différent de la page vide ») : sur la séance, le
+                    // galet monte — son ventre vers 40 % de l'écran.
                     Group {
                         if video, !Self.sansVideo, !fige {
                             NosfyReel(nom: "duo-galet-noir", boucle: true, muet: true)
@@ -1439,7 +1539,7 @@ struct FondV7: View {
                         }
                     }
                         .frame(width: l, height: h)
-                        .position(x: g.size.width * 0.5 + l * 0.37, y: g.size.height * 0.62)
+                        .position(x: g.size.width * 0.5 + l * 0.37, y: g.size.height * (video ? 0.62 : 0.40))
                         .blendMode(.screen)
                         .opacity(0.34)
                         .mask(LinearGradient(stops: [.init(color: .black, location: 0.55), .init(color: .clear, location: 0.92)],
@@ -1448,13 +1548,16 @@ struct FondV7: View {
                 // La braise, en bas à gauche (celle d'avant).
                 RadialGradient(colors: [Color(red: 0.75, green: 0.24, blue: 0.08).opacity(0.36), .clear],
                                center: .init(x: 0.3, y: 1.08), startRadius: 0, endRadius: 380)
-                // La lampe de l'île, en haut (celle de « Let's go »).
-                EllipticalGradient(stops: [.init(color: .white.opacity(0.22), location: 0),
-                                           .init(color: .white.opacity(0.05), location: 0.42),
-                                           .init(color: .clear, location: 0.76)],
-                                   center: .top, startRadiusFraction: 0, endRadiusFraction: 0.5)
-                    .frame(width: g.size.width * 0.92, height: 516)
-                    .position(x: g.size.width / 2, y: 258)
+                // La lampe de l'île, en haut : sur la page VIDE seulement
+                // (05-10, « plus de spotlight dans les pages »).
+                if video {
+                    EllipticalGradient(stops: [.init(color: .white.opacity(0.22), location: 0),
+                                               .init(color: .white.opacity(0.05), location: 0.42),
+                                               .init(color: .clear, location: 0.76)],
+                                       center: .top, startRadiusFraction: 0, endRadiusFraction: 0.5)
+                        .frame(width: g.size.width * 0.92, height: 516)
+                        .position(x: g.size.width / 2, y: 258)
+                }
                 if !SeanceV7.sansBraises {
                     // ⚠️ GELÉES HORS POSE, comme celles du lecteur : plein écran,
                     // c'est la plus chère de la page.

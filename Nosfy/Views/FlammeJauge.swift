@@ -1226,6 +1226,10 @@ struct FlammesRow: View {
     /// une série qu'on valide DOIT se voir ; morte dans la partition,
     /// qui n'est qu'un replay.
     var ceremonie: Bool = true
+    /// Le nombre de stickers avant le « +N » (05-10 : « la règle de 2
+    /// stickers flamme + le chiffre », sur les lignes de la séance). Défaut
+    /// 4 : aucun site existant ne bouge.
+    var plafond: Int = 4
 
     /// Le ratio du sticker rogné : 184 × 238 px.
     private var largeur: CGFloat { corps * 184 / 238 }
@@ -1234,7 +1238,7 @@ struct FlammesRow: View {
     /// change : le « +X » ne prend plus la place d'une flamme, il se
     /// COLLE à la dernière — « quand c'est plus de 5, sur la dernière
     /// flamme tu mets +X ».
-    private var pleines: Int { compacte ? min(done, 1) : min(done, 4) }
+    private var pleines: Int { compacte ? min(done, 1) : min(done, plafond) }
     private var reste: Int { done - pleines }
     /// ⚠️ **AUCUNE FLAMME POUR CE QUI N'EST PAS FAIT** — règle de
     /// Kathryn du 04-09, et elle vaut PARTOUT (jusque dans les règles
