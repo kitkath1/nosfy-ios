@@ -1,0 +1,5 @@
+19:32:17 build 88 : VALID
+consignes fr-FR : HTTP 200
+consignes en-GB : HTTP 200
+groupe Test Kath : builds ['88', '87', '86', '85', '84', '83', '82', '81'] · {'autoNotifyEnabled': True, 'internalBuildState': 'IN_BETA_TESTING', 'externalBuildState': 'READY_FOR_BETA_SUBMISSION'} · testeurs [('Kathryn', 'INSTALLED'), ('Margaux', 'INSTALLED')]
+✅ 88 VALID, consignes rattachées, accès interne relu — RIEN d'autre envoyé

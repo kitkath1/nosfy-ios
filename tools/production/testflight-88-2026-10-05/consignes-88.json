@@ -1,0 +1,65 @@
+{
+  "mesure_utc": "2026-10-05T17:32:21+00:00",
+  "ecriture": [
+    {
+      "locale": "fr-FR",
+      "http": 200,
+      "reponse": {
+        "data": {
+          "type": "betaBuildLocalizations",
+          "id": "90210aa9-ceab-4b0d-9d03-23f119635b9b",
+          "attributes": {
+            "whatsNew": "Build 88 — LE CARDIO REFAIT, ET PROFIL / RÉGLAGES QU'ON TIRE.\n\n1) LE CARDIO (HIIT, tapis lent, escalier) : rien ne part seul. GO scintille ; choisis ta vitesse avec − et + (un cran par toucher, maintenir pour défiler), puis touche GO. Pendant l'effort, un seul bouton : Stop (ou Pause). Après un set : Terminer ou Reprendre ; la vitesse réglée en pause part avec le set suivant. Toucher l'écran en courant n'arrête plus rien.\n\n2) LA FIN DU HIIT : « Tout est fait. » — le temps total, chaque set (temps · km/h), le max, le graphe — puis glisse « Retour à la séance ».\n\n3) PROFIL ET RÉGLAGES : plus de menu en bas ; tire la page vers le bas pour revenir à l'accueil.\n\n4) LA SÉANCE : la playlist d'un exercice et la feuille d'ajout se ferment en les tirant vers le bas.\n\nÀ dire surtout : la vitesse choisie s'enregistre-t-elle bien ? Les boutons répondent-ils en courant ? Le tirage vers le bas est-il fluide ?\n\nTeste le parcours complet avec un compte neuf :\n• Connecte-toi avec Apple, puis choisis ta langue, ton prénom et ton objectif.\n• Vérifie que les séances, les pièces, les boosters et la collection commencent à zéro.\n• Fais une séance de musculation ou de cardio et termine-la.\n• Consulte les stories et les récompenses, puis l’animation du galet accompli.\n• Ouvre le booster gagné et retrouve la carte dans ta collection.\n• Touche un jour fait dans le widget Regularity pour revoir sa séance. Si tu as fait plusieurs séances ce jour-là, choisis celle à revoir.\n• Déconnecte-toi puis reconnecte-toi : tes séances, leurs reçus et ta collection doivent revenir sans gain en double.\n• Reviens un autre jour pour vérifier le retour quotidien.\n\nEn cas de problème, indique l’étape, le modèle d’iPhone, la version d’iOS et joins une capture via TestFlight.",
+            "locale": "fr-FR"
+          },
+          "relationships": {
+            "build": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/90210aa9-ceab-4b0d-9d03-23f119635b9b/relationships/build",
+                "related": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/90210aa9-ceab-4b0d-9d03-23f119635b9b/build"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/90210aa9-ceab-4b0d-9d03-23f119635b9b"
+          }
+        },
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/90210aa9-ceab-4b0d-9d03-23f119635b9b"
+        }
+      }
+    },
+    {
+      "locale": "en-GB",
+      "http": 200,
+      "reponse": {
+        "data": {
+          "type": "betaBuildLocalizations",
+          "id": "23d2b2b7-bdce-40f3-80d8-37c1eafacfad",
+          "attributes": {
+            "whatsNew": "Build 88 — CARDIO REBUILT, AND PULL-TO-CLOSE PROFILE / SETTINGS.\n\n1) CARDIO (HIIT, slow run, stairs): nothing starts on its own. GO shimmers; set your speed with − and + (one step per tap, hold to scroll), then tap GO. During the effort, one button: Stop (or Pause). After a set: Finish or Resume; the speed set during the pause goes with the next set. Touching the screen while running no longer stops anything.\n\n2) END OF HIIT: « All done. » — total time, each set (time · km/h), the max, the chart — then slide « Back to the session ».\n\n3) PROFILE AND SETTINGS: no menu at the bottom; pull the page down to go home.\n\n4) THE SESSION: an exercise's set list and the add sheet close when pulled down.\n\nTell me above all: is the chosen speed recorded? Do the buttons respond while running? Is the pull-down smooth?\n\nTest the full experience with a new account:\n• Sign in with Apple, then choose your language, name and goal.\n• Check that workouts, coins, boosters and your collection start empty.\n• Complete a strength or cardio workout.\n• View the session stories, rewards and completed pebble animation.\n• Open the earned booster and find the card in your collection.\n• Tap a completed day in the Regularity widget to revisit its workout. Choose a session when the day contains several.\n• Sign out and back in: workouts, reward receipts and your collection should return without duplicate rewards.\n• Return on another day to check the daily return.\n\nIf something goes wrong, include the step, iPhone model, iOS version and a screenshot through TestFlight.",
+            "locale": "en-GB"
+          },
+          "relationships": {
+            "build": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/23d2b2b7-bdce-40f3-80d8-37c1eafacfad/relationships/build",
+                "related": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/23d2b2b7-bdce-40f3-80d8-37c1eafacfad/build"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/23d2b2b7-bdce-40f3-80d8-37c1eafacfad"
+          }
+        },
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/23d2b2b7-bdce-40f3-80d8-37c1eafacfad"
+        }
+      }
+    }
+  ],
+  "relecture": {
+    "fr-FR": "Build 88 — LE CARDIO REFAIT, ET PROFIL / RÉGLAGES QU'ON TIRE.\n\n1) LE CARDIO (HIIT, tapis lent, escalier) : rien ne part seul. GO scintille ; choisis ta vitesse avec − et + (un cran par toucher, maintenir pour défiler), puis touche GO. Pendant l'effort, un seul bouton : Stop (ou Pause). Après un set : Terminer ou Reprendre ; la vitesse réglée en pause part avec le set suivant. Toucher l'écran en courant n'arrête plus rien.\n\n2) LA FIN DU HIIT : « Tout est fait. » — le temps total, chaque set (temps · km/h), le max, le graphe — puis glisse « Retour à la séance ».\n\n3) PROFIL ET RÉGLAGES : plus de menu en bas ; tire la page vers le bas pour revenir à l'accueil.\n\n4) LA SÉANCE : la playlist d'un exercice et la feuille d'ajout se ferment en les tirant vers le bas.\n\nÀ dire surtout : la vitesse choisie s'enregistre-t-elle bien ? Les boutons répondent-ils en courant ? Le tirage vers le bas est-il fluide ?\n\nTeste le parcours complet avec un compte neuf :\n• Connecte-toi avec Apple, puis choisis ta langue, ton prénom et ton objectif.\n• Vérifie que les séances, les pièces, les boosters et la collection commencent à zéro.\n• Fais une séance de musculation ou de cardio et termine-la.\n• Consulte les stories et les récompenses, puis l’animation du galet accompli.\n• Ouvre le booster gagné et retrouve la carte dans ta collection.\n• Touche un jour fait dans le widget Regularity pour revoir sa séance. Si tu as fait plusieurs séances ce jour-là, choisis celle à revoir.\n• Déconnecte-toi puis reconnecte-toi : tes séances, leurs reçus et ta collection doivent revenir sans gain en double.\n• Reviens un autre jour pour vérifier le retour quotidien.\n\nEn cas de problème, indique l’étape, le modèle d’iPhone, la version d’iOS et joins une capture via TestFlight.",
+    "en-GB": "Build 88 — CARDIO REBUILT, AND PULL-TO-CLOSE PROFILE / SETTINGS.\n\n1) CARDIO (HIIT, slow run, stairs): nothing starts on its own. GO shimmers; set your speed with − and + (one step per tap, hold to scroll), then tap GO. During the effort, one button: Stop (or Pause). After a set: Finish or Resume; the speed set during the pause goes with the next set. Touching the screen while running no longer stops anything.\n\n2) END OF HIIT: « All done. » — total time, each set (time · km/h), the max, the chart — then slide « Back to the session ».\n\n3) PROFILE AND SETTINGS: no menu at the bottom; pull the page down to go home.\n\n4) THE SESSION: an exercise's set list and the add sheet close when pulled down.\n\nTell me above all: is the chosen speed recorded? Do the buttons respond while running? Is the pull-down smooth?\n\nTest the full experience with a new account:\n• Sign in with Apple, then choose your language, name and goal.\n• Check that workouts, coins, boosters and your collection start empty.\n• Complete a strength or cardio workout.\n• View the session stories, rewards and completed pebble animation.\n• Open the earned booster and find the card in your collection.\n• Tap a completed day in the Regularity widget to revisit its workout. Choose a session when the day contains several.\n• Sign out and back in: workouts, reward receipts and your collection should return without duplicate rewards.\n• Return on another day to check the daily return.\n\nIf something goes wrong, include the step, iPhone model, iOS version and a screenshot through TestFlight."
+  }
+}
