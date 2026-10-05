@@ -212,6 +212,11 @@ final class SeanceTapis {
     /// en HIIT la scène naît PRÊTE — « GO » scintille dans la pastille, rien
     /// ne tourne — et c'est le ▶ qui lance le set 1. Plus de 3, 2, 1.
     private(set) var pret = false
+    /// Les sets de CETTE scène, dans l'ordre — ce que l'écran de fin raconte.
+    private(set) var bilans: [BilanSet] = []
+    /// Finish a écrit au moins un set de HIIT : l'écran « Tout est fait. »
+    /// tient la scène jusqu'à « Retour à la séance » (05-10).
+    private(set) var finAffichee = false
     /// Le premier ▶ : l'ancre du TEMPS TOTAL, qui court ensuite à travers
     /// les pauses, et se fige à Finish.
     private(set) var premierDepart: Date?
@@ -369,16 +374,15 @@ final class SeanceTapis {
         self.setIndex = setsFaits + 1
         self.secondesAvancees = dejaSecondes
         self.effortAuSeuil = dejaAuSeuil
-        // Au long, la course part au GO : l'arrivée, puis le compte (30-09).
-        // En HIIT (05-10), rien ne part seul : la scène naît prête, « GO »
-        // scintille, le ▶ lance le set 1.
+        // (05-10, « je choisis un km/h, après je clique sur GO et ça lance ») :
+        // RIEN NE PART SEUL, au HIIT comme au long (tapis lent, escalier) —
+        // la scène naît prête, « GO » scintille, la vitesse se choisit, le GO
+        // (ou le ▶) lance. Plus de 3, 2, 1 qui démarrait sans elle.
         let neuve = !figee && avance == 0
-        let compte = neuve && mode.auLong
-        let pose = self.naissance.addingTimeInterval(Self.arrivee)
-        self.debutCompte = compte ? pose : nil
-        let depart = pose.addingTimeInterval(compte ? LiquidLensLab.igniteSpan : 0)
-        if neuve, !mode.auLong {
-            self.etat = .repos
+        self.debutCompte = nil
+        let depart = self.naissance.addingTimeInterval(Self.arrivee)
+        if neuve {
+            self.etat = mode.auLong ? .pause : .repos
             self.pret = true
             self.setDebut = nil
             self.segmentDebut = nil
@@ -494,7 +498,8 @@ final class SeanceTapis {
         defer { onLiveChange?() }
         let bilan = BilanSet(rang: setIndex, secondes: secondes, vitesse: vitesse, mode: mode)
         dernierBilan = bilan
-        dalle = TexteDalle(titre: "SET \(bilan.rang) END", recap: bilan.recap, pied: "Saved")
+        bilans.append(bilan)
+        dalle = TexteDalle(titre: "SET \(bilan.rang)", recap: bilan.recap, pied: L("Enregistré", "Saved"))
         etat = .repos
         setsFaits += 1
         setDebut = nil
@@ -551,6 +556,8 @@ final class SeanceTapis {
     func reprendre(_ now: Date = .now) {
         guard etat == .pause, !terminee else { return }
         defer { onLiveChange?() }
+        pret = false
+        if premierDepart == nil { premierDepart = now }
         etat = .court
         setDebut = now
         segmentDebut = now
@@ -635,6 +642,7 @@ final class SeanceTapis {
                   secondes > 0 {
             let bilan = BilanSet(rang: setIndex, secondes: secondes, vitesse: vitesse, mode: mode)
             dernierBilan = bilan
+            bilans.append(bilan)
             setsFaits += 1
             compter(secondes, vitesse: vitesse)
             onSetFini?(bilan)
@@ -651,6 +659,7 @@ final class SeanceTapis {
         segmentDebut = nil
         pointageJeton += 1
         feteJeton += 1
+        finAffichee = !mode.auLong && !bilans.isEmpty
         guard secondesEcrites > 0 else { return nil }
         let moyenne = vitesseParSeconde / Double(secondesEcrites)
         // CE QUE LE BARÈME FERA (lu dans `pieces_cardio_seance`) : au long,
@@ -671,16 +680,18 @@ final class SeanceTapis {
             : "\(q.segments) SET\(q.segments > 1 ? "S" : "") · " + duree
         let minutes = Int(mode.minMinutes.rounded())
         let pied: String
+        // (05-10) La quittance parle français, comme le reste de l'écran.
         if payable {
-            pied = "Paid at session end"
+            pied = L("Payé à la fin de la séance", "Paid at session end")
         } else if mode.auLong {
-            pied = "Under \(minutes) min · not paid"
+            pied = L("Moins de \(minutes) min · pas payé", "Under \(minutes) min · not paid")
         } else {
             let seuil = Int(SemaineStats.seuilEffort.rounded())
             let minS = Int(ModeCardio.hiitEffortMinS.rounded())
-            pied = "No \(minS) s at \(seuil) km/h, under \(minutes) min · not paid"
+            pied = L("Pas \(minS) s à \(seuil) km/h, moins de \(minutes) min · pas payé",
+                     "No \(minS) s at \(seuil) km/h, under \(minutes) min · not paid")
         }
-        dalle = TexteDalle(titre: "SAVED", recap: recap, pied: pied)
+        dalle = TexteDalle(titre: L("ENREGISTRÉ", "SAVED"), recap: recap, pied: pied)
         withAnimation(.spring(response: 0.48, dampingFraction: 0.82)) { dalleVisible = true }
         return q
     }
@@ -706,11 +717,11 @@ final class SeanceTapis {
         // « il manque les pop, l'annonce flamme, quand je termine un set »).
         // Retirée le matin même avec le minuteur (v17) ; le HIIT est de
         // nouveau au toucher, elle peut attendre le sien pendant la récup.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.40) { [weak self] in
-            guard let self, self.feteJeton == jeton, !self.terminee,
-                  self.etat == .repos else { return }
-            withAnimation(.easeOut(duration: 0.30)) { self.popupVisible = true }
-        }
+        // ⚠️ 05-10 (TestFlight 87, « comme je tape partout, ça lance la
+        // pop-up de fin, flamme, bravo » ; « en courant c'est horrible ») :
+        // PLUS DE POP-UP PENDANT LA COURSE — elle couvrait l'écran et
+        // bloquait le ▶. La dalle seule dit « c'est enregistré » ; les flammes
+        // viennent à « Tout est fait. ».
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.20) { [weak self] in
             guard let self, self.feteJeton == jeton else { return }
             withAnimation(.easeIn(duration: 0.28)) { self.dalleVisible = false }
@@ -726,22 +737,20 @@ final class SeanceTapis {
         defer { onLiveChange?() }
         popupVisible = false
         let secondes = reposDebut.map { max(0, Int(now.timeIntervalSince($0))) } ?? 0
-        let vRecup = vitesse
         pret = false
         if premierDepart == nil { premierDepart = now }
         etat = .court
         setIndex = setsFaits + 1
         setDebut = now
         reposDebut = nil
-        vitesseRecup = vRecup
-        // L'effort suivant repart de 0, lui aussi (03-10).
-        vitesse = 0
+        // ⚠️ 05-10 (TestFlight 87, « je veux mettre un km/h et lancer play :
+        // ça marche pas, ça n'enregistre rien ») : la vitesse réglée PENDANT
+        // la pause est celle du set qui part — on ne la remet plus à 0 (la
+        // règle du 03-10 effaçait son réglage au ▶, et le set s'écrivait à
+        // 0 km/h). La pause n'est pas une allure : elle s'écrit à 0, en repos.
         vitesseChoisie = Int(vitesse.rounded())
         if secondes > 0 {
-            // La récup compte pour le barème de repli (minutes à vitesse > 0),
-            // pas pour le récap des sets.
-            if vRecup > 0 { secondesAvancees += secondes }
-            onRecupFinie?(secondes, vRecup)
+            onRecupFinie?(secondes, 0)
         }
         armerLeMinuteur()
     }
@@ -816,6 +825,8 @@ struct TapisScene: View {
     /// dans le double galet termine l'exercice, pas la séance » ; la séance
     /// se termine par la dalle, comme partout). Le slider commet.
     var onFinish: () -> Void = {}
+    /// « Retour à la séance », depuis l'écran « Tout est fait. » (05-10).
+    var onRetour: () -> Void = {}
     /// BANC : les horloges clouées à cet instant après la naissance.
     var tempsFige: Double? = nil
     /// L'état de la vitesse. Il vit ICI et pas dans `SeanceTapis` : sa
@@ -824,9 +835,10 @@ struct TapisScene: View {
     @State private var vit: EtatVitesse
 
     init(seance: SeanceTapis, onFinish: @escaping () -> Void = {},
-         tempsFige: Double? = nil) {
+         onRetour: @escaping () -> Void = {}, tempsFige: Double? = nil) {
         self.seance = seance
         self.onFinish = onFinish
+        self.onRetour = onRetour
         self.tempsFige = tempsFige
         _vit = State(initialValue: EtatVitesse(depart: seance.vitesse))
     }
@@ -835,7 +847,9 @@ struct TapisScene: View {
     /// onglet n'est pas affiché ou qu'un player la recouvre — sauf au banc,
     /// où elle est seule à l'écran.
     private var dort: Bool {
-        !TapisBanc.actif
+        // L'écran de fin couvre tout : la scène vivante dort dessous.
+        if seance.finAffichee { return true }
+        return !TapisBanc.actif
             && (RythmeEcran.dort("exercises") || PlayerEtat.shared.couvre)
     }
 
@@ -857,23 +871,45 @@ struct TapisScene: View {
                 TimelineView(.animation(minimumInterval: pasTapis, paused: dort)) { tl in
                     vivante(w: w, h: h, now: date(tl.date))
                 }
-                // L'ARC et la FUMÉE : deux vues à part, chacune sur son
-                // horloge. L'arc est la SEULE qui suive la position continue.
-                AnneauHote(etat: vit, mode: seance.mode,
-                           centre: CGPoint(x: w / 2, y: h * Self.yVitesseF),
-                           rayon: TapisCotes.rayonAnneau)
+                // ⚠️ 05-10 (TestFlight 87, « en courant c'est horrible ») : EN
+                // COURANT, RIEN À GLISSER (sa règle de la v16). La molette et son
+                // arc sortent (`PriseVitesse`, `AnneauHote` restent, sans site) :
+                // deux gros boutons − / + de part et d'autre du km/h, un cran
+                // par toucher, maintenir pour défiler. Plus aucune grande zone
+                // de l'écran ne réagit au doigt.
                 FumeeVitesse(etat: vit,
                              centre: CGPoint(x: w / 2, y: h * Self.yVitesseF),
                              largeur: w, hauteur: h)
-                // LA PRISE en premier, les taps DEVANT : dans le
-                // chevauchement, c'est le tap du chrono qui doit gagner.
-                PriseVitesse(etat: vit, seance: seance, largeur: w,
-                             haut: max(0, h * Self.yVitesseF - TapisCotes.rayonDisque - 44),
-                             bas: h - 102)
-                zonesTactiles(w: w, h: h)
+                if !seance.terminee {
+                    ReglageVitesse(etat: vit, seance: seance, largeur: w)
+                        .position(x: w / 2, y: h * Self.yVitesseF)
+                }
+                // ⚠️ 05-10 (TestFlight 87, « comme je tape partout, ça lance la
+                // pop-up de fin ») : plus de tap sur la pastille du chrono — en
+                // courant, un toucher de travers arrêtait le set. Le médaillon
+                // du bas est le seul bouton. (`zonesTactiles` reste, sans site.)
+                // (05-10, « je choisis un km/h, je clique sur GO et ça lance ») :
+                // AVANT le premier set, le GO qui scintille se touche — c'est le
+                // seul moment où la pastille est un bouton (en courant, un
+                // toucher de travers arrêtait le set).
+                if seance.pret, !seance.terminee {
+                    Color.clear
+                        .frame(width: Self.coteChrono * 0.6, height: Self.coteChrono * 0.6)
+                        .contentShape(Circle())
+                        .onTapGesture { tapChrono() }
+                        .position(x: w / 2, y: h * 0.315)
+                        .accessibilityLabel("Go")
+                        .accessibilityAddTraits(.isButton)
+                }
                 pied(w: w, h: h)
                 fete
+                if seance.finAffichee {
+                    FinHiit(seance: seance, onRetour: onRetour)
+                        .transition(.opacity)
+                        .zIndex(80)
+                }
             }
+            .animation(.easeInOut(duration: 0.45), value: seance.finAffichee)
         }
         .onAppear { TapisEnCours.shared.poser(seance) }
         .onDisappear { TapisEnCours.shared.retirer(seance) }
@@ -912,6 +948,7 @@ struct TapisScene: View {
                         style: .fire,
                         onClose: { fermerPopup() })
                 .transition(.opacity)
+                .allowsHitTesting(false)
                 .zIndex(60)
         }
     }
@@ -1169,9 +1206,9 @@ struct TapisScene: View {
                 glyphe(seance.mode.auLong ? "pause.fill" : "stop.fill", corps: 19)
                     .opacity(0.78)
                     .padding(.top, 2)
-            } else if seance.mode.auLong {
-                acte("RESUME")
             }
+            // (05-10) Plus d'« ▶ RESUME » dans la pastille en pause : le
+            // bouton Reprendre du bas suffit (et il parle français).
             // (05-10) En HIIT, plus de « START SET n » dans la pastille : le
             // ▶ du bas est le seul bouton, « comme les autres exercices ».
         }
@@ -1289,7 +1326,9 @@ struct TapisScene: View {
         let repos = seance.etat == .repos && !seance.terminee
         let pause = seance.etat == .pause
         return VStack(spacing: 4) {
-            if repos {
+            // (05-10, « pas forcément récup, des fois on enchaîne ») : la pause
+            // du HIIT ne s'appelle plus « RÉCUP » — le 0 suffit.
+            if false, repos {
                 Text("RÉCUP")
                     .font(.inter(10.5, .semibold))
                     .tracking(2.4)
@@ -1339,7 +1378,7 @@ struct TapisScene: View {
     }
 
     private func tapChrono() {
-        guard !seance.popupVisible, !seance.terminee else { return }
+        guard !seance.terminee else { return }
         let arret = seance.etat == .court
         seance.basculer()                  // la fête part du MODÈLE
         // LA COMMANDE SUIT LA MÉMOIRE : le modèle vient de basculer
@@ -1562,6 +1601,8 @@ final class EtatVitesse {
     /// choisie (verdict 01-09) : en courant, l'écran doit revenir au calme —
     /// on ne laisse pas une règle graduée sous les yeux pendant l'effort.
     var arcOuvert = false
+    /// Le jeton du défilement des boutons − / + (05-10).
+    var jetonPas = 0
 
     /// Le départ vient du MODE (10 km/h pour le HIIT, niveau 6 pour
     /// l'escalier…) — plus jamais un 10 en dur à trois endroits.
@@ -1964,81 +2005,279 @@ private struct CommandeTapis: View {
     let seance: SeanceTapis
     let onAction: () -> Void
     let onFinish: () -> Void
-    /// L'anneau de « maintiens pour terminer », 0 → 1 en une seconde.
-    @State private var tenue: CGFloat = 0
-    @State private var prise: Date?
-    @State private var jeton = 0
-    private static let duree: Double = 1.0
+    @State private var presse = false
 
     private var libelle: (symbole: String, mot: String) {
         switch seance.etat {
         case .court: return seance.mode.auLong ? ("pause.fill", L("Pause", "Pause")) : ("stop.fill", "Stop")
-        case .repos: return ("play.fill", seance.pret ? L("Lancer", "Start") : L("Reprendre", "Resume"))
-        case .pause: return ("play.fill", L("Reprendre", "Resume"))
+        case .repos: return ("play.fill", seance.pret ? "Go" : L("Reprendre", "Resume"))
+        case .pause: return ("play.fill", seance.pret ? "Go" : L("Reprendre", "Resume"))
         }
+    }
+
+    /// (05-10, TestFlight 87 : « pas de gros bouton pour terminer le HIIT ;
+    /// quand je termine un set, deux choix — je dois cliquer le chevron pour
+    /// revenir en arrière ») : en pause, DEUX médaillons, comme le minuteur
+    /// d'Apple — Terminer à gauche, Reprendre à droite. Avant le premier set
+    /// et pendant l'effort, un seul.
+    private var deuxChoix: Bool {
+        !seance.terminee && !seance.pret && seance.etat != .court
     }
 
     var body: some View {
-        let l = libelle
-        VStack(spacing: 6) {
-            ZStack {
-                // 88 pt (05-10, « play et stop plus gros, comme les autres exercices »).
-                MedaillonStop(symbol: l.symbole, taille: 88)
-                    .allowsHitTesting(false)
-                Circle()
-                    .trim(from: 0, to: tenue)
-                    .stroke(Color.white.opacity(0.92), style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                    .frame(width: 104, height: 104)
-                    .shadow(color: .white.opacity(0.55), radius: 3)
-                    .allowsHitTesting(false)
+        HStack(alignment: .top, spacing: 52) {
+            if deuxChoix {
+                VStack(spacing: 6) {
+                    MedaillonStop(symbol: "checkmark", taille: 88) {
+                        UINotificationFeedbackGenerator().notificationOccurred(.success)
+                        onFinish()
+                    }
+                    .frame(width: 112, height: 112)
+                    Text(L("Terminer", "Finish"))
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.66))
+                }
+                .transition(.opacity.combined(with: .scale(scale: 0.9)))
             }
-            .frame(width: 112, height: 112)
-            .contentShape(Circle())
-            .gesture(DragGesture(minimumDistance: 0)
-                .onChanged { _ in commencer() }
-                .onEnded { _ in relacher() })
-            .accessibilityElement()
-            .accessibilityLabel(l.mot)
-            .accessibilityAddTraits(.isButton)
-            .accessibilityAction { onAction() }
-            .accessibilityAction(named: L("Terminer", "Finish")) { onFinish() }
+            principal
+        }
+        .animation(.spring(response: 0.42, dampingFraction: 0.86), value: deuxChoix)
+        .opacity(seance.terminee ? 0 : 1)
+        .allowsHitTesting(!seance.terminee)
+    }
+
+    private var principal: some View {
+        let l = libelle
+        return VStack(spacing: 6) {
+            // 88 pt (05-10, « play et stop plus gros, comme les autres exercices »).
+            // ⚠️ UN TOUCHER, COURT OU APPUYÉ, FAIT L'ACTE (05-10, TestFlight 87 :
+            // « quand je cours, rien ne marche ») — plus de « maintenir pour
+            // terminer » : Terminer a son bouton, en pause.
+            MedaillonStop(symbol: l.symbole, taille: 88)
+                .allowsHitTesting(false)
+                .scaleEffect(presse ? 0.92 : 1)
+                .animation(.spring(response: 0.22, dampingFraction: 0.6), value: presse)
+                .frame(width: 112, height: 112)
+                .contentShape(Circle())
+                .gesture(DragGesture(minimumDistance: 0)
+                    .onChanged { _ in if !presse { presse = true } }
+                    .onEnded { v in
+                        presse = false
+                        // En courant le doigt glisse : jusqu'à 44 pt, c'est un toucher.
+                        guard hypot(v.translation.width, v.translation.height) < 44 else { return }
+                        onAction()
+                    })
+                .accessibilityElement()
+                .accessibilityLabel(l.mot)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { onAction() }
             Text(l.mot)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.white.opacity(0.66))
-            // (05-10) Plus de « maintiens pour terminer » écrit : le geste
-            // reste, l'anneau qui se remplit le raconte.
         }
-        .opacity(seance.terminee ? 0 : 1)
-        .allowsHitTesting(!seance.terminee)
         .animation(.easeOut(duration: 0.25), value: l.symbole)
     }
+}
 
-    private func commencer() {
-        guard prise == nil else { return }
-        prise = .now
-        jeton += 1
-        let j = jeton
-        withAnimation(.linear(duration: Self.duree)) { tenue = 1 }
+// MARK: - Le km/h en courant : − / + (05-10)
+
+/// Deux gros boutons de part et d'autre du km/h : un cran par toucher,
+/// maintenir pour défiler (après 0,45 s, un cran toutes les 0,12 s). La
+/// vitesse s'écrit au cran ; le sceau (la dalle « 10 km/h ») au lâcher.
+private struct ReglageVitesse: View {
+    let etat: EtatVitesse
+    var seance: SeanceTapis
+    let largeur: CGFloat
+
+    var body: some View {
+        HStack(spacing: 0) {
+            BoutonVitesse(symbole: "minus", pas: -1, etat: etat, seance: seance)
+            Spacer(minLength: 0)
+            BoutonVitesse(symbole: "plus", pas: 1, etat: etat, seance: seance)
+        }
+        .frame(width: max(largeur - 16, 0))
+    }
+}
+
+private struct BoutonVitesse: View {
+    let symbole: String
+    let pas: Double
+    let etat: EtatVitesse
+    var seance: SeanceTapis
+    @State private var presse = false
+    @State private var clic = UIImpactFeedbackGenerator(style: .rigid)
+
+    var body: some View {
+        MedaillonStop(symbol: symbole, taille: 64)
+            .allowsHitTesting(false)
+            .scaleEffect(presse ? 0.9 : 1)
+            .animation(.spring(response: 0.22, dampingFraction: 0.6), value: presse)
+            .frame(width: 96, height: 96)
+            .contentShape(Circle())
+            .gesture(DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    guard !presse else { return }
+                    presse = true
+                    poser()
+                }
+                .onEnded { _ in
+                    presse = false
+                    lacher()
+                })
+            .accessibilityLabel(pas > 0 ? L("Plus vite", "Faster") : L("Moins vite", "Slower"))
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { poser(); lacher() }
+    }
+
+    private func poser() {
+        guard !seance.terminee else { return }
+        etat.prise = true
+        etat.base = etat.valeur
+        etat.toucheDebut = Date()
+        etat.toucheFin = nil
+        etat.jetonPas += 1
+        let jeton = etat.jetonPas
+        clic.prepare()
+        cran()
         Task { @MainActor in
-            try? await Task.sleep(for: .seconds(Self.duree))
-            guard jeton == j, prise != nil else { return }
-            prise = nil
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
-            var tr = Transaction(); tr.disablesAnimations = true
-            withTransaction(tr) { tenue = 0 }
-            onFinish()
+            try? await Task.sleep(for: .seconds(0.45))
+            while etat.jetonPas == jeton, etat.prise {
+                cran()
+                try? await Task.sleep(for: .seconds(0.12))
+            }
         }
     }
 
-    private func relacher() {
-        guard let p = prise else { return }
-        prise = nil
-        jeton += 1
-        withAnimation(.easeOut(duration: 0.2)) { tenue = 0 }
-        // Un toucher, pas une tenue : l'acte du moment.
-        if Date.now.timeIntervalSince(p) < 0.45 { onAction() }
+    private func cran() {
+        let plage = seance.mode.plage
+        let v = min(max(etat.valeur + pas, plage.lowerBound), plage.upperBound)
+        guard v != etat.valeur else { return }
+        etat.valeur = v
+        etat.continu = v
+        seance.vitesse = v
+        clic.impactOccurred(intensity: 0.85)
     }
+
+    private func lacher() {
+        guard etat.prise else { return }
+        etat.prise = false
+        etat.jetonPas += 1
+        etat.toucheFin = Date()
+        guard etat.valeur != etat.base, !seance.terminee else { return }
+        seance.vitesseScellee = Date()
+        seance.vitesseChoisie = Int(etat.valeur.rounded())
+        seance.sceller(etat.valeur)
+    }
+}
+
+// MARK: - « Tout est fait. » — la fin du HIIT (05-10, board rangée 7)
+
+/// Le temps total, les efforts et leurs flammes, chaque set (temps · km/h), le
+/// max, le graphe des sets — puis « Retour à la séance ». Un écran posé : aucune
+/// horloge, la scène dort dessous.
+private struct FinHiit: View {
+    var seance: SeanceTapis
+    var onRetour: () -> Void
+
+    private var bilans: [SeanceTapis.BilanSet] { seance.bilans }
+    private var vMax: Double { bilans.map(\.vitesse).max() ?? 0 }
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            Color.black.ignoresSafeArea()
+            RadialGradient(colors: [Color(red: 0.47, green: 0.12, blue: 0.03).opacity(0.42), .clear],
+                           center: .init(x: 0.5, y: 0.34), startRadius: 0, endRadius: 360)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(L("HIIT SUR TAPIS", "TREADMILL HIIT"))
+                    .font(.inter(12.5, .medium))
+                    .tracking(3.6)
+                    .foregroundStyle(.white.opacity(0.46))
+                Text(L("Tout est fait.", "All done."))
+                    .font(.inter(44, .semibold))
+                    .tracking(-1.1)
+                    .foregroundStyle(MotsFlou.blancDegrade)
+                    .padding(.top, 16)
+                chiffre.padding(.top, 20)
+                lignes.padding(.top, 26)
+                graphe.padding(.top, 22)
+                Spacer(minLength: 0)
+                SliderObsidienne(label: L("Retour", "Back"), height: 58,
+                                 legende: (L("Retour à la séance", "Back to the session"),
+                                           L("\(bilans.count) effort\(bilans.count > 1 ? "s" : "")",
+                                             "\(bilans.count) effort\(bilans.count > 1 ? "s" : "")")),
+                                 onConfirm: onRetour)
+                    .padding(.bottom, 30)
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 96)
+        }
+    }
+
+    private var chiffre: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(Self.mmss(seance.secondesTotales(.now)))
+                .font(.inter(50, .light))
+                .monospacedDigit()
+                .foregroundStyle(MotsFlou.blancDegrade)
+            FlammesRow(done: bilans.count, total: bilans.count, t: 0, date: .now,
+                       igniteAt: nil, corps: 19, ceremonie: false, plafond: 2)
+            Text(L("\(bilans.count) effort\(bilans.count > 1 ? "s" : "")",
+                   "\(bilans.count) effort\(bilans.count > 1 ? "s" : "")"))
+                .font(.system(size: 17))
+                .foregroundStyle(.white.opacity(0.55))
+        }
+        .padding(.vertical, 13)
+        .padding(.trailing, 28)
+        .overlay(alignment: .top) { Rectangle().fill(.white.opacity(0.22)).frame(height: 1) }
+        .overlay(alignment: .bottom) { Rectangle().fill(.white.opacity(0.22)).frame(height: 1) }
+    }
+
+    private var lignes: some View {
+        VStack(spacing: 0) {
+            ForEach(bilans, id: \.rang) { b in
+                ligne(L("Set \(b.rang)", "Set \(b.rang)"),
+                      Self.mmss(b.secondes) + " · " + b.mode.valeur(b.vitesse).lowercased())
+            }
+            ligne(L("Max", "Max"), (bilans.first?.mode.valeur(vMax) ?? "").lowercased())
+        }
+        .overlay(alignment: .top) { Rectangle().fill(.white.opacity(0.1)).frame(height: 1) }
+    }
+
+    private func ligne(_ g: String, _ d: String) -> some View {
+        HStack(spacing: 0) {
+            Text(g).font(.system(size: 13)).foregroundStyle(.white.opacity(0.5))
+                .frame(width: 70, alignment: .leading)
+            Text(d).font(.system(size: 16)).monospacedDigit().foregroundStyle(.white)
+            Spacer(minLength: 0)
+        }
+        .frame(height: 44)
+        .overlay(alignment: .bottom) { Rectangle().fill(.white.opacity(0.1)).frame(height: 0.5) }
+    }
+
+    private var graphe: some View {
+        HStack(alignment: .bottom, spacing: 12) {
+            ForEach(bilans, id: \.rang) { b in
+                VStack(spacing: 6) {
+                    Capsule(style: .continuous)
+                        .fill(LinearGradient(colors: [.white, .white.opacity(0.3)],
+                                             startPoint: .top, endPoint: .bottom))
+                        .frame(width: 8, height: 12 + 72 * (vMax > 0 ? b.vitesse / vMax : 0))
+                        .shadow(color: .white.opacity(0.4), radius: 3)
+                    Text(b.mode.valeur(b.vitesse).components(separatedBy: " ").first ?? "")
+                        .font(.system(size: 11))
+                        .monospacedDigit()
+                        .foregroundStyle(.white.opacity(0.45))
+                }
+                .frame(minWidth: 24)
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(height: 104, alignment: .bottom)
+    }
+
+    private static func mmss(_ s: Int) -> String { String(format: "%d:%02d", s / 60, s % 60) }
 }
 
 // MARK: - Les durées du HIIT minuté, en médaillons de verre

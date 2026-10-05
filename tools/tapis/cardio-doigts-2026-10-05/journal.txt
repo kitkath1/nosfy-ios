@@ -1,0 +1,30 @@
+BEB go : trouvé
+BEB capture h01-pret
+BEB plus : trouvé
+BEB capture h02-9kmh
+BEB capture h03-set1
+BEB stop : trouvé
+BEB capture h04-pause
+BEB set 1 terminé : true
+BEB plus : trouvé
+BEB capture h05-set2
+BEB capture h06-fin
+BEB tout est fait : true
+BEB slider retour glissé
+BEB capture h07-apres-retour
+BEB après retour : tout-est-fait = true · TA SÉANCE = true
+Test Case '-[NosfyUITests.CardioUITests test01_hiit]' passed (54.271 seconds).
+Test Suite 'CardioUITests' passed at 2026-10-05 19:20:38.181.
+Test Suite 'NosfyUITests.xctest' passed at 2026-10-05 19:20:38.182.
+Test Suite 'Selected tests' passed at 2026-10-05 19:20:38.183.
+BEB go : trouvé
+BEB capture t01-pret
+BEB plus : trouvé
+BEB capture t02-court
+BEB pause : trouvé
+BEB capture t03-pause
+BEB capture t04-fin
+Test Case '-[NosfyUITests.CardioUITests test02_tapis_lent]' passed (40.571 seconds).
+Test Suite 'CardioUITests' passed at 2026-10-05 19:18:58.545.
+Test Suite 'NosfyUITests.xctest' passed at 2026-10-05 19:18:58.546.
+Test Suite 'Selected tests' passed at 2026-10-05 19:18:58.548.

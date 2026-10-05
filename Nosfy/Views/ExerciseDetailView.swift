@@ -901,7 +901,8 @@ struct ExerciseDetailView: View {
             // montée dessous.
             ZStack(alignment: .top) {
                 if let st = seanceTapis {
-                    TapisScene(seance: st, onFinish: { finirTapis() })
+                    TapisScene(seance: st, onFinish: { finirTapis() },
+                               onRetour: { retourDuHiit() })
                         .transition(.opacity)
                 } else {
                     strengthPage
@@ -2677,6 +2678,14 @@ struct ExerciseDetailView: View {
             let compte = st.debutCompte != nil ? LiquidLensLab.igniteSpan : 0
             Task { @MainActor [weak st] in
                 try? await Task.sleep(for: .seconds(compte))
+                // (05-10) Toute scène naît prête : la vitesse se choisit AVANT
+                // le GO (le cas de son TestFlight 87), puis le GO lance.
+                if let st, st.pret {
+                    try? await Task.sleep(for: .seconds(3))   // l'écran « prêt » se voit
+                    guard seanceTapis === st else { return }
+                    st.vitesse = mode.auLong ? (mode.depart > 0 ? mode.depart + 1 : 7) : 10
+                    st.basculer()
+                }
                 if mode.auLong, CommandLine.arguments.contains("-cardioConstant") {
                     // `-cardioConstant` (30-09) : SA course, une allure
                     // tenue sans toucher, puis Finish — le pointage seul
@@ -2713,17 +2722,17 @@ struct ExerciseDetailView: View {
                     await ouvrirLecteurAuBanc()
                     return
                 }
-                // (05-10) La scène naît prête : le premier geste est le ▶.
-                if let st, st.pret { st.basculer() }
+                // (05-10, TestFlight 87 : « je mets un km/h et je lance play :
+                // ça n'enregistre rien ») — la vitesse se règle AVANT le ▶, puis
+                // pendant chaque pause : les phases doivent s'écrire à 10 · 13 · 16.
                 for tour in 0..<3 {
                     let attente = dureeSet > 0 ? dureeSet : (tour == 0 ? 5.0 : 4.0)
                     try? await Task.sleep(for: .seconds(attente))
                     guard let st, seanceTapis === st else { return }
-                    st.vitesse = 10 + Double(tour) * 3            // 10 · 13 · 16 (le HIIT part à 0 depuis le 02-10)
                     st.basculer()                                 // stop
                     try? await Task.sleep(for: .seconds(2.5))
                     guard seanceTapis === st else { return }
-                    if tour < 2 { st.basculer() }                 // start set
+                    if tour < 2 { st.vitesse = 13 + Double(tour) * 3; st.basculer() }   // réglée en pause, puis ▶
                 }
                 try? await Task.sleep(for: .seconds(1.5))
                 guard seanceTapis === st else { return }
@@ -2761,12 +2770,24 @@ struct ExerciseDetailView: View {
               + (quittance.map { "quittance=\($0.segments)×\($0.secondes)s "
                                  + "v=\(String(format: "%.1f", $0.vitesse)) payable=\($0.payable)" }
                  ?? "quittance=aucune"))
+        // (05-10) Le HIIT a son écran « Tout est fait. » : la scène reste,
+        // et c'est « Retour à la séance » qui la range (`retourDuHiit`).
+        if st.finAffichee { return }
         let delai = quittance == nil ? 0.0 : 1.3
         DispatchQueue.main.asyncAfter(deadline: .now() + delai) {
             guard seanceTapis === st else { return }
             withAnimation(.easeInOut(duration: 0.40)) { seanceTapis = nil }
             rafraichirSegments()
         }
+    }
+
+    /// « RETOUR À LA SÉANCE » depuis « Tout est fait. » (05-10) : la scène se
+    /// range et la fiche rend la page de séance, sous la coupe — en séance ;
+    /// hors séance, la fiche revient avec son graphe.
+    private func retourDuHiit() {
+        withAnimation(.easeInOut(duration: 0.40)) { seanceTapis = nil }
+        rafraichirSegments()
+        if active != nil, SeanceV7.actif { quitterLaFiche() }
     }
 
     /// LE BLOC DE CE PASSAGE, créé au premier besoin — la règle exacte

@@ -1,0 +1,19 @@
+[flow] double galet : exo=hiit-tapis mode=km/h départ=0.0 grammaire=sets avance=0
+[flow] phase écrite : exo=hiit-tapis kind=Accélération s=5 v=10.0 rang=1 ordre=0 faites=1 intervalles=1 cardioFait=true
+[flow] phase écrite : exo=hiit-tapis kind=Repos s=2 v=0.0 rang=1 ordre=1 faites=2 intervalles=1 cardioFait=true
+[flow] phase écrite : exo=hiit-tapis kind=Accélération s=4 v=13.0 rang=2 ordre=0 faites=3 intervalles=2 cardioFait=true
+[flow] phase écrite : exo=hiit-tapis kind=Repos s=2 v=0.0 rang=2 ordre=1 faites=4 intervalles=2 cardioFait=true
+[flow] phase écrite : exo=hiit-tapis kind=Sprint s=4 v=16.0 rang=3 ordre=0 faites=5 intervalles=3 cardioFait=true
+[flow] double galet fini : exo=hiit-tapis segments=5 intervalles=3 quittance=3×13s v=0.0 payable=false
+[flow] double galet : exo=tapis-lent mode=km/h départ=0.0 grammaire=au long avance=0
+[flow] phase écrite : exo=tapis-lent kind=Accélération s=6 v=7.0 rang=1 ordre=0 faites=1 intervalles=1 cardioFait=true
+[flow] phase écrite : exo=tapis-lent kind=Accélération s=6 v=9.0 rang=2 ordre=0 faites=2 intervalles=2 cardioFait=true
+[flow] phase écrite : exo=tapis-lent kind=Accélération s=6 v=9.0 rang=3 ordre=0 faites=3 intervalles=3 cardioFait=true
+[flow] phase écrite : exo=tapis-lent kind=Accélération s=6 v=6.0 rang=4 ordre=0 faites=4 intervalles=4 cardioFait=true
+[flow] double galet fini : exo=tapis-lent segments=4 intervalles=4 quittance=4×24s v=7.8 payable=false
+[flow] double galet : exo=escalier mode=NIVEAU départ=6.0 grammaire=au long avance=0
+[flow] phase écrite : exo=escalier kind=Accélération s=6 v=7.0 rang=1 ordre=0 faites=1 intervalles=1 cardioFait=true
+[flow] phase écrite : exo=escalier kind=Accélération s=6 v=8.0 rang=2 ordre=0 faites=2 intervalles=2 cardioFait=true
+[flow] phase écrite : exo=escalier kind=Accélération s=6 v=8.0 rang=3 ordre=0 faites=3 intervalles=3 cardioFait=true
+[flow] phase écrite : exo=escalier kind=Accélération s=6 v=5.0 rang=4 ordre=0 faites=4 intervalles=4 cardioFait=true
+[flow] double galet fini : exo=escalier segments=4 intervalles=4 quittance=4×24s v=7.0 payable=false
