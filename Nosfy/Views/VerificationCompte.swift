@@ -40,6 +40,22 @@ struct VerificationCompte: View {
             return true
         } catch {
             guard let cas = ErreurNosfy.cas(pour: error) else { return false }
+            // ⚠️ 05-10 (TestFlight 86, « en sous-sol, réseau faible ou pas du
+            // tout, le message noir d'erreur de Nosfy : impossible ») : cette
+            // vérification est armée par CHAQUE entrée Apple (`verifierALaReprise`)
+            // et ne s'éteint qu'à une lecture de profil RÉUSSIE — une entrée
+            // faite sous un réseau faible la laissait armée, et chaque lancement
+            // suivant sans réseau bloquait ici, derrière un écran sans « Plus
+            // tard ». Or le téléphone SAIT déjà si le questionnaire est fini
+            // (`InscriptionCompte.aReprendre`, posé à la dernière lecture) : une
+            // personne connue entre avec ce qu'il tient — prénom, but — et la
+            // vérification reste due pour la prochaine lecture avec réseau
+            // (le drapeau n'est pas touché, `profil()` l'éteindra).
+            if !InscriptionCompte.aReprendre, SupabaseSession.sessionGardee() {
+                print("[erreur] verification-compte : \(cas) → personne connue, questionnaire fini : elle entre sans le serveur")
+                onProfil(Self.profilDuTelephone)
+                return true
+            }
             print("[erreur] verification-compte : \(cas)")
             withAnimation(.easeOut(duration: 0.4)) {
                 chargement = false
@@ -47,5 +63,13 @@ struct VerificationCompte: View {
             }
             return false
         }
+    }
+
+    /// Ce que le téléphone tient d'elle, sans réseau : assez pour l'aiguillage
+    /// (le questionnaire est fini) — jamais un fait inventé.
+    private static var profilDuTelephone: ProfilServeur.Profil {
+        ProfilServeur.Profil(existe: true, onboardingTermine: true, langue: Langue.courante,
+                             prenom: ProfilServeur.prenomLocal, but: ProfilServeur.butLocal,
+                             objectifHebdo: Goal.weeklyTarget, exercices: [], seances: 0)
     }
 }
