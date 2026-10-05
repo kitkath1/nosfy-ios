@@ -1197,7 +1197,10 @@ private struct PlaylistV7: View {
     var onAjouterSerie: () -> Void
     var onSupprimer: (RangV7) -> Void
 
-    @State private var tire: CGFloat = 0
+    /// (05-10, « les overlays pas hyper fluides au drag vers le bas ») : le
+    /// décalage hors du corps (`TirerVersLeBas.swift`), le geste sur toute la
+    /// feuille, mesuré en `.global`.
+    @State private var tirage = TirageVersLeBas()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -1206,7 +1209,6 @@ private struct PlaylistV7: View {
             tete
                 .padding(.top, 14)
                 .contentShape(Rectangle())
-                .gesture(glisser)
             ScrollView {
                 VStack(spacing: 0) {
                     ForEach(rangs) { r in
@@ -1214,21 +1216,22 @@ private struct PlaylistV7: View {
                                 onLancer: onLancer, onSupprimer: { onSupprimer(r) })
                     }
                     if exo.tracking == .setsRepsWeight {
-                        Button(action: { Haptique.leger(); onAjouterSerie() }) {
-                            HStack(spacing: 16) {
-                                Image(systemName: "plus")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .frame(width: 22, height: 22)
-                                Text(L("Ajouter une série", "Add a set"))
-                                    .font(.system(size: 16, weight: .medium))
-                                Spacer(minLength: 0)
-                            }
-                            .foregroundStyle(.white.opacity(0.5))
-                            .frame(height: 54)
-                            .padding(.horizontal, 12)
-                            .contentShape(Rectangle())
+                        // Un toucher, pas un `Button` : un tirage de la feuille
+                        // qui part d'ici ne doit pas ajouter de série (05-10).
+                        HStack(spacing: 16) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 14, weight: .semibold))
+                                .frame(width: 22, height: 22)
+                            Text(L("Ajouter une série", "Add a set"))
+                                .font(.system(size: 16, weight: .medium))
+                            Spacer(minLength: 0)
                         }
-                        .buttonStyle(.plain)
+                        .foregroundStyle(.white.opacity(0.5))
+                        .frame(height: 54)
+                        .padding(.horizontal, 12)
+                        .contentShape(Rectangle())
+                        .onTapGesture { Haptique.leger(); onAjouterSerie() }
+                        .accessibilityAddTraits(.isButton)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -1236,10 +1239,12 @@ private struct PlaylistV7: View {
                 .padding(.bottom, 24)
             }
             .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
         }
         .foregroundStyle(.white)
         .frame(maxWidth: .infinity)
-        .frame(height: min(hauteur * 0.62, 120 + CGFloat(rangs.count + 2) * 54 + 60))
+        .frame(height: min(hauteur * 0.62,
+                           120 + CGFloat(rangs.count + (exo.tracking == .setsRepsWeight ? 2 : 1)) * 54 + 40))
         .background(fond)
         .clipShape(RoundedRectangle(cornerRadius: 44, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 44, style: .continuous)
@@ -1247,13 +1252,18 @@ private struct PlaylistV7: View {
                                          startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1))
         .padding(.horizontal, 8)
         .padding(.bottom, 8)
+        .contentShape(Rectangle())
+        .simultaneousGesture(tirage.geste(onFermer: onFermer))
+        .modifier(DecalageTirage(etat: tirage))
         .frame(maxHeight: .infinity, alignment: .bottom)
-        .offset(y: tire)
     }
 
     private var tete: some View {
-        Button(action: { Haptique.leger(); onFiche() }) {
-            HStack(spacing: 14) {
+        // ⚠️ 05-10 (banc à vrais doigts) : un `Button` ici s'enclenchait au
+        // lâcher d'un TIRAGE — la feuille suit le doigt, le bouton reste
+        // dessous — et ouvrait la fiche en fermant la feuille. Un toucher,
+        // lui, échoue dès que le doigt glisse.
+        HStack(spacing: 14) {
                 ExercisePhoto(exercise: exo)
                     .frame(width: 48, height: 52)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -1275,8 +1285,8 @@ private struct PlaylistV7: View {
             }
             .padding(.horizontal, 22)
             .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
+            .onTapGesture { Haptique.leger(); onFiche() }
+            .accessibilityAddTraits(.isButton)
     }
 
     /// Le verre de la feuille : celui de la feuille d'ajout.
@@ -1291,14 +1301,6 @@ private struct PlaylistV7: View {
         .environment(\.colorScheme, .dark)
     }
 
-    private var glisser: some Gesture {
-        DragGesture(minimumDistance: 8)
-            .onChanged { v in tire = max(0, v.translation.height) }
-            .onEnded { v in
-                if v.translation.height > 90 || v.predictedEndTranslation.height > 200 { onFermer() }
-                else { withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) { tire = 0 } }
-            }
-    }
 }
 
 /// Une piste de la playlist.
@@ -2205,7 +2207,10 @@ private struct FeuilleAjoutV7: View {
     @State private var zone: ExerciseCategory?
     @State private var choisis: [Exercise] = []
     @State private var recherche = ""
-    @State private var tire: CGFloat = 0
+    /// (05-10) Le décalage hors du corps, le geste en `.global` — voir
+    /// `TirerVersLeBas.swift`. Sur les zones (pas de liste), toute la feuille
+    /// se tire ; sur la liste, la tête seule (la liste défile).
+    @State private var tirage = TirageVersLeBas()
 
     private var exos: [Exercise] {
         let q = recherche.trimmingCharacters(in: .whitespaces).lowercased()
@@ -2223,7 +2228,7 @@ private struct FeuilleAjoutV7: View {
             }
             .padding(.top, 8)
             .contentShape(Rectangle())
-            .gesture(glisser)
+            .gesture(tirage.geste(onFermer: onAnnuler))
             champ
             ZStack(alignment: .top) {
                 if surLesZones {
@@ -2263,7 +2268,8 @@ private struct FeuilleAjoutV7: View {
         .padding(.horizontal, 8)
         .padding(.top, hauteur * 0.09)
         .padding(.bottom, 8)
-        .offset(y: tire)
+        .simultaneousGesture(tirage.geste(onFermer: onAnnuler), isEnabled: surLesZones)
+        .modifier(DecalageTirage(etat: tirage))
         .animation(.spring(response: 0.45, dampingFraction: 0.82), value: recherche.isEmpty)
     }
 
@@ -2407,14 +2413,4 @@ private struct FeuilleAjoutV7: View {
         .buttonStyle(.plain)
     }
 
-    private var glisser: some Gesture {
-        DragGesture(minimumDistance: 8)
-            .onChanged { v in tire = max(0, v.translation.height) }
-            .onEnded { v in
-                if v.translation.height > 110 || v.predictedEndTranslation.height > 240 {
-                    onAnnuler()
-                }
-                withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) { tire = 0 }
-            }
-    }
 }

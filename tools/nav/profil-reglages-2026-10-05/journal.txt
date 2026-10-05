@@ -1,0 +1,20 @@
+BEB vide : trouvé (89.16666666666667, 496.3333333333333, 214.66666666666663, 28.666666666666686)
+BEB feuille : trouvé (64.33333333333333, 158.66666666666666, 292.66666666666663, 22.0)
+BEB capture o01-feuille
+BEB capture o02-feuille-tiree
+BEB feuille après tirage : champ = false
+BEB refaire : trouvé (16.0, 732.0, 361.0, 80.0)
+BEB capture o03-seance
+BEB capture o04-playlist
+BEB capture o05-playlist-tiree
+BEB nav-home : trouvé (212.66666666666666, 791.0, 43.99999999999997, 44.0)
+BEB capture n01-home
+BEB capture n02-profil
+BEB profil : nav visible = false
+BEB capture n03-profil-tire
+BEB après tirage profil : nav visible = true · réglages-chip = true
+BEB nav-reglages : trouvé (288.66666666666663, 791.0, 44.0, 44.0)
+BEB capture n04-reglages
+BEB réglages : nav visible = false
+BEB capture n05-reglages-tire
+BEB après tirage réglages : nav visible = true

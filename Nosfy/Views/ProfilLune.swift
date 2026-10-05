@@ -33,6 +33,8 @@ private enum ReposDecorProfil {
 /// Banc : `-profilLab` — la page seule, plein écran.
 struct ProfilLuneView: View {
     @Binding var selection: WoopTab
+    /// Le dépassement du haut, pour fermer en tirant (05-10).
+    @State private var tirage = TirageVersLeBas()
 
     @Query(sort: \Workout.startedAt, order: .reverse)
     private var workouts: [Workout]
@@ -189,6 +191,10 @@ struct ProfilLuneView: View {
             let ps = Self.sstep(p)
             ZStack(alignment: .top) {
                 ProfilFondNoir()
+                    // (05-10, TestFlight 87 : « on voit le menu dans Profil et
+                    // Réglages ; non, que le chevron ») : la page demande à la
+                    // nav de se cacher tant qu'elle est l'onglet affiché.
+                    .modifier(NavCachee(jeton: "profil", actif: selection == .profile))
 
                 ScrollViewReader { deroulez in
                 ScrollView {
@@ -223,6 +229,19 @@ struct ProfilLuneView: View {
                     min(g.contentOffset.y + g.contentInsets.top, 140)
                 } action: { _, y in
                     if abs(y - scrollY) > 0.25 { scrollY = y }
+                }
+                // TIRER VERS LE BAS POUR FERMER (05-10, TestFlight 87 : « le
+                // comportement à la Spotify au drag vers le bas ») : l'élastique
+                // natif du haut, et au lâcher au-delà de 110 pt, l'accueil. Le
+                // dépassement n'est lu qu'au lâcher (rien ne se redessine).
+                .onScrollGeometryChange(for: CGFloat.self) { g in
+                    -(g.contentOffset.y + g.contentInsets.top)
+                } action: { _, d in tirage.depassement = d }
+                .onScrollPhaseChange { avant, apres in
+                    guard avant == .interacting, apres != .interacting,
+                          tirage.depassement > 110, carteP < 0.02 else { return }
+                    Haptique.leger()
+                    withAnimation(.easeOut(duration: 0.3)) { selection = .home }
                 }
                 // L'ACCUEIL, temps 1 : la page défile d'elle-même vers
                 // le registre de la rareté, la rangée s'avance, puis la
@@ -643,6 +662,10 @@ struct ProfilLuneView: View {
         let galetH = galetL * 1560 / 1206
         return ZStack {
             Color.black
+            // ⚠️ 05-10 (TestFlight 87 : « dans la page Profil, un vieux
+            // screenshot du galet, horrible ») : le galet couché du bandeau
+            // est RETIRÉ (le composant `GaletProfil` reste, sans site).
+            if false {
             GaletProfil(arriveeDepuis: CGSize(width: 0, height: -64))
                 .frame(width: galetL, height: galetH)
                 .rotationEffect(.degrees(90))
@@ -655,6 +678,7 @@ struct ProfilLuneView: View {
                 .position(x: largeur * 0.60 + galetH * 0.38,
                           y: hauteur * 0.56)
                 .allowsHitTesting(false)
+            }
             // LE SPOT (20-09) : la lumière de l'angle haut-gauche, qui
             // respire — voir `SpotProfil`.
             SpotProfil(portee: largeur * 0.72)

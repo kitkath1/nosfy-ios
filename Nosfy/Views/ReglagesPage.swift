@@ -48,6 +48,10 @@ struct ReglagesPage: View {
         _choixDepart = State(initialValue: DepartSerie.courant == .galet ? 0 : 1)
     }
 
+    /// (05-10, TestFlight 87 : « pas le menu, que le chevron, et le
+    /// comportement à la Spotify au drag vers le bas pour fermer »).
+    @State private var tirage = TirageVersLeBas()
+
     var body: some View {
         ZStack(alignment: .top) {
             FondReglages()
@@ -68,6 +72,10 @@ struct ReglagesPage: View {
                 .zIndex(20)
             }
         }
+        .contentShape(Rectangle())
+        .simultaneousGesture(tirage.geste(seuil: 120, onFermer: fermerParTirage), isEnabled: !showCGU)
+        .modifier(DecalageTirage(etat: tirage, page: true))
+        .modifier(NavCachee(jeton: "reglages", actif: selection == .settings))
         .sensoryFeedback(.error, trigger: refusLangue)
         // L'animation vit dans `Arrivee` (une par rang, décalée) : un
         // `withAnimation` ici la doublerait.
@@ -143,6 +151,15 @@ struct ReglagesPage: View {
 
     private func retour() {
         withAnimation(.easeOut(duration: 0.3)) { selection = .home }
+    }
+
+    /// Tirée vers le bas : la page finit de descendre, puis l'accueil.
+    private func fermerParTirage() {
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.92)) { tirage.tire = 900 }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) {
+            selection = .home
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { tirage.remettre() }
+        }
     }
 
     /// La langue part au serveur ; on l'ATTEND (le serveur gagne à chaque
