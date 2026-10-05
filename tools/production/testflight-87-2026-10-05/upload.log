@@ -1,0 +1,9 @@
+Running altool at path '/Applications/Xcode.app/Contents/SharedFrameworks/ContentDelivery.framework/Resources/altool'...
+
+2026-10-05 15:46:51.934  INFO: [ContentDelivery.Uploader.7C9410380] 
+==========================================
+UPLOAD SUCCEEDED with no errors
+Delivery UUID: 0ad070b8-4a8e-427d-8454-5dfa8567817a
+Transferred 355678052 bytes in 4.871 seconds (73.0MB/s, 584.163Mbps)
+==========================================
+No errors uploading archive at '/tmp/nosfy-tf87/export/Nosfy.ipa'.

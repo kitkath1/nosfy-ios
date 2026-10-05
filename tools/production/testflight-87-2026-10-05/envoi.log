@@ -1,0 +1,22 @@
+== 1/5 arbre figé
+2.2G	/tmp/nosfy-tf87
+== 2/5 archive Release (build 87)
+ARCHIVE SUCCEEDED
+== 3/5 export (clé ASC)
+EXPORT SUCCEEDED
+total 695024
+drwxr-xr-x@  6 kathryn  staff        192 Oct  5 15:45 .
+drwxr-xr-x@ 28 kathryn  staff        896 Oct  5 15:45 ..
+-rw-r--r--@  1 kathryn  staff       3028 Oct  5 15:45 DistributionSummary.plist
+-rw-r--r--@  1 kathryn  staff        622 Oct  5 15:45 ExportOptions.plist
+-rw-r--r--@  1 kathryn  staff  355678052 Oct  5 15:45 Nosfy.ipa
+-rw-r--r--@  1 kathryn  staff     162683 Oct  5 15:45 Packaging.log
+== 4/5 envoi chez Apple
+==========================================
+UPLOAD SUCCEEDED with no errors
+Delivery UUID: 0ad070b8-4a8e-427d-8454-5dfa8567817a
+Transferred 355678052 bytes in 4.871 seconds (73.0MB/s, 584.163Mbps)
+==========================================
+No errors uploading archive at '/tmp/nosfy-tf87/export/Nosfy.ipa'.
+UPLOAD OK
+== 5/5 fini — le traitement Apple prend 5 à 20 min

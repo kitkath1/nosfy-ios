@@ -1,0 +1,65 @@
+{
+  "mesure_utc": "2026-10-05T13:52:00+00:00",
+  "ecriture": [
+    {
+      "locale": "fr-FR",
+      "http": 200,
+      "reponse": {
+        "data": {
+          "type": "betaBuildLocalizations",
+          "id": "344bdb29-8a6a-4a7f-9143-635a74e89d0b",
+          "attributes": {
+            "whatsNew": "Build 87 — LA SÉANCE À LA APPLE, ET NOSFY SANS RÉSEAU.\n\n1) SANS RÉSEAU (le plus important) : en sous-sol, en mode avion ou avec un réseau faible, Nosfy doit s'ouvrir sur l'accueil et laisser faire toute une séance — jamais l'écran noir d'erreur. Puis le réseau revenu : la séance part toute seule.\n\n2) TA SÉANCE : la page vide (le +, « Compose ta séance », « Ta dernière séance · Refaire »), l'ajout par zone, les exercices en lignes fines avec leurs flammes. Toucher une ligne ouvre ses séries ; glisser une série ou un exercice vers la gauche le supprime ; « Ajouter une série ». Les exercices se font dans l'ordre que tu veux.\n\n3) LE CADRAN : le Stop plus gros, « Passer l'animation » sous lui, l'onglet Séries (ajouter, glisser pour supprimer), et le cadran qu'on tire vers le bas comme Spotify pour revenir à la séance.\n\n4) LE HIIT AU ▶ : GO scintille, rien ne tourne avant ton ▶. Stop : « SET 1 TERMINÉ », le chrono à 0:00, la vitesse à 0 ; ▶ reprend. Le temps total en haut. Maintenir le bouton termine.\n\n5) GAINAGE ET EXERCICES AU SOL : le chrono seul, sans reps ni kilos.\n\nÀ dire surtout : as-tu vu l'écran noir d'erreur une seule fois ? Le tirage du cadran saute-t-il ? Le téléphone chauffe-t-il ?\n\nTeste le parcours complet avec un compte neuf :\n• Connecte-toi avec Apple, puis choisis ta langue, ton prénom et ton objectif.\n• Vérifie que les séances, les pièces, les boosters et la collection commencent à zéro.\n• Fais une séance de musculation ou de cardio et termine-la.\n• Consulte les stories et les récompenses, puis l’animation du galet accompli.\n• Ouvre le booster gagné et retrouve la carte dans ta collection.\n• Touche un jour fait dans le widget Regularity pour revoir sa séance. Si tu as fait plusieurs séances ce jour-là, choisis celle à revoir.\n• Déconnecte-toi puis reconnecte-toi : tes séances, leurs reçus et ta collection doivent revenir sans gain en double.\n• Reviens un autre jour pour vérifier le retour quotidien.\n\nEn cas de problème, indique l’étape, le modèle d’iPhone, la version d’iOS et joins une capture via TestFlight.",
+            "locale": "fr-FR"
+          },
+          "relationships": {
+            "build": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/344bdb29-8a6a-4a7f-9143-635a74e89d0b/relationships/build",
+                "related": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/344bdb29-8a6a-4a7f-9143-635a74e89d0b/build"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/344bdb29-8a6a-4a7f-9143-635a74e89d0b"
+          }
+        },
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/344bdb29-8a6a-4a7f-9143-635a74e89d0b"
+        }
+      }
+    },
+    {
+      "locale": "en-GB",
+      "http": 200,
+      "reponse": {
+        "data": {
+          "type": "betaBuildLocalizations",
+          "id": "1e3ce302-a840-4ab5-aba7-f6b40959b8c8",
+          "attributes": {
+            "whatsNew": "Build 87 — THE APPLE-STYLE SESSION, AND NOSFY WITHOUT A NETWORK.\n\n1) NO NETWORK (most important): underground, in airplane mode or on a weak signal, Nosfy must open on the home screen and let you do a whole session — never the black error screen. Then, once the network is back, the session syncs on its own.\n\n2) YOUR SESSION: the empty page (the +, « Build your session », « Your last session · Redo »), adding by body zone, exercises as thin rows with their flames. Tap a row to see its sets; swipe a set or an exercise left to delete it; « Add a set ». Exercises can be done in any order.\n\n3) THE DIAL: a bigger Stop, « Skip animation » under it, the Sets tab (add, swipe to delete), and the dial you pull down like Spotify to go back to the session.\n\n4) HIIT ON ▶: GO shimmers, nothing runs before your ▶. Stop: « SET 1 DONE », the clock at 0:00, speed at 0; ▶ resumes. Total time at the top. Hold the button to finish.\n\n5) PLANKS AND FLOOR EXERCISES: the timer only, no reps or weight.\n\nTell me above all: did you see the black error screen even once? Does pulling the dial stutter? Does the phone heat up?\n\nTest the full experience with a new account:\n• Sign in with Apple, then choose your language, name and goal.\n• Check that workouts, coins, boosters and your collection start empty.\n• Complete a strength or cardio workout.\n• View the session stories, rewards and completed pebble animation.\n• Open the earned booster and find the card in your collection.\n• Tap a completed day in the Regularity widget to revisit its workout. Choose a session when the day contains several.\n• Sign out and back in: workouts, reward receipts and your collection should return without duplicate rewards.\n• Return on another day to check the daily return.\n\nIf something goes wrong, include the step, iPhone model, iOS version and a screenshot through TestFlight.",
+            "locale": "en-GB"
+          },
+          "relationships": {
+            "build": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/1e3ce302-a840-4ab5-aba7-f6b40959b8c8/relationships/build",
+                "related": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/1e3ce302-a840-4ab5-aba7-f6b40959b8c8/build"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/1e3ce302-a840-4ab5-aba7-f6b40959b8c8"
+          }
+        },
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/1e3ce302-a840-4ab5-aba7-f6b40959b8c8"
+        }
+      }
+    }
+  ],
+  "relecture": {
+    "fr-FR": "Build 87 — LA SÉANCE À LA APPLE, ET NOSFY SANS RÉSEAU.\n\n1) SANS RÉSEAU (le plus important) : en sous-sol, en mode avion ou avec un réseau faible, Nosfy doit s'ouvrir sur l'accueil et laisser faire toute une séance — jamais l'écran noir d'erreur. Puis le réseau revenu : la séance part toute seule.\n\n2) TA SÉANCE : la page vide (le +, « Compose ta séance », « Ta dernière séance · Refaire »), l'ajout par zone, les exercices en lignes fines avec leurs flammes. Toucher une ligne ouvre ses séries ; glisser une série ou un exercice vers la gauche le supprime ; « Ajouter une série ». Les exercices se font dans l'ordre que tu veux.\n\n3) LE CADRAN : le Stop plus gros, « Passer l'animation » sous lui, l'onglet Séries (ajouter, glisser pour supprimer), et le cadran qu'on tire vers le bas comme Spotify pour revenir à la séance.\n\n4) LE HIIT AU ▶ : GO scintille, rien ne tourne avant ton ▶. Stop : « SET 1 TERMINÉ », le chrono à 0:00, la vitesse à 0 ; ▶ reprend. Le temps total en haut. Maintenir le bouton termine.\n\n5) GAINAGE ET EXERCICES AU SOL : le chrono seul, sans reps ni kilos.\n\nÀ dire surtout : as-tu vu l'écran noir d'erreur une seule fois ? Le tirage du cadran saute-t-il ? Le téléphone chauffe-t-il ?\n\nTeste le parcours complet avec un compte neuf :\n• Connecte-toi avec Apple, puis choisis ta langue, ton prénom et ton objectif.\n• Vérifie que les séances, les pièces, les boosters et la collection commencent à zéro.\n• Fais une séance de musculation ou de cardio et termine-la.\n• Consulte les stories et les récompenses, puis l’animation du galet accompli.\n• Ouvre le booster gagné et retrouve la carte dans ta collection.\n• Touche un jour fait dans le widget Regularity pour revoir sa séance. Si tu as fait plusieurs séances ce jour-là, choisis celle à revoir.\n• Déconnecte-toi puis reconnecte-toi : tes séances, leurs reçus et ta collection doivent revenir sans gain en double.\n• Reviens un autre jour pour vérifier le retour quotidien.\n\nEn cas de problème, indique l’étape, le modèle d’iPhone, la version d’iOS et joins une capture via TestFlight.",
+    "en-GB": "Build 87 — THE APPLE-STYLE SESSION, AND NOSFY WITHOUT A NETWORK.\n\n1) NO NETWORK (most important): underground, in airplane mode or on a weak signal, Nosfy must open on the home screen and let you do a whole session — never the black error screen. Then, once the network is back, the session syncs on its own.\n\n2) YOUR SESSION: the empty page (the +, « Build your session », « Your last session · Redo »), adding by body zone, exercises as thin rows with their flames. Tap a row to see its sets; swipe a set or an exercise left to delete it; « Add a set ». Exercises can be done in any order.\n\n3) THE DIAL: a bigger Stop, « Skip animation » under it, the Sets tab (add, swipe to delete), and the dial you pull down like Spotify to go back to the session.\n\n4) HIIT ON ▶: GO shimmers, nothing runs before your ▶. Stop: « SET 1 DONE », the clock at 0:00, speed at 0; ▶ resumes. Total time at the top. Hold the button to finish.\n\n5) PLANKS AND FLOOR EXERCISES: the timer only, no reps or weight.\n\nTell me above all: did you see the black error screen even once? Does pulling the dial stutter? Does the phone heat up?\n\nTest the full experience with a new account:\n• Sign in with Apple, then choose your language, name and goal.\n• Check that workouts, coins, boosters and your collection start empty.\n• Complete a strength or cardio workout.\n• View the session stories, rewards and completed pebble animation.\n• Open the earned booster and find the card in your collection.\n• Tap a completed day in the Regularity widget to revisit its workout. Choose a session when the day contains several.\n• Sign out and back in: workouts, reward receipts and your collection should return without duplicate rewards.\n• Return on another day to check the daily return.\n\nIf something goes wrong, include the step, iPhone model, iOS version and a screenshot through TestFlight."
+  }
+}
