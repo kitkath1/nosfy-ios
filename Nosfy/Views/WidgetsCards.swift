@@ -2513,7 +2513,10 @@ struct SemaineStats {
     /// repli hors ligne, la valeur de la base. Un seul chiffre pour une idée
     /// (le ⚪ du site : « le seuil qui définit un effort n'existe nulle part »
     /// — il existait en base, l'app avait le sien).
-    static var seuilEffort: Double = 15.0
+    // 06-10 : 10 km/h (sa décision — « baisse, tu as raison » : ses HIIT à
+    // 10-13 km/h ne payaient rien). La base fait loi (`seuil_effort_kmh`) ;
+    // ceci n'est que la valeur avant sa lecture.
+    static var seuilEffort: Double = 10.0
 
     private static func segmentsDuPic(_ cette: [Workout],
                                       pic: Double) -> ([SegmentHiit], String) {
