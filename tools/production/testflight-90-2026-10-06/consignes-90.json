@@ -1,0 +1,65 @@
+{
+  "mesure_utc": "2026-10-06T10:18:04+00:00",
+  "ecriture": [
+    {
+      "locale": "fr-FR",
+      "http": 200,
+      "reponse": {
+        "data": {
+          "type": "betaBuildLocalizations",
+          "id": "4aa03593-5dc1-492c-8893-d240186e641d",
+          "attributes": {
+            "whatsNew": "Build 90 — LE HIIT PAYÉ, PLUS D'ÉCRAN NOIR, LA COULEUR DES FLAMMES.\n\n1) LE HIIT RAPPORTE DÈS 10 KM/H : un effort de 20 s à 10 km/h ou plus suffit. Regarde tes pièces à la fin de la séance.\n\n2) TIRER LE CADRAN VERS LE BAS : pendant le repos, tire le cadran, regarde ta séance, puis reviens. Le cadran doit être là, jamais un écran noir.\n\n3) LA PAGE DE SÉANCE : une série par exercice au départ, et un bouton Stop en haut à droite pour terminer quand tu veux.\n\n4) LE CADRAN : touche-le pendant l'arrivée pour passer l'animation ; le petit bouton réglages en haut à droite change la couleur des flammes (rouge, orange, jaune, vert, noir).\n\nÀ dire surtout : as-tu eu tes pièces pour le HIIT ? Un écran noir, quelque part ?\n\nTeste le parcours complet avec un compte neuf :\n• Connecte-toi avec Apple, puis choisis ta langue, ton prénom et ton objectif.\n• Vérifie que les séances, les pièces, les boosters et la collection commencent à zéro.\n• Fais une séance de musculation ou de cardio et termine-la.\n• Consulte les stories et les récompenses, puis l’animation du galet accompli.\n• Ouvre le booster gagné et retrouve la carte dans ta collection.\n• Touche un jour fait dans le widget Regularity pour revoir sa séance. Si tu as fait plusieurs séances ce jour-là, choisis celle à revoir.\n• Déconnecte-toi puis reconnecte-toi : tes séances, leurs reçus et ta collection doivent revenir sans gain en double.\n• Reviens un autre jour pour vérifier le retour quotidien.\n\nEn cas de problème, indique l’étape, le modèle d’iPhone, la version d’iOS et joins une capture via TestFlight.",
+            "locale": "fr-FR"
+          },
+          "relationships": {
+            "build": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/4aa03593-5dc1-492c-8893-d240186e641d/relationships/build",
+                "related": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/4aa03593-5dc1-492c-8893-d240186e641d/build"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/4aa03593-5dc1-492c-8893-d240186e641d"
+          }
+        },
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/4aa03593-5dc1-492c-8893-d240186e641d"
+        }
+      }
+    },
+    {
+      "locale": "en-GB",
+      "http": 200,
+      "reponse": {
+        "data": {
+          "type": "betaBuildLocalizations",
+          "id": "87b04492-ea67-4ff6-81e7-f2c27de56f98",
+          "attributes": {
+            "whatsNew": "Build 90 — HIIT PAID, NO MORE BLACK SCREEN, FLAME COLOURS.\n\n1) HIIT PAYS FROM 10 KM/H: one 20 s effort at 10 km/h or more is enough. Check your coins at the end of the session.\n\n2) PULL THE DIAL DOWN: during the rest, pull the dial down, look at your session, then go back. The dial must be there, never a black screen.\n\n3) THE SESSION PAGE: one set per exercise to start, and a Stop button at the top right to finish whenever you want.\n\n4) THE DIAL: tap it during the arrival to skip the animation; the small settings button at the top right changes the flame colour (red, orange, yellow, green, black).\n\nTell me above all: did you get your coins for the HIIT? Any black screen?\n\nTest the full experience with a new account:\n• Sign in with Apple, then choose your language, name and goal.\n• Check that workouts, coins, boosters and your collection start empty.\n• Complete a strength or cardio workout.\n• View the session stories, rewards and completed pebble animation.\n• Open the earned booster and find the card in your collection.\n• Tap a completed day in the Regularity widget to revisit its workout. Choose a session when the day contains several.\n• Sign out and back in: workouts, reward receipts and your collection should return without duplicate rewards.\n• Return on another day to check the daily return.\n\nIf something goes wrong, include the step, iPhone model, iOS version and a screenshot through TestFlight.",
+            "locale": "en-GB"
+          },
+          "relationships": {
+            "build": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/87b04492-ea67-4ff6-81e7-f2c27de56f98/relationships/build",
+                "related": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/87b04492-ea67-4ff6-81e7-f2c27de56f98/build"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/87b04492-ea67-4ff6-81e7-f2c27de56f98"
+          }
+        },
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/87b04492-ea67-4ff6-81e7-f2c27de56f98"
+        }
+      }
+    }
+  ],
+  "relecture": {
+    "en-GB": "Build 90 — HIIT PAID, NO MORE BLACK SCREEN, FLAME COLOURS.\n\n1) HIIT PAYS FROM 10 KM/H: one 20 s effort at 10 km/h or more is enough. Check your coins at the end of the session.\n\n2) PULL THE DIAL DOWN: during the rest, pull the dial down, look at your session, then go back. The dial must be there, never a black screen.\n\n3) THE SESSION PAGE: one set per exercise to start, and a Stop button at the top right to finish whenever you want.\n\n4) THE DIAL: tap it during the arrival to skip the animation; the small settings button at the top right changes the flame colour (red, orange, yellow, green, black).\n\nTell me above all: did you get your coins for the HIIT? Any black screen?\n\nTest the full experience with a new account:\n• Sign in with Apple, then choose your language, name and goal.\n• Check that workouts, coins, boosters and your collection start empty.\n• Complete a strength or cardio workout.\n• View the session stories, rewards and completed pebble animation.\n• Open the earned booster and find the card in your collection.\n• Tap a completed day in the Regularity widget to revisit its workout. Choose a session when the day contains several.\n• Sign out and back in: workouts, reward receipts and your collection should return without duplicate rewards.\n• Return on another day to check the daily return.\n\nIf something goes wrong, include the step, iPhone model, iOS version and a screenshot through TestFlight.",
+    "fr-FR": "Build 90 — LE HIIT PAYÉ, PLUS D'ÉCRAN NOIR, LA COULEUR DES FLAMMES.\n\n1) LE HIIT RAPPORTE DÈS 10 KM/H : un effort de 20 s à 10 km/h ou plus suffit. Regarde tes pièces à la fin de la séance.\n\n2) TIRER LE CADRAN VERS LE BAS : pendant le repos, tire le cadran, regarde ta séance, puis reviens. Le cadran doit être là, jamais un écran noir.\n\n3) LA PAGE DE SÉANCE : une série par exercice au départ, et un bouton Stop en haut à droite pour terminer quand tu veux.\n\n4) LE CADRAN : touche-le pendant l'arrivée pour passer l'animation ; le petit bouton réglages en haut à droite change la couleur des flammes (rouge, orange, jaune, vert, noir).\n\nÀ dire surtout : as-tu eu tes pièces pour le HIIT ? Un écran noir, quelque part ?\n\nTeste le parcours complet avec un compte neuf :\n• Connecte-toi avec Apple, puis choisis ta langue, ton prénom et ton objectif.\n• Vérifie que les séances, les pièces, les boosters et la collection commencent à zéro.\n• Fais une séance de musculation ou de cardio et termine-la.\n• Consulte les stories et les récompenses, puis l’animation du galet accompli.\n• Ouvre le booster gagné et retrouve la carte dans ta collection.\n• Touche un jour fait dans le widget Regularity pour revoir sa séance. Si tu as fait plusieurs séances ce jour-là, choisis celle à revoir.\n• Déconnecte-toi puis reconnecte-toi : tes séances, leurs reçus et ta collection doivent revenir sans gain en double.\n• Reviens un autre jour pour vérifier le retour quotidien.\n\nEn cas de problème, indique l’étape, le modèle d’iPhone, la version d’iOS et joins une capture via TestFlight."
+  }
+}

@@ -1,0 +1,22 @@
+== 1/5 arbre figé
+2.2G	/tmp/nosfy-tf90
+== 2/5 archive Release (build 90)
+ARCHIVE SUCCEEDED
+== 3/5 export (clé ASC)
+EXPORT SUCCEEDED
+total 695168
+drwxr-xr-x@  6 kathryn  staff        192 Oct  6 12:12 .
+drwxr-xr-x@ 28 kathryn  staff        896 Oct  6 12:12 ..
+-rw-r--r--@  1 kathryn  staff       3028 Oct  6 12:12 DistributionSummary.plist
+-rw-r--r--@  1 kathryn  staff        622 Oct  6 12:12 ExportOptions.plist
+-rw-r--r--@  1 kathryn  staff  355751906 Oct  6 12:12 Nosfy.ipa
+-rw-r--r--@  1 kathryn  staff     163736 Oct  6 12:12 Packaging.log
+== 4/5 envoi chez Apple
+==========================================
+UPLOAD SUCCEEDED with no errors
+Delivery UUID: 8bc4eeef-d14b-4397-8ee0-9e886e71922f
+Transferred 355751906 bytes in 24.500 seconds (14.5MB/s, 116.165Mbps)
+==========================================
+No errors uploading archive at '/tmp/nosfy-tf90/export/Nosfy.ipa'.
+UPLOAD OK
+== 5/5 fini — le traitement Apple prend 5 à 20 min

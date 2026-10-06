@@ -1,0 +1,9 @@
+12:13:57 build 90 : ABSENT
+12:14:58 build 90 : ABSENT
+12:15:59 build 90 : ABSENT
+12:16:59 build 90 : ABSENT
+12:18:00 build 90 : VALID
+consignes fr-FR : HTTP 200
+consignes en-GB : HTTP 200
+groupe Test Kath : builds ['90', '89', '88', '87', '86', '85', '84', '83', '82', '81'] · {'autoNotifyEnabled': True, 'internalBuildState': 'IN_BETA_TESTING', 'externalBuildState': 'READY_FOR_BETA_SUBMISSION'} · testeurs [('Kathryn', 'INSTALLED'), ('Margaux', 'INSTALLED')]
+✅ 90 VALID, consignes rattachées, accès interne relu — RIEN d'autre envoyé
