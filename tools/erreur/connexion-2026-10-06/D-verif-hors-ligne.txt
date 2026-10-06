@@ -1,0 +1,4 @@
+   1 [erreur] verification-compte : L’opération n’a pas pu s’achever. (NSURLErrorDomain erreur -1009.) → personne connue, questionnaire fini : elle entre sans le serveur
+   8 [session] renouvellement : -1009 au 1e essai → on retente avec le même refresh
+   8 [session] renouvellement : -1009 au 2e essai → on retente avec le même refresh
+   8 [session] renouvellement : réseau en panne après 3 essai(s) — la session reste

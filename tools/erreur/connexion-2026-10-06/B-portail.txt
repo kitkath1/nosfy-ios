@@ -1,0 +1,2 @@
+   1 [erreur] verification-compte : Réseau indisponible. → personne connue, questionnaire fini : elle entre sans le serveur
+  12 [session] 403 sans code d'authentification → panne réseau, la session reste · <html><body>Connexion au Wi-Fi</body></html>

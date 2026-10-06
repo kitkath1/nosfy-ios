@@ -30,38 +30,53 @@ struct VerificationCompte: View {
     }
 
     /// Lire le profil ; vrai si la racine a été servie.
+    /// (06-10, « la connexion n'est pas résolue ») : la session gardée se lit
+    /// AVANT l'appel — un renouvellement refusé pendant la lecture l'efface
+    /// (`suspendre`), et l'écran bloquait alors pour de bon ; une annulation
+    /// laissait le sablier tourner sans fin ; un réseau faible pouvait le
+    /// faire tourner 80 s. Une personne connue au questionnaire fini entre
+    /// donc sur TOUTE panne, et au plus tard après 8 s.
     @discardableResult
     @MainActor
     private func lire() async -> Bool {
+        let connue = !InscriptionCompte.aReprendre && SupabaseSession.sessionGardee()
         do {
-            let profil = try await ProfilServeur.profil()
+            let profil = try await Self.profilEnTemps(connue ? 8 : nil)
             try Task.checkCancellation()
             onProfil(profil)
             return true
         } catch {
-            guard let cas = ErreurNosfy.cas(pour: error) else { return false }
-            // ⚠️ 05-10 (TestFlight 86, « en sous-sol, réseau faible ou pas du
-            // tout, le message noir d'erreur de Nosfy : impossible ») : cette
-            // vérification est armée par CHAQUE entrée Apple (`verifierALaReprise`)
-            // et ne s'éteint qu'à une lecture de profil RÉUSSIE — une entrée
-            // faite sous un réseau faible la laissait armée, et chaque lancement
-            // suivant sans réseau bloquait ici, derrière un écran sans « Plus
-            // tard ». Or le téléphone SAIT déjà si le questionnaire est fini
-            // (`InscriptionCompte.aReprendre`, posé à la dernière lecture) : une
-            // personne connue entre avec ce qu'il tient — prénom, but — et la
-            // vérification reste due pour la prochaine lecture avec réseau
-            // (le drapeau n'est pas touché, `profil()` l'éteindra).
-            if !InscriptionCompte.aReprendre, SupabaseSession.sessionGardee() {
-                print("[erreur] verification-compte : \(cas) → personne connue, questionnaire fini : elle entre sans le serveur")
+            // Un renouvellement refusé PENDANT la lecture — par cet appel ou par
+            // un autre du lancement — a suspendu la session : la personne reste
+            // connue (son identité attend), elle entre (banc E du 06-10).
+            let suspendue = !InscriptionCompte.aReprendre && SupabaseSession.identiteSuspendue != nil
+            if connue || suspendue {
+                print("[erreur] verification-compte : \(error.localizedDescription) → personne connue, questionnaire fini : elle entre sans le serveur")
                 onProfil(Self.profilDuTelephone)
                 return true
             }
+            guard let cas = ErreurNosfy.cas(pour: error) else { return false }
             print("[erreur] verification-compte : \(cas)")
             withAnimation(.easeOut(duration: 0.4)) {
                 chargement = false
                 panne = cas
             }
             return false
+        }
+    }
+
+    /// `profil()`, borné : au-delà de `limite` secondes, une panne de réseau.
+    private static func profilEnTemps(_ limite: Double?) async throws -> ProfilServeur.Profil {
+        guard let limite else { return try await ProfilServeur.profil() }
+        return try await withThrowingTaskGroup(of: ProfilServeur.Profil.self) { g in
+            g.addTask { try await ProfilServeur.profil() }
+            g.addTask {
+                try await Task.sleep(for: .seconds(limite))
+                throw URLError(.timedOut)
+            }
+            defer { g.cancelAll() }
+            guard let p = try await g.next() else { throw URLError(.timedOut) }
+            return p
         }
     }
 

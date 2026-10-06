@@ -608,8 +608,22 @@ struct RootView: View {
 
     private func ouvrirLaReconnexion(_ prete: Bool) {
         guard prete else { return }
-        print("[compte] session suspendue, réseau là, rien ne tourne → la porte")
-        revenirALaPorte()
+        // (06-10, « la connexion n'est pas résolue ») : la porte ne s'ouvre
+        // que si le serveur RÉPOND (un appel réel), pas sur la seule barre de
+        // réseau du sous-sol ; sinon elle réessaie dans une minute.
+        Task { @MainActor in
+            for _ in 0..<30 {
+                guard reconnexionPrete else { return }
+                if await SupabaseSession.serveurJoignable() {
+                    guard reconnexionPrete else { return }
+                    print("[compte] session suspendue, le serveur répond, rien ne tourne → la porte")
+                    revenirALaPorte()
+                    return
+                }
+                print("[compte] session suspendue, le serveur ne répond pas → la porte attend")
+                try? await Task.sleep(for: .seconds(60))
+            }
+        }
     }
 
     private func refermerLaReconnexion(_ oui: Bool) {

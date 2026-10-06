@@ -1,0 +1,4 @@
+   1 [compte] la porte est rendue (?)
+   1 [compte] session suspendue, le serveur répond, rien ne tourne → la porte
+   1 [erreur] verification-compte : Session Supabase indisponible. → personne connue, questionnaire fini : elle entre sans le serveur
+   1 [session] refresh refusé (400) → session suspendue, rien n'est effacé · {"code":400,"error_code":"validation_failed","msg":"Refresh token is not valid"}

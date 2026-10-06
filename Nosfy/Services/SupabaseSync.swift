@@ -108,7 +108,11 @@ actor SupabaseSync {
             await OutboxGains.shared.vider()
         } catch {
             // La séance est déjà enregistrée localement : on réessaiera au prochain envoi.
-            await SupabaseSession.shared.invalidate()
+            // (06-10) Le jeton d'accès n'est jeté que sur un 401 : le jeter à
+            // chaque panne réseau forçait un renouvellement de plus à chaque
+            // essai — autant de chances, sous un réseau faible, de perdre sa
+            // réponse et de griller le refresh.
+            if SupabaseSession.estRefusDuJeton(error) { await SupabaseSession.shared.invalidate() }
             print("Synchronisation Supabase différée : \(error.localizedDescription)")
         }
     }
@@ -187,7 +191,7 @@ actor SupabaseSync {
             }
 
         } catch {
-            await SupabaseSession.shared.invalidate()
+            if SupabaseSession.estRefusDuJeton(error) { await SupabaseSession.shared.invalidate() }
             throw error
         }
     }

@@ -1,0 +1,2 @@
+   1 [erreur] verification-compte : L’opération n’a pas pu s’achever. (NSURLErrorDomain erreur -1009.) → personne connue, questionnaire fini : elle entre sans le serveur
+   1 [session] jeton d'accès repris du coffre — pas de renouvellement

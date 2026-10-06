@@ -37,15 +37,30 @@ enum WoopConfig {
 enum CoffreSession {
     private static let service = "fr.kathryn.woop"
     private static let compte = "supabase.refresh"
+    /// (06-10, « la connexion n'est pas résolue ») : le jeton d'ACCÈS aussi,
+    /// pour qu'un lancement dans l'heure ne renouvelle rien — chaque
+    /// renouvellement sous un réseau faible est une chance de perdre la
+    /// réponse et de griller le refresh.
+    private static let compteAcces = "supabase.access"
 
-    private static var requete: [String: Any] {
+    private static var requete: [String: Any] { requete(compte) }
+
+    private static func requete(_ c: String) -> [String: Any] {
         [kSecClass as String: kSecClassGenericPassword,
          kSecAttrService as String: service,
-         kSecAttrAccount as String: compte]
+         kSecAttrAccount as String: c]
     }
 
-    static func lire() -> String? {
-        var q = requete
+    static func lireAcces() -> String? { lire(requete(compteAcces)) }
+
+    static func ecrireAcces(_ jwt: String) { ecrire(jwt, requete(compteAcces)) }
+
+    static func effacerAcces() { SecItemDelete(requete(compteAcces) as CFDictionary) }
+
+    static func lire() -> String? { lire(requete) }
+
+    private static func lire(_ base: [String: Any]) -> String? {
+        var q = base
         q[kSecReturnData as String] = true
         q[kSecMatchLimit as String] = kSecMatchLimitOne
         var resultat: AnyObject?
@@ -54,20 +69,23 @@ enum CoffreSession {
         return String(data: data, encoding: .utf8)
     }
 
-    static func ecrire(_ refresh: String) {
-        let data = Data(refresh.utf8)
+    static func ecrire(_ refresh: String) { ecrire(refresh, requete) }
+
+    private static func ecrire(_ valeur: String, _ base: [String: Any]) {
+        let data = Data(valeur.utf8)
         let maj: [String: Any] = [kSecValueData as String: data]
-        let statut = SecItemUpdate(requete as CFDictionary, maj as CFDictionary)
+        let statut = SecItemUpdate(base as CFDictionary, maj as CFDictionary)
         guard statut != errSecSuccess else { return }
-        var q = requete
+        var q = base
         q[kSecValueData as String] = data
         q[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
         let ajout = SecItemAdd(q as CFDictionary, nil)
-        if ajout != errSecSuccess { print("[session] Keychain refuse d'écrire le refresh (\(ajout))") }
+        if ajout != errSecSuccess { print("[session] Keychain refuse d'écrire (\(ajout))") }
     }
 
     static func effacer() {
         SecItemDelete(requete as CFDictionary)
+        effacerAcces()
     }
 }
 
@@ -164,6 +182,13 @@ actor SupabaseSession {
             throw SupabaseError.notAuthenticated
         }
         if let accessToken, Self.encoreValide(accessToken) { return accessToken }
+        // (06-10) Le jeton d'accès du coffre, s'il vit encore : un lancement
+        // dans l'heure ne renouvelle rien.
+        if accessToken == nil, let garde = CoffreSession.lireAcces(), Self.encoreValide(garde) {
+            accessToken = garde
+            print("[session] jeton d'accès repris du coffre — pas de renouvellement")
+            return garde
+        }
         // Un actor peut recevoir un autre appel pendant l'attente réseau.
         // Tous les lecteurs partagent donc le même renouvellement.
         if let renouvellement { return try await renouvellement.task.value }
@@ -182,7 +207,14 @@ actor SupabaseSession {
 
     private func renouveler(_ stored: String, generation: UUID) async throws -> String {
         do {
-            return try await refresh(using: stored, generation: generation)
+            return try await refreshAvecEssais(stored, generation: generation)
+        } catch SupabaseError.server(let statut, let corps)
+                    where (400...403).contains(statut) && !Self.refusDAuth(corps) {
+            // (06-10) Un 4xx qui ne vient PAS du serveur d'authentification
+            // (un portail Wi-Fi, un proxy, une page HTML) n'est pas un refus de
+            // la session : c'est une panne de réseau, la session reste.
+            print("[session] \(statut) sans code d'authentification → panne réseau, la session reste · \(corps.prefix(100))")
+            throw SupabaseError.transport
         } catch SupabaseError.server(let statut, let corps) where (400...403).contains(statut) {
             guard self.generation == generation else { throw CancellationError() }
             // LE REFRESH EST REFUSÉ (C0) : jeton révoqué, compte supprimé ailleurs,
@@ -198,6 +230,47 @@ actor SupabaseSession {
         }
     }
 
+    /// LES ESSAIS RAPPROCHÉS (06-10, « la connexion n'est pas résolue », en
+    /// sous-sol) : sous un réseau faible, un renouvellement peut ARRIVER au
+    /// serveur — qui fait tourner le refresh — et sa RÉPONSE se perdre. Le
+    /// serveur rend le jeton actif à qui représente le parent dans sa fenêtre
+    /// de réutilisation (10 s par défaut) : on retente donc tout de suite, avec
+    /// le même refresh, au plus trois fois en moins de 10 s. Avant, le second
+    /// essai venait au lancement suivant — des heures après — et il était
+    /// refusé : la session tombait.
+    private func refreshAvecEssais(_ stored: String, generation: UUID) async throws -> String {
+        let debut = Date()
+        var essai = 0
+        while true {
+            essai += 1
+            do {
+                return try await refresh(using: stored, generation: generation)
+            } catch let e as URLError where e.code != .cancelled {
+                guard essai < 3, Date().timeIntervalSince(debut) < 8 else {
+                    print("[session] renouvellement : réseau en panne après \(essai) essai(s) — la session reste")
+                    throw e
+                }
+                print("[session] renouvellement : \(e.code.rawValue) au \(essai)e essai → on retente avec le même refresh")
+                try? await Task.sleep(for: .milliseconds(600))
+                try Task.checkCancellation()
+                guard self.generation == generation else { throw CancellationError() }
+            }
+        }
+    }
+
+    /// Le refus vient-il du serveur d'authentification ? Son JSON porte un
+    /// `error_code` (ou l'ancien `error: invalid_grant`). Une page HTML, un
+    /// corps vide, un JSON sans code : non.
+    nonisolated static func refusDAuth(_ corps: String) -> Bool {
+        guard let data = corps.data(using: .utf8),
+              let o = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return false }
+        if let code = o["error_code"] as? String, !code.isEmpty { return true }
+        if let e = o["error"] as? String, e == "invalid_grant" { return true }
+        if let msg = (o["msg"] ?? o["error_description"]) as? String,
+           msg.localizedCaseInsensitiveContains("refresh token") { return true }
+        return false
+    }
+
     private func refresh(using refreshToken: String, generation: UUID) async throws -> String {
         var request = URLRequest(url: WoopConfig.supabaseURL
             .appending(path: "auth/v1/token")
@@ -206,6 +279,15 @@ actor SupabaseSession {
         request.setValue(WoopConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(["refresh_token": refreshToken])
+        // (06-10) 8 s, pas les 60 s d'Apple : au-delà, la fenêtre où le serveur
+        // accepte encore le même refresh est passée.
+        request.timeoutInterval = 8
+        #if DEBUG
+        // Banc : un portail Wi-Fi qui répond 403 en HTML.
+        if CommandLine.arguments.contains("-refreshPortail") {
+            throw SupabaseError.server(status: 403, body: "<html><body>Connexion au Wi-Fi</body></html>")
+        }
+        #endif
 
         let (data, response) = try await URLSession.shared.data(for: request)
         // Une réponse ancienne ne doit jamais ressusciter une session effacée,
@@ -228,6 +310,7 @@ actor SupabaseSession {
         refreshToken = decoded.refresh_token
         userID = decoded.user.id
         CoffreSession.ecrire(decoded.refresh_token)
+        CoffreSession.ecrireAcces(decoded.access_token)
         return decoded.access_token
     }
 
@@ -241,8 +324,18 @@ actor SupabaseSession {
         self.refreshToken = refresh
         self.userID = userID
         CoffreSession.ecrire(refresh)
+        CoffreSession.ecrireAcces(access)
         UserDefaults.standard.set(userID, forKey: Self.appleUserKey)
         UserDefaults.standard.removeObject(forKey: Self.ancienneCleRefresh)
+        // (06-10) LA MÊME PERSONNE REVIENT : la suspension tombe ici, sans
+        // attendre la lecture du profil — si elle échoue (réseau faible), la
+        // porte revenait à chaque retour du réseau alors que la session était
+        // valide. Une AUTRE personne passe toujours par `onVerdict` (l'effacement).
+        if Self.identiteSuspendue == userID {
+            Self.lacherIdentiteSuspendue()
+            Task { @MainActor in CompteEtat.shared.reconnexionDue = false }
+            print("[session] reconnexion de la même personne → la suspension tombe")
+        }
     }
 
     /// OUBLIER LA SESSION (C2) — tout ce qui identifie la personne sur ce
@@ -334,10 +427,29 @@ actor SupabaseSession {
         return json
     }
 
+    /// LE SERVEUR RÉPOND-IL VRAIMENT ? (06-10) `NWPathMonitor` dit « réseau »
+    /// dès qu'une barre existe — en sous-sol aussi. Avant d'ouvrir une porte
+    /// plein écran, un appel réel, court : `/auth/v1/health` en 5 s.
+    nonisolated static func serveurJoignable() async -> Bool {
+        var r = URLRequest(url: WoopConfig.supabaseURL.appending(path: "auth/v1/health"))
+        r.setValue(WoopConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        r.timeoutInterval = 5
+        guard let (_, rep) = try? await URLSession.shared.data(for: r),
+              let http = rep as? HTTPURLResponse else { return false }
+        return http.statusCode == 200
+    }
+
+    /// Le serveur a refusé le JETON D'ACCÈS (401) — le seul cas où le jeter.
+    nonisolated static func estRefusDuJeton(_ erreur: Error) -> Bool {
+        if case SupabaseError.server(let statut, _) = erreur { return statut == 401 }
+        return false
+    }
+
     /// Le jeton a expiré : on force une nouvelle authentification au prochain appel.
     func invalidate(_ refuse: String? = nil) {
         if let refuse, refuse != accessToken { return }
         accessToken = nil
+        CoffreSession.effacerAcces()
     }
 
     private func annulerRenouvellement() {
