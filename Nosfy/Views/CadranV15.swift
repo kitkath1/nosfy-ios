@@ -397,10 +397,76 @@ private struct TeteV15: View {
             }
             .lineLimit(1)
             Spacer(minLength: 0)
+            // LA COULEUR DES FLAMMES (06-10, « un petit bouton en haut à droite,
+            // settings ») : un menu natif, cinq couleurs, rouge par défaut.
+            BoutonCouleurFlammes()
         }
         .padding(.leading, 14)
-        .padding(.trailing, 20)
+        .padding(.trailing, 14)
         .padding(.top, 14)
+    }
+}
+
+/// La couleur des flammes du cadran — un choix pour le plaisir, gardé sur le
+/// téléphone. Le shader `eclipseGlowFumee` la lit à chaque image.
+enum CouleurFlammes: Int, CaseIterable {
+    case rouge = 0, orange, jaune, vert, noir
+
+    private static let cle = "nosfy.cadran.couleurFlammes"
+    /// Lue par image : une valeur en mémoire, écrite au choix.
+    nonisolated(unsafe) static var courante: CouleurFlammes =
+        CouleurFlammes(rawValue: UserDefaults.standard.integer(forKey: cle)) ?? .rouge {
+        didSet { UserDefaults.standard.set(courante.rawValue, forKey: cle) }
+    }
+
+    var nom: String {
+        switch self {
+        case .rouge: return L("Rouge", "Red")
+        case .orange: return "Orange"
+        case .jaune: return L("Jaune", "Yellow")
+        case .vert: return L("Vert", "Green")
+        case .noir: return L("Noir", "Black")
+        }
+    }
+    var pastille: Color {
+        switch self {
+        case .rouge: return Color(red: 0.86, green: 0.18, blue: 0.04)
+        case .orange: return Color(red: 1.0, green: 0.52, blue: 0.10)
+        case .jaune: return Color(red: 1.0, green: 0.84, blue: 0.20)
+        case .vert: return Color(red: 0.28, green: 0.90, blue: 0.40)
+        case .noir: return Color(white: 0.45)
+        }
+    }
+}
+
+/// Le petit bouton réglages du cadran : un menu natif, sans page.
+private struct BoutonCouleurFlammes: View {
+    @State private var choix = CouleurFlammes.courante
+
+    var body: some View {
+        Menu {
+            Picker(L("Couleur des flammes", "Flame colour"), selection: $choix) {
+                ForEach(CouleurFlammes.allCases, id: \.self) { c in
+                    Label(c == .rouge ? L("Rouge (par défaut)", "Red (default)") : c.nom,
+                          systemImage: "flame.fill")
+                        .tag(c)
+                }
+            }
+        } label: {
+            Image(systemName: "gearshape")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.85))
+                .frame(width: 38, height: 38)
+                .background(Circle().fill(.white.opacity(0.08)))
+                .overlay(Circle().strokeBorder(.white.opacity(0.14), lineWidth: 1))
+                .frame(width: 48, height: 48)
+                .contentShape(Rectangle())
+        }
+        .accessibilityLabel(L("Couleur des flammes", "Flame colour"))
+        .onChange(of: choix) { _, c in
+            Haptique.leger()
+            CouleurFlammes.courante = c
+        }
     }
 }
 

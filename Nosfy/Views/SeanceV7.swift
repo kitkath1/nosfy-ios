@@ -135,7 +135,9 @@ final class SeanceV7Etat {
         for le in a.orderedExercises where !plan.contains(where: { $0.id == le.exerciseID }) {
             let f = faits(le.exerciseID, dans: a), der = f.last
             let cardio = le.exercise?.tracking != .setsRepsWeight
-            plan.append(Prevu(id: le.exerciseID, nombre: cardio ? 1 : max(3, f.count),
+            // (06-10) UNE série par défaut, plus trois : des séries prévues
+            // jamais faites laissaient la séance « en cours » sans fin.
+            plan.append(Prevu(id: le.exerciseID, nombre: cardio ? 1 : max(1, f.count),
                               reps: der?.reps ?? 10, kilos: der?.weight ?? 20,
                               secondes: der?.durationSeconds ?? 45))
         }
@@ -197,7 +199,9 @@ final class SeanceV7Etat {
     func ajouter(_ exos: [Exercise], historique: [String: PropositionExo]) {
         for e in exos where !plan.contains(where: { $0.id == e.id }) {
             let h = historique[e.id]
-            plan.append(Prevu(id: e.id, nombre: e.tracking == .setsRepsWeight ? 3 : 1,
+            // (06-10, « ajoute par défaut qu'une série ») : une, on en ajoute
+            // d'autres depuis la playlist ou le cadran.
+            plan.append(Prevu(id: e.id, nombre: 1,
                               reps: h?.reps ?? 10, kilos: h?.kilos ?? 20, secondes: 45))
         }
         if !exos.isEmpty { completeFetee = false }
@@ -392,7 +396,19 @@ struct SeanceV7Page: View {
         }
     }
 
-    private var prochain: (exo: String, rang: Int)? { etat.prochain(dans: seance) }
+    /// (06-10) UN CARDIO QUI TOURNE sous la page (ouverte par la pilule en
+    /// pleine course) : la page disait « Tout est fait. » et proposait
+    /// « Terminer la séance » — le HIIT n'avait encore qu'une phase écrite.
+    /// Tant qu'il tourne, il est la prochaine étape, et la séance est en cours.
+    private var cardioEnCours: String? {
+        guard TapisEnCours.shared.actif, let e = PlayerEtat.shared.ficheSeance,
+              etat.plan.contains(where: { $0.id == e.id }) else { return nil }
+        return e.id
+    }
+    private var prochain: (exo: String, rang: Int)? {
+        if let c = cardioEnCours { return (c, 0) }
+        return etat.prochain(dans: seance)
+    }
     /// Tout le plan est fait.
     private var complete: Bool { !etat.plan.isEmpty && prochain == nil }
 
@@ -519,6 +535,13 @@ struct SeanceV7Page: View {
         HStack {
             MedaillonStop(symbol: "chevron.left", taille: 40) { fermer() }
             Spacer()
+            // (06-10, « un bouton médaillon Stop en haut à droite de la page
+            // résumé ») : terminer à tout moment, même avec des séries prévues
+            // non faites — la carte STOP, comme le ■ de la pastille.
+            if !etat.plan.isEmpty {
+                MedaillonStop(symbol: "stop.fill", taille: 40) { onStop() }
+                    .accessibilityLabel(L("Arrêter la séance", "Stop the session"))
+            }
         }
         .padding(.horizontal, 18)
         .padding(.top, Self.haut)
@@ -635,6 +658,7 @@ struct SeanceV7Page: View {
         guard let n = prochain, let e = ExerciseCatalog.exercise(id: n.exo) else {
             return L("Terminer la séance", "Finish the session")
         }
+        if cardioEnCours == e.id { return L("Retour · \(e.nomLocalise)", "Back · \(e.nomLocalise)") }
         if e.tracking != .setsRepsWeight { return L("Allez, go · \(e.nomLocalise)", "Let's go · \(e.nomLocalise)") }
         return L("Allez, go · Série \(n.rang + 1)", "Let's go · Set \(n.rang + 1)")
     }
@@ -644,6 +668,7 @@ struct SeanceV7Page: View {
     /// charge, au repos ; ils s'effacent dès que le pouce part.
     private var legendeAction: (titre: String, sous: String)? {
         guard let n = prochain, let e = ExerciseCatalog.exercise(id: n.exo) else { return nil }
+        if cardioEnCours == e.id { return (e.nomLocalise, L("En cours · y retourner", "In progress · go back")) }
         guard e.tracking == .setsRepsWeight else { return (e.nomLocalise, L("Cardio", "Cardio")) }
         // Le nom en titre, la série dessous — jamais de reps ni de poids
         // prévus : on ne les connaît pas à l'avance (02-10).

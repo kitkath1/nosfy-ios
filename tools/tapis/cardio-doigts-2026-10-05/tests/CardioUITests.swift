@@ -178,4 +178,135 @@ final class CardioUITests: XCTestCase {
         toucherSousMot("Terminer"); pause(2.5)
         capture("e04-fin")
     }
+
+    // MARK: 06-10 — voir sa séance en pleine course, puis revenir
+
+    func test05_seance_pendant_hiit() {
+        lancer(["-skipAuth", "-sansPlafond", "-demoData", "-goAuto", "-bancHiit", "direct"])
+        guard attendre(boutonDuBas("Go"), 60, "go") else { return }
+        plus(10); boutonDuBas("Go").tap(); pause(3)
+        capture("s01-effort")
+        // la pilule du haut : son temps, à gauche (le ■ à droite ouvre la carte STOP)
+        pt(95, 26).tap(); pause(2.5)
+        capture("s02-seance-ouverte"); arbre("s02-seance-ouverte")
+        let enCours = app.staticTexts["En cours."].exists, toutFait = app.staticTexts["Tout est fait."].exists
+        log("page pendant le HIIT : en cours = \(enCours) · tout est fait = \(toutFait)")
+        XCTAssertTrue(enCours && !toutFait, "la page dit En cours pendant le HIIT")
+        // le slider « Retour · HIIT » : un vrai glissé
+        let s = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Retour")).allElementsBoundByIndex
+            .max { $0.frame.minY < $1.frame.minY }
+        if let s, s.frame.minY > 600 {
+            pt(s.frame.minX + 34, s.frame.midY).press(forDuration: 0.1, thenDragTo: pt(s.frame.maxX - 4, s.frame.midY),
+                                                     withVelocity: XCUIGestureVelocity(500), thenHoldForDuration: 0.2)
+            pause(3)
+        } else { log("slider Retour ABSENT"); arbre("absent-slider-retour") }
+        capture("s03-retour-hiit")
+        let stop = app.buttons["Stop"].exists
+        log("retour au HIIT : stop = \(stop) · vitesse = \(vitesse())")
+        XCTAssertTrue(stop, "le HIIT tourne toujours")
+        app.buttons["Stop"].tap(); pause(1.5)
+        toucherSousMot("Terminer"); pause(2.5)
+        capture("s04-fin")
+        let b = app.buttons["Retour à la séance"]
+        guard attendre(b, 5, "bouton-retour") else { return }
+        b.tap(); pause(3)
+        capture("s05-seance-finie")
+        log("après le bouton : tout est fait (page) = \(app.staticTexts["Tout est fait."].exists) · TA SÉANCE = \(app.staticTexts["TA SÉANCE"].exists)")
+    }
+
+    // MARK: 06-10 — l'écran noir après un tirage du cadran (son TestFlight 89)
+
+    func glisserSlider(_ debut: String) -> Bool {
+        let b = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", debut)).allElementsBoundByIndex
+            .max { $0.frame.minY < $1.frame.minY }
+        guard let b, b.exists else { log("slider \(debut) ABSENT"); return false }
+        let f = b.frame
+        pt(f.minX + 30, f.midY).press(forDuration: 0.15, thenDragTo: pt(f.maxX - 4, f.midY),
+                                       withVelocity: XCUIGestureVelocity(520), thenHoldForDuration: 0.2)
+        return true
+    }
+    func tirerCadran(_ nom: String) {
+        pt(196, 300).press(forDuration: 0.1, thenDragTo: pt(196, 620),
+                           withVelocity: XCUIGestureVelocity(500), thenHoldForDuration: 0.1)
+        pause(0.5); capture("\(nom)-a")
+        pause(2.0); capture("\(nom)-b"); arbre("\(nom)-b")
+        let page = app.staticTexts["TA SÉANCE"].exists
+        let cadran = app.buttons["Cadran"].exists
+        let touchable = app.buttons.allElementsBoundByIndex.filter { $0.isHittable }.count
+        log("\(nom) : page = \(page) · cadran = \(cadran) · boutons touchables = \(touchable)")
+    }
+    func attendreEffort(_ i: Int) {
+        let passer = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Passer l'animation")).firstMatch
+        if passer.waitForExistence(timeout: 6) { passer.tap() }
+        let enCours = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "en cours")).firstMatch
+        attendre(enCours, 25, "en-cours-\(i)")
+        pause(1.5)
+    }
+    func stopEtValider(_ i: Int) {
+        let valider = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Valider")).firstMatch
+        for _ in 1...3 where !valider.exists {
+            let t = app.staticTexts.matching(NSPredicate(format: "label == %@", "Stop")).firstMatch
+            if t.exists { pt(t.frame.midX, t.frame.minY - 50).tap() }
+            _ = valider.waitForExistence(timeout: 4)
+        }
+        if valider.exists { valider.tap() } else { log("valider ABSENT \(i)") }
+        pause(2)
+    }
+
+    func test06_tirage_cadran() {
+        lancer(["-skipAuth", "-sansPlafond", "-demoData", "-goAuto"])
+        let refaire = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Refaire")).firstMatch
+        guard attendre(refaire, 45, "refaire") else { return }
+        pt(refaire.frame.maxX - 50, refaire.frame.midY).tap(); pause(3)
+        capture("c01-seance")
+        guard glisserSlider("Allez, go") else { return }
+        attendreEffort(1)
+        capture("c02-effort")
+        // ① tirer PENDANT l'effort : le cadran résiste, la série continue
+        tirerCadran("c03-tire-effort")
+        stopEtValider(1)
+        // ② tirer PENDANT le repos : la page de séance
+        pause(1.5)
+        tirerCadran("c04-tire-repos")
+        // ③ revenir au cadran par le slider de la page, puis tirer encore
+        if glisserSlider("Allez, go") {
+            pause(1.0); capture("c05-relance-a")
+            tirerCadran("c06-tire-pendant-compte")   // pendant le 3-2-1 / l'arrivée
+            pause(2)
+            if glisserSlider("Allez, go") { attendreEffort(2); tirerCadran("c07-tire-effort-2") }
+        }
+        // ④ toucher une ligne puis ▶ de la playlist, et tirer
+        capture("c08-fin"); arbre("c08-fin")
+    }
+
+    /// Son cas exact (06-10, TestFlight 89, écran noir) : repos → tirage → page →
+    /// retour sur la MÊME série encore au repos. Avant : le cadran restait
+    /// descendu à 900 pt (le fond de séance seul, rien à toucher).
+    func test07_retour_pendant_repos() {
+        lancer(["-skipAuth", "-sansPlafond", "-demoData", "-goAuto"])
+        let refaire = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Refaire")).firstMatch
+        guard attendre(refaire, 45, "refaire") else { return }
+        pt(refaire.frame.maxX - 50, refaire.frame.midY).tap(); pause(3)
+        // une série de plus au premier exercice (la playlist de sa ligne)
+        let titre = app.staticTexts.matching(NSPredicate(format: "label == %@", "Prête.")).firstMatch
+        let y = titre.exists ? titre.frame.maxY + 190 : 380
+        pt(250, y).tap(); pause(1.5)
+        let ajouter = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Ajouter une série")).firstMatch
+        if attendre(ajouter, 4, "ajouter-serie") { ajouter.tap(); pause(0.8) }
+        pt(196, 60).tap(); pause(1.2)
+        capture("r01-deux-series")
+        guard glisserSlider("Allez, go") else { return }
+        attendreEffort(1)
+        stopEtValider(1)
+        pause(1.5)
+        capture("r02-repos")
+        tirerCadran("r03-tire-repos")
+        // retour sur la même série, toujours au repos
+        _ = glisserSlider("Allez, go")
+        pause(2.5)
+        capture("r04-retour"); arbre("r04-retour")
+        let cadran = app.buttons["Cadran"]
+        log("retour pendant le repos : cadran visible = \(cadran.exists && cadran.isHittable) · cadran y = \(cadran.frame.minY)")
+        XCTAssertTrue(cadran.exists && cadran.isHittable && cadran.frame.minY < 300, "le cadran est à sa place")
+    }
 }

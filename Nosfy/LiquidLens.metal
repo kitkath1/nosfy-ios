@@ -756,12 +756,26 @@ static float3 glowShade(float2 d, float r, float R, float t, float ig,
                                         float2 size, float2 center, float R,
                                         float t, float ig, float pulse,
                                         float flare, float flareAng,
-                                        float blanc) {
+                                        float blanc, float teinte) {
     if (ig < 0.004) { return half4(0.0); }
     float2 d = position - center;
     float r = length(d);
     if (r > size.y * 0.9) { return half4(0.0); }
     float3 c = glowShade(d, r, R, t, ig, pulse, flare, flareAng);
+    // LA COULEUR DES FLAMMES (06-10, son choix dans le cadran, « pour fun ») :
+    // 0 rouge (le feu d'origine, intact), 1 orange, 2 jaune, 3 vert, 4 noir
+    // (un argent sombre : du noir sur du noir ne se verrait pas). La forme et
+    // la lumière du feu restent les siennes ; seule la teinte change, et le
+    // cœur très clair garde sa blancheur.
+    if (teinte > 0.5) {
+        float mx = max(max(c.r, c.g), c.b);
+        float3 tint = teinte < 1.5 ? float3(1.00, 0.52, 0.10)
+                    : teinte < 2.5 ? float3(1.00, 0.84, 0.20)
+                    : teinte < 3.5 ? float3(0.28, 1.00, 0.40)
+                    :                float3(0.50, 0.52, 0.56);
+        float coeur = smoothstep(0.80, 1.0, mx) * smoothstep(0.35, 0.75, c.b / max(mx, 1e-4));
+        c = mix(tint * mx, float3(mx), coeur);
+    }
     float chaud = smoothstep(0.30, 0.80, 1.0 - c.b / max(c.r, 1e-4));
     c.g *= mix(1.0, 0.78, chaud);
     c.b *= mix(1.0, 0.50, chaud);

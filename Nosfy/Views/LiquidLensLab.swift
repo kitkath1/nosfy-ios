@@ -389,6 +389,17 @@ struct LiquidLensLab: View {
                 // du côté touché — un souffle, un tick, jamais un menu.
                 .simultaneousGesture(SpatialTapGesture().onEnded { v in
                     let nowD = Date()
+                    // (06-10, « si je tape sur le cadran, ça passe l'animation ») :
+                    // tant que l'arrivée se joue (avant le compte de l'effort),
+                    // un toucher sur le cadran fait ce que fait « Passer
+                    // l'animation » — `skipCine` garde ses propres verrous.
+                    if v15 != nil, effortIgnite == nil, restStart == nil, envolAt == nil,
+                       let s = summitAt,
+                       nowD.timeIntervalSince(s) < SummitCine.cutAt + SummitCine.enter
+                            + SummitCine.descend + 5.6 {
+                        skipCine(nowD)
+                        return
+                    }
                     let tt = nowD.timeIntervalSinceReferenceDate
                         .truncatingRemainder(dividingBy: 900)
                     guard let e = summitElapsed(now: nowD, t: tt),
@@ -1527,7 +1538,8 @@ struct LiquidLensLab: View {
                 .float2(sizeW, sizeH), .float2(cX, cY), .float(rad),
                 .float(tS), .float(igV), .float(Float(lens.pulse)),
                 .float(flareV), .float(Float(flareAng)),
-                .float(Float(nuitV15(now))))
+                .float(Float(nuitV15(now))),
+                .float(Float(CouleurFlammes.courante.rawValue)))
             : (Self.cadranAvant ? ShaderLibrary.eclipseGlow
                                 : ShaderLibrary.eclipseGlowBraise)(
                 .float2(sizeW, sizeH), .float2(cX, cY), .float(rad),

@@ -3296,7 +3296,8 @@ struct ExerciseDetailView: View {
     @State private var tirageSaisi = false
     @State private var tirageJeton = 0
 
-    /// La même remise à plat quand la lentille se montre par le geste.
+    /// La même remise à plat quand la lentille se montre par le geste, et
+    /// après chaque sortie par le tirage (06-10).
     private func remettreLeTirage() {
         guard tirageCadran != 0 || tirageSaisi else { return }
         var tr = Transaction(); tr.disablesAnimations = true
@@ -3340,6 +3341,14 @@ struct ExerciseDetailView: View {
         // se lève.
         withAnimation(.spring(response: 0.42, dampingFraction: 0.9)) { tirageCadran = 900 }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { quitterLaFiche() }
+        // ⚠️ 06-10 (TestFlight 89, « écran noir, j'ai dû quitter l'app ») : le
+        // cadran restait DESCENDU à 900 pt après la sortie. La fiche ne meurt
+        // pas (elle est l'onglet caché) : en y revenant sur la série en cours
+        // — le repos continue pendant qu'on regarde la séance —, aucun
+        // lancement ne le remettait (`launchPosed` seul le faisait), et l'on
+        // voyait le fond de séance posé dessous, sans rien à toucher. Remis
+        // en place sous la coupe, une fois la page de séance posée.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { remettreLeTirage() }
     }
 
     private func relacherTirage() {

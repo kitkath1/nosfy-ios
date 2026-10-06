@@ -2254,11 +2254,9 @@ private struct FinHiit: View {
                 lignes.padding(.top, 26)
                 graphe.padding(.top, 22)
                 Spacer(minLength: 0)
-                SliderObsidienne(label: L("Retour", "Back"), height: 58,
-                                 legende: (L("Retour à la séance", "Back to the session"),
-                                           L("\(bilans.count) effort\(bilans.count > 1 ? "s" : "")",
-                                             "\(bilans.count) effort\(bilans.count > 1 ? "s" : "")")),
-                                 onConfirm: onRetour)
+                // (06-10, « pas de slider pour le retour à la séance, juste un
+                // bouton primary ») : un toucher, rien à glisser.
+                BoutonPrimaire(title: L("Retour à la séance", "Back to the session")) { onRetour() }
                     .padding(.bottom, 30)
             }
             .padding(.horizontal, 24)
