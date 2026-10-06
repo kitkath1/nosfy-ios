@@ -1,0 +1,65 @@
+{
+  "mesure_utc": "2026-10-06T09:11:28+00:00",
+  "ecriture": [
+    {
+      "locale": "fr-FR",
+      "http": 200,
+      "reponse": {
+        "data": {
+          "type": "betaBuildLocalizations",
+          "id": "98049e6c-77c1-4760-85c0-759977aa772b",
+          "attributes": {
+            "whatsNew": "Build 89 — LA CONNEXION EN SOUS-SOL, ET LA FLAMME DU CARDIO.\n\n1) SANS RÉSEAU OU AVEC UN RÉSEAU FAIBLE (le plus important) : ouvre Nosfy en sous-sol, en mode avion, sur un Wi-Fi qui demande une connexion. Tu dois arriver sur l'accueil et pouvoir faire toute ta séance, sans écran noir d'erreur et sans que Nosfy te redemande Apple. Au retour du réseau, tout part tout seul.\n\n2) LE CARDIO : une flamme entoure le bouton à toucher. Elle bat vite sur Stop pendant l'effort, elle respire lentement sur Go et Reprendre. Choisis ta vitesse avec - et +, touche Go. Rien ne part et rien ne s'arrête sans toi.\n\nÀ dire surtout : as-tu vu l'écran noir ou la porte Apple, et à quel moment ? Comprends-tu tout de suite quand arrêter et quand reprendre ?\n\nTeste le parcours complet avec un compte neuf :\n• Connecte-toi avec Apple, puis choisis ta langue, ton prénom et ton objectif.\n• Vérifie que les séances, les pièces, les boosters et la collection commencent à zéro.\n• Fais une séance de musculation ou de cardio et termine-la.\n• Consulte les stories et les récompenses, puis l’animation du galet accompli.\n• Ouvre le booster gagné et retrouve la carte dans ta collection.\n• Touche un jour fait dans le widget Regularity pour revoir sa séance. Si tu as fait plusieurs séances ce jour-là, choisis celle à revoir.\n• Déconnecte-toi puis reconnecte-toi : tes séances, leurs reçus et ta collection doivent revenir sans gain en double.\n• Reviens un autre jour pour vérifier le retour quotidien.\n\nEn cas de problème, indique l’étape, le modèle d’iPhone, la version d’iOS et joins une capture via TestFlight.",
+            "locale": "fr-FR"
+          },
+          "relationships": {
+            "build": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/98049e6c-77c1-4760-85c0-759977aa772b/relationships/build",
+                "related": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/98049e6c-77c1-4760-85c0-759977aa772b/build"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/98049e6c-77c1-4760-85c0-759977aa772b"
+          }
+        },
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/98049e6c-77c1-4760-85c0-759977aa772b"
+        }
+      }
+    },
+    {
+      "locale": "en-GB",
+      "http": 200,
+      "reponse": {
+        "data": {
+          "type": "betaBuildLocalizations",
+          "id": "bf455a71-1f35-4d43-a4b1-4b02b5c13054",
+          "attributes": {
+            "whatsNew": "Build 89 — SIGN-IN UNDERGROUND, AND THE CARDIO FLAME.\n\n1) NO OR WEAK NETWORK (most important): open Nosfy underground, in airplane mode, on a Wi-Fi that asks you to log in. You must land on the home screen and do your whole session, with no black error screen and without Nosfy asking for Apple again. When the network is back, everything syncs on its own.\n\n2) CARDIO: a flame surrounds the button to press. It beats fast on Stop during the effort, it breathes slowly on Go and Resume. Set your speed with - and +, tap Go. Nothing starts or stops without you.\n\nTell me above all: did you see the black screen or the Apple gate, and when? Do you understand at once when to stop and when to resume?\n\nTest the full experience with a new account:\n• Sign in with Apple, then choose your language, name and goal.\n• Check that workouts, coins, boosters and your collection start empty.\n• Complete a strength or cardio workout.\n• View the session stories, rewards and completed pebble animation.\n• Open the earned booster and find the card in your collection.\n• Tap a completed day in the Regularity widget to revisit its workout. Choose a session when the day contains several.\n• Sign out and back in: workouts, reward receipts and your collection should return without duplicate rewards.\n• Return on another day to check the daily return.\n\nIf something goes wrong, include the step, iPhone model, iOS version and a screenshot through TestFlight.",
+            "locale": "en-GB"
+          },
+          "relationships": {
+            "build": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/bf455a71-1f35-4d43-a4b1-4b02b5c13054/relationships/build",
+                "related": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/bf455a71-1f35-4d43-a4b1-4b02b5c13054/build"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/bf455a71-1f35-4d43-a4b1-4b02b5c13054"
+          }
+        },
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/bf455a71-1f35-4d43-a4b1-4b02b5c13054"
+        }
+      }
+    }
+  ],
+  "relecture": {
+    "en-GB": "Build 89 — SIGN-IN UNDERGROUND, AND THE CARDIO FLAME.\n\n1) NO OR WEAK NETWORK (most important): open Nosfy underground, in airplane mode, on a Wi-Fi that asks you to log in. You must land on the home screen and do your whole session, with no black error screen and without Nosfy asking for Apple again. When the network is back, everything syncs on its own.\n\n2) CARDIO: a flame surrounds the button to press. It beats fast on Stop during the effort, it breathes slowly on Go and Resume. Set your speed with - and +, tap Go. Nothing starts or stops without you.\n\nTell me above all: did you see the black screen or the Apple gate, and when? Do you understand at once when to stop and when to resume?\n\nTest the full experience with a new account:\n• Sign in with Apple, then choose your language, name and goal.\n• Check that workouts, coins, boosters and your collection start empty.\n• Complete a strength or cardio workout.\n• View the session stories, rewards and completed pebble animation.\n• Open the earned booster and find the card in your collection.\n• Tap a completed day in the Regularity widget to revisit its workout. Choose a session when the day contains several.\n• Sign out and back in: workouts, reward receipts and your collection should return without duplicate rewards.\n• Return on another day to check the daily return.\n\nIf something goes wrong, include the step, iPhone model, iOS version and a screenshot through TestFlight.",
+    "fr-FR": "Build 89 — LA CONNEXION EN SOUS-SOL, ET LA FLAMME DU CARDIO.\n\n1) SANS RÉSEAU OU AVEC UN RÉSEAU FAIBLE (le plus important) : ouvre Nosfy en sous-sol, en mode avion, sur un Wi-Fi qui demande une connexion. Tu dois arriver sur l'accueil et pouvoir faire toute ta séance, sans écran noir d'erreur et sans que Nosfy te redemande Apple. Au retour du réseau, tout part tout seul.\n\n2) LE CARDIO : une flamme entoure le bouton à toucher. Elle bat vite sur Stop pendant l'effort, elle respire lentement sur Go et Reprendre. Choisis ta vitesse avec - et +, touche Go. Rien ne part et rien ne s'arrête sans toi.\n\nÀ dire surtout : as-tu vu l'écran noir ou la porte Apple, et à quel moment ? Comprends-tu tout de suite quand arrêter et quand reprendre ?\n\nTeste le parcours complet avec un compte neuf :\n• Connecte-toi avec Apple, puis choisis ta langue, ton prénom et ton objectif.\n• Vérifie que les séances, les pièces, les boosters et la collection commencent à zéro.\n• Fais une séance de musculation ou de cardio et termine-la.\n• Consulte les stories et les récompenses, puis l’animation du galet accompli.\n• Ouvre le booster gagné et retrouve la carte dans ta collection.\n• Touche un jour fait dans le widget Regularity pour revoir sa séance. Si tu as fait plusieurs séances ce jour-là, choisis celle à revoir.\n• Déconnecte-toi puis reconnecte-toi : tes séances, leurs reçus et ta collection doivent revenir sans gain en double.\n• Reviens un autre jour pour vérifier le retour quotidien.\n\nEn cas de problème, indique l’étape, le modèle d’iPhone, la version d’iOS et joins une capture via TestFlight."
+  }
+}
