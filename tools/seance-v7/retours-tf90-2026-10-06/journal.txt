@@ -1,0 +1,67 @@
+BEB refaire : trouvé
+BEB ajouter : trouvé
+BEB capture l01-quinze
+BEB séries visibles : 15 · ajouter touchable = true
+BEB capture l02-defile-bas
+BEB capture l03-defile-haut
+BEB après les deux défilements : la liste est ouverte = true
+BEB ajouter encore : ok
+Test Case '-[NosfyUITests.CardioUITests test09_liste_longue]' passed (38.170 seconds).
+Test Suite 'CardioUITests' passed at 2026-10-06 14:56:20.734.
+Test Suite 'NosfyUITests.xctest' passed at 2026-10-06 14:56:20.736.
+Test Suite 'Selected tests' passed at 2026-10-06 14:56:20.736.
+BEB vide : trouvé
+BEB feuille : trouvé
+BEB crunch : trouvé
+BEB capture d01-une-serie
+BEB en-cours-1 : trouvé
+BEB capture d02-dernier-repos
+BEB après la dernière série : repos = true · dernier repos = true
+BEB capture d03-page
+BEB page : tout est fait = true
+Test Case '-[NosfyUITests.CardioUITests test08_dernier_repos]' passed (43.858 seconds).
+Test Suite 'CardioUITests' passed at 2026-10-06 12:12:35.676.
+Test Suite 'NosfyUITests.xctest' passed at 2026-10-06 12:12:35.677.
+Test Suite 'Selected tests' passed at 2026-10-06 12:12:35.678.
+BEB refaire : trouvé
+BEB ajouter : trouvé
+BEB en-cours-1 : trouvé
+BEB tour 1 : Série 1
+BEB capture a01-apres-valider
+BEB capture a01-tire-a
+BEB capture a01-tire-b
+BEB a01-tire : page = true · cadran = false · boutons touchables = 4
+BEB en-cours-2 : trouvé
+BEB tour 2 : Série 2
+BEB capture a02-apres-valider
+BEB capture a02-tire-a
+BEB capture a02-tire-b
+BEB a02-tire : page = true · cadran = false · boutons touchables = 4
+BEB en-cours-3 : trouvé
+BEB tour 3 : Série 3
+BEB capture a03-apres-valider
+BEB capture a03-tire-a
+BEB capture a03-tire-b
+BEB a03-tire : page = false · cadran = true · boutons touchables = 2
+BEB capture a09-fin
+BEB page après trois passages : ["10 reps à 20 kg — déjà 60 pièces."]
+Test Case '-[NosfyUITests.CardioUITests test10_series_ajoutees]' passed (80.403 seconds).
+Test Suite 'CardioUITests' passed at 2026-10-06 14:57:57.879.
+Test Suite 'NosfyUITests.xctest' passed at 2026-10-06 14:57:57.879.
+Test Suite 'Selected tests' passed at 2026-10-06 14:57:57.879.
+BEB refaire : trouvé
+BEB en-cours-1 : trouvé
+BEB capture k01-page-a
+BEB capture k01-page-b
+BEB k01-page : page = true · cadran = false · boutons touchables = 4
+BEB capture k02-playlist
+BEB avant : 10 reps · 20 kg
+BEB capture k03-feuille
+BEB feuille-correction : trouvé
+BEB capture k04-molette
+BEB capture k05-corrigee
+BEB après : 22 reps · 20 kg
+Test Case '-[NosfyUITests.CardioUITests test11_corriger]' passed (47.621 seconds).
+Test Suite 'CardioUITests' passed at 2026-10-06 14:59:01.297.
+Test Suite 'NosfyUITests.xctest' passed at 2026-10-06 14:59:01.298.
+Test Suite 'Selected tests' passed at 2026-10-06 14:59:01.299.

@@ -767,12 +767,12 @@ static float3 glowShade(float2 d, float r, float R, float t, float ig,
     // (un argent sombre : du noir sur du noir ne se verrait pas). La forme et
     // la lumière du feu restent les siennes ; seule la teinte change, et le
     // cœur très clair garde sa blancheur.
+    float3 tint = teinte < 1.5 ? float3(1.00, 0.52, 0.10)
+                : teinte < 2.5 ? float3(1.00, 0.84, 0.20)
+                : teinte < 3.5 ? float3(0.28, 1.00, 0.40)
+                :                float3(0.50, 0.52, 0.56);
     if (teinte > 0.5) {
         float mx = max(max(c.r, c.g), c.b);
-        float3 tint = teinte < 1.5 ? float3(1.00, 0.52, 0.10)
-                    : teinte < 2.5 ? float3(1.00, 0.84, 0.20)
-                    : teinte < 3.5 ? float3(0.28, 1.00, 0.40)
-                    :                float3(0.50, 0.52, 0.56);
         float coeur = smoothstep(0.80, 1.0, mx) * smoothstep(0.35, 0.75, c.b / max(mx, 1e-4));
         c = mix(tint * mx, float3(mx), coeur);
     }
@@ -789,6 +789,9 @@ static float3 glowShade(float2 d, float r, float R, float t, float ig,
     float y = dot(c, float3(0.2126, 0.7152, 0.0722));
     float w = mix(y, m, 0.55) * 0.62;
     float3 fumee = float3(w) * float3(0.95, 0.97, 1.0);
+    // (06-10, « changer la couleur pendant mes repos ») : la fumée du repos
+    // prend la couleur choisie, en pâle ; le rouge garde la fumée blanche.
+    if (teinte > 0.5) { fumee = float3(w) * mix(float3(1.0), tint, 0.62); }
     c = mix(c, fumee, clamp(blanc, 0.0, 1.0));
     float a = clamp(max(max(c.r, c.g), c.b) * 0.9, 0.0, 1.0);
     return half4(half3(c), half(a)) * color.a;

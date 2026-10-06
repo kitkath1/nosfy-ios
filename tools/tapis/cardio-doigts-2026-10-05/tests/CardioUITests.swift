@@ -309,4 +309,129 @@ final class CardioUITests: XCTestCase {
         log("retour pendant le repos : cadran visible = \(cadran.exists && cadran.isHittable) · cadran y = \(cadran.frame.minY)")
         XCTAssertTrue(cadran.exists && cadran.isHittable && cadran.frame.minY < 300, "le cadran est à sa place")
     }
+
+    /// (06-10, « repos comme les autres exos ! ») : la toute dernière série de la
+    /// séance a son repos, puis le slider rend la page.
+    func test08_dernier_repos() {
+        lancer(["-skipAuth", "-sansPlafond", "-demoData", "-goAuto"])
+        let compose = app.staticTexts.matching(NSPredicate(format: "label == %@", "Compose ta séance")).firstMatch
+        guard attendre(compose, 45, "vide") else { return }
+        pause(1.2)
+        pt(196, compose.frame.minY - 30 - 48).tap()
+        let champ = app.textFields.firstMatch
+        guard attendre(champ, 8, "feuille") else { return }
+        champ.tap(); champ.typeText("Crunch"); pause(0.8)
+        let l = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Crunch au sol")).firstMatch
+        guard attendre(l, 5, "crunch") else { return }
+        l.tap(); pause(0.4)
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Ajouter (")).firstMatch.tap()
+        pause(3)
+        capture("d01-une-serie"); arbre("d01-une-serie")
+        guard glisserSlider("Allez, go") else { return }
+        attendreEffort(1)
+        stopEtValider(1)
+        pause(1.5)
+        capture("d02-dernier-repos"); arbre("d02-dernier-repos")
+        let repos = app.staticTexts["Repos"].exists, dernier = app.staticTexts["Dernier repos"].exists
+        log("après la dernière série : repos = \(repos) · dernier repos = \(dernier)")
+        XCTAssertTrue(repos, "un repos après la dernière série")
+        guard glisserSlider("Retour") else { XCTFail("slider Retour absent"); return }
+        pause(3)
+        capture("d03-page"); arbre("d03-page")
+        log("page : tout est fait = \(app.staticTexts["Tout est fait."].exists)")
+        XCTAssertTrue(app.staticTexts["Tout est fait."].exists, "la page, tout est fait")
+    }
+
+    // MARK: 06-10 — les retours du TestFlight 90
+
+    func ouvrirSeanceRefaite() -> Bool {
+        lancer(["-skipAuth", "-sansPlafond", "-demoData", "-goAuto"])
+        let refaire = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Refaire")).firstMatch
+        guard attendre(refaire, 45, "refaire") else { return false }
+        pt(refaire.frame.maxX - 50, refaire.frame.midY).tap(); pause(3)
+        return true
+    }
+    func ouvrirPremiereLigne() {
+        let titre = app.staticTexts.matching(NSPredicate(format: "label == %@", "Prête.")).firstMatch
+        let enCours = app.staticTexts.matching(NSPredicate(format: "label == %@", "En cours.")).firstMatch
+        let t = titre.exists ? titre : enCours
+        let y = t.exists ? t.frame.maxY + 190 : 380
+        pt(250, y).tap(); pause(1.5)
+    }
+    var ajouterSerie: XCUIElement {
+        app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Ajouter une série")).firstMatch
+    }
+
+    /// ① Quinze séries, défiler, « Ajouter » toujours là.
+    func test09_liste_longue() {
+        guard ouvrirSeanceRefaite() else { return }
+        ouvrirPremiereLigne()
+        guard attendre(ajouterSerie, 5, "ajouter") else { return }
+        for _ in 0..<14 { ajouterSerie.tap(); pause(0.25) }
+        pause(0.8); capture("l01-quinze")
+        let series = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Série ")).count
+        log("séries visibles : \(series) · ajouter touchable = \(ajouterSerie.isHittable)")
+        // défiler vers le bas puis vers le haut DANS la liste
+        pt(200, 700).press(forDuration: 0.05, thenDragTo: pt(200, 520), withVelocity: XCUIGestureVelocity(600), thenHoldForDuration: 0.1)
+        pause(0.8); capture("l02-defile-bas")
+        pt(200, 520).press(forDuration: 0.05, thenDragTo: pt(200, 720), withVelocity: XCUIGestureVelocity(600), thenHoldForDuration: 0.1)
+        pause(0.8); capture("l03-defile-haut")
+        let ouverte = ajouterSerie.exists && ajouterSerie.isHittable
+        log("après les deux défilements : la liste est ouverte = \(ouverte)")
+        XCTAssertTrue(ouverte, "défiler vers le haut ne ferme plus la feuille")
+        ajouterSerie.tap(); pause(0.5)
+        log("ajouter encore : ok")
+    }
+
+    /// ② Ajouter des séries, puis enchaîner deux passages sans geler ; ③ le rang.
+    func test10_series_ajoutees() {
+        guard ouvrirSeanceRefaite() else { return }
+        ouvrirPremiereLigne()
+        guard attendre(ajouterSerie, 5, "ajouter") else { return }
+        for _ in 0..<3 { ajouterSerie.tap(); pause(0.3) }
+        pt(196, 60).tap(); pause(1.2)
+        for i in 1...3 {
+            guard glisserSlider("Allez, go") || glisserSlider("Lancer") else { log("slider absent au tour \(i)"); break }
+            attendreEffort(i)
+            let rang = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Série ")).firstMatch.label
+            log("tour \(i) : \(rang)")
+            stopEtValider(i)
+            pause(2.5)
+            capture("a0\(i)-apres-valider")
+            // retour à la page, puis reprise depuis la page
+            tirerCadran("a0\(i)-tire")
+        }
+        capture("a09-fin"); arbre("a09-fin")
+        log("page après trois passages : \(app.staticTexts.allElementsBoundByIndex.map(\.label).filter { $0.contains("reps") || $0.contains("séries") }.prefix(4))")
+    }
+
+    /// ⑤ Corriger une série faite.
+    func test11_corriger() {
+        guard ouvrirSeanceRefaite() else { return }
+        guard glisserSlider("Allez, go") else { return }
+        attendreEffort(1)
+        stopEtValider(1)
+        pause(2)
+        tirerCadran("k01-page")
+        ouvrirPremiereLigne()
+        capture("k02-playlist"); arbre("k02-playlist")
+        // la série faite : la première ligne de la liste
+        let faite = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", " reps")).allElementsBoundByIndex
+            .filter { $0.frame.minY > 400 }.first
+        guard let faite else { log("série faite ABSENTE"); return }
+        log("avant : \(faite.label)")
+        faite.tap(); pause(1.5)
+        capture("k03-feuille"); arbre("k03-feuille")
+        let valider = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Valider")).firstMatch
+        guard attendre(valider, 4, "feuille-correction") else { return }
+        // la molette : glisser vers la gauche monte les reps
+        let m = valider.frame
+        pt(196, m.minY - 40).press(forDuration: 0.05, thenDragTo: pt(60, m.minY - 40), withVelocity: XCUIGestureVelocity(300), thenHoldForDuration: 0.1)
+        pause(0.8); capture("k04-molette")
+        valider.tap(); pause(1.5)
+        capture("k05-corrigee"); arbre("k05-corrigee")
+        let apres = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", " reps")).allElementsBoundByIndex
+            .filter { $0.frame.minY > 400 }.first?.label ?? "?"
+        log("après : \(apres)")
+    }
 }

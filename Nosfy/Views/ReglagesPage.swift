@@ -99,6 +99,11 @@ struct ReglagesPage: View {
             sectionDepart
                 .padding(.top, 28)
                 .modifier(Arrivee(la: arrivee, rang: 1))
+            // (06-10, « changer la couleur au-delà de la séance en cours ») :
+            // le même choix que le petit bouton du cadran.
+            SectionFlammes()
+                .padding(.top, 28)
+                .modifier(Arrivee(la: arrivee, rang: 1))
             // LE COMPTE (30-09, « rajoute en dessous la partie settings du
             // Profil, design type Apple, en lignes ») : ce que le panneau du
             // Profil portait — la personne, la déconnexion, les conditions,
@@ -523,5 +528,42 @@ private struct LigneAppuyee: ButtonStyle {
         configuration.label
             .background(Color.white.opacity(configuration.isPressed ? 0.07 : 0))
             .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+    }
+}
+
+/// LA COULEUR DES FLAMMES DU CADRAN (06-10) : cinq pastilles, la choisie
+/// cerclée de blanc. Le même réglage que le petit bouton du cadran.
+private struct SectionFlammes: View {
+    @State private var choix = CouleurFlammes.courante
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Etiquette(texte: L("Couleur des flammes", "Flame colour"))
+            HStack(spacing: 14) {
+                ForEach(CouleurFlammes.allCases, id: \.self) { c in
+                    Circle()
+                        .fill(RadialGradient(colors: [c.pastille, c.pastille.opacity(0.55)],
+                                             center: .init(x: 0.4, y: 0.35), startRadius: 2, endRadius: 22))
+                        .frame(width: 38, height: 38)
+                        .overlay(Circle().strokeBorder(.white.opacity(choix == c ? 0.95 : 0.14),
+                                                       lineWidth: choix == c ? 2 : 1).padding(-4))
+                        .frame(width: 50, height: 50)
+                        .contentShape(Circle())
+                        .onTapGesture {
+                            Haptique.leger()
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { choix = c }
+                            CouleurFlammes.courante = c
+                        }
+                        .accessibilityLabel(c.nom)
+                        .accessibilityAddTraits(choix == c ? [.isButton, .isSelected] : .isButton)
+                }
+                Spacer(minLength: 0)
+            }
+            Text(choix == .rouge ? L("Rouge (par défaut)", "Red (default)") : choix.nom)
+                .font(.system(size: 13))
+                .foregroundStyle(.white.opacity(0.5))
+        }
+        .padding(.horizontal, 20)
+        .onAppear { choix = CouleurFlammes.courante }
     }
 }

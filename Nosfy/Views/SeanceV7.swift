@@ -235,6 +235,22 @@ final class SeanceV7Etat {
         }
     }
 
+    /// (06-10) Corriger une série FAITE : ses reps, sa charge, son temps. Le
+    /// serveur suit au prochain envoi (upsert par id) ; les pièces ne bougent
+    /// pas (une série reste une série).
+    func corriger(_ r: RangV7, reps: Int, kilos: Double, secondes: Int,
+                  dans a: Workout, context: ModelContext) {
+        guard let id = r.set,
+              let s = blocs(r.exo, dans: a).compactMap({ $0.sets?.first(where: { $0.persistentModelID == id }) }).first
+        else { return }
+        s.reps = reps
+        s.weight = kilos
+        if secondes > 0 { s.durationSeconds = secondes }
+        try? context.save()
+        WorkoutActivityController.sync(a)
+        print("[seance] série corrigée : \(r.exo) n°\(r.rang + 1) → \(reps) reps · \(kilos) kg")
+    }
+
     func ajouterSerie(_ exo: String) {
         if let i = plan.firstIndex(where: { $0.id == exo }) { plan[i].nombre += 1 }
         completeFetee = false
@@ -293,6 +309,8 @@ struct SeanceV7Page: View {
     /// ouvre la card avec le détail des séries faites ») : ouverte par la
     /// ligne ; la vignette ou le nom, dedans, ouvrent la fiche.
     @State private var playlist: String?
+    /// (06-10) La série faite en cours de correction (la feuille native).
+    @State private var correction: RangV7?
     private var etat: SeanceV7Etat { .shared }
 
     private static let haut: CGFloat = 58
@@ -342,7 +360,8 @@ struct SeanceV7Page: View {
                                        etat.supprimer(r, dans: seance, context: context)
                                        if !etat.plan.contains(where: { $0.id == id }) { playlist = nil }
                                    }
-                               })
+                               },
+                               onCorriger: { r in correction = r })
                     .transition(.move(edge: .bottom))
                     .zIndex(3)
                 }
@@ -375,6 +394,14 @@ struct SeanceV7Page: View {
         .onDisappear { CouvertureFoyer.shared.retirer() }
         .task { await jouerLeBanc() }
         .task(id: complete && pose) { await feterLaSeance() }
+        .sheet(item: $correction) { r in
+            if let e = ExerciseCatalog.exercise(id: r.exo) {
+                FeuilleCorrectionV7(exo: e, r: r) { reps, kilos, secondes in
+                    etat.corriger(r, reps: reps, kilos: kilos, secondes: secondes, dans: seance, context: context)
+                    correction = nil
+                }
+            }
+        }
     }
 
     private var historique: [String: PropositionExo] {
@@ -1221,6 +1248,8 @@ private struct PlaylistV7: View {
     var onLancer: () -> Void
     var onAjouterSerie: () -> Void
     var onSupprimer: (RangV7) -> Void
+    /// (06-10) Toucher une série FAITE : la corriger (reps, kg).
+    var onCorriger: (RangV7) -> Void = { _ in }
 
     /// (05-10, « les overlays pas hyper fluides au drag vers le bas ») : le
     /// décalage hors du corps (`TirerVersLeBas.swift`), le geste sur toute la
@@ -1229,18 +1258,37 @@ private struct PlaylistV7: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Capsule().fill(.white.opacity(0.34)).frame(width: 40, height: 5)
-                .padding(.top, 8)
-            tete
-                .padding(.top, 14)
-                .contentShape(Rectangle())
+            // ⚠️ 06-10 (TestFlight 90 : « au-delà de 10 séries le scroll bug,
+            // on a du mal à avoir Ajouter ») : la feuille se tire par SA TÊTE
+            // seule — tirée par toute sa surface, un défilement vers le haut
+            // emportait la feuille au lieu de la liste.
+            VStack(spacing: 0) {
+                Capsule().fill(.white.opacity(0.34)).frame(width: 40, height: 5)
+                    .padding(.top, 8)
+                tete
+                    .padding(.top, 14)
+            }
+            .contentShape(Rectangle())
+            .gesture(tirage.geste(onFermer: onFermer))
             ScrollView {
                 VStack(spacing: 0) {
                     ForEach(rangs) { r in
                         PisteV7(exo: exo, r: r, prochaine: prochaine == r.rang && !r.fait,
-                                onLancer: onLancer, onSupprimer: { onSupprimer(r) })
+                                onLancer: onLancer, onSupprimer: { onSupprimer(r) },
+                                onCorriger: { onCorriger(r) })
                     }
-                    if exo.tracking == .setsRepsWeight {
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 6)
+                .padding(.bottom, 8)
+            }
+            .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
+            // « Ajouter une série » HORS de la liste, toujours visible sous elle.
+            if exo.tracking == .setsRepsWeight {
+                Rectangle().fill(.white.opacity(0.08)).frame(height: 0.5)
+                    .padding(.horizontal, 28)
+                Group {
                         // Un toucher, pas un `Button` : un tirage de la feuille
                         // qui part d'ici ne doit pas ajouter de série (05-10).
                         HStack(spacing: 16) {
@@ -1257,14 +1305,10 @@ private struct PlaylistV7: View {
                         .contentShape(Rectangle())
                         .onTapGesture { Haptique.leger(); onAjouterSerie() }
                         .accessibilityAddTraits(.isButton)
-                    }
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 6)
-                .padding(.bottom, 24)
+                .padding(.bottom, 18)
             }
-            .scrollIndicators(.hidden)
-            .scrollBounceBehavior(.basedOnSize)
         }
         .foregroundStyle(.white)
         .frame(maxWidth: .infinity)
@@ -1277,8 +1321,6 @@ private struct PlaylistV7: View {
                                          startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1))
         .padding(.horizontal, 8)
         .padding(.bottom, 8)
-        .contentShape(Rectangle())
-        .simultaneousGesture(tirage.geste(onFermer: onFermer))
         .modifier(DecalageTirage(etat: tirage))
         .frame(maxHeight: .infinity, alignment: .bottom)
     }
@@ -1335,6 +1377,7 @@ private struct PisteV7: View {
     let prochaine: Bool
     var onLancer: () -> Void
     var onSupprimer: () -> Void
+    var onCorriger: () -> Void = {}
     @State private var dx: CGFloat = 0
     @State private var ouvert = false
     private static let rouge: CGFloat = 92
@@ -1409,7 +1452,9 @@ private struct PisteV7: View {
         .contentShape(Rectangle())
         .onTapGesture {
             if ouvert { withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { ouvert = false }; return }
-            if prochaine { onLancer() } else { Haptique.leger() }
+            if prochaine { onLancer() }
+            else if r.fait, r.set != nil, exo.tracking == .setsRepsWeight { Haptique.leger(); onCorriger() }
+            else { Haptique.leger() }
         }
         .simultaneousGesture(glisser, isEnabled: supprimable)
     }
@@ -2438,4 +2483,55 @@ private struct FeuilleAjoutV7: View {
         .buttonStyle(.plain)
     }
 
+}
+
+// MARK: - Corriger une série faite (06-10)
+
+/// « Modifier une série existante, juste ajuster reps et kilos quand je me
+/// trompe » : la NOTE du cadran (ses valeurs entre deux traits, sa molette,
+/// « Valider »), dans une feuille native courte.
+struct FeuilleCorrectionV7: View {
+    let exo: Exercise
+    let r: RangV7
+    var onEnregistrer: (Int, Double, Int) -> Void
+    @State private var reps: Int
+    @State private var kilos: Double
+    @State private var secondes: Int
+    @State private var repos = 60
+
+    init(exo: Exercise, r: RangV7, onEnregistrer: @escaping (Int, Double, Int) -> Void) {
+        self.exo = exo; self.r = r; self.onEnregistrer = onEnregistrer
+        var re = 10, ki = 20.0, se = 0
+        if case .serie(let a, let b)? = r.ligne?.genre { re = a; ki = b }
+        se = r.ligne?.seconds ?? 0
+        _reps = State(initialValue: re)
+        _kilos = State(initialValue: ki)
+        _secondes = State(initialValue: se)
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text(L("SÉRIE \(r.rang + 1) · ", "SET \(r.rang + 1) · ") + exo.nomLocalise.uppercased())
+                .font(.inter(12.5, .medium))
+                .tracking(3.0)
+                .foregroundStyle(.white.opacity(0.46))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .padding(.horizontal, 24)
+                .padding(.top, 26)
+                .padding(.bottom, 18)
+            NoteV15(saisie: exo.saisie, rang: r.rang + 1, derniere: nil, avecRepos: false,
+                    reps: $reps, kilos: $kilos, repos: $repos, secondes: $secondes) {
+                Haptique.moyen()
+                onEnregistrer(reps, kilos, secondes)
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity)
+        .background(Color.black.ignoresSafeArea())
+        .presentationDetents([.height(330)])
+        .presentationBackground(.black)
+        .presentationCornerRadius(38)
+        .preferredColorScheme(.dark)
+    }
 }

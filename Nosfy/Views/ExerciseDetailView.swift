@@ -908,6 +908,7 @@ struct ExerciseDetailView: View {
                     strengthPage
                 }
             }
+            .modifier(CorrectionSerieV15(item: $correctionV15, corriger: corrigerSerieV15))
             // LA SÉANCE FERMÉE SOUS LA SCÈNE (16-09, relecture) : un STOP par
             // la pilule (montée à la racine, au-dessus de la fiche) termine la
             // séance pendant que le double galet tourne. La scène ne doit
@@ -3789,6 +3790,14 @@ struct ExerciseDetailView: View {
         let logged: LoggedExercise
         if let deja = bloc, deja.workout === seance {
             logged = deja
+        } else if SeanceV7.actif,
+                  let existant = seance.orderedExercises.last(where: { $0.exerciseID == exercise.id }) {
+            // ⚠️ 06-10 (TestFlight 90 : son Woodchopper en CINQ blocs dans la
+            // même séance, 1 + 4 + 5 + 3 + 3) : chaque retour sur la fiche
+            // ouvrait un bloc neuf. En séance, UN bloc par exercice — comme le
+            // cardio depuis le 02-10 ; les séries s'y suivent.
+            logged = existant
+            bloc = existant
         } else {
             logged = LoggedExercise(exerciseID: exercise.id,
                                     order: seance.exerciseCount,
@@ -3970,7 +3979,23 @@ struct ExerciseDetailView: View {
                 }
             },
             // (05-10) La piste k glissée : la même suppression que la page.
-            onSupprimerSerie: { k in supprimerSerieV15(k, dans: a) })
+            onSupprimerSerie: { k in supprimerSerieV15(k, dans: a) },
+            // (06-10) La piste k faite, touchée : la corriger.
+            onCorrigerSerie: { k in
+                let etat = SeanceV7Etat.shared
+                guard let p = etat.plan.first(where: { $0.id == exercise.id }) else { return }
+                let rangs = etat.rangs(p, exo: exercise, dans: a)
+                if rangs.indices.contains(k - 1), rangs[k - 1].fait { correctionV15 = rangs[k - 1] }
+            })
+    }
+
+    /// (06-10) La série faite que l'onglet Séries corrige.
+    @State private var correctionV15: RangV7?
+
+    private func corrigerSerieV15(_ r: RangV7, _ reps: Int, _ kilos: Double, _ secondes: Int) {
+        guard let a = active else { return }
+        SeanceV7Etat.shared.corriger(r, reps: reps, kilos: kilos, secondes: secondes, dans: a, context: context)
+        correctionV15 = nil
     }
 
     private func supprimerSerieV15(_ k: Int, dans a: Workout) {
@@ -4067,11 +4092,17 @@ struct ExerciseDetailView: View {
         restSeconds = f.rest
         settleSeries(f, coins: true)
         // Le rang se lit comme dans `finirSerie` : l'écriture est différée.
-        let ecrites = sets.filter(\.isDone).count
+        // ⚠️ 06-10 (TestFlight 90 : « la pop-up dit +3 alors que je suis à 12
+        // séries de Woodchopper ») : les séries de CET exercice dans TOUTE la
+        // séance — tous ses passages —, jamais celles de la seule fiche, et
+        // jamais cumulées avec les autres exercices (sa règle du 06-10).
+        let ecrites = active.map { faitesEnSeanceV15(exercise.id, $0) } ?? sets.filter(\.isDone).count
         let dejaEcrite = sets.indices.contains(f.index) && sets[f.index].isDone
         let rang = max(dejaEcrite ? ecrites : ecrites + 1, 1)
         rangIssue = rang
-        issueV15Fin = derniere
+        // (06-10) La dernière série a son repos : c'est la fin du repos (le
+        // cadran, `finirReposV15`) qui rend la page, plus la fin du toaster.
+        issueV15Fin = derniere && o.restSeconds <= 0
         let issue = DecideurSerie.pour(serie: rang,
                                        gain: gainParSerie,
                                        total: rang * gainParSerie,
@@ -4477,5 +4508,22 @@ struct ArriveeDouce: ViewModifier {
             .offset(y: vu ? 0 : 16)
             .scaleEffect(vu ? 1 : 1.04, anchor: .leading)
             .animation(.easeInOut(duration: 1.6).delay(retard), value: vu)
+    }
+}
+
+/// La feuille de correction d'une série faite, posée hors de la chaîne du
+/// corps de la fiche (le mur du type-checker).
+private struct CorrectionSerieV15: ViewModifier {
+    @Binding var item: RangV7?
+    let corriger: (RangV7, Int, Double, Int) -> Void
+
+    func body(content: Content) -> some View {
+        content.sheet(item: $item) { r in
+            if let e = ExerciseCatalog.exercise(id: r.exo) {
+                FeuilleCorrectionV7(exo: e, r: r) { reps, kilos, secondes in
+                    corriger(r, reps, kilos, secondes)
+                }
+            }
+        }
     }
 }

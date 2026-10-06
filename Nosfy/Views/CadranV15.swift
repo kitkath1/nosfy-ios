@@ -61,12 +61,24 @@ struct CommandesV15 {
     /// (05-10, « supprimer une série, même dans la partie cadran ») : la
     /// piste k (de 1) glissée vers la gauche — une prévue, ou une faite.
     var onSupprimerSerie: (Int) -> Void = { _ in }
+    /// (06-10, « modifier une série existante, juste reps et kilos ») : la
+    /// piste k (de 1), FAITE, touchée.
+    var onCorrigerSerie: (Int) -> Void = { _ in }
 
     /// Ce que le slider porte écrit : la PROCHAINE étape, quelle qu'elle soit.
     /// `versAutre` : la prochaine étape est l'exercice suivant. `prete` : la
     /// série prête est celle que le cadran porte déjà (sinon, la suivante).
+    /// La toute dernière série de la séance : ni série ni exercice après elle.
+    var derniereDeLaSeance: Bool { !aSuivante && ensuite == nil }
+
     func legende(_ saisie: Exercise.Saisie, prete: Bool, versAutre: Bool)
         -> (titre: String, sous: String) {
+        // (06-10, « repos comme les autres exos ! ») : le repos d'après la
+        // dernière série rend la page, où la séance se termine.
+        if !prete, derniereDeLaSeance {
+            return (L("Retour à la séance", "Back to the session"),
+                    L("Toutes tes séries sont faites", "All your sets are done"))
+        }
         // Jamais de reps ni de poids prévus (02-10, « on ne sait pas à
         // l'avance ») : le titre et le nom, c'est tout.
         if versAutre, let e = ensuite {
@@ -238,7 +250,7 @@ struct ChromeV15: View {
         let place = L("\(v.rang) sur \(v.total)", "\(v.rang) of \(v.total)")
         switch p {
         case .repos:
-            return v.ensuite.map { L("Ensuite : ", "Next: ") + $0 } ?? ""
+            return v.ensuite.map { L("Ensuite : ", "Next: ") + $0 } ?? L("Dernier repos", "Last rest")
         case .effort: return L("en cours", "in progress") + " · \(place)"
         case .note: return L("à noter", "to log") + " · \(place)"
         case .prete where pretAutre: return L("exercice suivant", "next exercise")
@@ -554,35 +566,39 @@ private struct AlbumV15: View {
     /// sa valeur, celle qui se joue avec l'égaliseur, les prochaines par leur
     /// numéro — et « Ajouter une série » au bout. Rien d'autre.
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            if let x = ici {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(1...max(1, x.total), id: \.self) { k in
-                        GlisserPourSupprimerV15(actif: supprimable(x, k),
-                                                onSupprimer: { v.onSupprimerSerie(k) }) { ligne(x, k) }
-                            .opacity(montre ? 1 : 0)
-                            .offset(y: montre ? 0 : 10)
-                            .animation(.spring(response: 0.55, dampingFraction: 0.88)
-                                .delay(0.045 * Double(k)), value: montre)
+        VStack(spacing: 0) {
+            ScrollView(showsIndicators: false) {
+                if let x = ici {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(1...max(1, x.total), id: \.self) { k in
+                            GlisserPourSupprimerV15(actif: supprimable(x, k),
+                                                    onSupprimer: { v.onSupprimerSerie(k) }) { ligne(x, k) }
+                                .opacity(montre ? 1 : 0)
+                                .offset(y: montre ? 0 : 10)
+                                .animation(.spring(response: 0.55, dampingFraction: 0.88)
+                                    .delay(0.045 * Double(min(k, 12))), value: montre)
+                        }
                     }
-                    if x.exercice.tracking == .setsRepsWeight {
-                        ajouter
-                            .opacity(montre ? 1 : 0)
-                            .animation(.spring(response: 0.55, dampingFraction: 0.88)
-                                .delay(0.045 * Double(x.total + 1)), value: montre)
-                    }
+                    .padding(.horizontal, 28)
+                    .padding(.vertical, 18)
                 }
-                .padding(.horizontal, 28)
-                .padding(.vertical, 18)
+            }
+            .mask(
+                LinearGradient(stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: .black, location: 0.07),
+                    .init(color: .black, location: 0.88),
+                    .init(color: .clear, location: 1),
+                ], startPoint: .top, endPoint: .bottom))
+            // (06-10, « au-delà de 10 séries, du mal à avoir Ajouter ») :
+            // « Ajouter une série » HORS de la liste, toujours visible.
+            if let x = ici, x.exercice.tracking == .setsRepsWeight {
+                ajouter
+                    .padding(.horizontal, 28)
+                    .opacity(montre ? 1 : 0)
+                    .animation(.spring(response: 0.55, dampingFraction: 0.88).delay(0.2), value: montre)
             }
         }
-        .mask(
-            LinearGradient(stops: [
-                .init(color: .clear, location: 0),
-                .init(color: .black, location: 0.07),
-                .init(color: .black, location: 0.88),
-                .init(color: .clear, location: 1),
-            ], startPoint: .top, endPoint: .bottom))
         .onAppear { montre = true }
     }
 
@@ -614,6 +630,7 @@ private struct AlbumV15: View {
         let valeur = e == .fait && k <= x.faites.count ? x.faites[k - 1]
             : L("Série \(k)", "Set \(k)")
         let lumiere = e == .joue || e == .prete
+        let corrigeable = e == .fait && k <= x.faites.count && x.exercice.tracking == .setsRepsWeight
         return HStack(spacing: 16) {
             ZStack {
                 switch e {
@@ -645,6 +662,8 @@ private struct AlbumV15: View {
         }
         .frame(height: 54)
         .padding(.horizontal, 12)
+        .contentShape(Rectangle())
+        .onTapGesture { if corrigeable { Haptique.leger(); v.onCorrigerSerie(k) } }
         .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
             .fill(.white.opacity(e == .joue ? 0.09 : 0)))
         .overlay(alignment: .bottom) {
@@ -777,7 +796,7 @@ private struct PointEnCours: View {
 /// molette comme le zoom de l'appareil photo, ton repos en segments, Valider.
 /// La feuille d'avant a été refusée (« beaucoup trop gros ») : tout tient
 /// sous le cadran, qui reste visible au-dessus.
-private struct NoteV15: View {
+struct NoteV15: View {
     let saisie: Exercise.Saisie
     let rang: Int
     let derniere: String?

@@ -1223,7 +1223,9 @@ struct LiquidLensLab: View {
         // LE REPOS VIENT APRÈS CHAQUE SÉRIE (01-10, « grosse erreur, il manque
         // le repos ») — la dernière de l'exercice comprise, avant l'exercice
         // suivant. Seule la toute dernière de la séance part en envol.
-        if v.aSuivante || v.ensuite != nil {
+        // (06-10, « repos comme les autres exos ! ») : la DERNIÈRE de la séance
+        // a son repos aussi ; à sa fin, le cadran rend la page (finirReposV15).
+        if v.aSuivante || v.ensuite != nil || repos > 0 {
             #if DEBUG
             restDuration = Self.v15Auto ? 5 : repos
             #else
@@ -1241,6 +1243,12 @@ struct LiquidLensLab: View {
     private func lancerSuivanteV15(_ d: Date) {
         guard let v = v15, envolAt == nil, notantDepuis == nil,
               restStart != nil || pretV15 else { return }
+        // Le dernier repos : le slider rend la page (06-10).
+        if !pretV15, v.derniereDeLaSeance {
+            restStart = nil
+            v.onReduire()
+            return
+        }
         // L'exercice suivant : sa fiche le lance, ce cadran se retire.
         if pretV15 ? pretAutre : !v.aSuivante { v.onExerciceSuivant(); return }
         if !pretV15 {
@@ -1255,6 +1263,14 @@ struct LiquidLensLab: View {
     }
 
     private func finirReposV15(_ d: Date) {
+        // Le repos de la toute dernière série : la page de séance, où l'on
+        // termine — jamais une série de plus inventée (06-10).
+        if v15?.derniereDeLaSeance == true {
+            restStart = nil
+            Haptique.moyen()
+            v15?.onReduire()
+            return
+        }
         restStart = nil
         retourAt = d
         pretV15 = true
