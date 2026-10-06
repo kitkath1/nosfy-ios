@@ -2053,8 +2053,17 @@ private struct CommandeTapis: View {
             // ⚠️ UN TOUCHER, COURT OU APPUYÉ, FAIT L'ACTE (05-10, TestFlight 87 :
             // « quand je cours, rien ne marche ») — plus de « maintenir pour
             // terminer » : Terminer a son bouton, en pause.
-            MedaillonStop(symbol: l.symbole, taille: 88)
-                .allowsHitTesting(false)
+            ZStack {
+                // LA FLAMME DIT L'ÉTAT (06-10, « que je puisse facilement
+                // comprendre quand arrêter et reprendre, avec une animation de
+                // couleurs de flamme ») : elle bat vite autour du Stop pendant
+                // l'effort, elle respire lentement autour du ▶ quand tout
+                // attend son doigt. `id` : chaque état relance son rythme.
+                HaloFlamme(vif: seance.etat == .court)
+                    .id(seance.etat == .court)
+                MedaillonStop(symbol: l.symbole, taille: 88)
+                    .allowsHitTesting(false)
+            }
                 .scaleEffect(presse ? 0.92 : 1)
                 .animation(.spring(response: 0.22, dampingFraction: 0.6), value: presse)
                 .frame(width: 112, height: 112)
@@ -2076,6 +2085,48 @@ private struct CommandeTapis: View {
                 .foregroundStyle(.white.opacity(0.66))
         }
         .animation(.easeOut(duration: 0.25), value: l.symbole)
+    }
+}
+
+// MARK: - La flamme du bouton à toucher (06-10)
+
+/// Un anneau de braise autour du médaillon, et sa lueur : deux couches de
+/// couleur (rouge de braise, orange de flamme) qui se relaient. Aucune
+/// rotation, aucun balayage : la couleur bat, c'est tout. `vif` : l'effort
+/// (un battement de 0,55 s, plus large) ; sinon l'attente (une respiration
+/// de 1,6 s, plus sourde). Des valeurs animées en `repeatForever`, jamais
+/// une horloge (skill perf).
+private struct HaloFlamme: View {
+    var vif: Bool
+    @State private var phase = false
+    private static let rouge = Color(red: 0.86, green: 0.18, blue: 0.04)
+    private static let orange = Color(red: 1.0, green: 0.56, blue: 0.20)
+
+    var body: some View {
+        ZStack {
+            // La lueur, sans flou : un dégradé radial qui s'éteint vite, collé
+            // au disque (06-10 : la première, trop large, mordait le mot).
+            Circle()
+                .fill(RadialGradient(colors: [(phase ? Self.orange : Self.rouge).opacity(vif ? 0.34 : 0.22), .clear],
+                                     center: .center, startRadius: 44, endRadius: 62))
+                .frame(width: 124, height: 124)
+            Circle()
+                .strokeBorder(Self.rouge, lineWidth: 1.5)
+                .frame(width: 100, height: 100)
+                .opacity(phase ? 0.2 : 0.85)
+            Circle()
+                .strokeBorder(Self.orange, lineWidth: 1.5)
+                .frame(width: 100, height: 100)
+                .opacity(phase ? 0.85 : 0.2)
+        }
+        .frame(width: 100, height: 100)
+        .scaleEffect(phase ? (vif ? 1.06 : 1.03) : 1)
+        .allowsHitTesting(false)
+        .onAppear {
+            withAnimation(.easeInOut(duration: vif ? 0.55 : 1.6).repeatForever(autoreverses: true)) {
+                phase = true
+            }
+        }
     }
 }
 

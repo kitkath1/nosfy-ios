@@ -98,4 +98,84 @@ final class CardioUITests: XCTestCase {
         toucherSousMot("Terminer"); pause(2.5)
         capture("t04-fin"); arbre("t04-fin")
     }
+
+    // MARK: 06-10 — la vitesse dans tous les sens, et le contrôle total
+
+    /// Le km/h affiché dans la pastille du bas (un nombre seul, au milieu de l'écran).
+    func vitesse() -> String {
+        let t = app.staticTexts.allElementsBoundByIndex.filter {
+            !$0.label.isEmpty && $0.label.allSatisfy(\.isNumber) && $0.frame.midY > 380 && $0.frame.midY < 620
+        }
+        return t.first?.label ?? "?"
+    }
+    func moins(_ n: Int) {
+        let b = app.buttons["Moins vite"]
+        guard attendre(b, 10, "moins") else { return }
+        for _ in 0..<n { b.tap(); pause(0.2) }
+    }
+    func verifier(_ attendu: String, _ quoi: String) {
+        let v = vitesse()
+        log("\(v == attendu ? "OK" : "KO") \(quoi) : \(v) (attendu \(attendu))")
+        XCTAssertEqual(v, attendu, quoi)
+    }
+
+    func test03_vitesse_hiit() {
+        lancer(["-skipAuth", "-sansPlafond", "-demoData", "-goAuto", "-bancHiit", "direct"])
+        guard attendre(boutonDuBas("Go"), 60, "go") else { return }
+        pause(1.5); capture("v01-pret")
+        verifier("0", "au départ")
+        plus(5); verifier("5", "+ ×5")
+        app.buttons["Plus vite"].press(forDuration: 2.6); pause(0.5)
+        verifier("20", "maintenir + jusqu'à la butée")
+        moins(25); verifier("0", "− ×25, plancher")
+        plus(12); verifier("12", "+ ×12")
+        capture("v02-12-avant-go")
+        // contrôle total : rien ne part seul
+        pause(5); log("après 5 s sans toucher : go = \(boutonDuBas("Go").exists)")
+        XCTAssertTrue(boutonDuBas("Go").exists, "rien ne part seul")
+        boutonDuBas("Go").tap(); pause(2)
+        verifier("12", "le GO garde la vitesse")
+        capture("v03-effort")
+        // toucher la pastille du chrono en courant : rien
+        pt(196, 0.315 * app.frame.height).tap(); pause(1)
+        log("toucher la pastille : stop toujours là = \(app.buttons["Stop"].exists)")
+        XCTAssertTrue(app.buttons["Stop"].exists, "la pastille n'arrête rien")
+        plus(2); verifier("14", "+ ×2 pendant l'effort")
+        pause(6)   // rien ne s'arrête seul
+        XCTAssertTrue(app.buttons["Stop"].exists, "rien ne s'arrête seul")
+        app.buttons["Stop"].tap(); pause(1.5)
+        capture("v04-pause")
+        verifier("0", "après Stop")
+        pause(6); log("pause tenue 6 s : terminer = \(app.staticTexts["Terminer"].exists)")
+        XCTAssertTrue(app.staticTexts["Terminer"].exists, "la pause attend")
+        plus(8); verifier("8", "+ ×8 en pause")
+        toucherSousMot("Reprendre"); pause(2)
+        verifier("8", "Reprendre garde la vitesse")
+        capture("v05-set2")
+        pause(2)
+        app.buttons["Stop"].tap(); pause(1.5)
+        toucherSousMot("Terminer"); pause(2.5)
+        capture("v06-fin"); arbre("v06-fin")
+        let lignes = app.staticTexts.allElementsBoundByIndex.map(\.label).filter { $0.contains("km/h") }
+        log("fin : \(lignes)")
+        XCTAssertTrue(lignes.contains { $0.hasSuffix("· 14 km/h") }, "set 1 à 14")
+        XCTAssertTrue(lignes.contains { $0.hasSuffix("· 8 km/h") }, "set 2 à 8")
+        XCTAssertTrue(lignes.contains("14 km/h"), "max 14")
+    }
+
+    func test04_escalier() {
+        lancer(["-skipAuth", "-sansPlafond", "-openTab", "exercises", "-openExercise", "escalier", "-departSerieAuto"])
+        guard attendre(boutonDuBas("Go"), 40, "go") else { return }
+        pause(1.5); capture("e01-pret")
+        moins(10); verifier("1", "− ×10, niveau plancher")
+        plus(20); verifier("15", "+ ×20, niveau plafond")
+        moins(6); verifier("9", "− ×6")
+        boutonDuBas("Go").tap(); pause(3)
+        verifier("9", "le GO garde le niveau")
+        capture("e02-effort")
+        app.buttons["Pause"].tap(); pause(1.5)
+        capture("e03-pause")
+        toucherSousMot("Terminer"); pause(2.5)
+        capture("e04-fin")
+    }
 }

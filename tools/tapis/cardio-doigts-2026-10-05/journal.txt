@@ -28,3 +28,49 @@ Test Case '-[NosfyUITests.CardioUITests test02_tapis_lent]' passed (40.571 secon
 Test Suite 'CardioUITests' passed at 2026-10-05 19:18:58.545.
 Test Suite 'NosfyUITests.xctest' passed at 2026-10-05 19:18:58.546.
 Test Suite 'Selected tests' passed at 2026-10-05 19:18:58.548.
+BEB go : trouvé
+BEB capture e01-pret
+BEB moins : trouvé
+BEB OK − ×10, niveau plancher : 1 (attendu 1)
+BEB plus : trouvé
+BEB OK + ×20, niveau plafond : 15 (attendu 15)
+BEB moins : trouvé
+BEB OK − ×6 : 9 (attendu 9)
+BEB OK le GO garde le niveau : 9 (attendu 9)
+BEB capture e02-effort
+BEB capture e03-pause
+BEB capture e04-fin
+Test Case '-[NosfyUITests.CardioUITests test04_escalier]' passed (48.877 seconds).
+Test Suite 'CardioUITests' passed at 2026-10-06 10:32:30.289.
+Test Suite 'NosfyUITests.xctest' passed at 2026-10-06 10:32:30.289.
+Test Suite 'Selected tests' passed at 2026-10-06 10:32:30.290.
+BEB go : trouvé
+BEB capture v01-pret
+BEB OK au départ : 0 (attendu 0)
+BEB plus : trouvé
+BEB OK + ×5 : 5 (attendu 5)
+BEB OK maintenir + jusqu'à la butée : 20 (attendu 20)
+BEB moins : trouvé
+BEB OK − ×25, plancher : 0 (attendu 0)
+BEB plus : trouvé
+BEB OK + ×12 : 12 (attendu 12)
+BEB capture v02-12-avant-go
+BEB après 5 s sans toucher : go = true
+BEB OK le GO garde la vitesse : 12 (attendu 12)
+BEB capture v03-effort
+BEB toucher la pastille : stop toujours là = true
+BEB plus : trouvé
+BEB OK + ×2 pendant l'effort : 14 (attendu 14)
+BEB capture v04-pause
+BEB OK après Stop : 0 (attendu 0)
+BEB pause tenue 6 s : terminer = true
+BEB plus : trouvé
+BEB OK + ×8 en pause : 8 (attendu 8)
+BEB OK Reprendre garde la vitesse : 8 (attendu 8)
+BEB capture v05-set2
+BEB capture v06-fin
+BEB fin : ["km/h", "ENREGISTRÉ, 2 SETS · 0:16, Pas 20 s à 15 km/h, moins de 5 min · pas payé", "0:12 · 14 km/h", "0:04 · 8 km/h", "14 km/h", "Pas 20 s à 15 km/h, moins de 5 min · pas payé"]
+Test Case '-[NosfyUITests.CardioUITests test03_vitesse_hiit]' passed (98.176 seconds).
+Test Suite 'CardioUITests' passed at 2026-10-06 10:35:13.439.
+Test Suite 'NosfyUITests.xctest' passed at 2026-10-06 10:35:13.439.
+Test Suite 'Selected tests' passed at 2026-10-06 10:35:13.439.
