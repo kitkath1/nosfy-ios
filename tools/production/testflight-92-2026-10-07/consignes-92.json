@@ -1,0 +1,65 @@
+{
+  "mesure_utc": "2026-10-07T14:22:32+00:00",
+  "ecriture": [
+    {
+      "locale": "fr-FR",
+      "http": 200,
+      "reponse": {
+        "data": {
+          "type": "betaBuildLocalizations",
+          "id": "ef7cc138-d774-472c-a0cf-7c874f41305f",
+          "attributes": {
+            "whatsNew": "Build 92 — LA FLAMME AU STOP DE MUSCU, LES CHEVRONS MÉDAILLONS, LES POP-UPS PAR EXERCICE.\n\n1) LE STOP DE MUSCU : pendant l'effort, l'anneau de flamme bat autour, comme au cardio, de la même taille ; il prend la couleur des flammes que tu as choisie.\n\n2) TOUS LES CHEVRONS sont des médaillons : fiche, cadran, Profil, Réglages, Exercices, Route.\n\n3) LES POP-UPS D'ANNONCE : aux séries 3, 5 et 10 de CHAQUE exercice ; une seule vidéo de pièces et une seule vidéo rare par séance.\n\n4) LA STORY DE FIN : chaque exercice une seule fois, avec toutes ses séries.\n\n5) RAJOUTER UN EXERCICE DÉJÀ PRÉSENT lui ajoute une série. CORRIGER UNE SÉRIE : touche-la, la feuille se retourne en éditeur.\n\nÀ dire surtout : les pop-ups tombent-elles au bon moment ? La story montre-t-elle chaque exercice une seule fois ?\n\nTeste le parcours complet avec un compte neuf :\n• Connecte-toi avec Apple, puis choisis ta langue, ton prénom et ton objectif.\n• Vérifie que les séances, les pièces, les boosters et la collection commencent à zéro.\n• Fais une séance de musculation ou de cardio et termine-la.\n• Consulte les stories et les récompenses, puis l’animation du galet accompli.\n• Ouvre le booster gagné et retrouve la carte dans ta collection.\n• Touche un jour fait dans le widget Regularity pour revoir sa séance. Si tu as fait plusieurs séances ce jour-là, choisis celle à revoir.\n• Déconnecte-toi puis reconnecte-toi : tes séances, leurs reçus et ta collection doivent revenir sans gain en double.\n• Reviens un autre jour pour vérifier le retour quotidien.\n\nEn cas de problème, indique l’étape, le modèle d’iPhone, la version d’iOS et joins une capture via TestFlight.",
+            "locale": "fr-FR"
+          },
+          "relationships": {
+            "build": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/ef7cc138-d774-472c-a0cf-7c874f41305f/relationships/build",
+                "related": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/ef7cc138-d774-472c-a0cf-7c874f41305f/build"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/ef7cc138-d774-472c-a0cf-7c874f41305f"
+          }
+        },
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/ef7cc138-d774-472c-a0cf-7c874f41305f"
+        }
+      }
+    },
+    {
+      "locale": "en-GB",
+      "http": 200,
+      "reponse": {
+        "data": {
+          "type": "betaBuildLocalizations",
+          "id": "255c409c-7b86-48e9-b2cf-fef182bf0ac9",
+          "attributes": {
+            "whatsNew": "Build 92 — FLAME ON THE STRENGTH STOP, MEDALLION CHEVRONS, PER-EXERCISE POP-UPS.\n\n1) STRENGTH STOP: during the effort, the flame ring beats around it, as in cardio, same size; it takes your chosen flame colour.\n\n2) ALL CHEVRONS are medallions: exercise page, dial, Profile, Settings, Exercises, Path.\n\n3) ANNOUNCEMENT POP-UPS: at sets 3, 5 and 10 of EACH exercise; one coin video and one rare video per session.\n\n4) END STORY: each exercise once, with all its sets.\n\n5) ADDING AN EXERCISE ALREADY THERE adds a set. EDIT A SET: tap it, the sheet turns into an editor.\n\nTell me above all: do pop-ups land at the right moment? Does the story show each exercise once?\n\nTest the full experience with a new account:\n• Sign in with Apple, then choose your language, name and goal.\n• Check that workouts, coins, boosters and your collection start empty.\n• Complete a strength or cardio workout.\n• View the session stories, rewards and completed pebble animation.\n• Open the earned booster and find the card in your collection.\n• Tap a completed day in the Regularity widget to revisit its workout. Choose a session when the day contains several.\n• Sign out and back in: workouts, reward receipts and your collection should return without duplicate rewards.\n• Return on another day to check the daily return.\n\nIf something goes wrong, include the step, iPhone model, iOS version and a screenshot through TestFlight.",
+            "locale": "en-GB"
+          },
+          "relationships": {
+            "build": {
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/255c409c-7b86-48e9-b2cf-fef182bf0ac9/relationships/build",
+                "related": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/255c409c-7b86-48e9-b2cf-fef182bf0ac9/build"
+              }
+            }
+          },
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/255c409c-7b86-48e9-b2cf-fef182bf0ac9"
+          }
+        },
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/betaBuildLocalizations/255c409c-7b86-48e9-b2cf-fef182bf0ac9"
+        }
+      }
+    }
+  ],
+  "relecture": {
+    "en-GB": "Build 92 — FLAME ON THE STRENGTH STOP, MEDALLION CHEVRONS, PER-EXERCISE POP-UPS.\n\n1) STRENGTH STOP: during the effort, the flame ring beats around it, as in cardio, same size; it takes your chosen flame colour.\n\n2) ALL CHEVRONS are medallions: exercise page, dial, Profile, Settings, Exercises, Path.\n\n3) ANNOUNCEMENT POP-UPS: at sets 3, 5 and 10 of EACH exercise; one coin video and one rare video per session.\n\n4) END STORY: each exercise once, with all its sets.\n\n5) ADDING AN EXERCISE ALREADY THERE adds a set. EDIT A SET: tap it, the sheet turns into an editor.\n\nTell me above all: do pop-ups land at the right moment? Does the story show each exercise once?\n\nTest the full experience with a new account:\n• Sign in with Apple, then choose your language, name and goal.\n• Check that workouts, coins, boosters and your collection start empty.\n• Complete a strength or cardio workout.\n• View the session stories, rewards and completed pebble animation.\n• Open the earned booster and find the card in your collection.\n• Tap a completed day in the Regularity widget to revisit its workout. Choose a session when the day contains several.\n• Sign out and back in: workouts, reward receipts and your collection should return without duplicate rewards.\n• Return on another day to check the daily return.\n\nIf something goes wrong, include the step, iPhone model, iOS version and a screenshot through TestFlight.",
+    "fr-FR": "Build 92 — LA FLAMME AU STOP DE MUSCU, LES CHEVRONS MÉDAILLONS, LES POP-UPS PAR EXERCICE.\n\n1) LE STOP DE MUSCU : pendant l'effort, l'anneau de flamme bat autour, comme au cardio, de la même taille ; il prend la couleur des flammes que tu as choisie.\n\n2) TOUS LES CHEVRONS sont des médaillons : fiche, cadran, Profil, Réglages, Exercices, Route.\n\n3) LES POP-UPS D'ANNONCE : aux séries 3, 5 et 10 de CHAQUE exercice ; une seule vidéo de pièces et une seule vidéo rare par séance.\n\n4) LA STORY DE FIN : chaque exercice une seule fois, avec toutes ses séries.\n\n5) RAJOUTER UN EXERCICE DÉJÀ PRÉSENT lui ajoute une série. CORRIGER UNE SÉRIE : touche-la, la feuille se retourne en éditeur.\n\nÀ dire surtout : les pop-ups tombent-elles au bon moment ? La story montre-t-elle chaque exercice une seule fois ?\n\nTeste le parcours complet avec un compte neuf :\n• Connecte-toi avec Apple, puis choisis ta langue, ton prénom et ton objectif.\n• Vérifie que les séances, les pièces, les boosters et la collection commencent à zéro.\n• Fais une séance de musculation ou de cardio et termine-la.\n• Consulte les stories et les récompenses, puis l’animation du galet accompli.\n• Ouvre le booster gagné et retrouve la carte dans ta collection.\n• Touche un jour fait dans le widget Regularity pour revoir sa séance. Si tu as fait plusieurs séances ce jour-là, choisis celle à revoir.\n• Déconnecte-toi puis reconnecte-toi : tes séances, leurs reçus et ta collection doivent revenir sans gain en double.\n• Reviens un autre jour pour vérifier le retour quotidien.\n\nEn cas de problème, indique l’étape, le modèle d’iPhone, la version d’iOS et joins une capture via TestFlight."
+  }
+}

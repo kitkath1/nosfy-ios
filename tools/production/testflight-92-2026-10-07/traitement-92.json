@@ -1,0 +1,18 @@
+{
+  "mesure_utc": "2026-10-07T14:22:29+00:00",
+  "http": 200,
+  "build": {
+    "type": "builds",
+    "id": "15c9fecd-32ad-453f-aace-65f7bf86e672",
+    "attributes": {
+      "version": "92",
+      "uploadedDate": "2026-10-07T07:20:27-07:00",
+      "expired": false,
+      "processingState": "VALID",
+      "usesNonExemptEncryption": false
+    },
+    "links": {
+      "self": "https://api.appstoreconnect.apple.com/v1/builds/15c9fecd-32ad-453f-aace-65f7bf86e672"
+    }
+  }
+}
