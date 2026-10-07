@@ -434,4 +434,29 @@ final class CardioUITests: XCTestCase {
             .filter { $0.frame.minY > 400 }.first?.label ?? "?"
         log("après : \(apres)")
     }
+
+    /// (07-10) Rajouter un exercice DÉJÀ dans la séance : une série de plus.
+    func test12_meme_exercice() {
+        guard ouvrirSeanceRefaite() else { return }
+        capture("m01-avant"); arbre("m01-avant")
+        let avant = app.staticTexts.allElementsBoundByIndex.map(\.label).filter { $0.contains("série") || $0.contains("séries") }
+        log("avant : \(avant.prefix(4))")
+        // le « + » du bas
+        let plus = app.buttons.matching(NSPredicate(format: "label == %@", "plus")).allElementsBoundByIndex
+            .max { $0.frame.minY < $1.frame.minY }
+        if let plus { plus.tap() } else { pt(358, 790).tap() }
+        let champ = app.textFields.firstMatch
+        guard attendre(champ, 8, "feuille") else { return }
+        champ.tap(); champ.typeText("Woodchopper poulie haute"); pause(0.8)
+        let l = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Woodchopper poulie haute")).firstMatch
+        guard attendre(l, 5, "woodchopper") else { return }
+        l.tap(); pause(0.4)
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Ajouter (")).firstMatch.tap()
+        pause(2.5)
+        capture("m02-apres"); arbre("m02-apres")
+        let lignes = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Woodchopper poulie haute")).count
+        let apres = app.staticTexts.allElementsBoundByIndex.map(\.label).filter { $0.contains("série") || $0.contains("séries") }
+        log("après : lignes Woodchopper = \(lignes) · \(apres.prefix(4))")
+        XCTAssertEqual(lignes, 1, "une seule ligne Woodchopper")
+    }
 }

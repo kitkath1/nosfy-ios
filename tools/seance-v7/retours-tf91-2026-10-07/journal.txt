@@ -1,0 +1,39 @@
+BEB refaire : trouvé
+BEB capture m01-avant
+BEB avant : ["exercices, 3 séries", "1 série", "1 série"]
+BEB feuille : trouvé
+BEB woodchopper : trouvé
+BEB capture m02-apres
+BEB après : lignes Woodchopper = 1 · ["exercices, 4 séries", "2 séries", "1 série"]
+Test Case '-[NosfyUITests.CardioUITests test12_meme_exercice]' passed (30.770 seconds).
+Test Suite 'CardioUITests' passed at 2026-10-07 15:13:03.110.
+Test Suite 'NosfyUITests.xctest' passed at 2026-10-07 15:13:03.112.
+Test Suite 'Selected tests' passed at 2026-10-07 15:13:03.112.
+BEB refaire : trouvé
+BEB ajouter : trouvé
+BEB capture l01-quinze
+BEB séries visibles : 15 · ajouter touchable = true
+BEB capture l02-defile-bas
+BEB capture l03-defile-haut
+BEB après les deux défilements : la liste est ouverte = true
+BEB ajouter encore : ok
+Test Case '-[NosfyUITests.CardioUITests test09_liste_longue]' passed (37.424 seconds).
+Test Suite 'CardioUITests' passed at 2026-10-07 15:11:14.847.
+Test Suite 'NosfyUITests.xctest' passed at 2026-10-07 15:11:14.847.
+Test Suite 'Selected tests' passed at 2026-10-07 15:11:14.847.
+BEB refaire : trouvé
+BEB en-cours-1 : trouvé
+BEB capture k01-page-a
+BEB capture k01-page-b
+BEB k01-page : page = true · cadran = false · boutons touchables = 4
+BEB capture k02-playlist
+BEB avant : 10 reps · 20 kg
+BEB capture k03-feuille
+BEB feuille-correction : trouvé
+BEB capture k04-molette
+BEB capture k05-corrigee
+BEB après : 21 reps · 20 kg
+Test Case '-[NosfyUITests.CardioUITests test11_corriger]' passed (46.727 seconds).
+Test Suite 'CardioUITests' passed at 2026-10-07 15:12:16.844.
+Test Suite 'NosfyUITests.xctest' passed at 2026-10-07 15:12:16.845.
+Test Suite 'Selected tests' passed at 2026-10-07 15:12:16.846.

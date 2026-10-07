@@ -138,7 +138,8 @@ struct StorySession {
         f.dateFormat = Langue.en ? "MMMM d" : "d MMMM"
         dateLabel = L("Séance du ", "Session on ") + f.string(from: workout.startedAt)
         minutes = max(1, Int(workout.duration / 60))
-        exos = workout.orderedExercises.count
+        // (07-10) Les exercices DIFFÉRENTS, pas les passages.
+        exos = Set(workout.orderedExercises.map(\.exerciseID)).count
         let all = workout.orderedExercises.flatMap { $0.orderedSets.filter(\.isDone) }
         series = workout.seriesPayantes
         recompense = workout.bilanRecompense.flatMap { try? JSONDecoder().decode(BilanRecompenseSeance.self, from: $0) }
@@ -167,12 +168,8 @@ struct StorySession {
         // son titre, seul dans une colonne rétrécie, partait au centre.
         // Les lignes viennent du MÊME constructeur que l'ardoise
         // (`SlateGroupe.lignes`) : séries, intervalles faits ou longueurs.
-        groupes = workout.orderedExercises.compactMap { le in
-            guard let exo = le.exercise else { return nil }
-            let rows = SlateGroupe.lignes(de: le, restSeconds: le.restSeconds)
-            guard !rows.isEmpty else { return nil }
-            return SlateGroupe(id: le.exerciseID, exercise: exo, rows: rows)
-        }
+        // (07-10) Un exercice = une rangée, tous ses passages réunis.
+        groupes = SlateGroupe.parExercice(workout.orderedExercises)
     }
 
     init(title: String, dateLabel: String, minutes: Int, exos: Int,

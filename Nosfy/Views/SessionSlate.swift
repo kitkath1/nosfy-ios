@@ -203,15 +203,8 @@ struct SessionSlate: View {
         }
         out.append(SlateGroupe(id: "courant", exercise: exercise,
                                rows: courant))
-        for le in workout?.orderedExercises ?? []
-        where le.exerciseID != exercise.id {
-            guard let exo = le.exercise else { continue }
-            // Séries, intervalles faits ou longueurs — un exercice sans rien
-            // de fait n'a pas de rangée (15-09 : le cardio entre ici).
-            let rows = SlateGroupe.lignes(de: le, restSeconds: le.restSeconds)
-            guard !rows.isEmpty else { continue }
-            out.append(SlateGroupe(id: le.exerciseID, exercise: exo, rows: rows))
-        }
+        // (07-10) Un exercice = UNE rangée, tous ses passages réunis.
+        out += SlateGroupe.parExercice(workout?.orderedExercises ?? [], sauf: exercise.id)
         return out
     }
 
@@ -300,6 +293,28 @@ struct SlateLigne {
 }
 
 struct SlateGroupe: Identifiable {
+    /// (07-10, « dans la story de fin, des fois on voit plusieurs fois le
+    /// Woodchopper ; on doit voir une seule fois l'exercice, puis son nombre de
+    /// séries ») : un exercice fait en plusieurs passages avait une rangée par
+    /// passage — et le même `id` deux fois dans une liste SwiftUI. Ici, UNE
+    /// rangée par exercice, ses passages bout à bout, dans l'ordre de la
+    /// séance. Un exercice sans rien de fait n'a pas de rangée.
+    static func parExercice(_ blocs: [LoggedExercise], sauf: String? = nil) -> [SlateGroupe] {
+        var ordre: [String] = []
+        var parId: [String: [LoggedExercise]] = [:]
+        for le in blocs where le.exerciseID != sauf {
+            if parId[le.exerciseID] == nil { ordre.append(le.exerciseID) }
+            parId[le.exerciseID, default: []].append(le)
+        }
+        return ordre.compactMap { id in
+            let passages = parId[id] ?? []
+            guard let exo = passages.first?.exercise else { return nil }
+            let rows = passages.flatMap { SlateGroupe.lignes(de: $0, restSeconds: $0.restSeconds) }
+            guard !rows.isEmpty else { return nil }
+            return SlateGroupe(id: id, exercise: exo, rows: rows)
+        }
+    }
+
     let id: String
     var exercise: Exercise
     var rows: [SlateLigne]

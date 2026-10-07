@@ -197,7 +197,14 @@ final class SeanceV7Etat {
     }
 
     func ajouter(_ exos: [Exercise], historique: [String: PropositionExo]) {
-        for e in exos where !plan.contains(where: { $0.id == e.id }) {
+        for e in exos {
+            // (07-10, « si je rajoute encore le même exercice, ça rajoute
+            // juste une série de l'exo déjà fait ») : déjà dans la séance, il
+            // gagne une série — jamais une deuxième ligne. (Avant : rien.)
+            if let i = plan.firstIndex(where: { $0.id == e.id }) {
+                if e.tracking == .setsRepsWeight { plan[i].nombre += 1 }
+                continue
+            }
             let h = historique[e.id]
             // (06-10, « ajoute par défaut qu'une série ») : une, on en ajoute
             // d'autres depuis la playlist ou le cadran.
@@ -309,8 +316,6 @@ struct SeanceV7Page: View {
     /// ouvre la card avec le détail des séries faites ») : ouverte par la
     /// ligne ; la vignette ou le nom, dedans, ouvrent la fiche.
     @State private var playlist: String?
-    /// (06-10) La série faite en cours de correction (la feuille native).
-    @State private var correction: RangV7?
     private var etat: SeanceV7Etat { .shared }
 
     private static let haut: CGFloat = 58
@@ -353,7 +358,8 @@ struct SeanceV7Page: View {
                                onFiche: { fermerPlaylist(); partir(exo, lancer: false) },
                                onLancer: { fermerPlaylist(); partir(exo, lancer: true) },
                                onAjouterSerie: {
-                                   withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { etat.ajouterSerie(id) }
+                                   // Une animation courte, pas un ressort sur toute la page (07-10).
+                                   withAnimation(.easeOut(duration: 0.18)) { etat.ajouterSerie(id) }
                                },
                                onSupprimer: { r in
                                    withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
@@ -361,7 +367,10 @@ struct SeanceV7Page: View {
                                        if !etat.plan.contains(where: { $0.id == id }) { playlist = nil }
                                    }
                                },
-                               onCorriger: { r in correction = r })
+                               onCorriger: { r, reps, kilos, secondes in
+                                   etat.corriger(r, reps: reps, kilos: kilos, secondes: secondes,
+                                                 dans: seance, context: context)
+                               })
                     .transition(.move(edge: .bottom))
                     .zIndex(3)
                 }
@@ -394,14 +403,7 @@ struct SeanceV7Page: View {
         .onDisappear { CouvertureFoyer.shared.retirer() }
         .task { await jouerLeBanc() }
         .task(id: complete && pose) { await feterLaSeance() }
-        .sheet(item: $correction) { r in
-            if let e = ExerciseCatalog.exercise(id: r.exo) {
-                FeuilleCorrectionV7(exo: e, r: r) { reps, kilos, secondes in
-                    etat.corriger(r, reps: reps, kilos: kilos, secondes: secondes, dans: seance, context: context)
-                    correction = nil
-                }
-            }
-        }
+
     }
 
     private var historique: [String: PropositionExo] {
@@ -1248,8 +1250,11 @@ private struct PlaylistV7: View {
     var onLancer: () -> Void
     var onAjouterSerie: () -> Void
     var onSupprimer: (RangV7) -> Void
-    /// (06-10) Toucher une série FAITE : la corriger (reps, kg).
-    var onCorriger: (RangV7) -> Void = { _ in }
+    /// (06-10) Une série FAITE corrigée (reps, kg, secondes).
+    var onCorriger: (RangV7, Int, Double, Int) -> Void = { _, _, _, _ in }
+    /// (07-10, « la mini overlay pas assez jolie ») : la série en cours de
+    /// correction — la feuille se RETOURNE en éditeur, dans son propre verre.
+    @State private var edition: RangV7?
 
     /// (05-10, « les overlays pas hyper fluides au drag vers le bas ») : le
     /// décalage hors du corps (`TirerVersLeBas.swift`), le geste sur toute la
@@ -1257,6 +1262,44 @@ private struct PlaylistV7: View {
     @State private var tirage = TirageVersLeBas()
 
     var body: some View {
+        ZStack {
+            if let r = edition {
+                VStack(spacing: 0) {
+                    Capsule().fill(.white.opacity(0.34)).frame(width: 40, height: 5)
+                        .padding(.top, 8)
+                    EditeurSerieV7(exo: exo, r: r, onRetour: {
+                        withAnimation(.spring(response: 0.42, dampingFraction: 0.88)) { edition = nil }
+                    }) { reps, kilos, secondes in
+                        onCorriger(r, reps, kilos, secondes)
+                        withAnimation(.spring(response: 0.42, dampingFraction: 0.88)) { edition = nil }
+                    }
+                }
+                .transition(.move(edge: .trailing).combined(with: .opacity))
+            } else {
+                liste
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+            }
+        }
+        .clipped()
+        .foregroundStyle(.white)
+        .frame(maxWidth: .infinity)
+        // (07-10) UNE hauteur pour la muscu : la feuille grandissait à chaque
+        // série ajoutée, et tout se re-mettait en page sous le doigt.
+        .frame(height: exo.tracking == .setsRepsWeight
+               ? hauteur * 0.62
+               : min(hauteur * 0.62, 120 + CGFloat(rangs.count + 1) * 54 + 40))
+        .background(fond)
+        .clipShape(RoundedRectangle(cornerRadius: 44, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 44, style: .continuous)
+            .strokeBorder(LinearGradient(colors: [.white.opacity(0.32), .white.opacity(0.06), .white.opacity(0.12)],
+                                         startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1))
+        .padding(.horizontal, 8)
+        .padding(.bottom, 8)
+        .modifier(DecalageTirage(etat: tirage))
+        .frame(maxHeight: .infinity, alignment: .bottom)
+    }
+
+    private var liste: some View {
         VStack(spacing: 0) {
             // ⚠️ 06-10 (TestFlight 90 : « au-delà de 10 séries le scroll bug,
             // on a du mal à avoir Ajouter ») : la feuille se tire par SA TÊTE
@@ -1270,20 +1313,31 @@ private struct PlaylistV7: View {
             }
             .contentShape(Rectangle())
             .gesture(tirage.geste(onFermer: onFermer))
-            ScrollView {
-                VStack(spacing: 0) {
-                    ForEach(rangs) { r in
-                        PisteV7(exo: exo, r: r, prochaine: prochaine == r.rang && !r.fait,
-                                onLancer: onLancer, onSupprimer: { onSupprimer(r) },
-                                onCorriger: { onCorriger(r) })
+            ScrollViewReader { liste in
+                ScrollView {
+                    VStack(spacing: 0) {
+                        ForEach(rangs) { r in
+                            PisteV7(exo: exo, r: r, prochaine: prochaine == r.rang && !r.fait,
+                                    onLancer: onLancer, onSupprimer: { onSupprimer(r) },
+                                    onCorriger: {
+                                        withAnimation(.spring(response: 0.42, dampingFraction: 0.88)) { edition = r }
+                                    })
+                                .id(r.id)
+                        }
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 6)
+                    .padding(.bottom, 8)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 6)
-                .padding(.bottom, 8)
+                .scrollIndicators(.hidden)
+                .scrollBounceBehavior(.basedOnSize)
+                // (07-10, « au-delà de 5 séries, ajouter n'est pas fluide ») :
+                // la liste descend jusqu'à la série qu'on vient d'ajouter.
+                .onChange(of: rangs.count) { avant, apres in
+                    guard apres > avant, let der = rangs.last else { return }
+                    withAnimation(.easeOut(duration: 0.25)) { liste.scrollTo(der.id, anchor: .bottom) }
+                }
             }
-            .scrollIndicators(.hidden)
-            .scrollBounceBehavior(.basedOnSize)
             // « Ajouter une série » HORS de la liste, toujours visible sous elle.
             if exo.tracking == .setsRepsWeight {
                 Rectangle().fill(.white.opacity(0.08)).frame(height: 0.5)
@@ -1310,19 +1364,6 @@ private struct PlaylistV7: View {
                 .padding(.bottom, 18)
             }
         }
-        .foregroundStyle(.white)
-        .frame(maxWidth: .infinity)
-        .frame(height: min(hauteur * 0.62,
-                           120 + CGFloat(rangs.count + (exo.tracking == .setsRepsWeight ? 2 : 1)) * 54 + 40))
-        .background(fond)
-        .clipShape(RoundedRectangle(cornerRadius: 44, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 44, style: .continuous)
-            .strokeBorder(LinearGradient(colors: [.white.opacity(0.32), .white.opacity(0.06), .white.opacity(0.12)],
-                                         startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1))
-        .padding(.horizontal, 8)
-        .padding(.bottom, 8)
-        .modifier(DecalageTirage(etat: tirage))
-        .frame(maxHeight: .infinity, alignment: .bottom)
     }
 
     private var tete: some View {
@@ -2485,41 +2526,63 @@ private struct FeuilleAjoutV7: View {
 
 }
 
-// MARK: - Corriger une série faite (06-10)
+// MARK: - Corriger une série faite (06-10 → 07-10)
 
-/// « Modifier une série existante, juste ajuster reps et kilos quand je me
-/// trompe » : la NOTE du cadran (ses valeurs entre deux traits, sa molette,
-/// « Valider »), dans une feuille native courte.
-struct FeuilleCorrectionV7: View {
+/// L'ÉDITEUR D'UNE SÉRIE FAITE (07-10, « la mini overlay des poids et reps
+/// pas assez jolie ») : la tête de la playlist (la photo, « Série 3 », le nom)
+/// avec son médaillon ‹, puis la NOTE du cadran — les valeurs entre deux
+/// traits, la molette, « Valider ». Dans le verre de la feuille qui le porte.
+struct EditeurSerieV7: View {
     let exo: Exercise
     let r: RangV7
+    var onRetour: (() -> Void)?
     var onEnregistrer: (Int, Double, Int) -> Void
     @State private var reps: Int
     @State private var kilos: Double
     @State private var secondes: Int
     @State private var repos = 60
 
-    init(exo: Exercise, r: RangV7, onEnregistrer: @escaping (Int, Double, Int) -> Void) {
-        self.exo = exo; self.r = r; self.onEnregistrer = onEnregistrer
-        var re = 10, ki = 20.0, se = 0
+    init(exo: Exercise, r: RangV7, onRetour: (() -> Void)? = nil,
+         onEnregistrer: @escaping (Int, Double, Int) -> Void) {
+        self.exo = exo; self.r = r; self.onRetour = onRetour; self.onEnregistrer = onEnregistrer
+        var re = 10, ki = 20.0
         if case .serie(let a, let b)? = r.ligne?.genre { re = a; ki = b }
-        se = r.ligne?.seconds ?? 0
         _reps = State(initialValue: re)
         _kilos = State(initialValue: ki)
-        _secondes = State(initialValue: se)
+        _secondes = State(initialValue: r.ligne?.seconds ?? 0)
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            Text(L("SÉRIE \(r.rang + 1) · ", "SET \(r.rang + 1) · ") + exo.nomLocalise.uppercased())
-                .font(.inter(12.5, .medium))
+            HStack(spacing: 14) {
+                if let onRetour {
+                    MedaillonStop(symbol: "chevron.left", taille: 36) { onRetour() }
+                        .frame(width: 54, height: 54)
+                }
+                ExercisePhoto(exercise: exo)
+                    .frame(width: 44, height: 48)
+                    .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .strokeBorder(.white.opacity(0.16), lineWidth: 0.5))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L("Série \(r.rang + 1)", "Set \(r.rang + 1)"))
+                        .font(.system(size: 18, weight: .semibold))
+                    Text(exo.nomLocalise)
+                        .font(.system(size: 13))
+                        .foregroundStyle(.white.opacity(0.5))
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 12)
+            Text(L("CORRIGER LA SÉRIE", "EDIT THE SET"))
+                .font(.inter(11.5, .medium))
                 .tracking(3.0)
-                .foregroundStyle(.white.opacity(0.46))
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-                .padding(.horizontal, 24)
-                .padding(.top, 26)
-                .padding(.bottom, 18)
+                .foregroundStyle(.white.opacity(0.42))
+                .frame(maxWidth: .infinity)
+                .padding(.top, 22)
+                .padding(.bottom, 14)
             NoteV15(saisie: exo.saisie, rang: r.rang + 1, derniere: nil, avecRepos: false,
                     reps: $reps, kilos: $kilos, repos: $repos, secondes: $secondes) {
                 Haptique.moyen()
@@ -2527,11 +2590,36 @@ struct FeuilleCorrectionV7: View {
             }
             Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity)
-        .background(Color.black.ignoresSafeArea())
-        .presentationDetents([.height(330)])
-        .presentationBackground(.black)
-        .presentationCornerRadius(38)
-        .preferredColorScheme(.dark)
+        .foregroundStyle(.white)
+    }
+}
+
+/// Le même éditeur, en feuille, pour l'onglet Séries du cadran : le verre
+/// sombre de la playlist, pas un fond plat.
+struct FeuilleCorrectionV7: View {
+    let exo: Exercise
+    let r: RangV7
+    var onEnregistrer: (Int, Double, Int) -> Void
+
+    var body: some View {
+        EditeurSerieV7(exo: exo, r: r, onEnregistrer: onEnregistrer)
+            .padding(.top, 14)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background {
+                ZStack {
+                    Rectangle().fill(.ultraThinMaterial)
+                    LinearGradient(colors: [Color(white: 0.24).opacity(0.6), Color(white: 0.08).opacity(0.86)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                    RadialGradient(colors: [.white.opacity(0.12), .clear], center: .init(x: 0.15, y: 0),
+                                   startRadius: 0, endRadius: 260)
+                }
+                .environment(\.colorScheme, .dark)
+                .ignoresSafeArea()
+            }
+            .presentationDetents([.height(420)])
+            .presentationBackground(.clear)
+            .presentationCornerRadius(44)
+            .presentationDragIndicator(.visible)
+            .preferredColorScheme(.dark)
     }
 }

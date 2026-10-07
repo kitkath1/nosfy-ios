@@ -50,9 +50,48 @@ struct ChipVerre: View {
     }
 
     var body: some View {
+        // (07-10, « tous les boutons chevron en mode médaillon, partout, comme
+        // la page de résumé quand la séance est en cours ») : un chevron est
+        // un médaillon noir laqué ; les autres chips gardent leur verre.
+        if symbole.hasPrefix("chevron") { medaillon } else { verre }
+    }
+
+    private var medaillon: some View {
+        Button(action: action) {
+            MedaillonStop(symbol: symbole, taille: 40)
+                .allowsHitTesting(false)
+                .frame(width: 44, height: 44)
+                .contentShape(Circle())
+                .overlay {
+                    if guideActif {
+                        ZStack {
+                            anneauRond(0)
+                            anneauRond(0.55)
+                        }
+                        .allowsHitTesting(false)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+        .onAppear { if guideActif { onde = true } }
+        .onChange(of: guideActif) { _, g in onde = g }
+    }
+
+    private func anneauRond(_ retard: Double) -> some View {
+        Circle().strokeBorder(.white, lineWidth: 1)
+            .frame(width: 44, height: 44)
+            .scaleEffect(onde ? 1.55 : 1.0)
+            .opacity(onde ? 0 : 0.85)
+            .animation(.easeOut(duration: 1.1)
+                .repeatForever(autoreverses: false).delay(retard),
+                value: onde)
+    }
+
+    private var verre: some View {
         let c = min(max(clarte, 0), 1)
         let forme = RoundedRectangle(cornerRadius: 15, style: .continuous)
-        Button(action: action) {
+        return Button(action: action) {
             Image(systemName: symbole)
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(Color.inkPrimary.opacity(1 - c))

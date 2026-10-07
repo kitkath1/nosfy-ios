@@ -635,6 +635,10 @@ enum DecideurSerie {
         var prochainHasard: Int?
     }
     private static var etat = EtatSeance(cle: "")
+    /// (07-10, sa règle : « exercice par exercice, jamais cumulé ») : le rang,
+    /// le hasard et le plafond de pop-ups vivent PAR EXERCICE ; la séance ne
+    /// garde que ses budgets de vidéos (`etat.videos`, `etat.monetaires`).
+    private static var parExercice: [String: EtatSeance] = [:]
     /// L'horloge de séance — remplacée par le banc (deux minutes par série).
     static var horloge: () -> Date = { Date() }
 
@@ -683,10 +687,14 @@ enum DecideurSerie {
     static func pour(serie: Int, gain: Int, total: Int,
                      reps: Int, kilos: Double, seance: UUID? = nil,
                      saisie: Exercise.Saisie = .repsEtCharge,
-                     secondes: Int = 0) -> IssueSerie {
+                     secondes: Int = 0, exercice: String? = nil) -> IssueSerie {
         if !reglesLues { Task { await chargerRegles() } }
-        let cle = seance?.uuidString ?? "banc"
-        if etat.cle != cle { etat = EtatSeance(cle: cle) }
+        let cleSeance = seance?.uuidString ?? "banc"
+        if etat.cle != cleSeance { etat = EtatSeance(cle: cleSeance); parExercice = [:] }
+        // Le rang de CET exercice : son hasard, son écart, son plafond.
+        let cle = cleSeance + "|" + (exercice ?? "")
+        var ex = parExercice[cle] ?? EtatSeance(cle: cle)
+        defer { parExercice[cle] = ex }
         let r = regles
         let pill = IssueSerie.pill(gain: gain, total: total)
 
@@ -694,13 +702,13 @@ enum DecideurSerie {
         let fixe = r.rangsFixes.contains(serie)
         var tire = false
         if !fixe, serie > r.hasardApres {
-            if etat.prochainHasard == nil {
-                etat.prochainHasard = tirage(apres: max(r.hasardApres, etat.dernierRang ?? 0), cle: cle)
+            if ex.prochainHasard == nil {
+                ex.prochainHasard = tirage(apres: max(r.hasardApres, ex.dernierRang ?? 0), cle: cle)
             }
-            if let p = etat.prochainHasard, serie >= p {
+            if let p = ex.prochainHasard, serie >= p {
                 // l'écart depuis la dernière pop-up : séries ET/OU minutes
-                let dSeries = serie - (etat.dernierRang ?? 0)
-                let dMin = etat.derniereDate.map { horloge().timeIntervalSince($0) / 60 } ?? .infinity
+                let dSeries = serie - (ex.dernierRang ?? 0)
+                let dMin = ex.derniereDate.map { horloge().timeIntervalSince($0) / 60 } ?? .infinity
                 let okSeries = dSeries >= r.ecartMinSeries
                 let okMin = dMin >= Double(r.ecartMinMinutes)
                 let ecartTenu = r.ecartExigeLesDeux ? (okSeries && okMin) : (okSeries || okMin)
@@ -708,14 +716,16 @@ enum DecideurSerie {
                     tire = true
                 } else {
                     // pas encore : on réessaie à la série suivante
-                    etat.prochainHasard = serie + 1
+                    ex.prochainHasard = serie + 1
                 }
             }
         }
         guard fixe || tire else { return pill }
 
         // Le budget de la séance.
-        guard etat.popups < r.popupsMax else { return pill }
+        // Le plafond est celui de l'EXERCICE (07-10 : « sans plafond de 4 par
+        // séance ») — chaque exercice garde ses 3, 5 et 10.
+        guard ex.popups < r.popupsMax else { return pill }
         let issue: IssueSerie
         if fixe, serie == r.rangVideo, etat.videos < r.videoMax {
             // Le dernier rang fixe : le cas RARE, avec sa vidéo — une par séance.
@@ -743,10 +753,11 @@ enum DecideurSerie {
                                     "\(fait) — that's \(total) coins so far."),
                             style: .galet)
         }
+        ex.popups += 1
         etat.popups += 1
-        etat.dernierRang = serie
-        etat.derniereDate = horloge()
-        if tire { etat.prochainHasard = tirage(apres: serie, cle: cle) }
+        ex.dernierRang = serie
+        ex.derniereDate = horloge()
+        if tire { ex.prochainHasard = tirage(apres: serie, cle: cle) }
         return issue
     }
 

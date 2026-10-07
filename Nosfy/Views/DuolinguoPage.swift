@@ -1866,10 +1866,10 @@ private struct DalleChapitre: View {
                             .impactOccurred()
                         onRetour()
                     } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Color(white: 0.82))
-                            .frame(width: 30, height: 58)
+                        // (07-10) Le chevron en médaillon, comme partout.
+                        MedaillonStop(symbol: "chevron.left", taille: 36)
+                            .allowsHitTesting(false)
+                            .frame(width: 44, height: 58)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)

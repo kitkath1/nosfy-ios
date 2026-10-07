@@ -298,7 +298,17 @@ struct ChromeV15: View {
             // = 150, le cadre — rien ne déborde plus sous la zone sûre.
             VStack(spacing: 4) {
                 // (04-10, « le médaillon Stop plus gros ») : 88 pt.
-                MedaillonStop(taille: 88, action: stop)
+                // (07-10, « l'animation trop belle du gros bouton cardio, le
+                // magnifique cercle orange : on doit la mettre dans les exos de
+                // muscu aussi ») : l'anneau de flamme bat autour du Stop pendant
+                // l'effort — le même que le tapis (`HaloFlamme`).
+                ZStack {
+                    if p == .effort {
+                        HaloFlamme(vif: true)
+                            .transition(.opacity)
+                    }
+                    MedaillonStop(taille: 88, action: stop)
+                }
                     .opacity(p == .effort ? 1 : 0.35)
                     .allowsHitTesting(p == .effort)
                 Text("Stop")
@@ -378,12 +388,9 @@ private struct TeteV15: View {
             // ⚠️ PAS UN `Button` (01-10, « quand je clique sur le chevron pour
             // réduire ça marche pas ») : le toucher se perdait. Un toucher
             // PRIORITAIRE, sur une zone de 48 pt — le remède de son Stop.
-            Image(systemName: "chevron.down")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.85))
-                .frame(width: 38, height: 38)
-                .background(Circle().fill(.white.opacity(0.08)))
-                .overlay(Circle().strokeBorder(.white.opacity(0.14), lineWidth: 1))
+            // (07-10) Le chevron en médaillon, comme partout.
+            MedaillonStop(symbol: "chevron.down", taille: 40)
+                .allowsHitTesting(false)
                 .frame(width: 48, height: 48)
                 .contentShape(Rectangle())
                 .highPriorityGesture(TapGesture().onEnded {
@@ -440,6 +447,18 @@ enum CouleurFlammes: Int, CaseIterable {
         case .noir: return L("Noir", "Black")
         }
     }
+    /// L'anneau de flamme des boutons (Stop, Go, Reprendre) : un ton foncé et
+    /// un ton clair qui se relaient.
+    var halo: (fonce: Color, clair: Color) {
+        switch self {
+        case .rouge: return (Color(red: 0.86, green: 0.18, blue: 0.04), Color(red: 1.0, green: 0.56, blue: 0.20))
+        case .orange: return (Color(red: 0.95, green: 0.38, blue: 0.05), Color(red: 1.0, green: 0.68, blue: 0.28))
+        case .jaune: return (Color(red: 0.95, green: 0.62, blue: 0.08), Color(red: 1.0, green: 0.90, blue: 0.40))
+        case .vert: return (Color(red: 0.12, green: 0.62, blue: 0.24), Color(red: 0.45, green: 1.0, blue: 0.55))
+        case .noir: return (Color(white: 0.38), Color(white: 0.78))
+        }
+    }
+
     var pastille: Color {
         switch self {
         case .rouge: return Color(red: 0.86, green: 0.18, blue: 0.04)
@@ -465,12 +484,9 @@ private struct BoutonCouleurFlammes: View {
                 }
             }
         } label: {
-            Image(systemName: "gearshape")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.85))
-                .frame(width: 38, height: 38)
-                .background(Circle().fill(.white.opacity(0.08)))
-                .overlay(Circle().strokeBorder(.white.opacity(0.14), lineWidth: 1))
+            // Le même médaillon que le chevron d'en face (07-10).
+            MedaillonStop(symbol: "gearshape", taille: 40)
+                .allowsHitTesting(false)
                 .frame(width: 48, height: 48)
                 .contentShape(Rectangle())
         }
@@ -567,6 +583,7 @@ private struct AlbumV15: View {
     /// numéro — et « Ajouter une série » au bout. Rien d'autre.
     var body: some View {
         VStack(spacing: 0) {
+            ScrollViewReader { liste in
             ScrollView(showsIndicators: false) {
                 if let x = ici {
                     VStack(alignment: .leading, spacing: 0) {
@@ -577,11 +594,18 @@ private struct AlbumV15: View {
                                 .offset(y: montre ? 0 : 10)
                                 .animation(.spring(response: 0.55, dampingFraction: 0.88)
                                     .delay(0.045 * Double(min(k, 12))), value: montre)
+                                .id(k)
                         }
                     }
                     .padding(.horizontal, 28)
                     .padding(.vertical, 18)
                 }
+            }
+            // (07-10) La liste descend jusqu'à la série ajoutée.
+            .onChange(of: ici?.total ?? 0) { avant, apres in
+                guard apres > avant else { return }
+                withAnimation(.easeOut(duration: 0.25)) { liste.scrollTo(apres, anchor: .bottom) }
+            }
             }
             .mask(
                 LinearGradient(stops: [

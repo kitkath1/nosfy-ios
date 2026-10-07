@@ -2096,26 +2096,28 @@ private struct CommandeTapis: View {
 /// (un battement de 0,55 s, plus large) ; sinon l'attente (une respiration
 /// de 1,6 s, plus sourde). Des valeurs animées en `repeatForever`, jamais
 /// une horloge (skill perf).
-private struct HaloFlamme: View {
+struct HaloFlamme: View {
     var vif: Bool
     @State private var phase = false
-    private static let rouge = Color(red: 0.86, green: 0.18, blue: 0.04)
-    private static let orange = Color(red: 1.0, green: 0.56, blue: 0.20)
+    /// (07-10) Les deux couleurs suivent le choix des flammes du cadran ; le
+    /// rouge garde le rouge de braise et l'orange de flamme d'origine.
+    private var rouge: Color { CouleurFlammes.courante.halo.fonce }
+    private var orange: Color { CouleurFlammes.courante.halo.clair }
 
     var body: some View {
         ZStack {
             // La lueur, sans flou : un dégradé radial qui s'éteint vite, collé
             // au disque (06-10 : la première, trop large, mordait le mot).
             Circle()
-                .fill(RadialGradient(colors: [(phase ? Self.orange : Self.rouge).opacity(vif ? 0.34 : 0.22), .clear],
+                .fill(RadialGradient(colors: [(phase ? orange : rouge).opacity(vif ? 0.34 : 0.22), .clear],
                                      center: .center, startRadius: 44, endRadius: 62))
                 .frame(width: 124, height: 124)
             Circle()
-                .strokeBorder(Self.rouge, lineWidth: 1.5)
+                .strokeBorder(rouge, lineWidth: 1.5)
                 .frame(width: 100, height: 100)
                 .opacity(phase ? 0.2 : 0.85)
             Circle()
-                .strokeBorder(Self.orange, lineWidth: 1.5)
+                .strokeBorder(orange, lineWidth: 1.5)
                 .frame(width: 100, height: 100)
                 .opacity(phase ? 0.85 : 0.2)
         }

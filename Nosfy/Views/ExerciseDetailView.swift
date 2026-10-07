@@ -3490,7 +3490,8 @@ struct ExerciseDetailView: View {
                                        reps: f.reps, kilos: f.kilos,
                                        seance: active?.remoteID,
                                        saisie: exercise.saisie,
-                                       secondes: f.seconds)
+                                       secondes: f.seconds,
+                                       exercice: exercise.id)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
             jouerIssue(issue, f)
         }
@@ -3974,9 +3975,9 @@ struct ExerciseDetailView: View {
             // LA PLAYLIST (04-10) : une série de plus à CET exercice, depuis
             // l'onglet Séries — le plan la porte, l'album la relit au rendu.
             onAjouterSerie: {
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.84)) {
-                    SeanceV7Etat.shared.ajouterSerie(exercise.id)
-                }
+                // (07-10, « pas hyper fluide ») : sans ressort — sous le cadran,
+                // une animation sur l'état de séance remontait tout le cadran.
+                SeanceV7Etat.shared.ajouterSerie(exercise.id)
             },
             // (05-10) La piste k glissée : la même suppression que la page.
             onSupprimerSerie: { k in supprimerSerieV15(k, dans: a) },
@@ -4109,7 +4110,8 @@ struct ExerciseDetailView: View {
                                        reps: f.reps, kilos: f.kilos,
                                        seance: active?.remoteID,
                                        saisie: exercise.saisie,
-                                       secondes: f.seconds)
+                                       secondes: f.seconds,
+                                       exercice: exercise.id)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
             jouerIssue(issue, f)
         }
