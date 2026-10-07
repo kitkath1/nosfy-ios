@@ -1,0 +1,24 @@
+=== AttributeGraph: cycle detected through attribute 28464 ===
+IOSurfaceClientSetSurfaceNotify failed e00002c7
+[booster-bench] makeHDRStudio: envCal=false
+[reseau] en ligne
+[depart-serveur] E66F639D-E611-4042-9A2F-190384F05AF0 · ouverte · 819ms
+[welcome-back] retenue : la porte, le film ou le splash tient l'écran
+[pull] bilans historiques : 0 retrouvés
+[pull] bilans historiques : 0 retrouvés
+[pull] seances_depuis(2026-10-07T14:29:01.164455+00:00) → total 0, rendues 0 · insérées 0, ignorées 0 · local 108
+Synchronisation Supabase différée : Erreur serveur 400 — {"code":"PT400","details":null,"hint":null,"message":"seance_invalide"}
+[home-serveur] home() → prénom Kiki · 5 / 5, reste 0 · en séance true (17 min) · 105 séances en tout · première fois false · visite false · langue fr
+[home-serveur] phrases → active, active_zero, seance, seance_debut, vide
+[annonces] regles_annonces() → rangs [10], vidéo 10, hasard 1-3 après 1, budget 6/1/1, écart 1 séries ET 1 min, rare reward-rare, pool 7 vidéos ["reward-piece-1", "reward-piece-2", "reward-piece-3", "reward-piece-4", "reward-piece-5", "reward-fire", "reward-lune"]
+[cardio] planchers du barème lus : tapis 5.0 min, escalier 5.0 min, seuil 10.0 km/h, effort HIIT 20.0 s
+[chemin] composition conforme à la base (5 règles lues)
+[depart-serie] depart_serie() → slider
+[annonces] banc 30 séries (règles serveur) → 2 reward+vidéo · 5 moment · 7 moment · 10 reward+vidéo · 11 moment · 13 moment
+[pull] bilans historiques : 0 retrouvés
+[pull] bilans historiques : 0 retrouvés
+[pull] seances_depuis(2026-10-07T14:30:05.259205+00:00) → total 21, rendues 21 · insérées 0, ignorées 21 · local 108
+[welcome-back] retenue : séance, story ou route à l’écran
+[booster-bench] lune: geo=false op=1.0
+[booster-bench] scène : mylar=false env=booster-studio.hdr emission=0.6000000238418579
+fr.kathryn.woop: 86949

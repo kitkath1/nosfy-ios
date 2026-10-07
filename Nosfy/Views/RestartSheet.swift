@@ -646,7 +646,13 @@ enum DecideurSerie {
     private static func stable(_ s: String) -> UInt64 {
         var h: UInt64 = 0xcbf29ce484222325
         for o in s.utf8 { h = (h ^ UInt64(o)) &* 0x100000001b3 }
-        return h
+        // ⚠️ (07-10, mesuré au banc) : les bits BAS d'un FNV-1a ne bougent
+        // presque pas — avec un écart de 1 à 2 (`% 2`), le tirage donnait
+        // toujours le même pas : 2, 4, 6, 8. Le brassage final de SplitMix64
+        // mélange tous les bits avant le modulo.
+        h = (h ^ (h >> 30)) &* 0xBF58476D1CE4E5B9
+        h = (h ^ (h >> 27)) &* 0x94D049BB133111EB
+        return h ^ (h >> 31)
     }
 
     /// Le prochain rang tiré après `apres` : + [écart min … écart max],
@@ -772,6 +778,14 @@ enum DecideurSerie {
         var rang = 0
         horloge = { depart.addingTimeInterval(Double(rang) * 120) }   // 2 min par série
         defer { horloge = { Date() } }
+        // `-decideurEcartMax N` (07-10) : essayer un écart au banc seul, sans
+        // toucher la base que lisent les téléphones.
+        let lues = regles
+        defer { regles = lues }
+        let args = CommandLine.arguments
+        if let i = args.firstIndex(of: "-decideurEcartMax"), i + 1 < args.count, let v = Int(args[i + 1]) {
+            regles.hasardEcartMax = max(v, regles.hasardEcartMin)
+        }
         for n in 1 ... 30 {
             rang = n
             switch pour(serie: n, gain: 20, total: n * 20, reps: 10, kilos: 40, seance: s) {
@@ -780,7 +794,8 @@ enum DecideurSerie {
             case .reward(_, let v): ligne.append("\(n) reward" + (v == nil ? "" : "+vidéo"))
             }
         }
-        print("[annonces] banc 30 séries (\(reglesLues ? "règles serveur" : "repli")) → " + ligne.joined(separator: " · "))
+        print("[annonces] banc 30 séries (\(reglesLues ? "règles serveur" : "repli"), écart \(regles.hasardEcartMin)-\(regles.hasardEcartMax)) → "
+              + ligne.joined(separator: " · "))
         etat = EtatSeance(cle: "")
     }
 }

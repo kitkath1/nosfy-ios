@@ -808,6 +808,13 @@ struct SeanceV7Page: View {
             print("[v7banc] série ajoutée et lancée : \(e.id)")
             partir(e, lancer: true)
         }
+        // `playlist` (07-10) : la feuille des séries du premier exercice.
+        if banc == "playlist", let p = etat.plan.first {
+            SeanceV7Page.bancJoue = true
+            try? await Task.sleep(for: .seconds(1.4))
+            print("[v7banc] feuille des séries : \(p.id)")
+            ouvrirPlaylist(p.id)
+        }
         if banc == "lancer" {
             SeanceV7Page.bancJoue = true
             try? await Task.sleep(for: .seconds(1.6))
@@ -1327,10 +1334,19 @@ private struct PlaylistV7: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 6)
-                    .padding(.bottom, 8)
+                    .padding(.bottom, 30)
                 }
                 .scrollIndicators(.hidden)
                 .scrollBounceBehavior(.basedOnSize)
+                // (07-10, « pourquoi les séries ne sont pas fondues dedans,
+                // beurk ») : pas de carte grise — les séries posent sur le
+                // noir et s'y FONDENT en bas, avant « Ajouter une série ».
+                // Un voile par-dessus (pas un masque : rien hors écran).
+                .overlay(alignment: .bottom) {
+                    LinearGradient(colors: [.black.opacity(0), .black], startPoint: .top, endPoint: .bottom)
+                        .frame(height: 46)
+                        .allowsHitTesting(false)
+                }
                 // (07-10, « au-delà de 5 séries, ajouter n'est pas fluide ») :
                 // la liste descend jusqu'à la série qu'on vient d'ajouter.
                 .onChange(of: rangs.count) { avant, apres in
@@ -1397,16 +1413,10 @@ private struct PlaylistV7: View {
             .accessibilityAddTraits(.isButton)
     }
 
-    /// Le verre de la feuille : celui de la feuille d'ajout.
+    /// Le verre de la feuille : celui de la feuille d'ajout (07-10 : le noir
+    /// en dégradé, l'arête dessinée, les braises de la tête).
     private var fond: some View {
-        ZStack {
-            Rectangle().fill(.ultraThinMaterial)
-            LinearGradient(colors: [Color(white: 0.24).opacity(0.6), Color(white: 0.08).opacity(0.86)],
-                           startPoint: .topLeading, endPoint: .bottomTrailing)
-            RadialGradient(colors: [.white.opacity(0.12), .clear], center: .init(x: 0.15, y: 0),
-                           startRadius: 0, endRadius: 260)
-        }
-        .environment(\.colorScheme, .dark)
+        FondFeuilleNoire()
     }
 
 }
@@ -2384,16 +2394,10 @@ private struct FeuilleAjoutV7: View {
         .animation(.spring(response: 0.45, dampingFraction: 0.82), value: recherche.isEmpty)
     }
 
-    /// Le verre de la feuille : un flou sombre, une lumière en haut à gauche.
+    /// Le verre de la feuille (07-10, « en dégradé de noir, tout liquid
+    /// glass ») : `FondFeuilleNoire`, sans flou sous le doigt.
     private var fond: some View {
-        ZStack {
-            Rectangle().fill(.ultraThinMaterial)
-            LinearGradient(colors: [Color(white: 0.24).opacity(0.6), Color(white: 0.08).opacity(0.86)],
-                           startPoint: .topLeading, endPoint: .bottomTrailing)
-            RadialGradient(colors: [.white.opacity(0.12), .clear], center: .init(x: 0.15, y: 0),
-                           startRadius: 0, endRadius: 260)
-        }
-        .environment(\.colorScheme, .dark)
+        FondFeuilleNoire()
     }
 
     /// Le mot court de la zone, celui des petits carrés de la page Exercices
@@ -2605,17 +2609,7 @@ struct FeuilleCorrectionV7: View {
         EditeurSerieV7(exo: exo, r: r, onEnregistrer: onEnregistrer)
             .padding(.top, 14)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .background {
-                ZStack {
-                    Rectangle().fill(.ultraThinMaterial)
-                    LinearGradient(colors: [Color(white: 0.24).opacity(0.6), Color(white: 0.08).opacity(0.86)],
-                                   startPoint: .topLeading, endPoint: .bottomTrailing)
-                    RadialGradient(colors: [.white.opacity(0.12), .clear], center: .init(x: 0.15, y: 0),
-                                   startRadius: 0, endRadius: 260)
-                }
-                .environment(\.colorScheme, .dark)
-                .ignoresSafeArea()
-            }
+            .background { FondFeuilleNoire().ignoresSafeArea() }
             .presentationDetents([.height(420)])
             .presentationBackground(.clear)
             .presentationCornerRadius(44)
